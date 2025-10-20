@@ -43,8 +43,8 @@ execute_init()
 	handle_lab
 	REPONAME=$(basename `git rev-parse --show-toplevel`)
 	echo -ne "Initializing $REPONAME . . . "
-	sed -i "s/REPLACEREPONAME/${REPONAME}/g" *.* > /dev/null 2>&1
-	sed -i "s/REPLACEREPONAME/${REPONAME}/g" supplemental-ui/partials/header-content.hbs > /dev/null 2>&1
+	sed -i "s/ocp-virt-cookbook/${REPONAME}/g" *.* > /dev/null 2>&1
+	sed -i "s/ocp-virt-cookbook/${REPONAME}/g" supplemental-ui/partials/header-content.hbs > /dev/null 2>&1
 	echo -e "done"
 	
 	mv -f README-TRAINING.md README.md
