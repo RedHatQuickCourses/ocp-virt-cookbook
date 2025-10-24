@@ -1,0 +1,145 @@
+= Virtctl Basics
+:navtitle: Virtctl Basics
+
+== Overview
+
+This tutorial provides a brief overview of the virtctl command. This document is designed to quickly cover some of the basic usage of this incredibly useful tool for controlling your virtual machines on OpenShift.
+
+For more in-depth information, see the link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.13/html/virtualization/virt-using-the-cli-tools[official documentation,window=_blank].
+
+== Basic Information Commands
+
+=== List File Systems
+
+List the file systems available in a virtual machine:
+
+[source,bash,role=execute]
+----
+virtctl fslist my-vm
+----
+
+=== List Logged-in Users
+
+Show users currently logged into a virtual machine:
+
+[source,bash,role=execute]
+----
+virtctl userlist my-vm
+----
+
+=== Guest OS Information
+
+Get information about the operating system running in the VM:
+
+[source,bash,role=execute]
+----
+virtctl guestosinfo my-vm
+----
+
+== VM Lifecycle Management
+
+=== Starting a VM
+
+Start a virtual machine:
+
+[source,bash,role=execute]
+----
+virtctl start my-vm
+----
+
+=== Stopping a VM
+
+Stop a virtual machine gracefully:
+
+[source,bash,role=execute]
+----
+virtctl stop my-vm
+----
+
+You can force a stop (similar to pulling the power plug):
+
+[source,bash,role=execute]
+----
+virtctl stop my-vm --force
+----
+
+WARNING: Using `--force` can mess up data on the VM. Use only when necessary.
+
+=== Pausing and Unpausing
+
+Pause a VM, keeping the machine state in memory:
+
+[source,bash,role=execute]
+----
+virtctl pause vm my-vm
+----
+
+Unpause a VM:
+
+[source,bash,role=execute]
+----
+virtctl unpause vm my-vm
+----
+
+NOTE: The pause and unpause commands require you to specify that you're talking about a `vm`, while other commands (start, stop) don't.
+
+== File Transfer with SCP
+
+=== Overview
+
+One of the more useful commands is `virtctl scp`. Just like a regular scp command, this lets you copy files to and from your virtual machines.
+
+IMPORTANT: To use scp, you'll need to make sure your virtual machine has an SSH key configured to allow connections.
+
+=== Copy File to VM
+
+Copy a file from your local machine to a virtual machine:
+
+[source,bash,role=execute]
+----
+virtctl scp -i key myLocalFile.txt user@my-vm:myVMFileLocation.txt
+----
+
+=== Copy File from VM
+
+Copy a file from a virtual machine to your local machine:
+
+[source,bash,role=execute]
+----
+virtctl scp -i key user@my-vm:VMFile.txt ~/Documents/
+----
+
+== Common Patterns
+
+=== Check VM Status
+
+[source,bash,role=execute]
+----
+oc get vm my-vm
+oc get vmi my-vm
+----
+
+=== Access VM Console
+
+[source,bash,role=execute]
+----
+virtctl console my-vm
+----
+
+TIP: Use `Ctrl+]` to exit the console.
+
+== Summary
+
+The virtctl command provides essential functionality for managing virtual machines on OpenShift:
+
+* Information gathering: `fslist`, `userlist`, `guestosinfo`
+* Lifecycle management: `start`, `stop`, `pause`, `unpause`
+* File transfer: `scp`
+* Console access: `console`
+
+== See Also
+
+* xref:vm-configuration:cloud-init-basics.adoc[Cloud-init IP Configuration]
+* link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.13/html/virtualization/virt-using-the-cli-tools[OpenShift Virtualization CLI Tools,window=_blank]
+* link:https://kubevirt.io/user-guide/user_workloads/virtctl_client_tool/[KubeVirt virtctl Documentation,window=_blank]
+
