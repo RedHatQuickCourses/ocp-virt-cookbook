@@ -1,0 +1,120 @@
+= Prerequisites and Setup
+:navtitle: Prerequisites
+
+== Overview
+
+This page outlines the prerequisites and requirements for working with OpenShift Virtualization as described in this cookbook.
+
+== Cluster Requirements
+
+=== OpenShift Version
+
+* OpenShift 4.17 or later
+* OpenShift Virtualization operator installed and running
+
+=== Cluster Access
+
+You'll need appropriate access levels depending on the tasks you want to perform:
+
+* **Cluster Admin**: Required for operator installation, storage configuration, and network configuration
+* **Namespace Admin**: Sufficient for managing VMs within specific namespaces
+* **Developer**: Can create and manage VMs with appropriate RBAC permissions
+
+== Required CLI Tools
+
+=== OpenShift CLI (oc)
+
+The OpenShift command-line interface is essential for cluster interaction.
+
+Install from: link:https://docs.openshift.com/container-platform/latest/cli_reference/openshift_cli/getting-started-cli.html[OpenShift CLI Documentation,window=_blank]
+
+Verify installation:
+[source,bash,role=execute]
+----
+oc version
+----
+
+=== Kubernetes CLI (kubectl)
+
+While `oc` is preferred, `kubectl` can also be used for many operations.
+
+Install from: link:https://kubernetes.io/docs/tasks/tools/[Kubernetes Documentation,window=_blank]
+
+Verify installation:
+[source,bash,role=execute]
+----
+kubectl version
+----
+
+=== Virtctl
+
+The virtctl tool is specifically designed for managing KubeVirt/OpenShift Virtualization resources.
+
+Install from: link:https://docs.openshift.com/container-platform/latest/virt/virt-using-the-cli-tools.html[Virtctl Documentation,window=_blank]
+
+Verify installation:
+[source,bash,role=execute]
+----
+virtctl version
+----
+
+== Optional Tools
+
+Depending on your workflow, you may also want:
+
+* **kustomize**: For managing Kubernetes configurations
+* **helm**: For deploying packaged applications
+* **ansible**: For automation and orchestration
+
+== Cluster Configuration
+
+=== Storage
+
+Ensure your cluster has:
+
+* At least one StorageClass configured
+* Sufficient storage capacity for VM disks
+* A storage provisioner that supports dynamic provisioning
+
+Check available storage classes:
+[source,bash,role=execute]
+----
+oc get storageclass
+----
+
+=== Network
+
+Verify network connectivity:
+
+* Cluster networking is functional
+* Pod network is accessible
+* External network access if required for your VMs
+
+== Verification
+
+Before proceeding with the tutorials, verify your setup:
+
+[source,bash,role=execute]
+----
+# Check cluster status
+oc get nodes
+
+# Verify OpenShift Virtualization operator
+oc get csv -n openshift-cnv
+
+# Check available VM templates
+oc get datasources -n openshift-virtualization-os-images
+----
+
+== Next Steps
+
+Once you have the prerequisites in place:
+
+* xref:virtctl-basics.adoc[Learn virtctl basics]
+* xref:storage-setup.adoc[Configure default storage]
+
+== See Also
+
+* link:https://docs.openshift.com/container-platform/latest/virt/about_virt/about-virt.html[OpenShift Virtualization Documentation,window=_blank]
+* link:https://kubevirt.io/[KubeVirt Project,window=_blank]
+

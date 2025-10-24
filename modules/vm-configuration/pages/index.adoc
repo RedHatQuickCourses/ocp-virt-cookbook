@@ -1,0 +1,99 @@
+= Virtual Machine Configuration
+:navtitle: VM Configuration
+
+== Overview
+
+This module covers comprehensive virtual machine configuration for OpenShift Virtualization, with a focus on cloud-init for network and system initialization. Proper VM configuration is essential for deploying production-ready virtual machines with predictable networking and system settings.
+
+== What You'll Learn
+
+In this section, you will learn:
+
+* How to configure IP addresses with cloud-init
+* How to troubleshoot cloud-init network configurations  
+* Best practices for VM configuration
+* Common VM manifest patterns and examples
+
+== Why Cloud-init Matters
+
+Cloud-init is the industry-standard tool for initializing cloud instances. In OpenShift Virtualization, cloud-init provides:
+
+* **Network Configuration**: Configure static and dynamic IP addresses
+* **User Management**: Create users, set passwords, configure SSH keys
+* **System Initialization**: Install packages, run scripts, configure services
+* **File Management**: Create and configure files during VM boot
+* **Consistency**: Same configuration method across different OS images
+
+== Prerequisites
+
+Before proceeding with the tutorials in this section, ensure you have:
+
+* OpenShift 4.17+ cluster with OpenShift Virtualization installed
+* Basic understanding of networking concepts (IP, subnet, gateway, DNS)
+* CLI tools installed: `oc`, `virtctl`
+* Familiarity with YAML syntax
+
+== Sections
+
+xref:cloud-init-basics.adoc[Configuring IP Addresses with Cloud-init]::
+Comprehensive guide to configuring network interfaces with cloud-init, including DHCP, static IP, multiple interfaces, and VLAN configurations. Includes 4 complete scenarios with working examples.
+
+xref:cloud-init-troubleshooting.adoc[Cloud-init Troubleshooting]::
+Comprehensive troubleshooting guide for diagnosing and resolving cloud-init configuration issues. Covers common problems, diagnostic commands, and solutions.
+
+== Cloud-init Configuration Approaches
+
+=== networkData vs userData
+
+* **networkData**: Dedicated network configuration (preferred for network settings)
+* **userData**: General cloud-init configuration (users, packages, scripts)
+
+Both can be used together in the same VM definition.
+
+=== When to Use Cloud-init
+
+Use cloud-init when you need to:
+
+* Configure network interfaces with specific IP addresses
+* Set up VMs with predictable network configuration
+* Initialize VMs with specific users and SSH keys
+* Run initialization scripts at VM boot time
+* Configure multiple network interfaces
+
+== Common Use Cases
+
+=== Development VMs
+
+* Quick deployment with DHCP
+* Temporary user accounts
+* Minimal configuration
+
+=== Production VMs
+
+* Static IP configurations
+* Multiple network interfaces for segregation
+* SSH key-based authentication
+* Service initialization scripts
+
+=== Multi-Network VMs
+
+* Primary interface on pod network (DHCP)
+* Secondary interface on VLAN (static IP)
+* Network segmentation for compliance
+
+== Next Steps
+
+After completing this module, you'll be ready to:
+
+* Deploy VMs with proper network configuration
+* Troubleshoot network connectivity issues
+* Use cloud-init for advanced VM initialization
+* Explore the xref:manifests:index.adoc[Manifests Reference] for ready-to-use examples
+
+== See Also
+
+* xref:networking:index.adoc[Networking Configuration] - Network setup for VMs
+* xref:getting-started:virtctl-basics.adoc[Virtctl Basics] - Managing VMs with virtctl
+* link:https://cloudinit.readthedocs.io/[Cloud-init Documentation,window=_blank]
+* link:https://docs.openshift.com/container-platform/latest/virt/virtual_machines/virt-creating-vms-using-cloud-init.html[OpenShift Virtualization Cloud-init Guide,window=_blank]
+
