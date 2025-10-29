@@ -1,0 +1,69 @@
+= Storage Configuration
+:navtitle: Storage
+
+== Overview
+
+This module covers storage configuration for OpenShift Virtualization, including installation and configuration of the LVM Storage operator and troubleshooting storage issues.
+
+Proper storage configuration is essential for virtual machine deployments, as VMs require persistent storage for their disks and data.
+
+== What You'll Learn
+
+In this section, you will learn:
+
+* How to install and configure the LVM Storage operator for local disk storage
+* How to set a default storage class for automatic provisioning
+* How to troubleshoot common LVM storage issues
+* Best practices for storage configuration in OpenShift Virtualization
+
+== Storage Options for OpenShift Virtualization
+
+OpenShift Virtualization supports various storage backends:
+
+* **LVM Storage**: Local disk storage using Logical Volume Manager (covered in this module)
+* **Ceph/ODF**: Distributed block and file storage
+* **HostPath Provisioner**: Simple local storage provisioning
+* **NFS**: Network-attached storage
+* **External storage providers**: AWS EBS, Azure Disk, etc.
+
+This module focuses on LVM Storage, which is ideal for Single Node OpenShift (SNO) and bare-metal deployments with local disks.
+
+== Prerequisites
+
+Before proceeding with the tutorials in this section, ensure you have:
+
+* OpenShift 4.14+ cluster
+* Cluster admin access
+* At least one spare local disk on cluster nodes
+* Basic understanding of Linux storage concepts (LVM, block devices)
+
+== Sections
+
+xref:lvm-operator.adoc[LVM Storage Operator Installation]::
+Step-by-step guide to install and configure the LVM Storage operator with a local disk.
+
+xref:lvm-troubleshooting.adoc[LVM Storage Troubleshooting]::
+Comprehensive troubleshooting guide for diagnosing and resolving LVM storage issues.
+
+== Why Default Storage Class Matters
+
+Setting a default storage class is critical for OpenShift Virtualization:
+
+* **Boot Source Images**: DataSource OS images require a default storage class
+* **Automatic Provisioning**: VMs can be created without explicitly specifying storage
+* **Template Support**: VM templates work out-of-the-box
+* **Simplified Operations**: Consistent storage provisioning across the cluster
+
+See xref:lvm-operator.adoc#_step_5_set_default_storageclass[Step 5: Set Default StorageClass] in the LVM operator guide for details.
+
+== Next Steps
+
+After completing this module, you'll be ready to:
+
+* xref:networking:index.adoc[Configure networking] for your VMs
+* Create and configure virtual machines
+
+== See Also
+
+* xref:getting-started:storage-setup.adoc[Configure Default Storage Class]
+* link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.19/html/storage/persistent-storage-using-local-storage#persistent-storage-using-lvms[OpenShift LVM Storage Documentation,window=_blank]

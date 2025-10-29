@@ -1,0 +1,90 @@
+= Networking Configuration
+:navtitle: Networking
+
+== Overview
+
+This module covers comprehensive networking configuration for OpenShift Virtualization, including User Defined Networks (UDN), localnet topologies, VLANs, and Linux bridges. Proper network configuration is essential for integrating virtual machines with existing infrastructure and enabling communication between VMs and external systems.
+
+== What You'll Learn
+
+In this section, you will learn:
+
+* How to configure Layer 2 primary networks using User Defined Networks (UDN)
+* How to set up localnet secondary networks for external connectivity
+* How to configure VLAN tagging for network segregation
+* How to use Linux bridges for VM networking
+* How to verify OVS bridge configurations
+* Network topology patterns and use cases
+
+== Network Topology Options
+
+OpenShift Virtualization supports several network topology options:
+
+* **User Defined Networks (UDN)**: Custom Layer 2 networks with namespace isolation
+* **Localnet**: Direct access to physical network infrastructure
+* **Linux Bridges**: Traditional bridge networking for VMs
+* **OVN-Kubernetes Overlay**: Cluster default networking with pod connectivity
+
+== Prerequisites
+
+Before proceeding with the tutorials in this section, ensure you have:
+
+* OpenShift 4.19+ cluster with OpenShift Virtualization installed
+* NMState operator installed for physical network configuration
+* Understanding of basic networking concepts (subnets, VLANs, bridges)
+* Cluster admin access for network configuration
+
+== Sections
+
+xref:udn-primary-networks.adoc[Configuring Layer 2 Primary Networks with UDNs]::
+Configure Layer 2 primary networks using UDNs for namespace isolation.
+
+xref:localnet-secondary.adoc[Configuring Localnet Secondary Networks with ClusterUserDefinedNetwork]::
+Set up localnet topology for external network connectivity using ClusterUserDefinedNetwork.
+
+xref:localnet-vlan.adoc[Configuring Localnet Secondary Networks with VLAN using NetworkAttachmentDefinition]::
+Configure VLAN tagging with localnet networks using NetworkAttachmentDefinition.
+
+xref:cudn-localnet-vlan.adoc[Configuring Localnet Secondary Networks with VLAN using ClusterUserDefinedNetwork]::
+Configure VLAN tagging with localnet networks using ClusterUserDefinedNetwork for cross-namespace availability.
+
+xref:linux-bridges.adoc[Configuring Linux Bridges for VMs]::
+Traditional Linux bridge networking for VMs.
+
+xref:ovs-bridge-verification.adoc[Troubleshooting OVS Bridge Creation for Localnet Networks]::
+Verify and troubleshoot OVS bridge configurations.
+
+== Network Architecture Considerations
+
+=== Primary vs Secondary Networks
+
+* **Primary Networks**: Replace the pod network, complete network control
+* **Secondary Networks**: Add additional interfaces while keeping pod network
+
+=== IPAM Options
+
+* **OVN-Kubernetes IPAM**: Automatic IP allocation from defined subnets
+* **External DHCP**: Use existing DHCP servers
+* **Cloud-init**: Static IP configuration in VM images
+* **Disabled**: Manual IP configuration after deployment
+
+=== Physical Network Integration
+
+For localnet and Linux bridge topologies:
+
+* Requires physical network interface access on worker nodes
+* May need VLAN trunk configuration on physical switches
+* Bridge mappings connect logical network names to physical interfaces
+
+== Next Steps
+
+After completing this module, you'll be ready to:
+
+* Deploy production VMs with appropriate network topologies
+* Troubleshoot network connectivity issues
+
+== See Also
+
+* link:https://docs.openshift.com/container-platform/latest/virt/vm_networking/virt-about-vm-networking.html[OpenShift Virtualization Networking,window=_blank]
+* link:https://docs.openshift.com/container-platform/latest/networking/ovn_kubernetes_network_provider/about-ovn-kubernetes.html[About OVN-Kubernetes,window=_blank]
+* link:https://kubevirt.io/user-guide/user_workloads/interfaces_and_networks/[KubeVirt Networking Documentation,window=_blank]
