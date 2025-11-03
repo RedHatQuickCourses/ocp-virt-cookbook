@@ -1,0 +1,232 @@
+= YAML Manifests Reference
+:navtitle: Manifests Reference
+
+== Overview
+
+This section provides a comprehensive library of ready-to-use YAML manifests for OpenShift Virtualization. These manifests cover operators, networking, storage, virtual machines, and security configurations.
+
+All manifests are organized by category and include descriptions, use cases, and prerequisites.
+
+== Manifest Categories
+
+xref:operators.adoc[Operators]::
+YAML manifests for deploying and configuring essential operators including OpenShift Virtualization (CNV), LVM Storage Operator, and NMState Operator.
+
+xref:networking.adoc[Networking]::
+Network configuration manifests including NADs (Network Attachment Definitions), localnet networks, VLAN configurations, Linux bridges, UDNs (User Defined Networks), and bonding.
+
+xref:storage.adoc[Storage]::
+Storage-related manifests for LVM configurations, PVCs, data volumes, hostpath provisioner, iSCSI, and NFS storage.
+
+xref:vms.adoc[Virtual Machines]::
+Complete VM manifest examples organized by OS type (Fedora, RHEL, Windows) with various cloud-init configurations and use cases.
+
+xref:security.adoc[Security]::
+Security configurations including network policies, RBAC (Role-Based Access Control), and SCCs (Security Context Constraints).
+
+== How to Use These Manifests
+
+=== Basic Usage
+
+. Copy the manifest you need
+. Customize values (namespaces, names, IP addresses, etc.)
+. Apply with `oc apply -f manifest.yaml`
+. Verify with appropriate `oc get` commands
+
+=== Customization Tips
+
+**Namespaces:**
+
+Always verify and update namespace values to match your environment:
+
+[source,bash,role=execute]
+----
+# Create namespace if it doesn't exist
+oc create namespace my-namespace
+
+# Apply manifest to specific namespace
+oc apply -f manifest.yaml -n my-namespace
+----
+
+**Names:**
+
+Update resource names to follow your naming conventions:
+
+[source,yaml]
+----
+metadata:
+  name: my-custom-name  # Update this
+  namespace: my-namespace  # Update this
+----
+
+**Network Configurations:**
+
+Update IP addresses, VLAN IDs, and network names to match your infrastructure:
+
+[source,yaml]
+----
+# Update VLAN ID
+vlanId: 100  # Change to your VLAN
+
+# Update IP ranges
+ipv4: 192.168.100.0/24  # Change to your subnet
+----
+
+=== Testing Manifests
+
+. Test in development environment first
+. Start with minimal configurations
+. Verify each component before proceeding
+. Check logs if issues occur
+
+== Manifest Organization
+
+The manifests are organized to align with the tutorials in this cookbook:
+
+**Getting Started:**
+
+* Operator subscriptions
+* Basic namespace creation
+* Default storage class configuration
+
+**Storage Configuration:**
+
+* LVM operator manifests
+* Storage class definitions
+* PVC and DataVolume templates
+
+**Networking Configuration:**
+
+* NAD definitions for localnet, VLAN, bridges
+* UDN configurations
+* NMState node network configurations
+
+**VM Configuration:**
+
+* VM templates with cloud-init
+* DataVolume templates
+* Various OS configurations (Fedora, RHEL, Windows)
+
+**Security:**
+
+* Network policies for VM isolation
+* RBAC for VM management
+* SCC configurations
+
+== Prerequisites
+
+Before using these manifests, ensure you have:
+
+* OpenShift 4.17+ cluster access
+* Appropriate permissions (cluster-admin for operators, namespace admin for resources)
+* Required operators installed (CNV, LVM, NMState as needed)
+* CLI tools: `oc`, `kubectl`
+
+== Related Tutorials
+
+Most manifests in this section are referenced by tutorials in other modules:
+
+* xref:getting-started:index.adoc[Getting Started] - Basic setup and prerequisites
+* xref:storage:index.adoc[Storage Configuration] - LVM and storage setup
+* xref:networking:index.adoc[Networking Configuration] - Network configuration tutorials
+
+== Validation
+
+After applying manifests, validate your configuration:
+
+[source,bash,role=execute]
+----
+# Check operator status
+oc get csv -n openshift-cnv
+oc get csv -n openshift-storage
+
+# Check network attachments
+oc get network-attachment-definition -A
+
+# Check storage classes
+oc get storageclass
+
+# Check VMs
+oc get vm,vmi -A
+
+# Check nodes
+oc get nodes
+----
+
+== Common Patterns
+
+=== Creating a Namespace
+
+[source,yaml]
+----
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: vms-prod
+  labels:
+    environment: production
+----
+
+=== Creating a NAD (Network Attachment Definition)
+
+[source,yaml]
+----
+apiVersion: k8s.cni.cncf.io/v1
+kind: NetworkAttachmentDefinition
+metadata:
+  name: localnet-vlan-100
+  namespace: default
+spec:
+  config: |
+    {
+      "cniVersion": "0.3.1",
+      "type": "ovn-k8s-cni-overlay",
+      "topology": "localnet",
+      "netAttachDefName": "default/localnet-vlan-100",
+      "vlanID": 100
+    }
+----
+
+=== Creating a PVC
+
+[source,yaml]
+----
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: vm-data-disk
+  namespace: vms-prod
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 50Gi
+  storageClassName: lvms-vg1
+----
+
+== Best Practices
+
+. **Version Control**: Keep your manifests in Git for tracking changes
+. **Documentation**: Comment your customizations in the YAML
+. **Testing**: Always test in a non-production environment first
+. **Validation**: Use `oc apply --dry-run=client` to validate syntax
+. **Backups**: Keep backups of working configurations
+. **Secrets**: Never commit sensitive data to version control
+
+== Troubleshooting
+
+If a manifest fails to apply:
+
+. Check syntax: `oc apply --dry-run=client -f manifest.yaml`
+. Verify API version: `oc api-resources | grep <kind>`
+. Check permissions: `oc auth can-i create <resource>`
+. Review events: `oc get events -n <namespace> --sort-by='.lastTimestamp'`
+. Check logs: `oc logs <pod-name> -n <namespace>`
+
+== See Also
+
+* link:https://docs.openshift.com/container-platform/latest/cli_reference/openshift_cli/getting-started-cli.html[OpenShift CLI Reference,window=_blank]
+* link:https://kubernetes.io/docs/reference/kubectl/[Kubectl Reference,window=_blank]
+* link:https://docs.openshift.com/container-platform/latest/virt/about_virt/about-virt.html[OpenShift Virtualization Documentation,window=_blank]
+
