@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Storage Configuration :: OpenShift Virtualization cookbook</title>
+    <link rel="prev" href="../getting-started/index.html">
+    <link rel="next" href="../networking/index.html">
+    <meta name="generator" content="Antora 3.1.3">
+    <link rel="stylesheet" href="../../../_/css/site.css">
+    <script>var uiRootPath = '../../../_'</script>
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://www.redhat.com" target="_blank"><img src="../../../_/img/redhat-logo.png" height="40px" alt="Red Hat"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="../../..">OpenShift Virtualization cookbook</a>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues" target="_blank">Report Issues</a>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="ocp-virt-cookbook" data-version="1">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="../index.html">OpenShift Virtualization cookbook</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../index.html">Home</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/index.html">Getting Started</a>
+  </li>
+  <li class="nav-item is-current-page" data-depth="2">
+    <a class="nav-link" href="index.html">Storage Configuration</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/index.html">Networking Configuration</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../manifests/index.html">Manifests Reference</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../LABENV/index.html">Lab Environment</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../appendix/glossary.html">Glossary</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">OpenShift Virtualization cookbook</span>
+    <span class="version">1</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <a class="title" href="../index.html">OpenShift Virtualization cookbook</a>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">1</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">OpenShift Virtualization cookbook</a></li>
+    <li><a href="../index.html">Home</a></li>
+    <li><a href="index.html">Storage Configuration</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">Storage Configuration</h1>
+<div class="sect1">
+<h2 id="_overview"><a class="anchor" href="#_overview"></a>Overview</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>This module covers storage configuration for OpenShift Virtualization, including installation and configuration of the LVM Storage operator and troubleshooting storage issues.</p>
+</div>
+<div class="paragraph">
+<p>Proper storage configuration is essential for virtual machine deployments, as VMs require persistent storage for their disks and data.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_what_youll_learn"><a class="anchor" href="#_what_youll_learn"></a>What You&#8217;ll Learn</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>In this section, you will learn:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>How to install and configure the LVM Storage operator for local disk storage</p>
+</li>
+<li>
+<p>How to set a default storage class for automatic provisioning</p>
+</li>
+<li>
+<p>How to troubleshoot common LVM storage issues</p>
+</li>
+<li>
+<p>Best practices for storage configuration in OpenShift Virtualization</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_storage_options_for_openshift_virtualization"><a class="anchor" href="#_storage_options_for_openshift_virtualization"></a>Storage Options for OpenShift Virtualization</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>OpenShift Virtualization supports various storage backends:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>LVM Storage</strong>: Local disk storage using Logical Volume Manager (covered in this module)</p>
+</li>
+<li>
+<p><strong>Ceph/ODF</strong>: Distributed block and file storage</p>
+</li>
+<li>
+<p><strong>HostPath Provisioner</strong>: Simple local storage provisioning</p>
+</li>
+<li>
+<p><strong>NFS</strong>: Network-attached storage</p>
+</li>
+<li>
+<p><strong>External storage providers</strong>: AWS EBS, Azure Disk, etc.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>This module focuses on LVM Storage, which is ideal for Single Node OpenShift (SNO) and bare-metal deployments with local disks.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_prerequisites"><a class="anchor" href="#_prerequisites"></a>Prerequisites</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Before proceeding with the tutorials in this section, ensure you have:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>OpenShift 4.14+ cluster</p>
+</li>
+<li>
+<p>Cluster admin access</p>
+</li>
+<li>
+<p>At least one spare local disk on cluster nodes</p>
+</li>
+<li>
+<p>Basic understanding of Linux storage concepts (LVM, block devices)</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_sections"><a class="anchor" href="#_sections"></a>Sections</h2>
+<div class="sectionbody">
+<div class="dlist">
+<dl>
+<dt class="hdlist1"><a href="lvm-operator.html" class="xref page">LVM Storage Operator Installation</a></dt>
+<dd>
+<p>Step-by-step guide to install and configure the LVM Storage operator with a local disk.</p>
+</dd>
+<dt class="hdlist1"><a href="lvm-troubleshooting.html" class="xref page">LVM Storage Troubleshooting</a></dt>
+<dd>
+<p>Comprehensive troubleshooting guide for diagnosing and resolving LVM storage issues.</p>
+</dd>
+</dl>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_why_default_storage_class_matters"><a class="anchor" href="#_why_default_storage_class_matters"></a>Why Default Storage Class Matters</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Setting a default storage class is critical for OpenShift Virtualization:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Boot Source Images</strong>: DataSource OS images require a default storage class</p>
+</li>
+<li>
+<p><strong>Automatic Provisioning</strong>: VMs can be created without explicitly specifying storage</p>
+</li>
+<li>
+<p><strong>Template Support</strong>: VM templates work out-of-the-box</p>
+</li>
+<li>
+<p><strong>Simplified Operations</strong>: Consistent storage provisioning across the cluster</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>See <a href="lvm-operator.html#_step_5_set_default_storageclass" class="xref page">Step 5: Set Default StorageClass</a> in the LVM operator guide for details.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_next_steps"><a class="anchor" href="#_next_steps"></a>Next Steps</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>After completing this module, you&#8217;ll be ready to:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><a href="../networking/index.html" class="xref page">Configure networking</a> for your VMs</p>
+</li>
+<li>
+<p>Create and configure virtual machines</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_see_also"><a class="anchor" href="#_see_also"></a>See Also</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p><a href="../getting-started/storage-setup.html" class="xref page">Configure Default Storage Class</a></p>
+</li>
+<li>
+<p><a href="https://docs.redhat.com/en/documentation/openshift_container_platform/4.19/html/storage/persistent-storage-using-local-storage#persistent-storage-using-lvms" target="_blank" rel="noopener">OpenShift LVM Storage Documentation</a></p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<nav class="pagination">
+  <span class="prev"><a href="../getting-started/index.html">Getting Started</a></span>
+  <span class="next"><a href="../networking/index.html">Networking Configuration</a></span>
+</nav>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <img src="../../../_/img/rhl-logo-red.png" height="40px" alt="Red Hat"  href="https://redhat.com" >
+</footer><script id="site-script" src="../../../_/js/site.js" data-ui-root-path="../../../_"></script>
+<script async src="../../../_/js/vendor/highlight.js"></script>
+  </body>
+</html>

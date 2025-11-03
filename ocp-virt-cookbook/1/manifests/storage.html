@@ -1,0 +1,897 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Storage Manifests :: OpenShift Virtualization cookbook</title>
+    <meta name="generator" content="Antora 3.1.3">
+    <link rel="stylesheet" href="../../../_/css/site.css">
+    <script>var uiRootPath = '../../../_'</script>
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://www.redhat.com" target="_blank"><img src="../../../_/img/redhat-logo.png" height="40px" alt="Red Hat"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="../../..">OpenShift Virtualization cookbook</a>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues" target="_blank">Report Issues</a>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="ocp-virt-cookbook" data-version="1">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="../index.html">OpenShift Virtualization cookbook</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../index.html">Home</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/index.html">Getting Started</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/index.html">Storage Configuration</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/index.html">Networking Configuration</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="index.html">Manifests Reference</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../LABENV/index.html">Lab Environment</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../appendix/glossary.html">Glossary</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">OpenShift Virtualization cookbook</span>
+    <span class="version">1</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <a class="title" href="../index.html">OpenShift Virtualization cookbook</a>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">1</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">OpenShift Virtualization cookbook</a></li>
+    <li><a href="storage.html">Storage Manifests</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">Storage Manifests</h1>
+<div class="sect1">
+<h2 id="_overview"><a class="anchor" href="#_overview"></a>Overview</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>This page provides storage-related YAML manifests for OpenShift Virtualization, including LVMCluster configurations, StorageClass definitions, PVCs, and DataVolumes.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_lvm_storage"><a class="anchor" href="#_lvm_storage"></a>LVM Storage</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_lvmcluster_configuration"><a class="anchor" href="#_lvmcluster_configuration"></a>LVMCluster Configuration</h3>
+<div class="paragraph">
+<p>After installing the LVM operator, create an LVMCluster to configure local storage:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: lvm.topolvm.io/v1alpha1
+kind: LVMCluster
+metadata:
+  name: lvmcluster
+  namespace: openshift-storage
+spec:
+  storage:
+    deviceClasses:
+      - name: vg1
+        default: true
+        deviceSelector:
+          paths:
+            - /dev/sdb
+            - /dev/sdc
+        thinPoolConfig:
+          name: thin-pool-1
+          sizePercent: 90
+          overprovisionRatio: 10
+        nodeSelector:
+          nodeSelectorTerms:
+            - matchExpressions:
+                - key: node-role.kubernetes.io/worker
+                  operator: In
+                  values:
+                    - ""</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Purpose:</strong> Configures LVM storage on worker nodes using specified devices.</p>
+</div>
+<div class="paragraph">
+<p><strong>Key Fields:</strong></p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>deviceClasses[].name</code> - Storage class name suffix</p>
+</li>
+<li>
+<p><code>default: true</code> - Makes this the default device class</p>
+</li>
+<li>
+<p><code>paths</code> - Block devices to use (must be empty, no partitions)</p>
+</li>
+<li>
+<p><code>sizePercent: 90</code> - Percentage of VG for thin pool</p>
+</li>
+<li>
+<p><code>overprovisionRatio: 10</code> - Thin provisioning ratio</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p><strong>Prerequisites:</strong></p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>LVM operator installed</p>
+</li>
+<li>
+<p>Block devices available on nodes</p>
+</li>
+<li>
+<p>Devices must be empty (no existing partitions)</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p><strong>Find Available Devices:</strong></p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># List block devices on node
+oc debug node/&lt;node-name&gt;
+chroot /host
+lsblk</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_verify_lvmcluster"><a class="anchor" href="#_verify_lvmcluster"></a>Verify LVMCluster</h3>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Check LVMCluster status
+oc get lvmcluster -n openshift-storage
+
+# Check LVMVolumeGroup status
+oc get lvmvolumegroup -n openshift-storage
+
+# Check created StorageClass
+oc get storageclass | grep lvms
+
+# Check topolvm pods
+oc get pods -n openshift-storage -l app.kubernetes.io/name=topolvm-node</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_related_tutorial"><a class="anchor" href="#_related_tutorial"></a>Related Tutorial</h3>
+<div class="ulist">
+<ul>
+<li>
+<p><a href="../storage/lvm-operator.html" class="xref page">Installing LVM Storage Operator</a></p>
+</li>
+<li>
+<p><a href="../storage/lvm-troubleshooting.html" class="xref page">Troubleshooting LVM Storage</a></p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_storageclass"><a class="anchor" href="#_storageclass"></a>StorageClass</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_lvm_based_storageclass"><a class="anchor" href="#_lvm_based_storageclass"></a>LVM-based StorageClass</h3>
+<div class="paragraph">
+<p>The LVM operator automatically creates StorageClass:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: lvms-vg1
+provisioner: topolvm.io
+parameters:
+  csi.storage.k8s.io/fstype: ext4
+  topolvm.io/device-class: vg1
+volumeBindingMode: WaitForFirstConsumer
+allowVolumeExpansion: true
+reclaimPolicy: Delete</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Key Features:</strong></p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>volumeBindingMode: WaitForFirstConsumer</code> - Delays binding until pod scheduled</p>
+</li>
+<li>
+<p><code>allowVolumeExpansion: true</code> - Allows PVC resizing</p>
+</li>
+<li>
+<p><code>reclaimPolicy: Delete</code> - Deletes PV when PVC deleted</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_set_default_storageclass"><a class="anchor" href="#_set_default_storageclass"></a>Set Default StorageClass</h3>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Remove existing default
+oc patch storageclass &lt;old-default&gt; -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"false"}}}'
+
+# Set new default
+oc patch storageclass lvms-vg1 -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}'
+
+# Verify
+oc get storageclass</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Related Tutorial:</strong></p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><a href="../getting-started/storage-setup.html" class="xref page">Configuring Default Storage Class</a></p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_persistentvolumeclaim_pvc"><a class="anchor" href="#_persistentvolumeclaim_pvc"></a>PersistentVolumeClaim (PVC)</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_basic_pvc"><a class="anchor" href="#_basic_pvc"></a>Basic PVC</h3>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: vm-disk
+  namespace: vms-prod
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 50Gi
+  storageClassName: lvms-vg1</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Purpose:</strong> Requests storage for VM disk.</p>
+</div>
+<div class="paragraph">
+<p><strong>Access Modes:</strong></p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>ReadWriteOnce</code> - Single node read-write (typical for VM disks)</p>
+</li>
+<li>
+<p><code>ReadWriteMany</code> - Multi-node read-write (requires special storage)</p>
+</li>
+<li>
+<p><code>ReadOnlyMany</code> - Multi-node read-only</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_pvc_with_volume_mode_block"><a class="anchor" href="#_pvc_with_volume_mode_block"></a>PVC with Volume Mode Block</h3>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: vm-block-disk
+  namespace: vms-prod
+spec:
+  accessModes:
+    - ReadWriteOnce
+  volumeMode: Block
+  resources:
+    requests:
+      storage: 100Gi
+  storageClassName: lvms-vg1</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>When to use:</strong> For raw block devices without filesystem.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_datavolume"><a class="anchor" href="#_datavolume"></a>DataVolume</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>DataVolumes are OpenShift Virtualization&#8217;s preferred way to provision storage for VMs.</p>
+</div>
+<div class="sect2">
+<h3 id="_datavolume_from_container_image"><a class="anchor" href="#_datavolume_from_container_image"></a>DataVolume from Container Image</h3>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: cdi.kubevirt.io/v1beta1
+kind: DataVolume
+metadata:
+  name: fedora-dv
+  namespace: vms-prod
+spec:
+  source:
+    registry:
+      url: docker://quay.io/containerdisks/fedora:latest
+  storage:
+    accessModes:
+      - ReadWriteOnce
+    resources:
+      requests:
+        storage: 30Gi
+    storageClassName: lvms-vg1</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Purpose:</strong> Creates VM disk from container disk image.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_datavolume_from_http_source"><a class="anchor" href="#_datavolume_from_http_source"></a>DataVolume from HTTP Source</h3>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: cdi.kubevirt.io/v1beta1
+kind: DataVolume
+metadata:
+  name: rhel9-dv
+  namespace: vms-prod
+spec:
+  source:
+    http:
+      url: https://example.com/rhel9.qcow2
+  storage:
+    accessModes:
+      - ReadWriteOnce
+    resources:
+      requests:
+        storage: 40Gi
+    storageClassName: lvms-vg1</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Purpose:</strong> Creates VM disk from qcow2 image via HTTP.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_datavolume_from_datasource"><a class="anchor" href="#_datavolume_from_datasource"></a>DataVolume from DataSource</h3>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: cdi.kubevirt.io/v1beta1
+kind: DataVolume
+metadata:
+  name: fedora-from-datasource
+  namespace: vms-prod
+spec:
+  sourceRef:
+    kind: DataSource
+    name: fedora
+    namespace: openshift-virtualization-os-images
+  storage:
+    accessModes:
+      - ReadWriteOnce
+    resources:
+      requests:
+        storage: 30Gi
+    storageClassName: lvms-vg1</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Purpose:</strong> Creates VM disk from pre-existing DataSource.</p>
+</div>
+<div class="paragraph">
+<p><strong>Benefits:</strong></p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Uses cluster-provided OS images</p>
+</li>
+<li>
+<p>Fast provisioning</p>
+</li>
+<li>
+<p>Automatically updated images</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_datavolume_clone"><a class="anchor" href="#_datavolume_clone"></a>DataVolume Clone</h3>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: cdi.kubevirt.io/v1beta1
+kind: DataVolume
+metadata:
+  name: vm-disk-clone
+  namespace: vms-prod
+spec:
+  source:
+    pvc:
+      namespace: vms-prod
+      name: original-vm-disk
+  storage:
+    accessModes:
+      - ReadWriteOnce
+    resources:
+      requests:
+        storage: 50Gi
+    storageClassName: lvms-vg1</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Purpose:</strong> Clones existing PVC to create new VM disk.</p>
+</div>
+<div class="paragraph">
+<p><strong>Use cases:</strong></p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>VM templates</p>
+</li>
+<li>
+<p>Quick VM deployment</p>
+</li>
+<li>
+<p>Testing scenarios</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_datavolume_templates"><a class="anchor" href="#_datavolume_templates"></a>DataVolume Templates</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>DataVolumeTemplates are embedded in VM definitions for automatic provisioning.</p>
+</div>
+<div class="sect2">
+<h3 id="_vm_with_datavolumetemplate"><a class="anchor" href="#_vm_with_datavolumetemplate"></a>VM with DataVolumeTemplate</h3>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: fedora-vm
+  namespace: vms-prod
+spec:
+  dataVolumeTemplates:
+    - apiVersion: cdi.kubevirt.io/v1beta1
+      kind: DataVolume
+      metadata:
+        name: fedora-vm-disk
+      spec:
+        sourceRef:
+          kind: DataSource
+          name: fedora
+          namespace: openshift-virtualization-os-images
+        storage:
+          resources:
+            requests:
+              storage: 30Gi
+          storageClassName: lvms-vg1
+  runStrategy: Always
+  template:
+    spec:
+      domain:
+        devices:
+          disks:
+            - disk:
+                bus: virtio
+              name: rootdisk
+        resources:
+          requests:
+            memory: 4Gi
+      volumes:
+        - dataVolume:
+            name: fedora-vm-disk
+          name: rootdisk</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Benefits:</strong></p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Automatic DataVolume creation with VM</p>
+</li>
+<li>
+<p>Simplified VM manifests</p>
+</li>
+<li>
+<p>Lifecycle tied to VM</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_additional_disks"><a class="anchor" href="#_additional_disks"></a>Additional Disks</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_add_data_disk_to_running_vm"><a class="anchor" href="#_add_data_disk_to_running_vm"></a>Add Data Disk to Running VM</h3>
+<div class="paragraph">
+<p>Create PVC:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: vm-data-disk
+  namespace: vms-prod
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Gi
+  storageClassName: lvms-vg1</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Add to VM:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Add disk to VM
+virtctl addvolume &lt;vm-name&gt; -n vms-prod \
+  --volume-name=data-disk \
+  --persist \
+  --serial=data001
+
+# Verify
+oc get vm &lt;vm-name&gt; -n vms-prod -o yaml | grep -A 5 "volumes:"</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_storage_verification"><a class="anchor" href="#_storage_verification"></a>Storage Verification</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_check_storage_resources"><a class="anchor" href="#_check_storage_resources"></a>Check Storage Resources</h3>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Check StorageClass
+oc get storageclass
+
+# Check PVCs
+oc get pvc -A
+
+# Check PVs
+oc get pv
+
+# Check DataVolumes
+oc get datavolume -A
+
+# Check DataSources
+oc get datasource -n openshift-virtualization-os-images</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_check_storage_usage"><a class="anchor" href="#_check_storage_usage"></a>Check Storage Usage</h3>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Check LVM volume usage
+oc get lvmvolumegroup -n openshift-storage -o yaml
+
+# Check node storage
+oc debug node/&lt;node-name&gt;
+chroot /host
+lvs
+vgs
+pvs</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_datavolume_status"><a class="anchor" href="#_datavolume_status"></a>DataVolume Status</h3>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Check DataVolume status
+oc get dv &lt;dv-name&gt; -n &lt;namespace&gt;
+
+# Watch DataVolume provisioning
+oc get dv &lt;dv-name&gt; -n &lt;namespace&gt; -w
+
+# Check DataVolume events
+oc describe dv &lt;dv-name&gt; -n &lt;namespace&gt;</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_storage_best_practices"><a class="anchor" href="#_storage_best_practices"></a>Storage Best Practices</h2>
+<div class="sectionbody">
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p><strong>Use DataVolumes</strong> for VM disks instead of direct PVCs</p>
+</li>
+<li>
+<p><strong>Set Default StorageClass</strong> appropriate for your environment</p>
+</li>
+<li>
+<p><strong>Size Appropriately</strong> - Consider thin provisioning ratios</p>
+</li>
+<li>
+<p><strong>Monitor Storage</strong> usage to avoid exhaustion</p>
+</li>
+<li>
+<p><strong>Use DataSources</strong> for common OS images</p>
+</li>
+<li>
+<p><strong>Test Provisioning</strong> in development before production</p>
+</li>
+<li>
+<p><strong>Plan Capacity</strong> based on overprovision ratio</p>
+</li>
+</ol>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_troubleshooting"><a class="anchor" href="#_troubleshooting"></a>Troubleshooting</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_datavolume_stuck_in_pending"><a class="anchor" href="#_datavolume_stuck_in_pending"></a>DataVolume Stuck in Pending</h3>
+<div class="paragraph">
+<p><strong>Check:</strong></p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Check DataVolume status
+oc describe dv &lt;dv-name&gt; -n &lt;namespace&gt;
+
+# Check CDI operator logs
+oc logs -n openshift-cnv deployment/cdi-operator
+
+# Check importer pod
+oc get pods -n &lt;namespace&gt; | grep importer
+oc logs &lt;importer-pod&gt; -n &lt;namespace&gt;</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Common Causes:</strong></p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>No default StorageClass</p>
+</li>
+<li>
+<p>Insufficient storage capacity</p>
+</li>
+<li>
+<p>Network issues downloading image</p>
+</li>
+<li>
+<p>Invalid source URL</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_pvc_not_binding"><a class="anchor" href="#_pvc_not_binding"></a>PVC Not Binding</h3>
+<div class="paragraph">
+<p><strong>Check:</strong></p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Check PVC status
+oc describe pvc &lt;pvc-name&gt; -n &lt;namespace&gt;
+
+# Check StorageClass
+oc get storageclass &lt;storage-class&gt;
+
+# Check provisioner pods
+oc get pods -n openshift-storage</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Common Causes:</strong></p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>StorageClass doesn&#8217;t exist</p>
+</li>
+<li>
+<p>No available storage on nodes</p>
+</li>
+<li>
+<p>Provisioner not running</p>
+</li>
+<li>
+<p>Volume binding mode waiting for consumer</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_lvm_volume_full"><a class="anchor" href="#_lvm_volume_full"></a>LVM Volume Full</h3>
+<div class="paragraph">
+<p><strong>Check:</strong></p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Check LVMVolumeGroup
+oc get lvmvolumegroup -n openshift-storage -o yaml
+
+# Check node LVM status
+oc debug node/&lt;node-name&gt;
+chroot /host
+vgs
+lvs</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Solutions:</strong></p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Delete unused PVCs</p>
+</li>
+<li>
+<p>Add more disks to deviceClass</p>
+</li>
+<li>
+<p>Reduce overprovision ratio</p>
+</li>
+<li>
+<p>Expand thin pool</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_summary"><a class="anchor" href="#_summary"></a>Summary</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Key storage manifest types:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>LVMCluster</strong>: Configures LVM storage operator</p>
+</li>
+<li>
+<p><strong>StorageClass</strong>: Defines storage provisioner</p>
+</li>
+<li>
+<p><strong>PVC</strong>: Requests storage volume</p>
+</li>
+<li>
+<p><strong>DataVolume</strong>: Provisions storage for VMs</p>
+</li>
+<li>
+<p><strong>DataVolumeTemplate</strong>: Embedded in VM for automatic provisioning</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_see_also"><a class="anchor" href="#_see_also"></a>See Also</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p><a href="../storage/lvm-operator.html" class="xref page">LVM Operator Installation</a></p>
+</li>
+<li>
+<p><a href="../storage/lvm-troubleshooting.html" class="xref page">LVM Troubleshooting</a></p>
+</li>
+<li>
+<p><a href="../getting-started/storage-setup.html" class="xref page">Storage Setup</a></p>
+</li>
+<li>
+<p><a href="index.html" class="xref page">Manifests Reference Overview</a></p>
+</li>
+<li>
+<p><a href="https://docs.openshift.com/container-platform/latest/virt/storage/virt-storage-config-overview.html" target="_blank" rel="noopener">OpenShift Virtualization Storage</a></p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <img src="../../../_/img/rhl-logo-red.png" height="40px" alt="Red Hat"  href="https://redhat.com" >
+</footer><script id="site-script" src="../../../_/js/site.js" data-ui-root-path="../../../_"></script>
+<script async src="../../../_/js/vendor/highlight.js"></script>
+  </body>
+</html>

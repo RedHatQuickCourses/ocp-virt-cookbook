@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Networking Configuration :: OpenShift Virtualization cookbook</title>
+    <link rel="prev" href="../storage/index.html">
+    <link rel="next" href="../manifests/index.html">
+    <meta name="generator" content="Antora 3.1.3">
+    <link rel="stylesheet" href="../../../_/css/site.css">
+    <script>var uiRootPath = '../../../_'</script>
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://www.redhat.com" target="_blank"><img src="../../../_/img/redhat-logo.png" height="40px" alt="Red Hat"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="../../..">OpenShift Virtualization cookbook</a>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues" target="_blank">Report Issues</a>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="ocp-virt-cookbook" data-version="1">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="../index.html">OpenShift Virtualization cookbook</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../index.html">Home</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/index.html">Getting Started</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/index.html">Storage Configuration</a>
+  </li>
+  <li class="nav-item is-current-page" data-depth="2">
+    <a class="nav-link" href="index.html">Networking Configuration</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../manifests/index.html">Manifests Reference</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../LABENV/index.html">Lab Environment</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../appendix/glossary.html">Glossary</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">OpenShift Virtualization cookbook</span>
+    <span class="version">1</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <a class="title" href="../index.html">OpenShift Virtualization cookbook</a>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">1</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">OpenShift Virtualization cookbook</a></li>
+    <li><a href="../index.html">Home</a></li>
+    <li><a href="index.html">Networking Configuration</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">Networking Configuration</h1>
+<div class="sect1">
+<h2 id="_overview"><a class="anchor" href="#_overview"></a>Overview</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>This module covers comprehensive networking configuration for OpenShift Virtualization, including User Defined Networks (UDN), localnet topologies, VLANs, and Linux bridges. Proper network configuration is essential for integrating virtual machines with existing infrastructure and enabling communication between VMs and external systems.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_what_youll_learn"><a class="anchor" href="#_what_youll_learn"></a>What You&#8217;ll Learn</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>In this section, you will learn:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>How to configure Layer 2 primary networks using User Defined Networks (UDN)</p>
+</li>
+<li>
+<p>How to set up localnet secondary networks for external connectivity</p>
+</li>
+<li>
+<p>How to configure VLAN tagging for network segregation</p>
+</li>
+<li>
+<p>How to use Linux bridges for VM networking</p>
+</li>
+<li>
+<p>How to verify OVS bridge configurations</p>
+</li>
+<li>
+<p>Network topology patterns and use cases</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_network_topology_options"><a class="anchor" href="#_network_topology_options"></a>Network Topology Options</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>OpenShift Virtualization supports several network topology options:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>User Defined Networks (UDN)</strong>: Custom Layer 2 networks with namespace isolation</p>
+</li>
+<li>
+<p><strong>Localnet</strong>: Direct access to physical network infrastructure</p>
+</li>
+<li>
+<p><strong>Linux Bridges</strong>: Traditional bridge networking for VMs</p>
+</li>
+<li>
+<p><strong>OVN-Kubernetes Overlay</strong>: Cluster default networking with pod connectivity</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_prerequisites"><a class="anchor" href="#_prerequisites"></a>Prerequisites</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Before proceeding with the tutorials in this section, ensure you have:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>OpenShift 4.19+ cluster with OpenShift Virtualization installed</p>
+</li>
+<li>
+<p>NMState operator installed for physical network configuration</p>
+</li>
+<li>
+<p>Understanding of basic networking concepts (subnets, VLANs, bridges)</p>
+</li>
+<li>
+<p>Cluster admin access for network configuration</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_sections"><a class="anchor" href="#_sections"></a>Sections</h2>
+<div class="sectionbody">
+<div class="dlist">
+<dl>
+<dt class="hdlist1"><a href="udn-primary-networks.html" class="xref page">Configuring Layer 2 Primary Networks with UDNs</a></dt>
+<dd>
+<p>Configure Layer 2 primary networks using UDNs for namespace isolation.</p>
+</dd>
+<dt class="hdlist1"><a href="localnet-secondary.html" class="xref page">Configuring Localnet Secondary Networks with ClusterUserDefinedNetwork</a></dt>
+<dd>
+<p>Set up localnet topology for external network connectivity using ClusterUserDefinedNetwork.</p>
+</dd>
+<dt class="hdlist1"><a href="localnet-vlan.html" class="xref page">Configuring Localnet Secondary Networks with VLAN using NetworkAttachmentDefinition</a></dt>
+<dd>
+<p>Configure VLAN tagging with localnet networks using NetworkAttachmentDefinition.</p>
+</dd>
+<dt class="hdlist1"><a href="cudn-localnet-vlan.html" class="xref page">Configuring Localnet Secondary Networks with VLAN using ClusterUserDefinedNetwork</a></dt>
+<dd>
+<p>Configure VLAN tagging with localnet networks using ClusterUserDefinedNetwork for cross-namespace availability.</p>
+</dd>
+<dt class="hdlist1"><a href="linux-bridges.html" class="xref page">Configuring Linux Bridges for VMs</a></dt>
+<dd>
+<p>Traditional Linux bridge networking for VMs.</p>
+</dd>
+<dt class="hdlist1"><a href="ovs-bridge-verification.html" class="xref page">Troubleshooting OVS Bridge Creation for Localnet Networks</a></dt>
+<dd>
+<p>Verify and troubleshoot OVS bridge configurations.</p>
+</dd>
+</dl>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_network_architecture_considerations"><a class="anchor" href="#_network_architecture_considerations"></a>Network Architecture Considerations</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_primary_vs_secondary_networks"><a class="anchor" href="#_primary_vs_secondary_networks"></a>Primary vs Secondary Networks</h3>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Primary Networks</strong>: Replace the pod network, complete network control</p>
+</li>
+<li>
+<p><strong>Secondary Networks</strong>: Add additional interfaces while keeping pod network</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_ipam_options"><a class="anchor" href="#_ipam_options"></a>IPAM Options</h3>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>OVN-Kubernetes IPAM</strong>: Automatic IP allocation from defined subnets</p>
+</li>
+<li>
+<p><strong>External DHCP</strong>: Use existing DHCP servers</p>
+</li>
+<li>
+<p><strong>Cloud-init</strong>: Static IP configuration in VM images</p>
+</li>
+<li>
+<p><strong>Disabled</strong>: Manual IP configuration after deployment</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_physical_network_integration"><a class="anchor" href="#_physical_network_integration"></a>Physical Network Integration</h3>
+<div class="paragraph">
+<p>For localnet and Linux bridge topologies:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Requires physical network interface access on worker nodes</p>
+</li>
+<li>
+<p>May need VLAN trunk configuration on physical switches</p>
+</li>
+<li>
+<p>Bridge mappings connect logical network names to physical interfaces</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_next_steps"><a class="anchor" href="#_next_steps"></a>Next Steps</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>After completing this module, you&#8217;ll be ready to:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Deploy production VMs with appropriate network topologies</p>
+</li>
+<li>
+<p>Troubleshoot network connectivity issues</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_see_also"><a class="anchor" href="#_see_also"></a>See Also</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p><a href="https://docs.openshift.com/container-platform/latest/virt/vm_networking/virt-about-vm-networking.html" target="_blank" rel="noopener">OpenShift Virtualization Networking</a></p>
+</li>
+<li>
+<p><a href="https://docs.openshift.com/container-platform/latest/networking/ovn_kubernetes_network_provider/about-ovn-kubernetes.html" target="_blank" rel="noopener">About OVN-Kubernetes</a></p>
+</li>
+<li>
+<p><a href="https://kubevirt.io/user-guide/user_workloads/interfaces_and_networks/" target="_blank" rel="noopener">KubeVirt Networking Documentation</a></p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<nav class="pagination">
+  <span class="prev"><a href="../storage/index.html">Storage Configuration</a></span>
+  <span class="next"><a href="../manifests/index.html">Manifests Reference</a></span>
+</nav>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <img src="../../../_/img/rhl-logo-red.png" height="40px" alt="Red Hat"  href="https://redhat.com" >
+</footer><script id="site-script" src="../../../_/js/site.js" data-ui-root-path="../../../_"></script>
+<script async src="../../../_/js/vendor/highlight.js"></script>
+  </body>
+</html>

@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Operator Manifests :: OpenShift Virtualization cookbook</title>
+    <meta name="generator" content="Antora 3.1.3">
+    <link rel="stylesheet" href="../../../_/css/site.css">
+    <script>var uiRootPath = '../../../_'</script>
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://www.redhat.com" target="_blank"><img src="../../../_/img/redhat-logo.png" height="40px" alt="Red Hat"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="../../..">OpenShift Virtualization cookbook</a>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues" target="_blank">Report Issues</a>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="ocp-virt-cookbook" data-version="1">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="../index.html">OpenShift Virtualization cookbook</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../index.html">Home</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/index.html">Getting Started</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/index.html">Storage Configuration</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/index.html">Networking Configuration</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="index.html">Manifests Reference</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../LABENV/index.html">Lab Environment</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../appendix/glossary.html">Glossary</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">OpenShift Virtualization cookbook</span>
+    <span class="version">1</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <a class="title" href="../index.html">OpenShift Virtualization cookbook</a>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">1</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">OpenShift Virtualization cookbook</a></li>
+    <li><a href="operators.html">Operator Manifests</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">Operator Manifests</h1>
+<div class="sect1">
+<h2 id="_overview"><a class="anchor" href="#_overview"></a>Overview</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>This page provides YAML manifests for deploying and configuring essential operators for OpenShift Virtualization, including the LVM Storage Operator and NMState Operator.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_prerequisites"><a class="anchor" href="#_prerequisites"></a>Prerequisites</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p>OpenShift 4.17+ cluster</p>
+</li>
+<li>
+<p>Cluster administrator access</p>
+</li>
+<li>
+<p>CLI tools: <code>oc</code>, <code>kubectl</code></p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_lvm_storage_operator"><a class="anchor" href="#_lvm_storage_operator"></a>LVM Storage Operator</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The LVM Storage Operator provides local storage for OpenShift Virtualization using LVM (Logical Volume Manager).</p>
+</div>
+<div class="sect2">
+<h3 id="_namespace_creation"><a class="anchor" href="#_namespace_creation"></a>Namespace Creation</h3>
+<div class="paragraph">
+<p>First, create the required namespace:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: v1
+kind: Namespace
+metadata:
+  name: openshift-storage
+  labels:
+    openshift.io/cluster-monitoring: "true"</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_operator_group"><a class="anchor" href="#_operator_group"></a>Operator Group</h3>
+<div class="paragraph">
+<p>Create an OperatorGroup to manage the LVM operator:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: operators.coreos.com/v1
+kind: OperatorGroup
+metadata:
+  name: openshift-storage-operatorgroup
+  namespace: openshift-storage
+spec:
+  targetNamespaces:
+  - openshift-storage</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Purpose:</strong> Defines the namespace scope for the LVM operator.</p>
+</div>
+<div class="paragraph">
+<p><strong>When to use:</strong> Required before installing the LVM operator subscription.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_subscription"><a class="anchor" href="#_subscription"></a>Subscription</h3>
+<div class="paragraph">
+<p>Subscribe to the LVM operator:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: lvm-operator
+  namespace: openshift-storage
+spec:
+  channel: stable-4.19
+  name: lvm-operator
+  source: redhat-operators
+  sourceNamespace: openshift-marketplace
+  installPlanApproval: Automatic</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Purpose:</strong> Installs and manages the LVM Storage Operator.</p>
+</div>
+<div class="paragraph">
+<p><strong>When to use:</strong> After creating namespace and OperatorGroup.</p>
+</div>
+<div class="paragraph">
+<p><strong>Note:</strong> Update the <code>channel</code> field to match your OpenShift version.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_apply_lvm_operator_manifests"><a class="anchor" href="#_apply_lvm_operator_manifests"></a>Apply LVM Operator Manifests</h3>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Create namespace
+oc apply -f namespace.yaml
+
+# Create OperatorGroup
+oc apply -f operator-group.yaml
+
+# Create Subscription
+oc apply -f subscription.yaml
+
+# Wait for operator to be ready
+oc wait --for=condition=Ready pod -l app.kubernetes.io/name=lvm-operator -n openshift-storage --timeout=300s
+
+# Verify installation
+oc get csv -n openshift-storage
+oc get pods -n openshift-storage</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_related_tutorial"><a class="anchor" href="#_related_tutorial"></a>Related Tutorial</h3>
+<div class="paragraph">
+<p>For complete LVM operator setup including LVMCluster configuration, see:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><a href="../storage/lvm-operator.html" class="xref page">Installing LVM Storage Operator</a></p>
+</li>
+<li>
+<p><a href="../storage/lvm-troubleshooting.html" class="xref page">Troubleshooting LVM Storage</a></p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_nmstate_operator"><a class="anchor" href="#_nmstate_operator"></a>NMState Operator</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The NMState Operator manages node network configuration, essential for configuring OVS bridges and network mappings for OpenShift Virtualization.</p>
+</div>
+<div class="sect2">
+<h3 id="_installation"><a class="anchor" href="#_installation"></a>Installation</h3>
+<div class="paragraph">
+<p>The NMState operator is typically pre-installed with OpenShift Virtualization. Verify installation:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Check if NMState operator is installed
+oc get csv -n openshift-nmstate
+
+# Check NMState pods
+oc get pods -n openshift-nmstate</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If not installed, install from OperatorHub:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Navigate to Operators &gt; OperatorHub in OpenShift Console</p>
+</li>
+<li>
+<p>Search for "Kubernetes NMState Operator"</p>
+</li>
+<li>
+<p>Click Install</p>
+</li>
+<li>
+<p>Select "stable" channel</p>
+</li>
+<li>
+<p>Install in "openshift-nmstate" namespace</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_ovs_bridge_mapping_configuration"><a class="anchor" href="#_ovs_bridge_mapping_configuration"></a>OVS Bridge Mapping Configuration</h3>
+<div class="paragraph">
+<p>Configure OVS bridge mapping for localnet networks:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: nmstate.io/v1
+kind: NodeNetworkConfigurationPolicy
+metadata:
+  name: ovs-br-mapping
+spec:
+  nodeSelector:
+    node-role.kubernetes.io/worker: ""
+  desiredState:
+    interfaces:
+      - name: ens224
+        description: Physical interface for OVS localnet
+        type: ethernet
+        state: up
+        ipv4:
+          enabled: false
+        ipv6:
+          enabled: false
+    ovs-db:
+      external_ids:
+        ovn-bridge-mappings: "physnet1:br-ex"
+        ovn-cms-options: "enable-chassis-as-gw"</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Purpose:</strong> Maps physical network interface to OVS bridge for localnet topology.</p>
+</div>
+<div class="paragraph">
+<p><strong>When to use:</strong> Required for localnet secondary networks and VLAN configurations.</p>
+</div>
+<div class="paragraph">
+<p><strong>Customization:</strong></p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>name: ens224</code> - Update to your physical interface name (find with <code>ip link show</code>)</p>
+</li>
+<li>
+<p><code>physnet1</code> - Logical network name (used in NAD configurations)</p>
+</li>
+<li>
+<p><code>br-ex</code> - OVS bridge name (typically <code>br-ex</code>)</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_verify_ovs_bridge_configuration"><a class="anchor" href="#_verify_ovs_bridge_configuration"></a>Verify OVS Bridge Configuration</h3>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Check NodeNetworkConfigurationPolicy status
+oc get nncp
+
+# Get detailed status
+oc describe nncp ovs-br-mapping
+
+# Verify on nodes (requires debug pod)
+oc debug node/&lt;node-name&gt;
+chroot /host
+ovs-vsctl show
+ovs-vsctl get Open_vSwitch . external_ids:ovn-bridge-mappings</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_related_tutorials"><a class="anchor" href="#_related_tutorials"></a>Related Tutorials</h3>
+<div class="paragraph">
+<p>For network configuration using NMState, see:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><a href="../networking/ovs-bridge-verification.html" class="xref page">Troubleshooting OVS Bridge Creation for Localnet Networks</a></p>
+</li>
+<li>
+<p><a href="../networking/localnet-secondary.html" class="xref page">Localnet Secondary Networks with CUDN</a></p>
+</li>
+<li>
+<p><a href="../networking/localnet-vlan.html" class="xref page">Localnet Secondary Networks with VLAN using NAD</a></p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_openshift_virtualization_operator_cnv"><a class="anchor" href="#_openshift_virtualization_operator_cnv"></a>OpenShift Virtualization Operator (CNV)</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The OpenShift Virtualization (Container Native Virtualization) operator is the foundation for running VMs on OpenShift.</p>
+</div>
+<div class="sect2">
+<h3 id="_installation_2"><a class="anchor" href="#_installation_2"></a>Installation</h3>
+<div class="paragraph">
+<p>Install from OperatorHub:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Navigate to Operators &gt; OperatorHub in OpenShift Console</p>
+</li>
+<li>
+<p>Search for "OpenShift Virtualization"</p>
+</li>
+<li>
+<p>Click Install</p>
+</li>
+<li>
+<p>Select "stable" channel</p>
+</li>
+<li>
+<p>Install in "openshift-cnv" namespace</p>
+</li>
+<li>
+<p>Wait for installation to complete</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_verify_installation"><a class="anchor" href="#_verify_installation"></a>Verify Installation</h3>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Check operator status
+oc get csv -n openshift-cnv
+
+# Check HyperConverged CR
+oc get hco -n openshift-cnv
+
+# Check pods
+oc get pods -n openshift-cnv
+
+# Check available VM images
+oc get datasource -n openshift-virtualization-os-images</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_hyperconverged_configuration"><a class="anchor" href="#_hyperconverged_configuration"></a>HyperConverged Configuration</h3>
+<div class="paragraph">
+<p>The HyperConverged custom resource configures OpenShift Virtualization:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># View current configuration
+oc get hco kubevirt-hyperconverged -n openshift-cnv -o yaml</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Key configuration options:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Feature gates for experimental features</p>
+</li>
+<li>
+<p>Network configuration defaults</p>
+</li>
+<li>
+<p>Storage defaults</p>
+</li>
+<li>
+<p>Live migration settings</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_related_information"><a class="anchor" href="#_related_information"></a>Related Information</h3>
+<div class="paragraph">
+<p>For complete setup and usage:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><a href="../getting-started/prerequisites.html" class="xref page">Prerequisites and Setup</a></p>
+</li>
+<li>
+<p><a href="../getting-started/virtctl-basics.html" class="xref page">Virtctl Basics</a></p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_operator_management"><a class="anchor" href="#_operator_management"></a>Operator Management</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_check_operator_status"><a class="anchor" href="#_check_operator_status"></a>Check Operator Status</h3>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># List all operators
+oc get csv -A
+
+# Check specific operator
+oc get csv -n openshift-cnv
+oc get csv -n openshift-storage
+oc get csv -n openshift-nmstate
+
+# Check operator pods
+oc get pods -n openshift-cnv
+oc get pods -n openshift-storage
+oc get pods -n openshift-nmstate</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_update_operators"><a class="anchor" href="#_update_operators"></a>Update Operators</h3>
+<div class="paragraph">
+<p>Operators with <code>installPlanApproval: Automatic</code> update automatically. For manual approval:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># List pending install plans
+oc get installplan -n openshift-storage
+
+# Approve install plan
+oc patch installplan &lt;install-plan-name&gt; -n openshift-storage \
+  --type merge --patch '{"spec":{"approved":true}}'</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_troubleshooting_operators"><a class="anchor" href="#_troubleshooting_operators"></a>Troubleshooting Operators</h3>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Check operator events
+oc get events -n openshift-storage --sort-by='.lastTimestamp'
+
+# Check operator logs
+oc logs -n openshift-storage deployment/lvm-operator-controller-manager
+
+# Check ClusterServiceVersion
+oc describe csv -n openshift-storage</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_summary"><a class="anchor" href="#_summary"></a>Summary</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Key operator manifests covered:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>LVM Storage Operator</strong>: Provides local storage using LVM</p>
+</li>
+<li>
+<p><strong>NMState Operator</strong>: Manages node network configuration</p>
+</li>
+<li>
+<p><strong>OpenShift Virtualization</strong>: Core virtualization platform</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>All operators work together to provide a complete virtualization platform with networking and storage capabilities.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_see_also"><a class="anchor" href="#_see_also"></a>See Also</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p><a href="../storage/lvm-operator.html" class="xref page">LVM Operator Installation Guide</a></p>
+</li>
+<li>
+<p><a href="../networking/ovs-bridge-verification.html" class="xref page">Troubleshooting OVS Bridge Creation for Localnet Networks</a></p>
+</li>
+<li>
+<p><a href="index.html" class="xref page">Manifests Reference Overview</a></p>
+</li>
+<li>
+<p><a href="https://docs.openshift.com/container-platform/latest/operators/understanding/olm/olm-understanding-olm.html" target="_blank" rel="noopener">Operator Lifecycle Manager</a></p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <img src="../../../_/img/rhl-logo-red.png" height="40px" alt="Red Hat"  href="https://redhat.com" >
+</footer><script id="site-script" src="../../../_/js/site.js" data-ui-root-path="../../../_"></script>
+<script async src="../../../_/js/vendor/highlight.js"></script>
+  </body>
+</html>

@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Basic usage of the virtctl command :: OpenShift Virtualization cookbook</title>
+    <meta name="generator" content="Antora 3.1.3">
+    <link rel="stylesheet" href="../../../_/css/site.css">
+    <script>var uiRootPath = '../../../_'</script>
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://www.redhat.com" target="_blank"><img src="../../../_/img/redhat-logo.png" height="40px" alt="Red Hat"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="../../..">OpenShift Virtualization cookbook</a>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues" target="_blank">Report Issues</a>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="ocp-virt-cookbook" data-version="1">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="../index.html">OpenShift Virtualization cookbook</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../index.html">Home</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="index.html">Getting Started</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/index.html">Storage Configuration</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/index.html">Networking Configuration</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../manifests/index.html">Manifests Reference</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../LABENV/index.html">Lab Environment</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../appendix/glossary.html">Glossary</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">OpenShift Virtualization cookbook</span>
+    <span class="version">1</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <a class="title" href="../index.html">OpenShift Virtualization cookbook</a>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">1</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">OpenShift Virtualization cookbook</a></li>
+    <li><a href="virtctl-basics.html">Basic usage of the virtctl command</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">Basic usage of the virtctl command</h1>
+<div class="paragraph">
+<p>This tutorial will provide a brief overview of the virtctl command. This document is designed to quickly cover some of the basic usage of this incredibly useful tool for controlling your virtual machines on OpenShift, but for more in-depth information on this tool, see our <a href="https://docs.redhat.com/en/documentation/openshift_container_platform/4.13/html/virtualization/virt-using-the-cli-tools" target="_blank" rel="noopener">official documentation</a></p>
+</div>
+<div class="paragraph">
+<p>At a basic level, we have virtctl fslist &lt;your vm name&gt; to list the file systems available</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">$ virtctl fslist my-vm</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>virtctl userlist &lt;your vm name&gt; for a list of logged-in users</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">$ virtctl userlist my-vm</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>and virtctl guestosinfo &lt;your vm name&gt; for information about the operating system.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">$ virtctl guestosinfo my-vm</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>You can type virtctl start &lt;your vm name&gt; to start a VM</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">$ virtctl start my-vm</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>and virtctl stop &lt;your vm&gt; to stop a VM.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">$ virtctl stop my-vm</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This can also be used with --force to force a stop, but be aware this can mess up the data on the VM.</p>
+</div>
+<div class="paragraph">
+<p>To pause a VM, keeping the machine state in memory you can run virtctl pause vm &lt;your vm name&gt;, and unpause it with virtctl unpause vm &lt;name&gt;.</p>
+</div>
+<div class="paragraph">
+<p><strong>Note: these commands require you to specify that you&#8217;re talking about a vm, and the others don&#8217;t.</strong></p>
+</div>
+<div class="paragraph">
+<p>One of the more useful commands is virtctl scp. Just like a regular scp command, this lets you copy files to and from your virtual machines. To use scp, you&#8217;ll need to make sure your virtual machine has an SSH key to allow connections.</p>
+</div>
+<div class="paragraph">
+<p>To copy a file locally to your virtual machine, use virtctl scp -i &lt;ssh key&gt; &lt;file name&gt; &lt;user name&gt;@&lt;your name&gt;.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">$ virtctl scp -i key myLocalFile.txt user@my-vm:myVMFileLocation.txt</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If you need a file off a VM, you just reverse the command - virtctl scp -i &lt;ssh key&gt; &lt;user name&gt;@&lt;your name&gt;:&lt;file name&gt; &lt;destination directory&gt;.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">$ virtctl scp -i key user@my-vm:VMFile.txt ~/Documents/</code></pre>
+</div>
+</div>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <img src="../../../_/img/rhl-logo-red.png" height="40px" alt="Red Hat"  href="https://redhat.com" >
+</footer><script id="site-script" src="../../../_/js/site.js" data-ui-root-path="../../../_"></script>
+<script async src="../../../_/js/vendor/highlight.js"></script>
+  </body>
+</html>

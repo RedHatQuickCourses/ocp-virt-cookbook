@@ -1,0 +1,1069 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Virtual Machine Manifests :: OpenShift Virtualization cookbook</title>
+    <meta name="generator" content="Antora 3.1.3">
+    <link rel="stylesheet" href="../../../_/css/site.css">
+    <script>var uiRootPath = '../../../_'</script>
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://www.redhat.com" target="_blank"><img src="../../../_/img/redhat-logo.png" height="40px" alt="Red Hat"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="../../..">OpenShift Virtualization cookbook</a>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues" target="_blank">Report Issues</a>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="ocp-virt-cookbook" data-version="1">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="../index.html">OpenShift Virtualization cookbook</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../index.html">Home</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/index.html">Getting Started</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/index.html">Storage Configuration</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/index.html">Networking Configuration</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="index.html">Manifests Reference</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../LABENV/index.html">Lab Environment</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../appendix/glossary.html">Glossary</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">OpenShift Virtualization cookbook</span>
+    <span class="version">1</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <a class="title" href="../index.html">OpenShift Virtualization cookbook</a>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">1</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">OpenShift Virtualization cookbook</a></li>
+    <li><a href="vms.html">Virtual Machine Manifests</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">Virtual Machine Manifests</h1>
+<div class="sect1">
+<h2 id="_overview"><a class="anchor" href="#_overview"></a>Overview</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>This page provides complete VM manifest examples for different operating systems and use cases, including cloud-init configurations and network attachments.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_basic_vm_structure"><a class="anchor" href="#_basic_vm_structure"></a>Basic VM Structure</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>A typical VM manifest includes:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>dataVolumeTemplates</code> - Storage provisioning</p>
+</li>
+<li>
+<p><code>runStrategy</code> - VM lifecycle management</p>
+</li>
+<li>
+<p><code>template.spec.domain</code> - VM hardware configuration</p>
+</li>
+<li>
+<p><code>template.spec.networks</code> - Network attachments</p>
+</li>
+<li>
+<p><code>template.spec.volumes</code> - Volume attachments</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_fedora_vm_examples"><a class="anchor" href="#_fedora_vm_examples"></a>Fedora VM Examples</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_basic_fedora_vm_with_dhcp"><a class="anchor" href="#_basic_fedora_vm_with_dhcp"></a>Basic Fedora VM with DHCP</h3>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: fedora-basic
+  namespace: vms-prod
+spec:
+  dataVolumeTemplates:
+    - apiVersion: cdi.kubevirt.io/v1beta1
+      kind: DataVolume
+      metadata:
+        name: fedora-basic-disk
+      spec:
+        sourceRef:
+          kind: DataSource
+          name: fedora
+          namespace: openshift-virtualization-os-images
+        storage:
+          resources:
+            requests:
+              storage: 30Gi
+  runStrategy: Always
+  template:
+    metadata:
+      labels:
+        kubevirt.io/domain: fedora-basic
+    spec:
+      domain:
+        cpu:
+          cores: 2
+        devices:
+          disks:
+            - disk:
+                bus: virtio
+              name: rootdisk
+            - disk:
+                bus: virtio
+              name: cloudinitdisk
+          interfaces:
+            - masquerade: {}
+              name: default
+          rng: {}
+        machine:
+          type: pc-q35-rhel9.4.0
+        memory:
+          guest: 4Gi
+      networks:
+        - name: default
+          pod: {}
+      volumes:
+        - dataVolume:
+            name: fedora-basic-disk
+          name: rootdisk
+        - cloudInitNoCloud:
+            userData: |-
+              #cloud-config
+              user: fedora
+              password: fedora123
+              chpasswd: { expire: False }
+              ssh_pwauth: True
+          name: cloudinitdisk</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Key Components:</strong></p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Uses Fedora DataSource from cluster</p>
+</li>
+<li>
+<p>2 vCPUs, 4Gi memory</p>
+</li>
+<li>
+<p>Masquerade interface (default pod network)</p>
+</li>
+<li>
+<p>Cloud-init with basic user configuration</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_fedora_vm_with_multiple_networks"><a class="anchor" href="#_fedora_vm_with_multiple_networks"></a>Fedora VM with Multiple Networks</h3>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: fedora-multi-network
+  namespace: vms-prod
+spec:
+  dataVolumeTemplates:
+    - apiVersion: cdi.kubevirt.io/v1beta1
+      kind: DataVolume
+      metadata:
+        name: fedora-multi-network-disk
+      spec:
+        sourceRef:
+          kind: DataSource
+          name: fedora
+          namespace: openshift-virtualization-os-images
+        storage:
+          resources:
+            requests:
+              storage: 30Gi
+  runStrategy: Always
+  template:
+    metadata:
+      labels:
+        kubevirt.io/domain: fedora-multi-network
+    spec:
+      domain:
+        cpu:
+          cores: 4
+        devices:
+          disks:
+            - disk:
+                bus: virtio
+              name: rootdisk
+            - disk:
+                bus: virtio
+              name: cloudinitdisk
+          interfaces:
+            - masquerade: {}
+              name: default
+            - bridge: {}
+              name: data-network
+          rng: {}
+        machine:
+          type: pc-q35-rhel9.4.0
+        memory:
+          guest: 8Gi
+      networks:
+        - name: default
+          pod: {}
+        - name: data-network
+          multus:
+            networkName: localnet-vlan-100
+      volumes:
+        - dataVolume:
+            name: fedora-multi-network-disk
+          name: rootdisk
+        - cloudInitNoCloud:
+            userData: |-
+              #cloud-config
+              user: fedora
+              password: fedora123
+              chpasswd: { expire: False }
+              ssh_pwauth: True
+            networkData: |-
+              version: 2
+              ethernets:
+                enp1s0:
+                  dhcp4: true
+                enp2s0:
+                  dhcp4: false
+                  dhcp6: false
+                  addresses:
+                    - 192.168.100.50/24
+          name: cloudinitdisk</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Key Features:</strong></p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Two network interfaces (pod network + VLAN)</p>
+</li>
+<li>
+<p>Static IP on secondary interface via cloud-init</p>
+</li>
+<li>
+<p>4 vCPUs, 8Gi memory for higher workloads</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p><strong>Related Tutorial:</strong></p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><a href="../networking/localnet-vlan.html" class="xref page">Localnet Secondary Networks with VLAN using NAD</a></p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_rhel_vm_examples"><a class="anchor" href="#_rhel_vm_examples"></a>RHEL VM Examples</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_rhel_9_vm"><a class="anchor" href="#_rhel_9_vm"></a>RHEL 9 VM</h3>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: rhel9-vm
+  namespace: vms-prod
+spec:
+  dataVolumeTemplates:
+    - apiVersion: cdi.kubevirt.io/v1beta1
+      kind: DataVolume
+      metadata:
+        name: rhel9-vm-disk
+      spec:
+        sourceRef:
+          kind: DataSource
+          name: rhel9
+          namespace: openshift-virtualization-os-images
+        storage:
+          resources:
+            requests:
+              storage: 40Gi
+  runStrategy: Always
+  template:
+    metadata:
+      labels:
+        kubevirt.io/domain: rhel9-vm
+        app: database
+        environment: production
+    spec:
+      domain:
+        cpu:
+          cores: 4
+          sockets: 1
+          threads: 1
+        devices:
+          disks:
+            - disk:
+                bus: virtio
+              name: rootdisk
+            - disk:
+                bus: virtio
+              name: cloudinitdisk
+          interfaces:
+            - masquerade: {}
+              name: default
+          rng: {}
+        machine:
+          type: pc-q35-rhel9.4.0
+        memory:
+          guest: 16Gi
+      networks:
+        - name: default
+          pod: {}
+      volumes:
+        - dataVolume:
+            name: rhel9-vm-disk
+          name: rootdisk
+        - cloudInitNoCloud:
+            userData: |-
+              #cloud-config
+              user: cloud-user
+              password: changeme
+              chpasswd: { expire: True }
+              ssh_pwauth: True
+              packages:
+                - vim
+                - git
+              runcmd:
+                - systemctl enable --now cockpit.socket
+          name: cloudinitdisk</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Key Features:</strong></p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>RHEL 9 DataSource</p>
+</li>
+<li>
+<p>Labels for organization (app, environment)</p>
+</li>
+<li>
+<p>Package installation via cloud-init</p>
+</li>
+<li>
+<p>Cockpit enabled for web management</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_rhel_with_additional_data_disk"><a class="anchor" href="#_rhel_with_additional_data_disk"></a>RHEL with Additional Data Disk</h3>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: rhel9-with-data-disk
+  namespace: vms-prod
+spec:
+  dataVolumeTemplates:
+    - apiVersion: cdi.kubevirt.io/v1beta1
+      kind: DataVolume
+      metadata:
+        name: rhel9-with-data-disk-root
+      spec:
+        sourceRef:
+          kind: DataSource
+          name: rhel9
+          namespace: openshift-virtualization-os-images
+        storage:
+          resources:
+            requests:
+              storage: 40Gi
+    - apiVersion: cdi.kubevirt.io/v1beta1
+      kind: DataVolume
+      metadata:
+        name: rhel9-with-data-disk-data
+      spec:
+        source:
+          blank: {}
+        storage:
+          resources:
+            requests:
+              storage: 100Gi
+  runStrategy: Always
+  template:
+    metadata:
+      labels:
+        kubevirt.io/domain: rhel9-with-data-disk
+    spec:
+      domain:
+        cpu:
+          cores: 4
+        devices:
+          disks:
+            - disk:
+                bus: virtio
+              name: rootdisk
+            - disk:
+                bus: virtio
+              name: datadisk
+            - disk:
+                bus: virtio
+              name: cloudinitdisk
+          interfaces:
+            - masquerade: {}
+              name: default
+          rng: {}
+        machine:
+          type: pc-q35-rhel9.4.0
+        memory:
+          guest: 16Gi
+      networks:
+        - name: default
+          pod: {}
+      volumes:
+        - dataVolume:
+            name: rhel9-with-data-disk-root
+          name: rootdisk
+        - dataVolume:
+            name: rhel9-with-data-disk-data
+          name: datadisk
+        - cloudInitNoCloud:
+            userData: |-
+              #cloud-config
+              user: cloud-user
+              password: changeme
+              chpasswd: { expire: True }
+              ssh_pwauth: True
+          name: cloudinitdisk</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Key Features:</strong></p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Two DataVolumes - root and data disks</p>
+</li>
+<li>
+<p>Blank data disk for application data</p>
+</li>
+<li>
+<p>Separate storage management</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_windows_vm_example"><a class="anchor" href="#_windows_vm_example"></a>Windows VM Example</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_windows_server_2022"><a class="anchor" href="#_windows_server_2022"></a>Windows Server 2022</h3>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: windows-2022
+  namespace: vms-prod
+spec:
+  dataVolumeTemplates:
+    - apiVersion: cdi.kubevirt.io/v1beta1
+      kind: DataVolume
+      metadata:
+        name: windows-2022-disk
+      spec:
+        sourceRef:
+          kind: DataSource
+          name: win2k22
+          namespace: openshift-virtualization-os-images
+        storage:
+          resources:
+            requests:
+              storage: 60Gi
+  runStrategy: RerunOnFailure
+  template:
+    metadata:
+      labels:
+        kubevirt.io/domain: windows-2022
+    spec:
+      domain:
+        cpu:
+          cores: 4
+          sockets: 1
+          threads: 1
+        devices:
+          disks:
+            - disk:
+                bus: sata
+              name: rootdisk
+            - cdrom:
+                bus: sata
+              name: windows-guest-tools
+          interfaces:
+            - masquerade: {}
+              model: e1000e
+              name: default
+          inputs:
+            - bus: usb
+              name: tablet
+              type: tablet
+          rng: {}
+        features:
+          acpi: {}
+          apic: {}
+          hyperv:
+            relaxed: {}
+            spinlocks:
+              spinlocks: 8191
+            vapic: {}
+        machine:
+          type: pc-q35-rhel9.4.0
+        memory:
+          guest: 16Gi
+        resources:
+          requests:
+            memory: 16Gi
+      networks:
+        - name: default
+          pod: {}
+      volumes:
+        - dataVolume:
+            name: windows-2022-disk
+          name: rootdisk
+        - containerDisk:
+            image: registry.redhat.io/container-native-virtualization/virtio-win-rhel9
+          name: windows-guest-tools</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Key Features for Windows:</strong></p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>bus: sata</code> for Windows compatibility</p>
+</li>
+<li>
+<p><code>model: e1000e</code> network adapter</p>
+</li>
+<li>
+<p>Hyper-V enlightenments for better performance</p>
+</li>
+<li>
+<p>VirtIO drivers via container disk</p>
+</li>
+<li>
+<p>USB tablet for mouse input</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p><strong>Note:</strong> Windows VMs require valid licenses and proper guest tools installation.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_vm_lifecycle_management"><a class="anchor" href="#_vm_lifecycle_management"></a>VM Lifecycle Management</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_run_strategies"><a class="anchor" href="#_run_strategies"></a>Run Strategies</h3>
+<div class="paragraph">
+<p><strong>Always:</strong></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">spec:
+  runStrategy: Always</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>VM should always be running. Automatically restarts if stopped.</p>
+</div>
+<div class="paragraph">
+<p><strong>RerunOnFailure:</strong></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">spec:
+  runStrategy: RerunOnFailure</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>VM restarts only if it fails. Normal shutdown keeps it stopped.</p>
+</div>
+<div class="paragraph">
+<p><strong>Manual:</strong></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">spec:
+  runStrategy: Manual</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>VM lifecycle managed manually via virtctl or API.</p>
+</div>
+<div class="paragraph">
+<p><strong>Halted:</strong></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">spec:
+  runStrategy: Halted</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>VM should be stopped. Running VM will be shut down.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_startstop_vms"><a class="anchor" href="#_startstop_vms"></a>Start/Stop VMs</h3>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Start VM
+virtctl start &lt;vm-name&gt; -n &lt;namespace&gt;
+
+# Stop VM (graceful)
+virtctl stop &lt;vm-name&gt; -n &lt;namespace&gt;
+
+# Restart VM
+virtctl restart &lt;vm-name&gt; -n &lt;namespace&gt;
+
+# Pause VM
+virtctl pause vm &lt;vm-name&gt; -n &lt;namespace&gt;
+
+# Unpause VM
+virtctl unpause vm &lt;vm-name&gt; -n &lt;namespace&gt;</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_vm_resource_management"><a class="anchor" href="#_vm_resource_management"></a>VM Resource Management</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_cpu_configuration"><a class="anchor" href="#_cpu_configuration"></a>CPU Configuration</h3>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">spec:
+  template:
+    spec:
+      domain:
+        cpu:
+          cores: 4
+          sockets: 2
+          threads: 1
+          dedicatedCpuPlacement: false
+          model: host-passthrough</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>CPU Models:</strong></p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>host-passthrough</code> - Pass through host CPU features</p>
+</li>
+<li>
+<p><code>host-model</code> - Similar to host, filtered for migration</p>
+</li>
+<li>
+<p>Specific models - e.g., <code>Skylake-Client</code></p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_memory_configuration"><a class="anchor" href="#_memory_configuration"></a>Memory Configuration</h3>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">spec:
+  template:
+    spec:
+      domain:
+        memory:
+          guest: 16Gi
+          hugepages:
+            pageSize: 2Mi
+        resources:
+          requests:
+            memory: 16Gi
+          limits:
+            memory: 16Gi</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Memory Options:</strong></p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>guest</code> - Memory visible to guest OS</p>
+</li>
+<li>
+<p><code>hugepages</code> - Use huge pages for better performance</p>
+</li>
+<li>
+<p><code>requests/limits</code> - Kubernetes resource management</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_vm_verification"><a class="anchor" href="#_vm_verification"></a>VM Verification</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_check_vm_status"><a class="anchor" href="#_check_vm_status"></a>Check VM Status</h3>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># List VMs
+oc get vm -n &lt;namespace&gt;
+
+# List running VMs (VMIs)
+oc get vmi -n &lt;namespace&gt;
+
+# Get VM details
+oc describe vm &lt;vm-name&gt; -n &lt;namespace&gt;
+
+# Get VMI details
+oc describe vmi &lt;vm-name&gt; -n &lt;namespace&gt;
+
+# Check VM events
+oc get events -n &lt;namespace&gt; --field-selector involvedObject.name=&lt;vm-name&gt;</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_access_vm_console"><a class="anchor" href="#_access_vm_console"></a>Access VM Console</h3>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Text console
+virtctl console &lt;vm-name&gt; -n &lt;namespace&gt;
+
+# VNC console (requires port-forward)
+virtctl vnc &lt;vm-name&gt; -n &lt;namespace&gt;
+
+# RDP for Windows (requires service)
+virtctl rdp &lt;vm-name&gt; -n &lt;namespace&gt;</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_check_vm_network"><a class="anchor" href="#_check_vm_network"></a>Check VM Network</h3>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Get VM IP addresses
+oc get vmi &lt;vm-name&gt; -n &lt;namespace&gt; -o jsonpath='{.status.interfaces[*].ipAddress}'
+
+# Get VM interface details
+oc get vmi &lt;vm-name&gt; -n &lt;namespace&gt; -o jsonpath='{.status.interfaces[*]}'</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_vm_best_practices"><a class="anchor" href="#_vm_best_practices"></a>VM Best Practices</h2>
+<div class="sectionbody">
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p><strong>Use DataSources</strong> for standard OS images</p>
+</li>
+<li>
+<p><strong>Set Appropriate Resources</strong> based on workload</p>
+</li>
+<li>
+<p><strong>Use Labels</strong> for organization and selection</p>
+</li>
+<li>
+<p><strong>Configure Cloud-init</strong> for initialization</p>
+</li>
+<li>
+<p><strong>Test in Development</strong> before production</p>
+</li>
+<li>
+<p><strong>Monitor Resource Usage</strong> to right-size VMs</p>
+</li>
+<li>
+<p><strong>Use runStrategy</strong> appropriately for workload type</p>
+</li>
+<li>
+<p><strong>Enable Guest Agent</strong> for better integration</p>
+</li>
+</ol>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_troubleshooting"><a class="anchor" href="#_troubleshooting"></a>Troubleshooting</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_vm_wont_start"><a class="anchor" href="#_vm_wont_start"></a>VM Won&#8217;t Start</h3>
+<div class="paragraph">
+<p><strong>Check:</strong></p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Check VM status
+oc get vm &lt;vm-name&gt; -n &lt;namespace&gt; -o yaml
+
+# Check events
+oc get events -n &lt;namespace&gt; --field-selector involvedObject.name=&lt;vm-name&gt;
+
+# Check virt-launcher pod
+oc get pods -n &lt;namespace&gt; | grep virt-launcher
+oc logs &lt;virt-launcher-pod&gt; -n &lt;namespace&gt;</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Common Causes:</strong></p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Insufficient resources on nodes</p>
+</li>
+<li>
+<p>DataVolume not ready</p>
+</li>
+<li>
+<p>Invalid configuration</p>
+</li>
+<li>
+<p>Storage issues</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_vm_running_but_no_network"><a class="anchor" href="#_vm_running_but_no_network"></a>VM Running But No Network</h3>
+<div class="paragraph">
+<p><strong>Check:</strong></p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Access console
+virtctl console &lt;vm-name&gt; -n &lt;namespace&gt;
+
+# Inside VM
+ip addr show
+ip route show
+cat /etc/resolv.conf</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Common Causes:</strong></p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Cloud-init network configuration error</p>
+</li>
+<li>
+<p>NAD not found</p>
+</li>
+<li>
+<p>Interface naming mismatch</p>
+</li>
+<li>
+<p>DHCP not working</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_vm_performance_issues"><a class="anchor" href="#_vm_performance_issues"></a>VM Performance Issues</h3>
+<div class="paragraph">
+<p><strong>Check:</strong></p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Check resource usage
+oc adm top pod &lt;virt-launcher-pod&gt; -n &lt;namespace&gt;
+
+# Inside VM
+top
+free -h
+df -h</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Solutions:</strong></p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Increase CPU/memory</p>
+</li>
+<li>
+<p>Use VirtIO drivers</p>
+</li>
+<li>
+<p>Enable huge pages</p>
+</li>
+<li>
+<p>Check disk I/O</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_summary"><a class="anchor" href="#_summary"></a>Summary</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Key VM manifest components:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>DataVolumeTemplates</strong>: Automatic storage provisioning</p>
+</li>
+<li>
+<p><strong>runStrategy</strong>: Lifecycle management</p>
+</li>
+<li>
+<p><strong>domain</strong>: Hardware configuration (CPU, memory, devices)</p>
+</li>
+<li>
+<p><strong>networks</strong>: Network attachments</p>
+</li>
+<li>
+<p><strong>cloud-init</strong>: Initialization configuration</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_see_also"><a class="anchor" href="#_see_also"></a>See Also</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p><a href="../getting-started/virtctl-basics.html" class="xref page">Virtctl Basics</a></p>
+</li>
+<li>
+<p><a href="networking.html" class="xref page">Network Configuration</a></p>
+</li>
+<li>
+<p><a href="storage.html" class="xref page">Storage Configuration</a></p>
+</li>
+<li>
+<p><a href="index.html" class="xref page">Manifests Reference Overview</a></p>
+</li>
+<li>
+<p><a href="https://docs.openshift.com/container-platform/latest/virt/virtual_machines/creating_vms_custom/virt-creating-vms-by-using-yaml.html" target="_blank" rel="noopener">Creating VMs with YAML</a></p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <img src="../../../_/img/rhl-logo-red.png" height="40px" alt="Red Hat"  href="https://redhat.com" >
+</footer><script id="site-script" src="../../../_/js/site.js" data-ui-root-path="../../../_"></script>
+<script async src="../../../_/js/vendor/highlight.js"></script>
+  </body>
+</html>
