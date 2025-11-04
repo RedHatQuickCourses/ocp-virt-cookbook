@@ -1,0 +1,99 @@
+= Virtual Machine Configuration
+:navtitle: VM Configuration
+
+== Overview
+
+This section covers virtual machine configuration in OpenShift Virtualization, focusing on cloud-init and network initialization patterns. Cloud-init is the standard tool for VM initialization and configuration.
+
+== What You'll Learn
+
+Learn how to configure and customize virtual machines in OpenShift Virtualization:
+
+* Cloud-init basics and network configuration
+* Static and dynamic IP address assignment
+* Multiple network interface configuration
+* Best practices for VM initialization
+
+== Prerequisites
+
+Before working with VM configuration, ensure you have:
+
+* OpenShift 4.17+ with OpenShift Virtualization operator installed
+* Basic understanding of virtual machines and networking
+* Familiarity with YAML syntax
+* CLI tools installed: `oc`, `virtctl`, `kubectl`
+
+== Topics
+
+xref:cloud-init-ip-configuration.adoc[Cloud-init IP Configuration]::
+Configure static and dynamic IP addresses using cloud-init for virtual machines with single and multiple network interfaces.
+
+xref:cloud-init-troubleshooting.adoc[Cloud-init Troubleshooting]::
+Comprehensive troubleshooting guide for cloud-init IP configuration issues, including diagnostic commands and common problem solutions.
+
+== Key Concepts
+
+=== Cloud-init
+
+Cloud-init is an industry-standard initialization tool that configures cloud instances during first boot. It supports:
+
+* Network configuration (networkData)
+* User and SSH key setup (userData)
+* Package installation
+* Custom scripts and commands
+* File creation and modification
+
+=== Network Interface Naming
+
+KubeVirt uses predictable network interface naming based on PCI slot positions:
+
+* Primary interface: `enp1s0`
+* Secondary interface: `enp2s0`
+* Additional interfaces: `enp3s0`, `enp4s0`, etc.
+
+This differs from traditional `eth0`, `eth1` naming found in older Linux distributions.
+
+=== VM Network Types
+
+OpenShift Virtualization supports multiple network attachment methods:
+
+* **Masquerade**: Default pod network with NAT
+* **Bridge**: Direct bridge to secondary networks (VLANs, localnet)
+* **SR-IOV**: High-performance direct hardware access
+* **Macvtap**: Direct network attachment with MAC filtering
+
+== Best Practices
+
+=== Configuration Management
+
+* Use networkData for network-specific configuration
+* Keep userData for general system initialization
+* Test configurations in development before production
+* Validate YAML syntax before deployment
+
+=== Network Design
+
+* Use DHCP for ephemeral/development workloads
+* Use static IPs for production services
+* Only set default route on primary interface
+* Document IP assignments and network topology
+
+=== Security
+
+* Avoid hardcoding passwords in production
+* Use SSH keys for authentication
+* Implement network segmentation
+* Apply least privilege principles
+
+== Related Topics
+
+* xref:getting-started:index.adoc[Getting Started] - Initial setup and prerequisites
+* xref:storage:index.adoc[Storage Configuration] - Persistent storage for VMs
+* xref:networking:index.adoc[Networking Configuration] - Network infrastructure setup
+
+== Additional Resources
+
+* link:https://docs.openshift.com/container-platform/latest/virt/about_virt/about-virt.html[OpenShift Virtualization Documentation,window=_blank]
+* link:https://cloudinit.readthedocs.io/[Cloud-init Official Documentation,window=_blank]
+* link:https://kubevirt.io/user-guide/[KubeVirt User Guide,window=_blank]
+
