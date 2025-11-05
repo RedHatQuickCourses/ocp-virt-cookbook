@@ -1,0 +1,829 @@
+= Cloud-init IP Configuration Troubleshooting Guide
+:navtitle: Cloud-init Troubleshooting
+
+This guide provides comprehensive troubleshooting steps, verification commands, and solutions for issues related to configuring IP addresses with cloud-init in OpenShift Virtualization.
+
+== Table of Contents
+
+* <<quick-health-checks,Quick Health Checks>>
+* <<debugging-cloud-init,Debugging Cloud-init>>
+* <<common-issues-by-scenario,Common Issues by Scenario>>
+* <<diagnostic-commands,Diagnostic Commands>>
+
+== Quick Health Checks
+
+=== Check VM Status
+
+[source,bash,role=execute]
+----
+oc get vm <vm-name> -n <namespace>
+oc get vmi <vm-name> -n <namespace>
+----
+
+=== Check VM Has IP Address
+
+[source,bash,role=execute]
+----
+oc get vmi <vm-name> -n <namespace> -o jsonpath='{.status.interfaces[*].ipAddress}'
+----
+
+=== Check Guest Agent is Running
+
+[source,bash,role=execute]
+----
+oc get vmi <vm-name> -n <namespace> -o jsonpath='{.status.guestOSInfo}'
+----
+
+If empty, guest agent is not running (see <<issue-1-guest-agent-not-running,Guest Agent Issues>>).
+
+== Debugging Cloud-init
+
+=== Access VM Console
+
+[source,bash,role=execute]
+----
+virtctl console <vm-name> -n <namespace>
+----
+
+=== Check Cloud-init Status
+
+Inside VM:
+
+[source,bash]
+----
+# Check cloud-init completion status
+cloud-init status
+
+# Expected output for success:
+# status: done
+
+# Check detailed status
+cloud-init status --long
+----
+
+=== Check Cloud-init Logs
+
+[source,bash]
+----
+# Main cloud-init log
+cat /var/log/cloud-init.log
+
+# Output log (shows command execution)
+cat /var/log/cloud-init-output.log
+
+# Check for errors
+grep -i error /var/log/cloud-init.log
+grep -i failed /var/log/cloud-init.log
+----
+
+=== View Applied Cloud-init Configuration
+
+[source,bash]
+----
+# View userdata
+sudo cat /var/lib/cloud/instance/user-data.txt
+
+# View network config (if using networkData)
+sudo cat /var/lib/cloud/instance/network-config.txt
+
+# View cloud-init data
+sudo cat /var/lib/cloud/instance/cloud-config.txt
+----
+
+=== Check Network Configuration
+
+[source,bash]
+----
+# View network interfaces
+ip addr show
+
+# View routing table
+ip route show
+
+# Check DNS configuration
+cat /etc/resolv.conf
+
+# For NetworkManager systems (Fedora, RHEL)
+nmcli device status
+nmcli connection show
+----
+
+=== Test Connectivity
+
+[source,bash]
+----
+# Test network connectivity
+ping -c 3 8.8.8.8
+
+# Test DNS resolution
+nslookup google.com
+
+# Test from pod network
+curl http://<vm-ip>
+----
+
+== Common Issues by Scenario
+
+=== Scenario 1: DHCP Configuration
+
+==== Issue: VM Not Getting IP via DHCP
+
+**Symptoms**:
+
+[source,bash]
+----
+$ oc get vmi fedora-dhcp-vm -n vms -o jsonpath='{.status.interfaces[0].ipAddress}'
+# Returns empty or shows no IP
+----
+
+**Diagnosis**:
+
+[source,bash]
+----
+# Access VM console
+virtctl console fedora-dhcp-vm -n vms
+
+# Check interface status
+ip addr show enp1s0
+
+# Check DHCP client
+journalctl -u NetworkManager | grep -i dhcp
+----
+
+**Common Causes**:
+
+* DHCP client not running
+* Network interface down
+* Cloud-init DHCP configuration error
+
+**Solutions**:
+
+1. Verify cloud-init DHCP config in VM definition:
++
+[source,yaml]
+----
+cloudInitNoCloud:
+  networkData: |
+    version: 2
+    ethernets:
+      enp1s0:
+        dhcp4: true
+----
+
+2. Manually restart network interface:
++
+[source,bash]
+----
+sudo nmcli connection down "Wired connection 1"
+sudo nmcli connection up "Wired connection 1"
+----
+
+3. Check NetworkManager logs:
++
+[source,bash]
+----
+sudo journalctl -u NetworkManager --since "5 minutes ago"
+----
+
+==== Issue: Wrong Interface Name in Cloud-init
+
+**Symptoms**:
+Network configuration not applied, logs show "device eth0 not found".
+
+**Diagnosis**:
+
+[source,bash]
+----
+# Inside VM - check actual interface names
+ip link show
+----
+
+**Common Causes**:
+
+* Using generic names (`eth0`, `eth1`) instead of the interface names used by your guest OS
+
+**Solutions**:
+
+1. Check the actual interface names in your guest OS. Modern Linux distributions (RHEL 8+, Fedora, Ubuntu 16.04+) use predictable naming:
+   * First interface: `enp1s0`
+   * Second interface: `enp2s0`
+   * Third interface: `enp3s0`
+
+2. Update cloud-init networkData to use correct names:
++
+[source,yaml]
+----
+networkData: |
+  version: 2
+  ethernets:
+    enp1s0:  # Not eth0
+      dhcp4: true
+----
+
+=== Scenario 2: Static IP Configuration
+
+==== Issue: Static IP Not Applied
+
+**Symptoms**:
+VM gets DHCP IP instead of configured static IP.
+
+**Diagnosis**:
+
+[source,bash]
+----
+# Inside VM
+ip addr show enp1s0
+
+# Check cloud-init logs for errors
+grep -i "network" /var/log/cloud-init.log
+----
+
+**Common Causes**:
+
+* Wrong interface name in networkData
+* DHCP still enabled
+* Syntax errors in networkData YAML
+* cloud-init not processing networkData
+
+**Solutions**:
+
+1. Verify networkData syntax (indentation, YAML format):
++
+[source,yaml]
+----
+networkData: |
+  version: 2
+  ethernets:
+    enp1s0:
+      dhcp4: false  # Disable DHCP
+      addresses:
+        - 192.168.1.100/24
+      routes:
+        - to: default
+          via: 192.168.1.1
+      nameservers:
+        addresses:
+          - 8.8.8.8
+          - 8.8.4.4
+----
+
+2. Check for cloud-init errors:
++
+[source,bash]
+----
+cloud-init status --long
+cat /var/log/cloud-init.log | grep -A 5 -B 5 "network"
+----
+
+3. Manually apply network configuration:
++
+[source,bash]
+----
+sudo nmcli connection modify "Wired connection 1" \
+  ipv4.method manual \
+  ipv4.addresses 192.168.1.100/24 \
+  ipv4.gateway 192.168.1.1 \
+  ipv4.dns "8.8.8.8 8.8.4.4"
+
+sudo nmcli connection up "Wired connection 1"
+----
+
+==== Issue: Static IP Applied But No Connectivity
+
+**Symptoms**:
+
+[source,bash]
+----
+# Inside VM
+ip addr show enp1s0
+# Shows correct IP
+
+ping 192.168.1.1
+# Network unreachable
+----
+
+**Diagnosis**:
+
+[source,bash]
+----
+# Check routing table
+ip route show
+
+# Check if gateway is reachable
+ping -c 1 192.168.1.1
+----
+
+**Common Causes**:
+
+* Missing or wrong gateway
+* Wrong subnet mask
+* Physical network not configured for static IPs
+* Switch port in wrong VLAN
+
+**Solutions**:
+
+1. Verify gateway in cloud-init configuration
+2. Check subnet mask matches network configuration
+3. Verify physical network allows static IPs on this subnet
+4. If using VLAN, ensure NAD and bridge mapping are correct
+
+=== Scenario 3: Multiple Network Interfaces
+
+==== Issue: Secondary Interface Not Configured
+
+**Symptoms**:
+Only primary interface has IP, secondary interface down or unconfigured.
+
+**Diagnosis**:
+
+[source,bash]
+----
+# Inside VM
+ip addr show
+
+# Check NetworkManager connections
+nmcli connection show
+----
+
+**Common Causes**:
+
+* Secondary interface not defined in networkData
+* Wrong interface name for secondary interface
+* Secondary network attachment not working
+
+**Solutions**:
+
+1. Verify VM has multiple network attachments:
++
+[source,yaml]
+----
+spec:
+  template:
+    spec:
+      networks:
+        - name: default
+          pod: {}
+        - name: secondary-net
+          multus:
+            networkName: my-nad
+----
+
+2. Verify both interfaces in networkData:
++
+[source,yaml]
+----
+networkData: |
+  version: 2
+  ethernets:
+    enp1s0:
+      dhcp4: true
+    enp2s0:  # Secondary interface
+      dhcp4: false
+      addresses:
+        - 192.168.100.10/24
+----
+
+3. Check NAD exists and is configured:
++
+[source,bash,role=execute]
+----
+oc get network-attachment-definition -n <namespace>
+oc describe network-attachment-definition <nad-name> -n <namespace>
+----
+
+==== Issue: Default Route Conflict
+
+**Symptoms**:
+Both interfaces have default routes, causing routing issues.
+
+**Diagnosis**:
+
+[source,bash]
+----
+# Inside VM
+ip route show
+
+# Will show multiple default routes
+# default via 10.128.0.1 dev enp1s0
+# default via 192.168.100.1 dev enp2s0
+----
+
+**Common Causes**:
+
+* Both interfaces configured with default gateway
+* DHCP adding default route on primary interface
+* Static config adding default route on secondary interface
+
+**Solutions**:
+
+1. Remove default route from secondary interface in networkData:
++
+[source,yaml]
+----
+enp2s0:
+  dhcp4: false
+  addresses:
+    - 192.168.100.10/24
+  # No 'routes' section - no default gateway
+----
+
+2. If both need routes, use metrics to prioritize:
++
+[source,yaml]
+----
+enp1s0:
+  dhcp4: true
+  dhcp4-overrides:
+    route-metric: 100  # Lower is preferred
+
+enp2s0:
+  dhcp4: false
+  addresses:
+    - 192.168.100.10/24
+  routes:
+    - to: default
+      via: 192.168.100.1
+      metric: 200  # Higher = less preferred
+----
+
+=== Scenario 4: VLAN Interface Configuration
+
+==== Issue: VLAN Interface Not Created
+
+**Symptoms**:
+VLAN interface (e.g., `enp2s0.100`) doesn't exist.
+
+**Diagnosis**:
+
+[source,bash]
+----
+# Inside VM
+ip link show
+
+# Check cloud-init logs
+grep -i vlan /var/log/cloud-init.log
+----
+
+**Common Causes**:
+
+* VLAN configuration syntax error in networkData
+* Parent interface not up
+* VLAN module not loaded
+
+**Solutions**:
+
+1. Verify VLAN configuration in networkData:
++
+[source,yaml]
+----
+networkData: |
+  version: 2
+  ethernets:
+    enp2s0: {}  # Parent interface must be defined
+  vlans:
+    vlan100:
+      id: 100
+      link: enp2s0
+      addresses:
+        - 192.168.100.10/24
+----
+
+2. Manually create VLAN interface:
++
+[source,bash]
+----
+sudo nmcli connection add type vlan \
+  con-name vlan100 \
+  ifname enp2s0.100 \
+  dev enp2s0 \
+  id 100 \
+  ip4 192.168.100.10/24
+----
+
+==== Issue: VLAN Interface Has No Connectivity
+
+**Symptoms**:
+VLAN interface exists but cannot reach network.
+
+**Diagnosis**:
+
+[source,bash]
+----
+# Check VLAN interface status
+ip addr show enp2s0.100
+
+# Check if traffic is tagged
+tcpdump -i enp2s0 -n vlan 100
+----
+
+**Common Causes**:
+
+* Physical switch port not in trunk mode
+* VLAN not allowed on switch trunk
+* Wrong VLAN ID in configuration
+* NAD not configured for VLAN
+
+**Solutions**:
+
+1. Verify switch port is in trunk mode and allows VLAN 100
+2. Verify NAD VLAN configuration:
++
+[source,bash,role=execute]
+----
+oc get network-attachment-definition <nad-name> -n <namespace> -o yaml
+----
++
+Look for: `"vlan": 100`
+
+3. Verify OVN bridge mapping for localnet:
++
+[source,bash,role=execute]
+----
+oc get nncp -A
+----
+
+=== Scenario 5: IPv6 Configuration
+
+==== Issue: IPv6 Address Not Applied
+
+**Symptoms**:
+Only IPv4 configured, no IPv6 address.
+
+**Diagnosis**:
+
+[source,bash]
+----
+# Inside VM
+ip -6 addr show
+----
+
+**Common Causes**:
+
+* IPv6 not enabled in cloud-init
+* IPv6 disabled in OS
+
+**Solutions**:
+
+1. Enable IPv6 in networkData:
++
+[source,yaml]
+----
+networkData: |
+  version: 2
+  ethernets:
+    enp1s0:
+      dhcp4: true
+      dhcp6: true
+      # Or static IPv6:
+      addresses:
+        - 2001:db8::10/64
+----
+
+2. Check IPv6 is not disabled:
++
+[source,bash]
+----
+cat /proc/sys/net/ipv6/conf/all/disable_ipv6
+# Should be 0 (enabled)
+----
+
+=== Scenario 6: DNS Configuration
+
+==== Issue: DNS Not Working
+
+**Symptoms**:
+
+[source,bash]
+----
+# Inside VM
+ping 8.8.8.8
+# Works
+
+ping google.com
+# Unknown host
+----
+
+**Diagnosis**:
+
+[source,bash]
+----
+cat /etc/resolv.conf
+
+# Check DNS resolution
+nslookup google.com
+----
+
+**Common Causes**:
+
+* Nameservers not configured in cloud-init
+* DHCP not providing DNS servers
+* `/etc/resolv.conf` empty or wrong
+
+**Solutions**:
+
+1. Add nameservers to networkData:
++
+[source,yaml]
+----
+networkData: |
+  version: 2
+  ethernets:
+    enp1s0:
+      dhcp4: false
+      addresses:
+        - 192.168.1.100/24
+      nameservers:
+        addresses:
+          - 8.8.8.8
+          - 8.8.4.4
+        search:
+          - example.com
+----
+
+2. Manually configure DNS:
++
+[source,bash]
+----
+echo "nameserver 8.8.8.8" | sudo tee /etc/resolv.conf
+----
+
+== Diagnostic Commands
+
+=== Full Network Status Check
+
+[source,bash]
+----
+# Inside VM - comprehensive network check
+echo "=== Interfaces ==="
+ip addr show
+
+echo "=== Routes ==="
+ip route show
+
+echo "=== DNS ==="
+cat /etc/resolv.conf
+
+echo "=== Cloud-init Status ==="
+cloud-init status --long
+
+echo "=== Cloud-init Network Config ==="
+sudo cat /var/lib/cloud/instance/network-config.txt
+
+echo "=== NetworkManager Connections ==="
+nmcli connection show
+
+echo "=== Connectivity Tests ==="
+ping -c 2 8.8.8.8 && echo "IP connectivity: OK" || echo "IP connectivity: FAILED"
+nslookup google.com && echo "DNS: OK" || echo "DNS: FAILED"
+----
+
+=== From OpenShift Cluster
+
+[source,bash,role=execute]
+----
+# Check VM status
+oc get vm,vmi <vm-name> -n <namespace>
+
+# Check VM IP addresses
+oc get vmi <vm-name> -n <namespace> -o jsonpath='{.status.interfaces}' | jq
+
+# Check network attachments
+oc get vm <vm-name> -n <namespace> -o jsonpath='{.spec.template.spec.networks}' | jq
+
+# Check NADs
+oc get network-attachment-definition -n <namespace>
+
+# Check VM events
+oc get events -n <namespace> --field-selector involvedObject.name=<vm-name> --sort-by='.lastTimestamp'
+
+# Check VM definition cloud-init sections
+oc get vm <vm-name> -n <namespace> -o yaml | grep -A 50 cloudInitNoCloud
+----
+
+=== Cloud-init Rerun (For Testing)
+
+[source,bash]
+----
+# Inside VM - clean and rerun cloud-init (DESTRUCTIVE)
+sudo cloud-init clean --logs
+sudo cloud-init init
+sudo cloud-init modules --mode config
+sudo cloud-init modules --mode final
+
+# Check status
+cloud-init status --long
+----
+
+== Interface Naming Reference
+
+Modern Linux distributions in VMs use predictable interface names based on PCI slot positions:
+
+[cols="1,1,2"]
+|===
+|Network Attachment Order |Interface Name |Typical Usage
+
+|1st (default pod network)
+|`enp1s0`
+|Primary network (DHCP)
+
+|2nd (Multus/NAD)
+|`enp2s0`
+|Secondary network
+
+|3rd (Multus/NAD)
+|`enp3s0`
+|Third network
+
+|4th (Multus/NAD)
+|`enp4s0`
+|Fourth network
+|===
+
+**Use the interface names as they appear in your guest OS. Modern Linux distributions (RHEL 8+, Fedora, Ubuntu 16.04+) use the enpXsY format shown above. Older distributions may still use eth0, eth1, etc.**
+
+== Cloud-init Version Differences
+
+=== cloud-init v1 vs v2 Network Config
+
+**Version 1** (older, legacy):
+
+[source,yaml]
+----
+networkData: |
+  version: 1
+  config:
+    - type: physical
+      name: eth0
+      subnets:
+        - type: dhcp
+----
+
+**Version 2** (modern, recommended):
+
+[source,yaml]
+----
+networkData: |
+  version: 2
+  ethernets:
+    enp1s0:
+      dhcp4: true
+----
+
+**Recommendation**: Always use version 2 for new configurations.
+
+== Additional Resources
+
+* link:https://cloudinit.readthedocs.io/en/latest/reference/network-config.html[Cloud-init Documentation - Network Configuration,window=_blank]
+* link:https://netplan.io/examples/[Netplan Configuration Examples,window=_blank]
+* link:https://docs.openshift.com/container-platform/latest/virt/vm_networking/virt-about-vm-networking.html[OpenShift Virtualization Networking,window=_blank]
+* link:https://kubevirt.io/user-guide/virtual_machines/interfaces_and_networks/[KubeVirt Network Configuration,window=_blank]
+* xref:networking:ovs-bridge-verification.adoc[OVS Bridge Verification]
+
+== Example Test: ocplab01 Cluster
+
+From testing on the SNO cluster (ocplab01):
+
+[source,bash]
+----
+$ oc get vmi fedora-dhcp-vm -n cloud-init-test -o jsonpath='{.status.interfaces}' | jq
+[
+  {
+    "infoSource": "domain, guest-agent, multus-status",
+    "interfaceName": "eth0",
+    "ipAddress": "10.128.0.165",
+    "ipAddresses": [
+      "10.128.0.165",
+      "fd02::5e"
+    ],
+    "mac": "02:92:c2:00:00:05",
+    "name": "default",
+    "queueCount": 1
+  }
+]
+----
+
+**Note**: The `interfaceName` field shows `eth0` in VMI status (internal KubeVirt naming), but inside the Fedora VM the interface is `enp1s0`. Always use the interface names as they appear in your guest OS for cloud-init configuration.
+
+Inside VM verification:
+
+[source,bash]
+----
+[fedora@fedora ~]$ ip addr show enp1s0
+2: enp1s0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1400 qdisc fq_codel state UP group default qlen 1000
+    link/ether 02:92:c2:00:00:05 brd ff:ff:ff:ff:ff:ff
+    inet 10.128.0.165/23 brd 10.128.1.255 scope global dynamic noprefixroute enp1s0
+       valid_lft 86295sec preferred_lft 86295sec
+    inet6 fd02::5e/64 scope global dynamic noprefixroute
+       valid_lft 86296sec preferred_lft 14296sec
+----
+
+Cloud-init status:
+
+[source,bash]
+----
+[fedora@fedora ~]$ cloud-init status
+status: done
+----
+
+This confirms DHCP scenario works correctly with proper interface naming.
+
