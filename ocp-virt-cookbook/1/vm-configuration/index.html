@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Virtual Machine Configuration :: OpenShift Virtualization cookbook</title>
+    <link rel="prev" href="../networking/index.html">
+    <link rel="next" href="../manifests/index.html">
+    <meta name="generator" content="Antora 3.1.3">
+    <link rel="stylesheet" href="../../../_/css/site.css">
+    <script>var uiRootPath = '../../../_'</script>
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://www.redhat.com" target="_blank"><img src="../../../_/img/redhat-logo.png" height="40px" alt="Red Hat"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="../../..">OpenShift Virtualization cookbook</a>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues" target="_blank">Report Issues</a>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="ocp-virt-cookbook" data-version="1">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="../index.html">OpenShift Virtualization cookbook</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../index.html">Home</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/index.html">Getting Started</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/index.html">Storage Configuration</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/index.html">Networking Configuration</a>
+  </li>
+  <li class="nav-item is-current-page" data-depth="2">
+    <a class="nav-link" href="index.html">Virtual Machine Configuration</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../manifests/index.html">Manifests Reference</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../LABENV/index.html">Lab Environment</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../appendix/glossary.html">Glossary</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">OpenShift Virtualization cookbook</span>
+    <span class="version">1</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <a class="title" href="../index.html">OpenShift Virtualization cookbook</a>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">1</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">OpenShift Virtualization cookbook</a></li>
+    <li><a href="../index.html">Home</a></li>
+    <li><a href="index.html">Virtual Machine Configuration</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">Virtual Machine Configuration</h1>
+<div class="sect1">
+<h2 id="_overview"><a class="anchor" href="#_overview"></a>Overview</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>This section covers virtual machine configuration in OpenShift Virtualization, focusing on cloud-init and network initialization patterns. Cloud-init is the standard tool for VM initialization and configuration.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_what_youll_learn"><a class="anchor" href="#_what_youll_learn"></a>What You&#8217;ll Learn</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Learn how to configure and customize virtual machines in OpenShift Virtualization:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Cloud-init basics and network configuration</p>
+</li>
+<li>
+<p>Static and dynamic IP address assignment</p>
+</li>
+<li>
+<p>Multiple network interface configuration</p>
+</li>
+<li>
+<p>Best practices for VM initialization</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_prerequisites"><a class="anchor" href="#_prerequisites"></a>Prerequisites</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Before working with VM configuration, ensure you have:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>OpenShift 4.17+ with OpenShift Virtualization operator installed</p>
+</li>
+<li>
+<p>Basic understanding of virtual machines and networking</p>
+</li>
+<li>
+<p>Familiarity with YAML syntax</p>
+</li>
+<li>
+<p>CLI tools installed: <code>oc</code>, <code>virtctl</code>, <code>kubectl</code></p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_topics"><a class="anchor" href="#_topics"></a>Topics</h2>
+<div class="sectionbody">
+<div class="dlist">
+<dl>
+<dt class="hdlist1"><a href="cloud-init-ip-configuration.html" class="xref page">Cloud-init IP Configuration</a></dt>
+<dd>
+<p>Configure static and dynamic IP addresses using cloud-init for virtual machines with single and multiple network interfaces.</p>
+</dd>
+<dt class="hdlist1"><a href="cloud-init-troubleshooting.html" class="xref page">Cloud-init Troubleshooting</a></dt>
+<dd>
+<p>Comprehensive troubleshooting guide for cloud-init IP configuration issues, including diagnostic commands and common problem solutions.</p>
+</dd>
+</dl>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_key_concepts"><a class="anchor" href="#_key_concepts"></a>Key Concepts</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_cloud_init"><a class="anchor" href="#_cloud_init"></a>Cloud-init</h3>
+<div class="paragraph">
+<p>Cloud-init is an industry-standard initialization tool that configures cloud instances during first boot. It supports:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Network configuration (networkData)</p>
+</li>
+<li>
+<p>User and SSH key setup (userData)</p>
+</li>
+<li>
+<p>Package installation</p>
+</li>
+<li>
+<p>Custom scripts and commands</p>
+</li>
+<li>
+<p>File creation and modification</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_network_interface_naming"><a class="anchor" href="#_network_interface_naming"></a>Network Interface Naming</h3>
+<div class="paragraph">
+<p>KubeVirt uses predictable network interface naming based on PCI slot positions:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Primary interface: <code>enp1s0</code></p>
+</li>
+<li>
+<p>Secondary interface: <code>enp2s0</code></p>
+</li>
+<li>
+<p>Additional interfaces: <code>enp3s0</code>, <code>enp4s0</code>, etc.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>This differs from traditional <code>eth0</code>, <code>eth1</code> naming found in older Linux distributions.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_vm_network_types"><a class="anchor" href="#_vm_network_types"></a>VM Network Types</h3>
+<div class="paragraph">
+<p>OpenShift Virtualization supports multiple network attachment methods:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Masquerade</strong>: Default pod network with NAT</p>
+</li>
+<li>
+<p><strong>Bridge</strong>: Direct bridge to secondary networks (VLANs, localnet)</p>
+</li>
+<li>
+<p><strong>SR-IOV</strong>: High-performance direct hardware access</p>
+</li>
+<li>
+<p><strong>Macvtap</strong>: Direct network attachment with MAC filtering</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_best_practices"><a class="anchor" href="#_best_practices"></a>Best Practices</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_configuration_management"><a class="anchor" href="#_configuration_management"></a>Configuration Management</h3>
+<div class="ulist">
+<ul>
+<li>
+<p>Use networkData for network-specific configuration</p>
+</li>
+<li>
+<p>Keep userData for general system initialization</p>
+</li>
+<li>
+<p>Test configurations in development before production</p>
+</li>
+<li>
+<p>Validate YAML syntax before deployment</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_network_design"><a class="anchor" href="#_network_design"></a>Network Design</h3>
+<div class="ulist">
+<ul>
+<li>
+<p>Use DHCP for ephemeral/development workloads</p>
+</li>
+<li>
+<p>Use static IPs for production services</p>
+</li>
+<li>
+<p>Only set default route on primary interface</p>
+</li>
+<li>
+<p>Document IP assignments and network topology</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_security"><a class="anchor" href="#_security"></a>Security</h3>
+<div class="ulist">
+<ul>
+<li>
+<p>Avoid hardcoding passwords in production</p>
+</li>
+<li>
+<p>Use SSH keys for authentication</p>
+</li>
+<li>
+<p>Implement network segmentation</p>
+</li>
+<li>
+<p>Apply least privilege principles</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_related_topics"><a class="anchor" href="#_related_topics"></a>Related Topics</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p><a href="../getting-started/index.html" class="xref page">Getting Started</a> - Initial setup and prerequisites</p>
+</li>
+<li>
+<p><a href="../storage/index.html" class="xref page">Storage Configuration</a> - Persistent storage for VMs</p>
+</li>
+<li>
+<p><a href="../networking/index.html" class="xref page">Networking Configuration</a> - Network infrastructure setup</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_additional_resources"><a class="anchor" href="#_additional_resources"></a>Additional Resources</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p><a href="https://docs.openshift.com/container-platform/latest/virt/about_virt/about-virt.html" target="_blank" rel="noopener">OpenShift Virtualization Documentation</a></p>
+</li>
+<li>
+<p><a href="https://cloudinit.readthedocs.io/" target="_blank" rel="noopener">Cloud-init Official Documentation</a></p>
+</li>
+<li>
+<p><a href="https://kubevirt.io/user-guide/" target="_blank" rel="noopener">KubeVirt User Guide</a></p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<nav class="pagination">
+  <span class="prev"><a href="../networking/index.html">Networking Configuration</a></span>
+  <span class="next"><a href="../manifests/index.html">Manifests Reference</a></span>
+</nav>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <img src="../../../_/img/rhl-logo-red.png" height="40px" alt="Red Hat"  href="https://redhat.com" >
+</footer><script id="site-script" src="../../../_/js/site.js" data-ui-root-path="../../../_"></script>
+<script async src="../../../_/js/vendor/highlight.js"></script>
+  </body>
+</html>

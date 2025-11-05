@@ -1,0 +1,1274 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Cloud-init IP Configuration Troubleshooting Guide :: OpenShift Virtualization cookbook</title>
+    <meta name="generator" content="Antora 3.1.3">
+    <link rel="stylesheet" href="../../../_/css/site.css">
+    <script>var uiRootPath = '../../../_'</script>
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://www.redhat.com" target="_blank"><img src="../../../_/img/redhat-logo.png" height="40px" alt="Red Hat"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="../../..">OpenShift Virtualization cookbook</a>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues" target="_blank">Report Issues</a>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="ocp-virt-cookbook" data-version="1">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="../index.html">OpenShift Virtualization cookbook</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../index.html">Home</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/index.html">Getting Started</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/index.html">Storage Configuration</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/index.html">Networking Configuration</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="index.html">Virtual Machine Configuration</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../manifests/index.html">Manifests Reference</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../LABENV/index.html">Lab Environment</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../appendix/glossary.html">Glossary</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">OpenShift Virtualization cookbook</span>
+    <span class="version">1</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <a class="title" href="../index.html">OpenShift Virtualization cookbook</a>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">1</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">OpenShift Virtualization cookbook</a></li>
+    <li><a href="cloud-init-troubleshooting.html">Cloud-init IP Configuration Troubleshooting Guide</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">Cloud-init IP Configuration Troubleshooting Guide</h1>
+<div id="preamble">
+<div class="sectionbody">
+<div class="paragraph">
+<p>This guide provides comprehensive troubleshooting steps, verification commands, and solutions for issues related to configuring IP addresses with cloud-init in OpenShift Virtualization.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_table_of_contents"><a class="anchor" href="#_table_of_contents"></a>Table of Contents</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p><a href="#quick-health-checks">Quick Health Checks</a></p>
+</li>
+<li>
+<p><a href="#debugging-cloud-init">Debugging Cloud-init</a></p>
+</li>
+<li>
+<p><a href="#common-issues-by-scenario">Common Issues by Scenario</a></p>
+</li>
+<li>
+<p><a href="#diagnostic-commands">Diagnostic Commands</a></p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_quick_health_checks"><a class="anchor" href="#_quick_health_checks"></a>Quick Health Checks</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_check_vm_status"><a class="anchor" href="#_check_vm_status"></a>Check VM Status</h3>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vm &lt;vm-name&gt; -n &lt;namespace&gt;
+oc get vmi &lt;vm-name&gt; -n &lt;namespace&gt;</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_check_vm_has_ip_address"><a class="anchor" href="#_check_vm_has_ip_address"></a>Check VM Has IP Address</h3>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vmi &lt;vm-name&gt; -n &lt;namespace&gt; -o jsonpath='{.status.interfaces[*].ipAddress}'</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_check_guest_agent_is_running"><a class="anchor" href="#_check_guest_agent_is_running"></a>Check Guest Agent is Running</h3>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vmi &lt;vm-name&gt; -n &lt;namespace&gt; -o jsonpath='{.status.guestOSInfo}'</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If empty, guest agent is not running (see <a href="#issue-1-guest-agent-not-running">Guest Agent Issues</a>).</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_debugging_cloud_init"><a class="anchor" href="#_debugging_cloud_init"></a>Debugging Cloud-init</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_access_vm_console"><a class="anchor" href="#_access_vm_console"></a>Access VM Console</h3>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">virtctl console &lt;vm-name&gt; -n &lt;namespace&gt;</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_check_cloud_init_status"><a class="anchor" href="#_check_cloud_init_status"></a>Check Cloud-init Status</h3>
+<div class="paragraph">
+<p>Inside VM:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Check cloud-init completion status
+cloud-init status
+
+# Expected output for success:
+# status: done
+
+# Check detailed status
+cloud-init status --long</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_check_cloud_init_logs"><a class="anchor" href="#_check_cloud_init_logs"></a>Check Cloud-init Logs</h3>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Main cloud-init log
+cat /var/log/cloud-init.log
+
+# Output log (shows command execution)
+cat /var/log/cloud-init-output.log
+
+# Check for errors
+grep -i error /var/log/cloud-init.log
+grep -i failed /var/log/cloud-init.log</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_view_applied_cloud_init_configuration"><a class="anchor" href="#_view_applied_cloud_init_configuration"></a>View Applied Cloud-init Configuration</h3>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># View userdata
+sudo cat /var/lib/cloud/instance/user-data.txt
+
+# View network config (if using networkData)
+sudo cat /var/lib/cloud/instance/network-config.txt
+
+# View cloud-init data
+sudo cat /var/lib/cloud/instance/cloud-config.txt</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_check_network_configuration"><a class="anchor" href="#_check_network_configuration"></a>Check Network Configuration</h3>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># View network interfaces
+ip addr show
+
+# View routing table
+ip route show
+
+# Check DNS configuration
+cat /etc/resolv.conf
+
+# For NetworkManager systems (Fedora, RHEL)
+nmcli device status
+nmcli connection show</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_test_connectivity"><a class="anchor" href="#_test_connectivity"></a>Test Connectivity</h3>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Test network connectivity
+ping -c 3 8.8.8.8
+
+# Test DNS resolution
+nslookup google.com
+
+# Test from pod network
+curl http://&lt;vm-ip&gt;</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_common_issues_by_scenario"><a class="anchor" href="#_common_issues_by_scenario"></a>Common Issues by Scenario</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_scenario_1_dhcp_configuration"><a class="anchor" href="#_scenario_1_dhcp_configuration"></a>Scenario 1: DHCP Configuration</h3>
+<div class="sect3">
+<h4 id="_issue_vm_not_getting_ip_via_dhcp"><a class="anchor" href="#_issue_vm_not_getting_ip_via_dhcp"></a>Issue: VM Not Getting IP via DHCP</h4>
+<div class="paragraph">
+<p><strong>Symptoms</strong>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">$ oc get vmi fedora-dhcp-vm -n vms -o jsonpath='{.status.interfaces[0].ipAddress}'
+# Returns empty or shows no IP</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Diagnosis</strong>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Access VM console
+virtctl console fedora-dhcp-vm -n vms
+
+# Check interface status
+ip addr show enp1s0
+
+# Check DHCP client
+journalctl -u NetworkManager | grep -i dhcp</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Common Causes</strong>:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>DHCP client not running</p>
+</li>
+<li>
+<p>Network interface down</p>
+</li>
+<li>
+<p>Cloud-init DHCP configuration error</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p><strong>Solutions</strong>:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Verify cloud-init DHCP config in VM definition:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">cloudInitNoCloud:
+  networkData: |
+    version: 2
+    ethernets:
+      enp1s0:
+        dhcp4: true</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Manually restart network interface:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">sudo nmcli connection down "Wired connection 1"
+sudo nmcli connection up "Wired connection 1"</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Check NetworkManager logs:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">sudo journalctl -u NetworkManager --since "5 minutes ago"</code></pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_issue_wrong_interface_name_in_cloud_init"><a class="anchor" href="#_issue_wrong_interface_name_in_cloud_init"></a>Issue: Wrong Interface Name in Cloud-init</h4>
+<div class="paragraph">
+<p><strong>Symptoms</strong>:
+Network configuration not applied, logs show "device eth0 not found".</p>
+</div>
+<div class="paragraph">
+<p><strong>Diagnosis</strong>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Inside VM - check actual interface names
+ip link show</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Common Causes</strong>:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Using generic names (<code>eth0</code>, <code>eth1</code>) instead of the interface names used by your guest OS</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p><strong>Solutions</strong>:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Check the actual interface names in your guest OS. Modern Linux distributions (RHEL 8+, Fedora, Ubuntu 16.04+) use predictable naming:</p>
+<div class="ulist">
+<ul>
+<li>
+<p>First interface: <code>enp1s0</code></p>
+</li>
+<li>
+<p>Second interface: <code>enp2s0</code></p>
+</li>
+<li>
+<p>Third interface: <code>enp3s0</code></p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>Update cloud-init networkData to use correct names:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">networkData: |
+  version: 2
+  ethernets:
+    enp1s0:  # Not eth0
+      dhcp4: true</code></pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_scenario_2_static_ip_configuration"><a class="anchor" href="#_scenario_2_static_ip_configuration"></a>Scenario 2: Static IP Configuration</h3>
+<div class="sect3">
+<h4 id="_issue_static_ip_not_applied"><a class="anchor" href="#_issue_static_ip_not_applied"></a>Issue: Static IP Not Applied</h4>
+<div class="paragraph">
+<p><strong>Symptoms</strong>:
+VM gets DHCP IP instead of configured static IP.</p>
+</div>
+<div class="paragraph">
+<p><strong>Diagnosis</strong>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Inside VM
+ip addr show enp1s0
+
+# Check cloud-init logs for errors
+grep -i "network" /var/log/cloud-init.log</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Common Causes</strong>:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Wrong interface name in networkData</p>
+</li>
+<li>
+<p>DHCP still enabled</p>
+</li>
+<li>
+<p>Syntax errors in networkData YAML</p>
+</li>
+<li>
+<p>cloud-init not processing networkData</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p><strong>Solutions</strong>:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Verify networkData syntax (indentation, YAML format):</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">networkData: |
+  version: 2
+  ethernets:
+    enp1s0:
+      dhcp4: false  # Disable DHCP
+      addresses:
+        - 192.168.1.100/24
+      routes:
+        - to: default
+          via: 192.168.1.1
+      nameservers:
+        addresses:
+          - 8.8.8.8
+          - 8.8.4.4</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Check for cloud-init errors:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">cloud-init status --long
+cat /var/log/cloud-init.log | grep -A 5 -B 5 "network"</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Manually apply network configuration:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">sudo nmcli connection modify "Wired connection 1" \
+  ipv4.method manual \
+  ipv4.addresses 192.168.1.100/24 \
+  ipv4.gateway 192.168.1.1 \
+  ipv4.dns "8.8.8.8 8.8.4.4"
+
+sudo nmcli connection up "Wired connection 1"</code></pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_issue_static_ip_applied_but_no_connectivity"><a class="anchor" href="#_issue_static_ip_applied_but_no_connectivity"></a>Issue: Static IP Applied But No Connectivity</h4>
+<div class="paragraph">
+<p><strong>Symptoms</strong>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Inside VM
+ip addr show enp1s0
+# Shows correct IP
+
+ping 192.168.1.1
+# Network unreachable</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Diagnosis</strong>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Check routing table
+ip route show
+
+# Check if gateway is reachable
+ping -c 1 192.168.1.1</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Common Causes</strong>:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Missing or wrong gateway</p>
+</li>
+<li>
+<p>Wrong subnet mask</p>
+</li>
+<li>
+<p>Physical network not configured for static IPs</p>
+</li>
+<li>
+<p>Switch port in wrong VLAN</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p><strong>Solutions</strong>:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Verify gateway in cloud-init configuration</p>
+</li>
+<li>
+<p>Check subnet mask matches network configuration</p>
+</li>
+<li>
+<p>Verify physical network allows static IPs on this subnet</p>
+</li>
+<li>
+<p>If using VLAN, ensure NAD and bridge mapping are correct</p>
+</li>
+</ol>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_scenario_3_multiple_network_interfaces"><a class="anchor" href="#_scenario_3_multiple_network_interfaces"></a>Scenario 3: Multiple Network Interfaces</h3>
+<div class="sect3">
+<h4 id="_issue_secondary_interface_not_configured"><a class="anchor" href="#_issue_secondary_interface_not_configured"></a>Issue: Secondary Interface Not Configured</h4>
+<div class="paragraph">
+<p><strong>Symptoms</strong>:
+Only primary interface has IP, secondary interface down or unconfigured.</p>
+</div>
+<div class="paragraph">
+<p><strong>Diagnosis</strong>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Inside VM
+ip addr show
+
+# Check NetworkManager connections
+nmcli connection show</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Common Causes</strong>:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Secondary interface not defined in networkData</p>
+</li>
+<li>
+<p>Wrong interface name for secondary interface</p>
+</li>
+<li>
+<p>Secondary network attachment not working</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p><strong>Solutions</strong>:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Verify VM has multiple network attachments:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">spec:
+  template:
+    spec:
+      networks:
+        - name: default
+          pod: {}
+        - name: secondary-net
+          multus:
+            networkName: my-nad</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Verify both interfaces in networkData:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">networkData: |
+  version: 2
+  ethernets:
+    enp1s0:
+      dhcp4: true
+    enp2s0:  # Secondary interface
+      dhcp4: false
+      addresses:
+        - 192.168.100.10/24</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Check NAD exists and is configured:</p>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get network-attachment-definition -n &lt;namespace&gt;
+oc describe network-attachment-definition &lt;nad-name&gt; -n &lt;namespace&gt;</code></pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_issue_default_route_conflict"><a class="anchor" href="#_issue_default_route_conflict"></a>Issue: Default Route Conflict</h4>
+<div class="paragraph">
+<p><strong>Symptoms</strong>:
+Both interfaces have default routes, causing routing issues.</p>
+</div>
+<div class="paragraph">
+<p><strong>Diagnosis</strong>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Inside VM
+ip route show
+
+# Will show multiple default routes
+# default via 10.128.0.1 dev enp1s0
+# default via 192.168.100.1 dev enp2s0</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Common Causes</strong>:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Both interfaces configured with default gateway</p>
+</li>
+<li>
+<p>DHCP adding default route on primary interface</p>
+</li>
+<li>
+<p>Static config adding default route on secondary interface</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p><strong>Solutions</strong>:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Remove default route from secondary interface in networkData:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">enp2s0:
+  dhcp4: false
+  addresses:
+    - 192.168.100.10/24
+  # No 'routes' section - no default gateway</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>If both need routes, use metrics to prioritize:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">enp1s0:
+  dhcp4: true
+  dhcp4-overrides:
+    route-metric: 100  # Lower is preferred
+
+enp2s0:
+  dhcp4: false
+  addresses:
+    - 192.168.100.10/24
+  routes:
+    - to: default
+      via: 192.168.100.1
+      metric: 200  # Higher = less preferred</code></pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_scenario_4_vlan_interface_configuration"><a class="anchor" href="#_scenario_4_vlan_interface_configuration"></a>Scenario 4: VLAN Interface Configuration</h3>
+<div class="sect3">
+<h4 id="_issue_vlan_interface_not_created"><a class="anchor" href="#_issue_vlan_interface_not_created"></a>Issue: VLAN Interface Not Created</h4>
+<div class="paragraph">
+<p><strong>Symptoms</strong>:
+VLAN interface (e.g., <code>enp2s0.100</code>) doesn&#8217;t exist.</p>
+</div>
+<div class="paragraph">
+<p><strong>Diagnosis</strong>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Inside VM
+ip link show
+
+# Check cloud-init logs
+grep -i vlan /var/log/cloud-init.log</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Common Causes</strong>:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>VLAN configuration syntax error in networkData</p>
+</li>
+<li>
+<p>Parent interface not up</p>
+</li>
+<li>
+<p>VLAN module not loaded</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p><strong>Solutions</strong>:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Verify VLAN configuration in networkData:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">networkData: |
+  version: 2
+  ethernets:
+    enp2s0: {}  # Parent interface must be defined
+  vlans:
+    vlan100:
+      id: 100
+      link: enp2s0
+      addresses:
+        - 192.168.100.10/24</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Manually create VLAN interface:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">sudo nmcli connection add type vlan \
+  con-name vlan100 \
+  ifname enp2s0.100 \
+  dev enp2s0 \
+  id 100 \
+  ip4 192.168.100.10/24</code></pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_issue_vlan_interface_has_no_connectivity"><a class="anchor" href="#_issue_vlan_interface_has_no_connectivity"></a>Issue: VLAN Interface Has No Connectivity</h4>
+<div class="paragraph">
+<p><strong>Symptoms</strong>:
+VLAN interface exists but cannot reach network.</p>
+</div>
+<div class="paragraph">
+<p><strong>Diagnosis</strong>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Check VLAN interface status
+ip addr show enp2s0.100
+
+# Check if traffic is tagged
+tcpdump -i enp2s0 -n vlan 100</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Common Causes</strong>:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Physical switch port not in trunk mode</p>
+</li>
+<li>
+<p>VLAN not allowed on switch trunk</p>
+</li>
+<li>
+<p>Wrong VLAN ID in configuration</p>
+</li>
+<li>
+<p>NAD not configured for VLAN</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p><strong>Solutions</strong>:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Verify switch port is in trunk mode and allows VLAN 100</p>
+</li>
+<li>
+<p>Verify NAD VLAN configuration:</p>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get network-attachment-definition &lt;nad-name&gt; -n &lt;namespace&gt; -o yaml</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Look for: <code>"vlan": 100</code></p>
+</div>
+</li>
+<li>
+<p>Verify OVN bridge mapping for localnet:</p>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get nncp -A</code></pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_scenario_5_ipv6_configuration"><a class="anchor" href="#_scenario_5_ipv6_configuration"></a>Scenario 5: IPv6 Configuration</h3>
+<div class="sect3">
+<h4 id="_issue_ipv6_address_not_applied"><a class="anchor" href="#_issue_ipv6_address_not_applied"></a>Issue: IPv6 Address Not Applied</h4>
+<div class="paragraph">
+<p><strong>Symptoms</strong>:
+Only IPv4 configured, no IPv6 address.</p>
+</div>
+<div class="paragraph">
+<p><strong>Diagnosis</strong>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Inside VM
+ip -6 addr show</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Common Causes</strong>:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>IPv6 not enabled in cloud-init</p>
+</li>
+<li>
+<p>IPv6 disabled in OS</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p><strong>Solutions</strong>:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Enable IPv6 in networkData:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">networkData: |
+  version: 2
+  ethernets:
+    enp1s0:
+      dhcp4: true
+      dhcp6: true
+      # Or static IPv6:
+      addresses:
+        - 2001:db8::10/64</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Check IPv6 is not disabled:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">cat /proc/sys/net/ipv6/conf/all/disable_ipv6
+# Should be 0 (enabled)</code></pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_scenario_6_dns_configuration"><a class="anchor" href="#_scenario_6_dns_configuration"></a>Scenario 6: DNS Configuration</h3>
+<div class="sect3">
+<h4 id="_issue_dns_not_working"><a class="anchor" href="#_issue_dns_not_working"></a>Issue: DNS Not Working</h4>
+<div class="paragraph">
+<p><strong>Symptoms</strong>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Inside VM
+ping 8.8.8.8
+# Works
+
+ping google.com
+# Unknown host</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Diagnosis</strong>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">cat /etc/resolv.conf
+
+# Check DNS resolution
+nslookup google.com</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Common Causes</strong>:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Nameservers not configured in cloud-init</p>
+</li>
+<li>
+<p>DHCP not providing DNS servers</p>
+</li>
+<li>
+<p><code>/etc/resolv.conf</code> empty or wrong</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p><strong>Solutions</strong>:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Add nameservers to networkData:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">networkData: |
+  version: 2
+  ethernets:
+    enp1s0:
+      dhcp4: false
+      addresses:
+        - 192.168.1.100/24
+      nameservers:
+        addresses:
+          - 8.8.8.8
+          - 8.8.4.4
+        search:
+          - example.com</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Manually configure DNS:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">echo "nameserver 8.8.8.8" | sudo tee /etc/resolv.conf</code></pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_diagnostic_commands"><a class="anchor" href="#_diagnostic_commands"></a>Diagnostic Commands</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_full_network_status_check"><a class="anchor" href="#_full_network_status_check"></a>Full Network Status Check</h3>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Inside VM - comprehensive network check
+echo "=== Interfaces ==="
+ip addr show
+
+echo "=== Routes ==="
+ip route show
+
+echo "=== DNS ==="
+cat /etc/resolv.conf
+
+echo "=== Cloud-init Status ==="
+cloud-init status --long
+
+echo "=== Cloud-init Network Config ==="
+sudo cat /var/lib/cloud/instance/network-config.txt
+
+echo "=== NetworkManager Connections ==="
+nmcli connection show
+
+echo "=== Connectivity Tests ==="
+ping -c 2 8.8.8.8 &amp;&amp; echo "IP connectivity: OK" || echo "IP connectivity: FAILED"
+nslookup google.com &amp;&amp; echo "DNS: OK" || echo "DNS: FAILED"</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_from_openshift_cluster"><a class="anchor" href="#_from_openshift_cluster"></a>From OpenShift Cluster</h3>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Check VM status
+oc get vm,vmi &lt;vm-name&gt; -n &lt;namespace&gt;
+
+# Check VM IP addresses
+oc get vmi &lt;vm-name&gt; -n &lt;namespace&gt; -o jsonpath='{.status.interfaces}' | jq
+
+# Check network attachments
+oc get vm &lt;vm-name&gt; -n &lt;namespace&gt; -o jsonpath='{.spec.template.spec.networks}' | jq
+
+# Check NADs
+oc get network-attachment-definition -n &lt;namespace&gt;
+
+# Check VM events
+oc get events -n &lt;namespace&gt; --field-selector involvedObject.name=&lt;vm-name&gt; --sort-by='.lastTimestamp'
+
+# Check VM definition cloud-init sections
+oc get vm &lt;vm-name&gt; -n &lt;namespace&gt; -o yaml | grep -A 50 cloudInitNoCloud</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_cloud_init_rerun_for_testing"><a class="anchor" href="#_cloud_init_rerun_for_testing"></a>Cloud-init Rerun (For Testing)</h3>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Inside VM - clean and rerun cloud-init (DESTRUCTIVE)
+sudo cloud-init clean --logs
+sudo cloud-init init
+sudo cloud-init modules --mode config
+sudo cloud-init modules --mode final
+
+# Check status
+cloud-init status --long</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_interface_naming_reference"><a class="anchor" href="#_interface_naming_reference"></a>Interface Naming Reference</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Modern Linux distributions in VMs use predictable interface names based on PCI slot positions:</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 25%;">
+<col style="width: 25%;">
+<col style="width: 50%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Network Attachment Order</th>
+<th class="tableblock halign-left valign-top">Interface Name</th>
+<th class="tableblock halign-left valign-top">Typical Usage</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1st (default pod network)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>enp1s0</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Primary network (DHCP)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">2nd (Multus/NAD)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>enp2s0</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Secondary network</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">3rd (Multus/NAD)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>enp3s0</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Third network</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">4th (Multus/NAD)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>enp4s0</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Fourth network</p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p><strong>Use the interface names as they appear in your guest OS. Modern Linux distributions (RHEL 8+, Fedora, Ubuntu 16.04+) use the enpXsY format shown above. Older distributions may still use eth0, eth1, etc.</strong></p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_cloud_init_version_differences"><a class="anchor" href="#_cloud_init_version_differences"></a>Cloud-init Version Differences</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_cloud_init_v1_vs_v2_network_config"><a class="anchor" href="#_cloud_init_v1_vs_v2_network_config"></a>cloud-init v1 vs v2 Network Config</h3>
+<div class="paragraph">
+<p><strong>Version 1</strong> (older, legacy):</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">networkData: |
+  version: 1
+  config:
+    - type: physical
+      name: eth0
+      subnets:
+        - type: dhcp</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Version 2</strong> (modern, recommended):</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">networkData: |
+  version: 2
+  ethernets:
+    enp1s0:
+      dhcp4: true</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Recommendation</strong>: Always use version 2 for new configurations.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_additional_resources"><a class="anchor" href="#_additional_resources"></a>Additional Resources</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p><a href="https://cloudinit.readthedocs.io/en/latest/reference/network-config.html" target="_blank" rel="noopener">Cloud-init Documentation - Network Configuration</a></p>
+</li>
+<li>
+<p><a href="https://netplan.io/examples/" target="_blank" rel="noopener">Netplan Configuration Examples</a></p>
+</li>
+<li>
+<p><a href="https://docs.openshift.com/container-platform/latest/virt/vm_networking/virt-about-vm-networking.html" target="_blank" rel="noopener">OpenShift Virtualization Networking</a></p>
+</li>
+<li>
+<p><a href="https://kubevirt.io/user-guide/virtual_machines/interfaces_and_networks/" target="_blank" rel="noopener">KubeVirt Network Configuration</a></p>
+</li>
+<li>
+<p><a href="../networking/ovs-bridge-verification.html" class="xref page">OVS Bridge Verification</a></p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_example_test_ocplab01_cluster"><a class="anchor" href="#_example_test_ocplab01_cluster"></a>Example Test: ocplab01 Cluster</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>From testing on the SNO cluster (ocplab01):</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">$ oc get vmi fedora-dhcp-vm -n cloud-init-test -o jsonpath='{.status.interfaces}' | jq
+[
+  {
+    "infoSource": "domain, guest-agent, multus-status",
+    "interfaceName": "eth0",
+    "ipAddress": "10.128.0.165",
+    "ipAddresses": [
+      "10.128.0.165",
+      "fd02::5e"
+    ],
+    "mac": "02:92:c2:00:00:05",
+    "name": "default",
+    "queueCount": 1
+  }
+]</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Note</strong>: The <code>interfaceName</code> field shows <code>eth0</code> in VMI status (internal KubeVirt naming), but inside the Fedora VM the interface is <code>enp1s0</code>. Always use the interface names as they appear in your guest OS for cloud-init configuration.</p>
+</div>
+<div class="paragraph">
+<p>Inside VM verification:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">[fedora@fedora ~]$ ip addr show enp1s0
+2: enp1s0: &lt;BROADCAST,MULTICAST,UP,LOWER_UP&gt; mtu 1400 qdisc fq_codel state UP group default qlen 1000
+    link/ether 02:92:c2:00:00:05 brd ff:ff:ff:ff:ff:ff
+    inet 10.128.0.165/23 brd 10.128.1.255 scope global dynamic noprefixroute enp1s0
+       valid_lft 86295sec preferred_lft 86295sec
+    inet6 fd02::5e/64 scope global dynamic noprefixroute
+       valid_lft 86296sec preferred_lft 14296sec</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Cloud-init status:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">[fedora@fedora ~]$ cloud-init status
+status: done</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This confirms DHCP scenario works correctly with proper interface naming.</p>
+</div>
+</div>
+</div>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <img src="../../../_/img/rhl-logo-red.png" height="40px" alt="Red Hat"  href="https://redhat.com" >
+</footer><script id="site-script" src="../../../_/js/site.js" data-ui-root-path="../../../_"></script>
+<script async src="../../../_/js/vendor/highlight.js"></script>
+  </body>
+</html>
