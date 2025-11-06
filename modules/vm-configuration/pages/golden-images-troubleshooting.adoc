@@ -1,0 +1,601 @@
+= Golden Images Troubleshooting Guide
+:navtitle: Golden Images Troubleshooting
+
+This guide provides comprehensive troubleshooting steps, verification commands, and solutions for issues related to creating and using custom OS images and golden images in OpenShift Virtualization.
+
+== Table of Contents
+* <<Quick Health Checks>>
+* <<Detailed Verification by Step>>
+* <<Common Issues and Solutions>>
+
+== Quick Health Checks
+
+=== Check Namespace
+[source,bash]
+----
+oc get namespace golden-images
+----
+
+Expected output:
+[source,text]
+----
+NAME             STATUS   AGE
+golden-images    Active   5m
+----
+
+=== Check All Resources
+[source,bash]
+----
+oc get all -n golden-images
+----
+
+=== Check VMs and VMIs
+[source,bash]
+----
+oc get vm,vmi -n golden-images
+----
+
+=== Check DataVolumes and PVCs
+[source,bash]
+----
+oc get dv,pvc -n golden-images
+----
+
+=== Check DataSources
+[source,bash]
+----
+oc get datasource -n golden-images
+----
+
+== Detailed Verification by Step
+
+=== Step 1: Verify Base VM Creation
+
+==== Check VM Status
+[source,bash]
+----
+oc get vm base-fedora-vm -n golden-images
+----
+
+Expected output:
+[source,text]
+----
+NAME             AGE   STATUS    READY
+base-fedora-vm   2m    Running   True
+----
+
+==== Check VMI Details
+[source,bash]
+----
+oc get vmi base-fedora-vm -n golden-images -o yaml
+----
+
+Look for:
+- `status.phase: Running`
+- `status.interfaces[].ipAddress` (VM has an IP)
+- `status.guestOSInfo.id: fedora` (Guest agent is running)
+
+Example:
+[source,yaml]
+----
+status:
+  guestOSInfo:
+    id: fedora
+    kernelRelease: 6.11.4-301.fc41.x86_64
+    kernelVersion: '#1 SMP PREEMPT_DYNAMIC Thu Oct 10 16:16:06 UTC 2024'
+    name: Fedora Linux
+    prettyName: Fedora Linux 41 (Cloud Edition)
+    version: '41'
+    versionId: '41'
+  interfaces:
+  - infoSource: domain, guest-agent, multus-status
+    interfaceName: eth0
+    ipAddress: 10.128.0.168
+    ipAddresses:
+    - 10.128.0.168
+    - fd02::76
+    mac: 02:92:c2:00:00:06
+    name: default
+    queueCount: 1
+  phase: Running
+----
+
+==== Check Base VM DataVolume
+[source,bash]
+----
+oc get dv base-fedora-vm-disk -n golden-images
+----
+
+Expected output:
+[source,text]
+----
+NAME                  PHASE       PROGRESS   RESTARTS   AGE
+base-fedora-vm-disk   Succeeded   100.0%                5m
+----
+
+==== Check PVC for Base VM
+[source,bash]
+----
+oc get pvc base-fedora-vm-disk -n golden-images
+----
+
+Expected output shows `Bound` status and correct storage class:
+[source,text]
+----
+NAME                  STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   AGE
+base-fedora-vm-disk   Bound    pvc-abc123...                              30Gi       RWO            lvms-vg1       5m
+----
+
+=== Step 2: Verify VM Customization
+
+==== Access VM Console
+[source,bash]
+----
+virtctl console base-fedora-vm -n golden-images
+----
+
+==== Check if Software is Installed
+Inside the VM:
+[source,bash]
+----
+# For nginx
+systemctl status nginx
+nginx -v
+
+# For custom configuration
+cat /etc/nginx/nginx.conf
+ls -la /usr/share/nginx/html/
+----
+
+==== Check Cloud-init Logs (if used)
+[source,bash]
+----
+cat /var/log/cloud-init.log
+cat /var/log/cloud-init-output.log
+----
+
+=== Step 3: Verify VM Shutdown
+
+==== Check VM is Stopped
+[source,bash]
+----
+oc get vm base-fedora-vm -n golden-images
+----
+
+Expected output:
+[source,text]
+----
+NAME             AGE   STATUS    READY
+base-fedora-vm   10m   Stopped   False
+----
+
+==== Verify No VMI Exists
+[source,bash]
+----
+oc get vmi base-fedora-vm -n golden-images 2>&1
+----
+
+Expected output:
+[source,text]
+----
+Error from server (NotFound): virtualmachineinstances.kubevirt.io "base-fedora-vm" not found
+----
+
+=== Step 4: Verify DataSource Creation
+
+==== Check DataSource
+[source,bash]
+----
+oc get datasource fedora-nginx-golden -n golden-images
+----
+
+Expected output:
+[source,text]
+----
+NAME                   AGE
+fedora-nginx-golden    1m
+----
+
+==== Check DataSource Details
+[source,bash]
+----
+oc get datasource fedora-nginx-golden -n golden-images -o yaml
+----
+
+Look for:
+[source,yaml]
+----
+spec:
+  source:
+    pvc:
+      name: base-fedora-vm-disk
+      namespace: golden-images
+----
+
+=== Step 5: Verify VMs Deployed from Golden Image
+
+==== Check Deployed VMs
+[source,bash]
+----
+oc get vm webserver-vm-1 webserver-vm-2 -n golden-images
+----
+
+Expected output:
+[source,text]
+----
+NAME              AGE   STATUS    READY
+webserver-vm-1    2m    Running   True
+webserver-vm-2    2m    Running   True
+----
+
+==== Check DataVolumes for Deployed VMs
+[source,bash]
+----
+oc get dv webserver-vm-1-disk webserver-vm-2-disk -n golden-images
+----
+
+Expected output:
+[source,text]
+----
+NAME                   PHASE       PROGRESS   RESTARTS   AGE
+webserver-vm-1-disk    Succeeded   100.0%                2m
+webserver-vm-2-disk    Succeeded   100.0%                2m
+----
+
+==== Verify VMs are Clones
+[source,bash]
+----
+oc get dv webserver-vm-1-disk -n golden-images -o jsonpath='{.spec.sourceRef}'
+----
+
+Expected output shows reference to DataSource:
+[source,json]
+----
+{"kind":"DataSource","name":"fedora-nginx-golden","namespace":"golden-images"}
+----
+
+==== Check VM Functionality
+Get VM IPs:
+[source,bash]
+----
+oc get vmi webserver-vm-1 webserver-vm-2 -n golden-images -o jsonpath='{range .items[*]}{.metadata.name}: {.status.interfaces[0].ipAddress}{"\n"}{end}'
+----
+
+Example output:
+[source,text]
+----
+webserver-vm-1: 10.128.0.169
+webserver-vm-2: 10.128.0.170
+----
+
+Test nginx from another pod:
+[source,bash]
+----
+oc run test-curl --image=curlimages/curl:latest --rm -it --restart=Never -- curl http://10.128.0.169
+----
+
+=== Step 6: Verify Resource Efficiency
+
+==== Check PVC Usage
+[source,bash]
+----
+oc get pvc -n golden-images
+----
+
+Look for multiple PVCs all sourced from the base VM disk, showing efficient cloning:
+[source,text]
+----
+NAME                   STATUS   VOLUME           CAPACITY   ACCESS MODES   STORAGECLASS   AGE
+base-fedora-vm-disk    Bound    pvc-abc123...    30Gi       RWO            lvms-vg1       15m
+webserver-vm-1-disk    Bound    pvc-def456...    30Gi       RWO            lvms-vg1       5m
+webserver-vm-2-disk    Bound    pvc-ghi789...    30Gi       RWO            lvms-vg1       5m
+----
+
+==== Check Actual Storage Usage (if using LVM)
+[source,bash]
+----
+# Get the LVM thin pool usage
+oc get lvmvolumegroup -n openshift-storage -o yaml | grep -A 10 status
+----
+
+== Common Issues and Solutions
+
+=== Issue 1: Base VM DataVolume Stuck in ImportInProgress
+
+**Symptoms**:
+[source,bash]
+----
+oc get dv base-fedora-vm-disk -n golden-images
+NAME                  PHASE              PROGRESS   AGE
+base-fedora-vm-disk   ImportInProgress   10%        10m
+----
+
+**Diagnosis**:
+[source,bash]
+----
+# Check CDI importer pod
+oc get pods -n golden-images | grep importer
+
+# Check importer logs
+oc logs -n golden-images <importer-pod-name>
+----
+
+**Common Causes**:
+- Source DataSource not available
+- Network issues downloading image
+- Insufficient storage space
+- Storage class issues
+
+**Solutions**:
+1. Verify source DataSource exists:
++
+[source,bash]
+----
+oc get datasource fedora -n openshift-virtualization-os-images
+----
+
+2. Check CDI operator is healthy:
++
+[source,bash]
+----
+oc get pods -n openshift-cnv | grep cdi
+----
+
+3. Check storage capacity:
++
+[source,bash]
+----
+oc get pvc -n golden-images
+oc get lvmvolumegroup -n openshift-storage
+----
+
+=== Issue 2: VM Will Not Start - Waiting for DataVolume
+
+**Symptoms**:
+[source,bash]
+----
+oc get vm base-fedora-vm -n golden-images
+NAME             AGE   STATUS                                    READY
+base-fedora-vm   5m    WaitingForVolumeBinding                   False
+----
+
+**Diagnosis**:
+[source,bash]
+----
+# Check DataVolume status
+oc get dv base-fedora-vm-disk -n golden-images
+
+# Check events
+oc get events -n golden-images --sort-by='.lastTimestamp' | grep -i error
+----
+
+**Common Causes**:
+- DataVolume in `PendingPopulation` or failed state
+- Storage class issues
+- PVC binding issues
+
+**Solutions**:
+1. If using `WaitForFirstConsumer`, this is normal - VM will start once DV is ready
+2. Check storage class exists and is properly configured:
++
+[source,bash]
+----
+oc get storageclass
+----
+
+3. Verify default storage class if not specified:
++
+[source,bash]
+----
+oc get storageclass -o jsonpath='{.items[?(@.metadata.annotations.storageclass\.kubernetes\.io/is-default-class=="true")].metadata.name}'
+----
+
+=== Issue 3: Guest Agent Not Running
+
+**Symptoms**:
+[source,bash]
+----
+oc get vmi base-fedora-vm -n golden-images -o jsonpath='{.status.guestOSInfo}'
+# Returns empty
+----
+
+**Diagnosis**:
+[source,bash]
+----
+# Access VM console
+virtctl console base-fedora-vm -n golden-images
+
+# Check if qemu-guest-agent is installed
+rpm -qa | grep qemu-guest-agent
+
+# Check service status
+systemctl status qemu-guest-agent
+----
+
+**Solutions**:
+1. Install guest agent:
++
+[source,bash]
+----
+sudo dnf install -y qemu-guest-agent
+sudo systemctl enable --now qemu-guest-agent
+----
+
+2. For cloud images, guest agent should be pre-installed. If not, the image may be corrupted.
+
+=== Issue 4: Deployed VMs Do Not Have Custom Software
+
+**Symptoms**:
+VM deployed from golden image does not have nginx or custom configuration.
+
+**Diagnosis**:
+[source,bash]
+----
+# Access the VM
+virtctl console webserver-vm-1 -n golden-images
+
+# Check for nginx
+which nginx
+systemctl status nginx
+----
+
+**Common Causes**:
+- Base VM was not customized before creating DataSource
+- DataSource references wrong PVC
+- VM cloning failed
+
+**Solutions**:
+1. Verify base VM has customizations:
++
+[source,bash]
+----
+virtctl console base-fedora-vm -n golden-images
+# Check manually for installed software
+----
+
+2. Verify DataSource references correct PVC:
++
+[source,bash]
+----
+oc get datasource fedora-nginx-golden -n golden-images -o jsonpath='{.spec.source}'
+----
++
+Should reference PVC `base-fedora-vm-disk`.
+
+3. Recreate DataSource with correct PVC reference if needed.
+
+=== Issue 5: DataSource References Wrong PVC
+
+**Symptoms**:
+VMs deployed from DataSource do not have expected customizations from base VM.
+
+**Diagnosis**:
+[source,bash]
+----
+oc get datasource fedora-nginx-golden -n golden-images -o yaml
+----
+
+Look at `spec.source.pvc.name` - should reference `base-fedora-vm-disk`.
+
+**Solutions**:
+1. Delete and recreate DataSource with correct PVC reference:
++
+[source,bash]
+----
+oc delete datasource fedora-nginx-golden -n golden-images
+oc create -f fedora-golden-datasource.yaml
+----
+
+=== Issue 6: Insufficient Storage Space
+
+**Symptoms**:
+[source,text]
+----
+Failed to create PVC: insufficient storage
+----
+
+**Diagnosis**:
+[source,bash]
+----
+# Check LVM volume group usage
+oc get lvmvolumegroup -n openshift-storage -o yaml
+
+# Check PVC requests vs available
+oc get pvc -n golden-images
+----
+
+**Solutions**:
+1. Clean up unused PVCs:
++
+[source,bash]
+----
+oc delete pvc <unused-pvc> -n golden-images
+----
+
+2. Expand LVM volume group (if using additional disks)
+
+3. Reduce requested storage size in VM/DataVolume specs
+
+=== Issue 7: VM Cloning is Slow
+
+**Symptoms**:
+DataVolume for deployed VM takes a long time to reach `Succeeded` phase.
+
+**Diagnosis**:
+[source,bash]
+----
+# Check DataVolume progress
+oc get dv webserver-vm-1-disk -n golden-images -w
+
+# Check CDI pod logs
+oc logs -n golden-images -l app=containerized-data-importer --tail=100
+----
+
+**Common Causes**:
+- Large disk size
+- Storage backend performance
+- Not using efficient cloning (e.g., not using DataSource)
+
+**Solutions**:
+1. Ensure using DataSource for efficient cloning:
++
+[source,yaml]
+----
+spec:
+  sourceRef:
+    kind: DataSource
+    name: fedora-nginx-golden
+----
+
+2. Use storage class that supports fast cloning (e.g., smart clones with LVM thin provisioning)
+
+3. Consider reducing disk size if VMs do not need large volumes
+
+== Diagnostic Commands Summary
+
+=== Full Resource Check
+[source,bash]
+----
+# Everything in namespace
+oc get all,dv,pvc,datasource -n golden-images
+
+# With more details
+oc get all,dv,pvc,datasource -n golden-images -o wide
+
+# Watch for changes
+oc get vm,vmi,dv -n golden-images -w
+----
+
+=== Logs and Events
+[source,bash]
+----
+# Recent events
+oc get events -n golden-images --sort-by='.lastTimestamp' | tail -20
+
+# VM events
+oc describe vm base-fedora-vm -n golden-images | tail -20
+
+# CDI operator logs
+oc logs -n openshift-cnv -l app=cdi-operator --tail=50
+----
+
+=== Storage Details
+[source,bash]
+----
+# PVC details
+oc describe pvc <pvc-name> -n golden-images
+
+# Storage class configuration
+oc get storageclass -o yaml
+
+# LVM status (if using LVM)
+oc get lvmvolumegroup,lvmvolumegroupnodestatus -n openshift-storage
+----
+
+== Additional Resources
+
+* link:https://docs.openshift.com/container-platform/latest/virt/about_virt/about-virt.html[OpenShift Virtualization Documentation,window=_blank]
+* link:https://kubevirt.io/user-guide/storage/disks_and_volumes/[KubeVirt User Guide - DataVolumes,window=_blank]
+* link:https://github.com/kubevirt/containerized-data-importer[Containerized Data Importer (CDI),window=_blank]
+* xref:storage:lvm-troubleshooting.adoc[LVM Storage Troubleshooting]
+
