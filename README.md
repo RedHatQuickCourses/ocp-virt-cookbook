@@ -1,49 +1,88 @@
-# OpenShift Virtualization Onboarding Kit
+# OpenShift Virtualization Cookbook
 
-A bite-size approach reference project for deploying virtualization workloads for those who are just starting with OpenShift.
+This cookbook provides bite-sized, practical tutorials for deploying and managing virtualization workloads on Red Hat OpenShift Virtualization. It serves as a complement to official OpenShift Virtualization training and documentation, offering hands-on guides with tested workflows, YAML manifests, and troubleshooting tips specifically designed for partner and customer engineers getting started with OpenShift Virtualization.
 
-**WARNING: This project DOES NOT replace the official OpenShift Virtualization training, which is highly recommended, nor the official documentation. Instead it is supposed to serve as a complement and a facilitator to partner and customer engineers just getting started.**
+## Creating Course Content
 
-## Prerequisites
+We use a system called Antora (https://antora.org) to publish courses. Antora expects the files and folders in a source repository to be arranged in a certain opinionated way to simplify the process of writing course content using asciidoc, and then converting the asciidoc source to HTML.
 
-- OpenShift 4.17+ cluster with OpenShift Virtualization operator
-- CLI tools: `oc`, `kubectl`, `virtctl` 
-- Optional: `kustomize`, `helm`, `ansible` depending on chosen approach
+Refer to the quick courses contributor guide for a detailed guide on how to work with Antora tooling and publish courses.
 
-### Quick Start Guides (WIP):
+## TL;DR Quickstart
 
-#### Setting up the basics:
+This section is intended as a quick start guide for technically experienced members. The contributor guide remains the canonical reference for the course content creation process with detailed explanations, commands, video demonstrations, and screenshots.
 
-- Setting UP Local Environment and Tools for OCP virtualization
-- [Virtctl basics](modules/getting-started/pages/virtctl-basics.adoc)
-- Accessing Windows 11 VM on Red Hat OCP via RDP
+### Pre-requisites
 
-#### Working with files, images and templates
+- You have a macOS or Linux workstation. Windows has not been tested, or supported. You can try using a WSL2 based environment to run these steps - YMMV!
+- You have a somewhat recent version of the Git client installed on your workstation
+- You have a somewhat new Node.js LTS release (Node.js 16+) installed locally.
+- Install a recent version of Visual Studio Code. Other editors with asciidoc editing support may work - YMMV, and you are on your own...
 
-- Transferring files to and from VMs
-- Creating and Using your own custom VM images
-- Shrinking large images
-- Converting images to qcow2 format
-- Creating your own custom template on OCP Virtualization
+### Antora Files and Folder Structure
 
-#### Configuring network for special purposes
+The _antora.yml_ file lists the chapters/modules/units that make up the course.
 
-- [Setting a Primary User Defined Network for your VMs](modules/networking/pages/udn-primary-networks.adoc)
-- Configuring secondary networks with layer 2 topology
-- [Setting up your VMs on the same network as your nodes using localnet topology](modules/networking/pages/localnet-secondary.adoc)
-- [Setting up your VMs on VLANs using localnet topology with NADs](modules/networking/pages/localnet-vlan.adoc)
-- [Setting up your VMs on VLANs using localnet topology with CUDN](modules/networking/pages/cudn-localnet-vlan.adoc)
-- [Setting up your VMs on VLANs, external or layer2-only networks \(Linux Bridges\)](modules/networking/pages/linux-bridges.adoc)
-- Setting VMs on Hardware Accelerated networks (SR-IOv)
-- Configuring IP addresses through cloud-init
+Each chapter entry points to a _nav.adoc_ file that lists the sections in that chapter. The home page of the course is rendered from _modules/ROOT/pages/index.adoc_.
 
-#### Configuring storage for OCP virtualization
+Each chapter lives in a separate folder under the _modules_ directory. All asciidoc source files live under the _modules/CHAPTER/pages_ folder.
 
-- Configuring a Default Storage Class for OCP Virtualization
-- Creating Storage Profiles for OCP virtualization
-- Using local storage with HostPath provisioner
-- Creating Storage Classes
-- [Using local Storage with LVM operator](modules/storage/pages/lvm-operator.adoc)
+To create a new chapter in the course, create a new folder under _modules_.
+
+To add a new section under a chapter create an entry in the _modules/CHAPTER/nav.adoc_ file and then create the asciidoc file in the _modules/CHAPTER/pages_ folder.
+
+### Steps
+
+1. Clone or fork the course repository.
+
+```
+$ git clone git@github.com:RedHatQuickCourses/ocp-virt-cookbook.git
+```
+
+2. Install the npm dependencies for the course tooling.
+
+```
+$ cd ocp-virt-cookbook
+$ npm install
+```
+
+3. Start the asciidoc to HTML compiler in the background. This command watches for changes to the asciidoc source content in the **modules** folder and automatically re-generates the HTML content.
+
+```
+$ npm run watch:adoc
+```
+
+4. Start a local web server to serve the generated HTML files. Navigate to the URL printed by this command to preview the generated HTML content in a web browser.
+
+```
+$ npm run serve
+```
+
+5. Before you make any content changes, create a local Git branch based on the **main** branch. As a good practice, prefix the branch name with your GitHub ID. Use a suitable branch naming scheme that reflects the content you are creating or changing.
+
+```
+$ git checkout -b username/add-tutorial-xyz
+```
+
+6. Make your changes to the asciidoc files. Preview the generated HTML and verify that there are no rendering errors. Commit your changes to the local Git branch and push the branch to GitHub.
+
+```
+$ git add .
+$ git commit -m "Add tutorial for XYZ feature"
+$ git push -u origin username/add-tutorial-xyz
+```
+
+7. Create a GitHub pull request (PR) for your changes using the GitHub web UI. For forks, create a PR that merges your forked changes into the `main` branch of this repository.
+8. Request a review of the PR from your technical peers and/or a member of the PTL team.
+9. Make any changes requested by the reviewer in the **same** branch as the PR, and then commit and push your changes to GitHub. If other team members have made changes to the PR, then do not forget to do a **git pull** before committing your changes.
+10. Once reviewer(s) approve your PR, you should merge it into the **main** branch.
+11. Wait for a few minutes while the automated GitHub action publishes your changes to the production GitHub pages website.
+12. Verify that your changes have been published to the production GitHub pages website at https://redhatquickcourses.github.io/ocp-virt-cookbook
+
+## Problems and Feedback
+
+If you run into any issues, report bugs/suggestions/improvements about this course here - https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues
 
 ## License
+
 This project is licensed under the MIT License - see the LICENSE file for details.
