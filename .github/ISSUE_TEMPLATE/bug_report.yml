@@ -1,0 +1,66 @@
+name: Bug Report
+description: Report a technical error, broken link, or incorrect information in the cookbook
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug! Please fill out the form below.
+
+  - type: dropdown
+    id: tutorial
+    attributes:
+      label: Which tutorial/page has the issue?
+      description: Select the affected section
+      options:
+        - Getting Started
+        - Storage Configuration
+        - Networking Configuration
+        - Virtual Machine Configuration
+        - Manifests Reference
+        - Other/Multiple
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug Description
+      description: Clear description of what's wrong
+      placeholder: |
+        Example: The command on line 45 produces an error...
+        Example: The link to OpenShift docs is broken...
+        Example: The YAML manifest is missing the 'namespace' field...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      description: What should happen instead?
+      placeholder: The command should create the VM successfully...
+    validations:
+      required: false
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment (if applicable)
+      description: OpenShift version, storage class, etc.
+      placeholder: |
+        - OpenShift Version: 4.20
+        - OpenShift Virtualization Version: 4.20
+        - Storage: LVM
+    validations:
+      required: false
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional Context
+      description: Screenshots, error messages, or other relevant information
+    validations:
+      required: false
+
