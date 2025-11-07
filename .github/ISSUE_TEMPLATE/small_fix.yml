@@ -1,0 +1,57 @@
+name: Small Fix or Typo
+description: Quick fix for typos, formatting, or minor improvements
+title: "[Fix]: "
+labels: ["documentation", "good first issue"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping improve the cookbook!
+        
+        **For very small changes (typos, formatting), feel free to submit a PR directly without creating an issue.**
+
+  - type: dropdown
+    id: type
+    attributes:
+      label: Type of Fix
+      description: What needs to be fixed?
+      options:
+        - Typo/spelling
+        - Grammar/language
+        - Formatting
+        - Broken link
+        - Code formatting
+        - YAML syntax
+        - Other minor fix
+    validations:
+      required: true
+
+  - type: input
+    id: location
+    attributes:
+      label: Location
+      description: File path or page title where the issue is
+      placeholder: "modules/networking/pages/localnet-vlan.adoc"
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: What needs to be fixed?
+      description: Describe the fix needed
+      placeholder: |
+        Line 45: "virutal" should be "virtual"
+        The command is missing a closing bracket
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: submit_pr
+    attributes:
+      label: Would you like to submit a PR?
+      description: You can fix this yourself!
+      options:
+        - label: Yes, I'll submit a PR for this fix
+        - label: No, I'm just reporting it
+

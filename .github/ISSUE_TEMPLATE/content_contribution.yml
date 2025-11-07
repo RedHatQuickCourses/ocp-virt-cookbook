@@ -1,0 +1,96 @@
+name: Content Contribution
+description: I want to contribute a new tutorial or article
+title: "[Content]: "
+labels: ["content", "good first issue"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Awesome! We appreciate your willingness to contribute content.
+        
+        **Note:** For small fixes (typos, formatting), you can skip this and submit a PR directly.
+
+  - type: dropdown
+    id: category
+    attributes:
+      label: Content Category
+      description: Where does this content belong?
+      options:
+        - Getting Started
+        - Storage Configuration
+        - Networking Configuration
+        - Virtual Machine Configuration
+        - Manifests Reference
+        - Troubleshooting
+        - New category
+    validations:
+      required: true
+
+  - type: textarea
+    id: title
+    attributes:
+      label: Tutorial/Article Title
+      description: Proposed title for your content
+      placeholder: "Example: Configuring SR-IOV Networks for High-Performance VMs"
+    validations:
+      required: true
+
+  - type: textarea
+    id: outline
+    attributes:
+      label: Content Outline
+      description: High-level overview of what you'll cover
+      placeholder: |
+        ## Overview
+        Brief introduction
+        
+        ## Prerequisites
+        - Requirement 1
+        - Requirement 2
+        
+        ## Steps
+        1. Configure SR-IOV operator
+        2. Create network policy
+        3. Attach to VM
+        
+        ## Verification
+        How to verify it works
+        
+        ## Troubleshooting
+        Common issues
+    validations:
+      required: true
+
+  - type: dropdown
+    id: testing
+    attributes:
+      label: Have you tested this on a live cluster?
+      description: Tested content is preferred
+      options:
+        - "Yes - I have tested this"
+        - "No - This is theoretical/documentation-based"
+        - "Partially tested"
+    validations:
+      required: true
+
+  - type: textarea
+    id: timeline
+    attributes:
+      label: Estimated Timeline
+      description: When can you submit this content?
+      placeholder: "I can submit a PR within 2 weeks"
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: format
+    attributes:
+      label: Content Format Checklist
+      description: Please confirm you'll follow these guidelines
+      options:
+        - label: I will write in AsciiDoc format
+        - label: I will include complete YAML manifests (not partial snippets)
+        - label: I will include verification/testing steps
+        - label: I will follow the existing documentation style
+        - label: I have read the README contributor guidelines
+
