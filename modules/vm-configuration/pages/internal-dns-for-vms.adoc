@@ -1,0 +1,424 @@
+= Internal DNS Resolution for Virtual Machines
+:navtitle: Internal DNS for VMs
+
+== Overview
+
+This tutorial demonstrates how to make virtual machines discoverable via stable DNS names for internal cluster communication in OpenShift Virtualization. You will learn how Kubernetes Services enable DNS-based service discovery for VMs, allowing Pod-to-VM and VM-to-VM communication without hardcoded IP addresses.
+
+== What You Will Learn
+
+* How to expose a VM via a Kubernetes Service
+* How to test DNS resolution for VMs
+* How DNS queries are resolved for VMs in OpenShift Virtualization
+
+== Prerequisites
+
+* OpenShift 4.17+ with OpenShift Virtualization operator installed
+* CLI tools installed: `oc`, `virtctl`
+* Basic understanding of Kubernetes Services and DNS
+
+== Part 1: Deploy, Expose, and Test
+
+=== Step 1: Create a Namespace
+
+Create a dedicated namespace for this tutorial:
+
+[source,bash]
+----
+oc new-project myapp
+----
+
+=== Step 2: Deploy a Fedora VM
+
+Deploy a Fedora VM:
+
+[source,bash]
+----
+oc apply -f - <<EOF
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: fedora-app-vm
+  namespace: myapp
+  labels:
+    app: myapp
+spec:
+  runStrategy: Always
+  dataVolumeTemplates:
+    - metadata:
+        name: fedora-app-vm-volume
+      spec:
+        sourceRef:
+          kind: DataSource
+          name: fedora
+          namespace: openshift-virtualization-os-images
+        storage:
+          resources:
+            requests:
+              storage: 30Gi
+  template:
+    metadata:
+      labels:
+        kubevirt.io/domain: fedora-app-vm
+        app: myapp
+    spec:
+      domain:
+        devices:
+          disks:
+            - disk:
+                bus: virtio
+              name: rootdisk
+            - disk:
+                bus: virtio
+              name: cloudinitdisk
+          interfaces:
+            - name: default
+              masquerade: {}
+        resources:
+          requests:
+            memory: 2Gi
+      networks:
+        - name: default
+          pod: {}
+      volumes:
+        - dataVolume:
+            name: fedora-app-vm-volume
+          name: rootdisk
+        - cloudInitNoCloud:
+            userData: |-
+              #cloud-config
+              user: fedora
+              password: fedora
+              chpasswd: { expire: false }
+              ssh_pwauth: true
+          name: cloudinitdisk
+EOF
+----
+
+Wait for the VM to be running:
+
+[source,bash]
+----
+watch 'oc get vm,vmi,dv -n myapp'
+----
+
+Wait until the VM shows `Running` and `Ready: True`, then press `Ctrl+C`.
+
+=== Step 3: Create a Service for the VM
+
+Create a headless Service that targets the VM:
+
+[source,bash]
+----
+oc apply -f - <<EOF
+apiVersion: v1
+kind: Service
+metadata:
+  name: myapp-service
+  namespace: myapp
+spec:
+  clusterIP: None
+  selector:
+    kubevirt.io/domain: fedora-app-vm
+  ports:
+    - name: ssh
+      protocol: TCP
+      port: 22
+      targetPort: 22
+EOF
+----
+
+Verify the Service and its EndpointSlice:
+
+[source,bash]
+----
+oc get svc myapp-service -n myapp
+oc get endpointslice -n myapp -l kubernetes.io/service-name=myapp-service
+----
+
+Expected output:
+
+The Service should show `TYPE: ClusterIP` with `CLUSTER-IP: None` (headless service).
+
+The EndpointSlice should show the VM's pod IP address in the ENDPOINTS column.
+
+=== Step 4: Test DNS Resolution and Connectivity
+
+Create a debug pod to test DNS resolution and connectivity:
+
+[source,bash]
+----
+oc apply -f - <<EOF
+apiVersion: v1
+kind: Pod
+metadata:
+  name: debug-dns
+  namespace: myapp
+spec:
+  containers:
+  - name: debug
+    image: registry.access.redhat.com/ubi9/ubi
+    command: ["sleep", "3600"]
+    securityContext:
+      allowPrivilegeEscalation: false
+      runAsNonRoot: true
+      runAsUser: 1000
+      capabilities:
+        drop:
+        - ALL
+      seccompProfile:
+        type: RuntimeDefault
+  restartPolicy: Never
+EOF
+
+# Wait for pod to be ready
+oc wait --for=condition=Ready pod/debug-dns -n myapp --timeout=60s
+
+# Test DNS resolution
+oc exec -n myapp debug-dns -- getent hosts myapp-service.myapp.svc.cluster.local
+
+# Clean up
+oc delete pod debug-dns -n myapp
+----
+
+Expected result:
+
+* DNS resolution returns the VM's pod IP address (e.g., `10.128.0.169 myapp-service.myapp.svc.cluster.local`)
+
+This confirms the Service DNS name resolves correctly to the VM's IP address.
+
+== Part 2: Understanding How This Works
+
+=== DNS Resolution Flow
+
+When a pod or VM queries a Service by its DNS name, the following flow occurs:
+
+[source,text]
+----
+┌───────────────────────────────────────────────────────────────┐
+│ OpenShift Cluster                                             │
+│                                                               │
+│  [Client VM/Pod]                                              │
+│         │                                                     │
+│         │ 1. DNS Query: myapp-service.myapp.svc...            │
+│         │                                                     │
+│         ↓                                                     │
+│  [/etc/resolv.conf]                                           │
+│   nameserver 172.30.0.10                                      │
+│   search myapp.svc.cluster.local svc.cluster.local            │
+│         │                                                     │
+│         │ 2. Send query to DNS server                         │
+│         ↓                                                     │
+│  ┌──────────────┐                                             │
+│  │   CoreDNS    │                                             │
+│  │ 172.30.0.10  │                                             │
+│  └──────┬───────┘                                             │
+│         │                                                     │
+│         │ 3. Lookup Service record                            │
+│         ↓                                                     │
+│  ┌──────────────────────────────────────────────┐             │
+│  │ Service: myapp-service                       │             │
+│  │ Type: Headless                               │             │
+│  │ Selector: kubevirt.io/domain=fedora-app-vm   │             │
+│  └──────┬───────────────────────────────────────┘             │
+│         │                                                     │
+│         │ 4. Return VM Pod IP                                 │
+│         ↓                                                     │
+│  [Client receives: 10.128.2.45]                               │
+│         │                                                     │
+│         │ 5. Connect to VM                                    │
+│         ↓                                                     │
+│  ┌──────────────────────┐                                     │
+│  │  fedora-app-vm       │                                     │
+│  │  IP: 10.128.2.45     │                                     │
+│  └──────────────────────┘                                     │
+│                                                               │
+└───────────────────────────────────────────────────────────────┘
+----
+
+=== Step-by-Step Explanation
+
+**Step 1: DNS Query Initiated**
+
+A client (another VM or pod) needs to connect to `myapp-service.myapp.svc.cluster.local`. It initiates a DNS query.
+
+**Step 2: Query Sent to CoreDNS**
+
+The client reads its `/etc/resolv.conf` file, which points to the cluster DNS service (typically `172.30.0.10`). The DNS query is sent to CoreDNS.
+
+**Step 3: CoreDNS Looks Up Service Record**
+
+CoreDNS maintains a database of all Kubernetes Services in the cluster. It looks up the Service named `myapp-service` in the `myapp` namespace.
+
+**Step 4: Service Returns VM Pod IP**
+
+Because the Service is headless (`clusterIP: None`), CoreDNS returns the actual IP address of the VM's pod from the EndpointSlice. For a regular ClusterIP Service, it would return the Service's virtual IP instead.
+
+**Step 5: Connection Established**
+
+The client receives the IP address and establishes a direct connection to the VM.
+
+=== Key Takeaways
+
+* **Services are required for DNS**: Virtual machines are not automatically registered in CoreDNS. Only Kubernetes Services create DNS records.
+
+* **VM name is not a DNS name**: The VM's `metadata.name` is a Kubernetes resource identifier, not a DNS name. It cannot be used for network access.
+
+* **Service name becomes DNS name**: The Service's `metadata.name` is what gets registered in CoreDNS as `<service-name>.<namespace>.svc.cluster.local`.
+
+* **Headless services return VM IPs**: A headless Service (`clusterIP: None`) returns the VM's pod IP directly, enabling direct VM-to-VM communication.
+
+* **Regular services provide load balancing**: A regular ClusterIP Service provides a stable virtual IP and can distribute traffic among multiple VMs.
+
+* **Search domains enable short names**: The `search` domains in `/etc/resolv.conf` allow using short names like `myapp-service` instead of the full FQDN when accessing Services in the same namespace.
+
+== Part 3: Reference
+
+=== Verification Commands
+
+**Check Service and EndpointSlice:**
+
+[source,bash]
+----
+# View Service details
+oc get svc myapp-service -n myapp
+
+# Check EndpointSlice (should show VM pod IP)
+oc get endpointslice -n myapp -l kubernetes.io/service-name=myapp-service
+
+# Describe service for full details
+oc describe svc myapp-service -n myapp
+----
+
+**Test DNS Resolution and Connectivity:**
+
+[source,bash]
+----
+# Create debug pod (if not already exists)
+oc apply -f - <<EOF
+apiVersion: v1
+kind: Pod
+metadata:
+  name: debug-dns
+  namespace: myapp
+spec:
+  containers:
+  - name: debug
+    image: registry.access.redhat.com/ubi9/ubi
+    command: ["sleep", "3600"]
+    securityContext:
+      allowPrivilegeEscalation: false
+      runAsNonRoot: true
+      runAsUser: 1000
+      capabilities:
+        drop:
+        - ALL
+      seccompProfile:
+        type: RuntimeDefault
+  restartPolicy: Never
+EOF
+
+# Wait for pod to be ready
+oc wait --for=condition=Ready pod/debug-dns -n myapp --timeout=60s
+
+# Test DNS resolution
+oc exec -n myapp debug-dns -- getent hosts myapp-service.myapp.svc.cluster.local
+
+# Clean up when done
+oc delete pod debug-dns -n myapp
+----
+
+**Check VM Labels:**
+
+[source,bash]
+----
+# Verify VM labels match Service selector
+oc get vm fedora-app-vm -n myapp -o jsonpath='{.metadata.labels}'
+oc get svc myapp-service -n myapp -o jsonpath='{.spec.selector}'
+----
+
+=== Common Issues
+
+**Issue: DNS resolution returns no results**
+
+**Diagnosis:**
+
+[source,bash]
+----
+oc get svc myapp-service -n myapp
+oc get endpointslice -n myapp -l kubernetes.io/service-name=myapp-service
+----
+
+**Common causes:**
+
+* Service selector does not match VM labels
+* VM is not running (no EndpointSlice entries)
+* Wrong namespace
+
+**Solutions:**
+
+1. Verify Service selector matches VM's `kubevirt.io/domain` label exactly
+2. Ensure VM is running: `oc get vmi -n myapp`
+3. Check that both Service and VM are in the same namespace
+
+**Issue: Cross-namespace DNS fails**
+
+**Diagnosis:**
+
+[source,bash]
+----
+# Create debug pod in different namespace
+oc new-project test-namespace 2>/dev/null || true
+
+oc apply -f - <<EOF
+apiVersion: v1
+kind: Pod
+metadata:
+  name: debug-cross-ns
+  namespace: test-namespace
+spec:
+  containers:
+  - name: debug
+    image: registry.access.redhat.com/ubi9/ubi
+    command: ["sleep", "300"]
+    securityContext:
+      allowPrivilegeEscalation: false
+      runAsNonRoot: true
+      runAsUser: 1000
+      capabilities:
+        drop:
+        - ALL
+      seccompProfile:
+        type: RuntimeDefault
+  restartPolicy: Never
+EOF
+
+# Wait and test
+oc wait --for=condition=Ready pod/debug-cross-ns -n test-namespace --timeout=60s
+oc exec -n test-namespace debug-cross-ns -- \
+  getent hosts myapp-service.myapp.svc.cluster.local
+
+# Clean up
+oc delete pod debug-cross-ns -n test-namespace
+----
+
+**Common causes:**
+
+* Using short name instead of FQDN
+* Network policy blocking cross-namespace traffic
+
+**Solutions:**
+
+1. Always use FQDN for cross-namespace: `<service>.<namespace>.svc.cluster.local`
+2. Check for restrictive NetworkPolicies
+
+=== Additional Resources
+
+* link:https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/[Kubernetes DNS for Services and Pods,window=_blank]
+* link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/virtualization/networking#virt-accessing-vm-internal-fqdn[Accessing a VM by using the internal FQDN - OpenShift Virtualization,window=_blank]
+* link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/virtualization/networking#virt-accessing-vm-secondary-network-fqdn[Accessing a VM on a secondary network by using the cluster FQDN - OpenShift Virtualization,window=_blank]
+
+== See Also
+
+* xref:cloud-init-ip-configuration.adoc[Cloud-init IP Configuration]
+* xref:remote-access-linux-vms.adoc[Remote Access to Linux VMs]
