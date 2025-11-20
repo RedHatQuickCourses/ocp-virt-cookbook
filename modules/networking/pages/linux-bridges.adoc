@@ -1,4 +1,5 @@
-== Adding a Bridge as a Secondary Network Adapter
+= Adding a Bridge as a Secondary Network Adapter
+:navtitle: Linux Bridges
 
 This quick-guide describes how to add a secondary Linux bridge adapter to a VM.
 A Linux bridge acts as a network switch between pods running on the same node/host machine.
@@ -26,12 +27,12 @@ The process is broken down into the following steps:
 ** <<vm_nic_gui_prcoedure,OpenShift console procedure to configure the VM NIC>>
 ** <<vm_nic_cli_procedure,CLI procedure to configure the VM NIC>>
 
-=== Install the Kubernetes NMState Operator [[install_nmstate_operator]]
+== Install the Kubernetes NMState Operator [[install_nmstate_operator]]
 This operator is required to configure the Node Network Configuration Policy (NNCP) objects used to create new bridge network adapters on each node.
 The NNCP actually creates the bridge interface on all (or specific) nodes/hosts in the cluster, which of course can be filtered using labels.
 The bridge interface must exist on the nodes/hosts that the VMs are running on, before you can attach a secondary NIC to a pod/VM.
 
-==== Procedure using the OpenShift console: [[nmstate_operator_gui_procedure]]
+=== Procedure using the OpenShift console: [[nmstate_operator_gui_procedure]]
 Login to the OpenShift admin console as any user with cluster-admin privileges (such as the default `kubeadmin` account).
 
 On the navigation menu (left side), expand *Operators* then select *OperatorHub*.
@@ -53,7 +54,7 @@ NOTE: On later versions of OpenShift, you may instead be logged out of the OpenS
 From the navigation menu, expand *Networking* and check for the *NodeNetworkConfigurationPolicy* and *NodeNetworkState* items.
 These should both exist before proceeding with <<create_linux_bridge_nncp,creating  NodeNetworkConfigurationPolicy (NNCP)>>.
 
-==== Procedure using the CLI: [[nmstate_operator_cli_procedure]]
+=== Procedure using the CLI: [[nmstate_operator_cli_procedure]]
 Before proceeding, authenticate to your OpenShift cluster's API as a cluster-admin.
 
 Create the `openshift-nmstate` namespace:
@@ -107,17 +108,17 @@ NOTE: `nmstate` objects are cluster scoped, so a namespace is not required. Only
 The `nmstate` object will trigger the NMState operator to install the `NodeNetworkConfigurationPolicy` and `NodeNetworkState` APIs (CRDs).
 Once these APIs are available, proceed with <<create_linux_bridge_nncp,creating a linux bridge network device>>.
 
-=== Create a Linux Bridge NodeNetworkConfigurationPolicy (NNCP) [[create_linux_bridge_nncp]]
+== Create a Linux Bridge NodeNetworkConfigurationPolicy (NNCP) [[create_linux_bridge_nncp]]
 The first step is to define the Linux bridge on the cluster nodes using a NodeNetworkConfigurationPolicy (NNCP).
 NNCP objects are cluster-scoped, so they do not exist in a namespace.
 You can, however control which node(s)/host(s) to which the NNCP applies using key/value labels.
 
 NOTE: If you skip the NNCP step and try to boot a VM with a secondary bridge adapter, it will fail to start.
 
-==== Prerequisites: [[create_nncp_prereqs]]
+=== Prerequisites: [[create_nncp_prereqs]]
 You must have first installed the Kubernetes NMState Operator and created a `nmstate` CR after installation.
 
-==== Procedure using the OpenShift console [[create_nncp_gui_procedure]]
+=== Procedure using the OpenShift console [[create_nncp_gui_procedure]]
 To create a NodeNetworkConfigurationPolicy, make sure you're still logged into the OpenShift admin console as a cluster admin before continuing on.
 
 From the console navigation menu (left pane), click *Networking* > *NodeNetworkConfigurationPolicy*.
@@ -141,7 +142,7 @@ NOTE: As with `nmstate` objects, `nncp` objects are cluster-scoped, so the names
 
 Once the NNCP is created, proceed with <<create_net_attach_def,creating a network attachment definition>>.
 
-==== Procedure using the CLI: [[create_nncp_cli_procedure]]
+=== Procedure using the CLI: [[create_nncp_cli_procedure]]
 Create a NodeNetworkConfigurationPolicy manifest, choosing from either a static, dhcp, or layer2-only (link-level) configuration for the bridge interface.
 
 Launch a new/empty buffer in your favorite text editor, and name the file `lnbr0-policy.nncp.yaml`.
@@ -259,17 +260,17 @@ NOTE: As with `nmstate` objects, `nncp` objects are cluster-scoped, so the names
 Once the existence of the Linux bridge interface is confirmed on the node(s), proceed with <<create_net_attach_def,creating a network attachment definition>>.
 
 
-=== Creating a Linux Bridge Network Attachment Definition (NAD) [[create_net_attach_def]]
+== Creating a Linux Bridge Network Attachment Definition (NAD) [[create_net_attach_def]]
 The next step is to create a Network Attachment Definition to provides Layer 2 networking to your pods/VMs.
 The NAD is what allows pods/VMs within a specific project/namespace to connect to a secondary network.
 
-==== Prerequisites [[create_nad_prereqs]]
+=== Prerequisites [[create_nad_prereqs]]
 While not strictly required to create a network attachment definition, a NNCP defining the bridge interface must exist on the cluster before you attach a pod/VM to a bridge network. 
 Neglecting to do so will prevent any VM with a bridge-based NIC from booting.
 
 NOTE: A namespace containing VMs must either exist or be created before proceeding.
 
-==== Procedure using the CLI: [[create_nad_cli_procedure]]
+=== Procedure using the CLI: [[create_nad_cli_procedure]]
 It is necessary to change to the project/namespace of the VMs before proceeding (replace `bridge-demo` with the namespace for where the VMs reside):
 
 ----
@@ -334,7 +335,7 @@ oc get network-attachment-definition lnbr0-nad
 
 With two of the three components in place, the last step is to <<configure_vm_nic,add a new virtual network adapter to the VM(s)>>.
 
-==== Procedure using the OpenShift console: [[create_nad_console_procedure]]
+=== Procedure using the OpenShift console: [[create_nad_console_procedure]]
 
 From the web console, select *Networking* > *NetworkAttachmentDefinitions*.
 
@@ -364,15 +365,15 @@ Click *Create*.
 
 You should see the network attachment definition show up in the list once it's created. 
 
-=== Configuring the VM Network Interface [[configure_vm_nic]]
+== Configuring the VM Network Interface [[configure_vm_nic]]
 Finally, you configure the virtual machine to use the newly created Linux bridge network attachment definition.
 
-==== Prerequisites [[vm_nic_prereqs]]
+=== Prerequisites [[vm_nic_prereqs]]
 The NMState operator, along with the `nmstate`, `nncp` and `network-attachment-definition` resources, should all exist in the cluster (the latter in the respective namespace of the VMs) before proceeding.
 
 The VMs must also already exist in OpenShift Virtualzation before proceeding. The VMs do not have to be running, but changes to running VMs will require restarting (or live migrating) before taking effect.
 
-==== Procedure using the OpenShift Console: [[vm_nic_console_procedure]]
+=== Procedure using the OpenShift Console: [[vm_nic_console_procedure]]
 Navigate to *Virtualization* > *VirtualMachines*.
 
 Click on a VM to view its VirtualMachine details page.
@@ -394,7 +395,7 @@ Restart or live migrate the VM to apply the changes.
 * *Type*: Binding method (select bridge for a Linux bridge network).
 * *MAC Address*: MAC address for the network interface controller. If not specified, one is assigned automatically.
 
-==== Procedure using the CLI: [[vm_nic_cli_procedure]]
+=== Procedure using the CLI: [[vm_nic_cli_procedure]]
 
 Start by fetching the existing VM configuration in yaml format. In the following example, we use a VM named `bridge-example-0` in the namespace `bridge-example`, and an output file named `bridge-example.vm.yaml`:
 

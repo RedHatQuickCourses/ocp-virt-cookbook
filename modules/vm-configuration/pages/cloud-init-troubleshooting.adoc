@@ -158,7 +158,7 @@ journalctl -u NetworkManager | grep -i dhcp
 
 **Solutions**:
 
-1. Verify cloud-init DHCP config in VM definition:
+. Verify cloud-init DHCP config in VM definition:
 +
 [source,yaml]
 ----
@@ -169,16 +169,14 @@ cloudInitNoCloud:
       enp1s0:
         dhcp4: true
 ----
-
-2. Manually restart network interface:
+. Manually restart network interface:
 +
 [source,bash]
 ----
 sudo nmcli connection down "Wired connection 1"
 sudo nmcli connection up "Wired connection 1"
 ----
-
-3. Check NetworkManager logs:
+. Check NetworkManager logs:
 +
 [source,bash]
 ----
@@ -204,12 +202,11 @@ ip link show
 
 **Solutions**:
 
-1. Check the actual interface names in your guest OS. Modern Linux distributions (RHEL 8+, Fedora, Ubuntu 16.04+) use predictable naming:
+. Check the actual interface names in your guest OS. Modern Linux distributions (RHEL 8+, Fedora, Ubuntu 16.04+) use predictable naming:
    * First interface: `enp1s0`
    * Second interface: `enp2s0`
    * Third interface: `enp3s0`
-
-2. Update cloud-init networkData to use correct names:
+. Update cloud-init networkData to use correct names:
 +
 [source,yaml]
 ----
@@ -247,7 +244,7 @@ grep -i "network" /var/log/cloud-init.log
 
 **Solutions**:
 
-1. Verify networkData syntax (indentation, YAML format):
+. Verify networkData syntax (indentation, YAML format):
 +
 [source,yaml]
 ----
@@ -266,16 +263,14 @@ networkData: |
           - 8.8.8.8
           - 8.8.4.4
 ----
-
-2. Check for cloud-init errors:
+. Check for cloud-init errors:
 +
 [source,bash]
 ----
 cloud-init status --long
 cat /var/log/cloud-init.log | grep -A 5 -B 5 "network"
 ----
-
-3. Manually apply network configuration:
+. Manually apply network configuration:
 +
 [source,bash]
 ----
@@ -322,10 +317,10 @@ ping -c 1 192.168.1.1
 
 **Solutions**:
 
-1. Verify gateway in cloud-init configuration
-2. Check subnet mask matches network configuration
-3. Verify physical network allows static IPs on this subnet
-4. If using VLAN, ensure NAD and bridge mapping are correct
+. Verify gateway in cloud-init configuration
+. Check subnet mask matches network configuration
+. Verify physical network allows static IPs on this subnet
+. If using VLAN, ensure NAD and bridge mapping are correct
 
 === Scenario 3: Multiple Network Interfaces
 
@@ -353,7 +348,7 @@ nmcli connection show
 
 **Solutions**:
 
-1. Verify VM has multiple network attachments:
+. Verify VM has multiple network attachments:
 +
 [source,yaml]
 ----
@@ -367,8 +362,7 @@ spec:
           multus:
             networkName: my-nad
 ----
-
-2. Verify both interfaces in networkData:
+. Verify both interfaces in networkData:
 +
 [source,yaml]
 ----
@@ -382,8 +376,7 @@ networkData: |
       addresses:
         - 192.168.100.10/24
 ----
-
-3. Check NAD exists and is configured:
+. Check NAD exists and is configured:
 +
 [source,bash,role=execute]
 ----
@@ -416,7 +409,7 @@ ip route show
 
 **Solutions**:
 
-1. Remove default route from secondary interface in networkData:
+. Remove default route from secondary interface in networkData:
 +
 [source,yaml]
 ----
@@ -426,8 +419,7 @@ enp2s0:
     - 192.168.100.10/24
   # No 'routes' section - no default gateway
 ----
-
-2. If both need routes, use metrics to prioritize:
+. If both need routes, use metrics to prioritize:
 +
 [source,yaml]
 ----
@@ -472,7 +464,7 @@ grep -i vlan /var/log/cloud-init.log
 
 **Solutions**:
 
-1. Verify VLAN configuration in networkData:
+. Verify VLAN configuration in networkData:
 +
 [source,yaml]
 ----
@@ -487,8 +479,7 @@ networkData: |
       addresses:
         - 192.168.100.10/24
 ----
-
-2. Manually create VLAN interface:
+. Manually create VLAN interface:
 +
 [source,bash]
 ----
@@ -525,8 +516,8 @@ tcpdump -i enp2s0 -n vlan 100
 
 **Solutions**:
 
-1. Verify switch port is in trunk mode and allows VLAN 100
-2. Verify NAD VLAN configuration:
+. Verify switch port is in trunk mode and allows VLAN 100
+. Verify NAD VLAN configuration:
 +
 [source,bash,role=execute]
 ----
@@ -534,8 +525,7 @@ oc get network-attachment-definition <nad-name> -n <namespace> -o yaml
 ----
 +
 Look for: `"vlan": 100`
-
-3. Verify OVN bridge mapping for localnet:
+. Verify OVN bridge mapping for localnet:
 +
 [source,bash,role=execute]
 ----
@@ -564,7 +554,7 @@ ip -6 addr show
 
 **Solutions**:
 
-1. Enable IPv6 in networkData:
+. Enable IPv6 in networkData:
 +
 [source,yaml]
 ----
@@ -578,8 +568,7 @@ networkData: |
       addresses:
         - 2001:db8::10/64
 ----
-
-2. Check IPv6 is not disabled:
+. Check IPv6 is not disabled:
 +
 [source,bash]
 ----
@@ -621,7 +610,7 @@ nslookup google.com
 
 **Solutions**:
 
-1. Add nameservers to networkData:
+. Add nameservers to networkData:
 +
 [source,yaml]
 ----
@@ -639,8 +628,7 @@ networkData: |
         search:
           - example.com
 ----
-
-2. Manually configure DNS:
+. Manually configure DNS:
 +
 [source,bash]
 ----
@@ -777,7 +765,7 @@ networkData: |
 * link:https://netplan.io/examples/[Netplan Configuration Examples,window=_blank]
 * link:https://docs.openshift.com/container-platform/latest/virt/vm_networking/virt-about-vm-networking.html[OpenShift Virtualization Networking,window=_blank]
 * link:https://kubevirt.io/user-guide/virtual_machines/interfaces_and_networks/[KubeVirt Network Configuration,window=_blank]
-* xref:networking:ovs-bridge-verification.adoc[OVS Bridge Verification]
+* xref:networking:ovs-bridge-troubleshooting.adoc[OVS Bridge Verification]
 
 == Example Test: ocplab01 Cluster
 
@@ -826,4 +814,3 @@ status: done
 ----
 
 This confirms DHCP scenario works correctly with proper interface naming.
-

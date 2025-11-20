@@ -327,21 +327,20 @@ oc logs -n golden-images <importer-pod-name>
 - Storage class issues
 
 **Solutions**:
-1. Verify source DataSource exists:
+
+. Verify source DataSource exists:
 +
 [source,bash]
 ----
 oc get datasource fedora -n openshift-virtualization-os-images
 ----
-
-2. Check CDI operator is healthy:
+. Check CDI operator is healthy:
 +
 [source,bash]
 ----
 oc get pods -n openshift-cnv | grep cdi
 ----
-
-3. Check storage capacity:
+. Check storage capacity:
 +
 [source,bash]
 ----
@@ -375,15 +374,15 @@ oc get events -n golden-images --sort-by='.lastTimestamp' | grep -i error
 - PVC binding issues
 
 **Solutions**:
-1. If using `WaitForFirstConsumer`, this is normal - VM will start once DV is ready
-2. Check storage class exists and is properly configured:
+
+. If using `WaitForFirstConsumer`, this is normal - VM will start once DV is ready
+. Check storage class exists and is properly configured:
 +
 [source,bash]
 ----
 oc get storageclass
 ----
-
-3. Verify default storage class if not specified:
+. Verify default storage class if not specified:
 +
 [source,bash]
 ----
@@ -413,15 +412,15 @@ systemctl status qemu-guest-agent
 ----
 
 **Solutions**:
-1. Install guest agent:
+
+. Install guest agent:
 +
 [source,bash]
 ----
 sudo dnf install -y qemu-guest-agent
 sudo systemctl enable --now qemu-guest-agent
 ----
-
-2. For cloud images, guest agent should be pre-installed. If not, the image may be corrupted.
+. For cloud images, guest agent should be pre-installed. If not, the image may be corrupted.
 
 === Issue 4: Deployed VMs Do Not Have Custom Software
 
@@ -445,15 +444,15 @@ systemctl status nginx
 - VM cloning failed
 
 **Solutions**:
-1. Verify base VM has customizations:
+
+. Verify base VM has customizations:
 +
 [source,bash]
 ----
 virtctl console base-fedora-vm -n golden-images
 # Check manually for installed software
 ----
-
-2. Verify DataSource references correct PVC:
+. Verify DataSource references correct PVC:
 +
 [source,bash]
 ----
@@ -461,8 +460,7 @@ oc get datasource fedora-nginx-golden -n golden-images -o jsonpath='{.spec.sourc
 ----
 +
 Should reference PVC `base-fedora-vm-disk`.
-
-3. Recreate DataSource with correct PVC reference if needed.
+. Recreate DataSource with correct PVC reference if needed.
 
 === Issue 5: DataSource References Wrong PVC
 
@@ -478,7 +476,8 @@ oc get datasource fedora-nginx-golden -n golden-images -o yaml
 Look at `spec.source.pvc.name` - should reference `base-fedora-vm-disk`.
 
 **Solutions**:
-1. Delete and recreate DataSource with correct PVC reference:
+
+. Delete and recreate DataSource with correct PVC reference:
 +
 [source,bash]
 ----
@@ -505,16 +504,15 @@ oc get pvc -n golden-images
 ----
 
 **Solutions**:
-1. Clean up unused PVCs:
+
+. Clean up unused PVCs:
 +
 [source,bash]
 ----
 oc delete pvc <unused-pvc> -n golden-images
 ----
-
-2. Expand LVM volume group (if using additional disks)
-
-3. Reduce requested storage size in VM/DataVolume specs
+. Expand LVM volume group (if using additional disks)
+. Reduce requested storage size in VM/DataVolume specs
 
 === Issue 7: VM Cloning is Slow
 
@@ -537,7 +535,8 @@ oc logs -n golden-images -l app=containerized-data-importer --tail=100
 - Not using efficient cloning (e.g., not using DataSource)
 
 **Solutions**:
-1. Ensure using DataSource for efficient cloning:
+
+. Ensure using DataSource for efficient cloning:
 +
 [source,yaml]
 ----
@@ -546,10 +545,8 @@ spec:
     kind: DataSource
     name: fedora-nginx-golden
 ----
-
-2. Use storage class that supports fast cloning (e.g., smart clones with LVM thin provisioning)
-
-3. Consider reducing disk size if VMs do not need large volumes
+. Use storage class that supports fast cloning (e.g., smart clones with LVM thin provisioning)
+. Consider reducing disk size if VMs do not need large volumes
 
 == Diagnostic Commands Summary
 

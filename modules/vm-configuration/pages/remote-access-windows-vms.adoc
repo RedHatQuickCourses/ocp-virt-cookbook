@@ -33,17 +33,15 @@ The IP address discrepancy you observe is expected behavior:
 
 ==== Step 1: Enable Remote Desktop in Windows 11
 
-1. **Access VM Console**
+. **Access VM Console**
 +
 Log into your Windows 11 VM using the OpenShift VNC console
-
-2. **Open System Settings**
+. **Open System Settings**
 +
 Right-click the **Start Menu**
 +
 Select **System**
-
-3. **Configure Remote Desktop**
+. **Configure Remote Desktop**
 +
 Navigate to **Remote Desktop** in the left menu
 +
@@ -59,14 +57,13 @@ You need to create a service exposing RDP port 3389. Choose your preferred metho
 
 ===== Option A: OpenShift Web Console (Recommended)
 
-1. **Navigate to Services**
+. **Navigate to Services**
 +
 [source,text]
 ----
 OpenShift Console → Your Project → Networking → Services
 ----
-
-2. **Create New Service**
+. **Create New Service**
 +
 Click **Create Service**
 +
@@ -101,8 +98,7 @@ Configure the following:
 |===
 +
 NOTE: If LoadBalancer is unavailable, use `NodePort` (assigns port 30000-32767)
-
-3. **Create the Service**
+. **Create the Service**
 +
 Click **Create**
 +
@@ -110,7 +106,7 @@ Note the assigned port if using NodePort
 
 ===== Option B: Command Line Interface
 
-1. **Create Service Definition**
+. **Create Service Definition**
 +
 Create `rdp-service.yaml`:
 +
@@ -129,8 +125,7 @@ spec:
       targetPort: 3389
   type: LoadBalancer  # or NodePort
 ----
-
-2. **Apply Configuration**
+. **Apply Configuration**
 +
 [source,bash]
 ----
@@ -141,14 +136,14 @@ oc apply -f rdp-service.yaml
 
 ===== For LoadBalancer Service:
 
-1. Navigate to **Networking → Services**
-2. Locate `win11-rdp-service`
-3. Record the **External IP** address
+. Navigate to **Networking → Services**
+. Locate `win11-rdp-service`
+. Record the **External IP** address
 
 ===== For NodePort Service:
 
-1. Find your service and note the assigned **NodePort** (e.g., `31234`)
-2. Get worker node external IP:
+. Find your service and note the assigned **NodePort** (e.g., `31234`)
+. Get worker node external IP:
 +
 [source,bash]
 ----
@@ -159,11 +154,10 @@ Look for **EXTERNAL-IP** column
 
 ==== Step 4: Connect via Remote Desktop
 
-1. **Open Remote Desktop Connection**
+. **Open Remote Desktop Connection**
 +
 Search for "Remote Desktop Connection" on your local Windows machine
-
-2. **Enter Connection Information**
+. **Enter Connection Information**
 +
 |===
 | Service Type | Computer Field Format | Example
@@ -176,8 +170,7 @@ Search for "Remote Desktop Connection" on your local Windows machine
 | `<Node-External-IP>:<NodePort>`
 | `203.0.113.10:31234`
 |===
-
-3. **Initiate Connection**
+. **Initiate Connection**
 +
 Click **Connect**
 +
