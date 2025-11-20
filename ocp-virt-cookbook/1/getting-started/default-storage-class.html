@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Configuring Default Storage Class :: OpenShift Virtualization cookbook</title>
+    <link rel="prev" href="virtctl-basics.html">
+    <link rel="next" href="../storage/index.html">
+    <meta name="generator" content="Antora 3.1.3">
+    <link rel="stylesheet" href="../../../_/css/site.css">
+    <script>var uiRootPath = '../../../_'</script>
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://www.redhat.com" target="_blank"><img src="../../../_/img/redhat-logo.png" height="40px" alt="Red Hat"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="../../..">OpenShift Virtualization cookbook</a>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues" target="_blank">Report Issues</a>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="ocp-virt-cookbook" data-version="1">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="../index.html">OpenShift Virtualization cookbook</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="index.html">Getting Started</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="prerequisites.html">Prerequisites</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="virtctl-basics.html">Virtctl Basics</a>
+  </li>
+  <li class="nav-item is-current-page" data-depth="2">
+    <a class="nav-link" href="default-storage-class.html">Storage Setup</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../storage/index.html">Storage Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/lvm-operator.html">LVM Operator Installation</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/lvm-troubleshooting.html">LVM Troubleshooting</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../networking/index.html">Networking Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/udn-primary-networks.html">UDN Primary Networks</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/localnet-secondary.html">Localnet Secondary Networks with CUDN</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/localnet-vlan.html">Localnet Secondary Networks with VLAN using NAD</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/cudn-localnet-vlan.html">Localnet VLAN with CUDN</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/linux-bridges.html">Linux Bridges</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/ovs-bridge-troubleshooting.html">Troubleshooting OVS Bridge Creation for Localnet Networks</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../vm-configuration/index.html">Virtual Machine Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/cloud-init-ip-configuration.html">Cloud-init IP Configuration</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/cloud-init-troubleshooting.html">Cloud-init Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/remote-access-linux-vms.html">Remote Access to Linux VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/remote-access-linux-troubleshooting.html">Remote Access to Linux VMs Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/remote-access-windows-vms.html">Remote Access to Windows VMs via RDP</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/custom-golden-images.html">Custom Golden Images</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/golden-images-troubleshooting.html">Golden Images Troubleshooting</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../manifests/index.html">YAML Manifests Reference</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../manifests/operators.html">Operators</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../manifests/networking.html">Networking</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../manifests/storage.html">Storage</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../manifests/vms.html">Virtual Machines</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../manifests/security.html">Security</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../lab-env/index.html">Lab Environment</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../appendix/glossary.html">Glossary</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">OpenShift Virtualization cookbook</span>
+    <span class="version">1</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <a class="title" href="../index.html">OpenShift Virtualization cookbook</a>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">1</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">OpenShift Virtualization cookbook</a></li>
+    <li><a href="index.html">Getting Started</a></li>
+    <li><a href="default-storage-class.html">Storage Setup</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">Configuring Default Storage Class</h1>
+<div class="sect1">
+<h2 id="_overview"><a class="anchor" href="#_overview"></a>Overview</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>This tutorial provides a step-by-step guide on how to configure a default storage class for OpenShift Virtualization. Setting a default storage class ensures that virtual machines and data volumes automatically use the specified storage class when no storage class is explicitly specified, simplifying VM deployment and management.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_prerequisites"><a class="anchor" href="#_prerequisites"></a>Prerequisites</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>To get started, you&#8217;ll need the following:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>OpenShift Cluster</strong>: An OpenShift cluster with OpenShift Virtualization installed</p>
+</li>
+<li>
+<p><strong>Cluster Admin Access</strong>: Access to the cluster with cluster-admin privileges</p>
+</li>
+<li>
+<p><strong>Storage Classes</strong>: At least one StorageClass configured in your cluster</p>
+</li>
+<li>
+<p><strong>Storage Provisioner</strong>: A storage provisioner that supports dynamic provisioning</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Versions tested:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>OCP 4.19</pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_1_view_available_storage_classes"><a class="anchor" href="#_step_1_view_available_storage_classes"></a>Step 1: View Available Storage Classes</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>First, check which storage classes are already available in your cluster and identify if there&#8217;s already a default storage class configured.</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get sc</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This command will list all the storage classes, showing their names and provisioners. Look for any storage class that has <code>(default)</code> next to its name, which indicates it&#8217;s currently set as the default.</p>
+</div>
+<div class="paragraph">
+<p>Example output showing no default storage class:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>NAME                    PROVISIONER                             RECLAIMPOLICY   VOLUMEBINDINGMODE      ALLOWVOLUMEEXPANSION   AGE
+ceph-rbd-sc             rbd.csi.ceph.com                        Delete          Immediate              true                   2d
+hostpath-provisioner    kubevirt.io/hostpath-provisioner        Delete          WaitForFirstConsumer   false                  1d
+local-storage           kubernetes.io/no-provisioner            Delete          WaitForFirstConsumer   false                  1d</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Example output showing an existing default storage class:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>NAME                    PROVISIONER                             RECLAIMPOLICY   VOLUMEBINDINGMODE      ALLOWVOLUMEEXPANSION   AGE
+ceph-rbd-sc (default)   rbd.csi.ceph.com                        Delete          Immediate              true                   2d
+hostpath-provisioner    kubevirt.io/hostpath-provisioner        Delete          WaitForFirstConsumer   false                  1d
+local-storage           kubernetes.io/no-provisioner            Delete          WaitForFirstConsumer   false                  1d</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Take note of:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>The name of the storage class you want to set as the default</p>
+</li>
+<li>
+<p>Whether there&#8217;s already a default storage class configured</p>
+</li>
+</ol>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_2_remove_existing_default_if_necessary"><a class="anchor" href="#_step_2_remove_existing_default_if_necessary"></a>Step 2: Remove Existing Default (If Necessary)</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>If another storage class was already set as the default, you&#8217;ll need to remove that annotation first before setting a new one. A cluster can only have one default storage class.</p>
+</div>
+<div class="paragraph">
+<p>To remove the default annotation from a storage class:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc annotate sc &lt;the-old-default-storage-class-name&gt; storageclass.kubernetes.io/is-default-class-</code></pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+The hyphen at the end of the annotation key is what removes the annotation.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_3_annotate_the_storage_class"><a class="anchor" href="#_step_3_annotate_the_storage_class"></a>Step 3: Annotate the Storage Class</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Add an annotation to the storage class you&#8217;ve chosen. This annotation tells OpenShift that this particular storage class should be the default one.</p>
+</div>
+<div class="paragraph">
+<p>The annotation is: <code>storageclass.kubernetes.io/is-default-class: "true"</code></p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc annotate sc &lt;your-storage-class-name&gt; storageclass.kubernetes.io/is-default-class="true"</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>For example, if your storage class is named <code>ceph-rbd-sc</code>:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc annotate sc ceph-rbd-sc storageclass.kubernetes.io/is-default-class="true"</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_4_verify_the_default_storage_class"><a class="anchor" href="#_step_4_verify_the_default_storage_class"></a>Step 4: Verify the Default Storage Class</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>After applying the annotation, verify that the change has taken effect:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get sc</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Example output after setting the default:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>NAME                    PROVISIONER                             RECLAIMPOLICY   VOLUMEBINDINGMODE      ALLOWVOLUMEEXPANSION   AGE
+ceph-rbd-sc (default)   rbd.csi.ceph.com                        Delete          Immediate              true                   2d
+hostpath-provisioner    kubevirt.io/hostpath-provisioner        Delete          WaitForFirstConsumer   false                  1d
+local-storage           kubernetes.io/no-provisioner            Delete          WaitForFirstConsumer   false                  1d</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>You should see <code>(default)</code> next to your chosen storage class name.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_5_test_the_default_storage_class"><a class="anchor" href="#_step_5_test_the_default_storage_class"></a>Step 5: Test the Default Storage Class</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Create a simple test to verify that the default storage class is working correctly. Create a PVC without specifying a storage class:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">oc apply -f - &lt;&lt;EOF
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: test-default-storage
+  namespace: default
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+EOF</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Then verify that the PVC was created with the correct storage class:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get pvc test-default-storage -o yaml | grep storageClassName</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>You should see that the PVC was automatically assigned to your default storage class.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_6_deploy_a_vm_using_default_storage"><a class="anchor" href="#_step_6_deploy_a_vm_using_default_storage"></a>Step 6: Deploy a VM Using Default Storage</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Now you can deploy a virtual machine that will automatically use the default storage class for its data volumes:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">oc apply -f - &lt;&lt;EOF
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: test-vm-default-storage
+  namespace: default
+spec:
+  running: true
+  dataVolumeTemplates:
+  - metadata:
+      name: test-vm-disk
+    spec:
+      pvc:
+        accessModes:
+        - ReadWriteOnce
+        resources:
+          requests:
+            storage: 10Gi
+      sourceRef:
+        kind: DataSource
+        name: fedora
+        namespace: openshift-virtualization-os-images
+  template:
+    metadata:
+      labels:
+        kubevirt.io/vm: test-vm-default-storage
+    spec:
+      domain:
+        devices:
+          disks:
+          - name: datavolumedisk
+            disk:
+              bus: virtio
+        resources:
+          requests:
+            memory: 1Gi
+            cpu: 1
+      networks:
+      - name: default
+        pod: {}
+      volumes:
+      - name: datavolumedisk
+        dataVolume:
+          name: test-vm-disk
+EOF</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_troubleshooting"><a class="anchor" href="#_troubleshooting"></a>Troubleshooting</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_common_issues"><a class="anchor" href="#_common_issues"></a>Common Issues</h3>
+<div class="sect3">
+<h4 id="_multiple_default_storage_classes"><a class="anchor" href="#_multiple_default_storage_classes"></a>Multiple Default Storage Classes</h4>
+<div class="paragraph">
+<p>If you see multiple storage classes marked as default, remove the annotation from all but one:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get sc -o custom-columns=NAME:.metadata.name,DEFAULT:.metadata.annotations.storageclass\.kubernetes\.io/is-default-class</code></pre>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_storage_class_not_found"><a class="anchor" href="#_storage_class_not_found"></a>Storage Class Not Found</h4>
+<div class="paragraph">
+<p>Ensure the storage class exists before trying to annotate it:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get sc &lt;storage-class-name&gt;</code></pre>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_permission_denied"><a class="anchor" href="#_permission_denied"></a>Permission Denied</h4>
+<div class="paragraph">
+<p>Make sure you have cluster-admin privileges:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc auth can-i create storageclass --all-namespaces</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_verification_commands"><a class="anchor" href="#_verification_commands"></a>Verification Commands</h3>
+<div class="paragraph">
+<p>Check all storage classes and their default status:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get sc -o wide</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>View detailed information about a specific storage class:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc describe sc &lt;storage-class-name&gt;</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>List PVCs and their storage classes:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get pvc --all-namespaces -o custom-columns=NAMESPACE:.metadata.namespace,NAME:.metadata.name,STORAGECLASS:.spec.storageClassName</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_best_practices"><a class="anchor" href="#_best_practices"></a>Best Practices</h2>
+<div class="sectionbody">
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p><strong>Choose Appropriate Storage</strong>: Select a storage class that provides the performance and features needed for your VMs (e.g., fast I/O, snapshots, encryption).</p>
+</li>
+<li>
+<p><strong>Consider Workload Requirements</strong>: Different workloads may require different storage characteristics. Consider using specific storage classes for critical workloads rather than relying on defaults.</p>
+</li>
+<li>
+<p><strong>Monitor Storage Usage</strong>: Regularly monitor storage usage and performance to ensure the default storage class meets your needs.</p>
+</li>
+<li>
+<p><strong>Document Your Choice</strong>: Document why you chose a particular storage class as the default for future reference and troubleshooting.</p>
+</li>
+</ol>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_references"><a class="anchor" href="#_references"></a>References</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_openshift_documentation"><a class="anchor" href="#_openshift_documentation"></a>OpenShift Documentation</h3>
+<div class="ulist">
+<ul>
+<li>
+<p><a href="https://docs.redhat.com/en/documentation/openshift_container_platform/4.19/html/storage/understanding-persistent-storage#persistent-storage-overview_storage-classes" target="_blank" rel="noopener">OpenShift - Storage Classes</a></p>
+</li>
+<li>
+<p><a href="https://docs.redhat.com/en/documentation/openshift_container_platform/4.19/html/virtualization/virtual-machines/virt-storage-overview" target="_blank" rel="noopener">OpenShift Virtualization - Storage</a></p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<nav class="pagination">
+  <span class="prev"><a href="virtctl-basics.html">Virtctl Basics</a></span>
+  <span class="next"><a href="../storage/index.html">Storage Configuration</a></span>
+</nav>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <img src="../../../_/img/rhl-logo-red.png" height="40px" alt="Red Hat"  href="https://redhat.com" >
+</footer><script id="site-script" src="../../../_/js/site.js" data-ui-root-path="../../../_"></script>
+<script async src="../../../_/js/vendor/highlight.js"></script>
+  </body>
+</html>

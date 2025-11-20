@@ -3,7 +3,9 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>Untitled :: OpenShift Virtualization cookbook</title>
+    <title>Adding a Bridge as a Secondary Network Adapter :: OpenShift Virtualization cookbook</title>
+    <link rel="prev" href="cudn-localnet-vlan.html">
+    <link rel="next" href="ovs-bridge-troubleshooting.html">
     <meta name="generator" content="Antora 3.1.3">
     <link rel="stylesheet" href="../../../_/css/site.css">
     <script>var uiRootPath = '../../../_'</script>
@@ -39,22 +41,16 @@
 <ul class="nav-list">
   <li class="nav-item" data-depth="1">
     <button class="nav-item-toggle"></button>
-    <a class="nav-link" href="../index.html">Home</a>
+    <a class="nav-link" href="../getting-started/index.html">Getting Started</a>
 <ul class="nav-list">
   <li class="nav-item" data-depth="2">
-    <a class="nav-link" href="../getting-started/index.html">Getting Started</a>
+    <a class="nav-link" href="../getting-started/prerequisites.html">Prerequisites</a>
   </li>
   <li class="nav-item" data-depth="2">
-    <a class="nav-link" href="../storage/index.html">Storage Configuration</a>
+    <a class="nav-link" href="../getting-started/virtctl-basics.html">Virtctl Basics</a>
   </li>
   <li class="nav-item" data-depth="2">
-    <a class="nav-link" href="index.html">Networking Configuration</a>
-  </li>
-  <li class="nav-item" data-depth="2">
-    <a class="nav-link" href="../vm-configuration/index.html">Virtual Machine Configuration</a>
-  </li>
-  <li class="nav-item" data-depth="2">
-    <a class="nav-link" href="../manifests/index.html">Manifests Reference</a>
+    <a class="nav-link" href="../getting-started/default-storage-class.html">Storage Setup</a>
   </li>
 </ul>
   </li>
@@ -63,7 +59,107 @@
   <li class="nav-item" data-depth="0">
 <ul class="nav-list">
   <li class="nav-item" data-depth="1">
-    <a class="nav-link" href="../LABENV/index.html">Lab Environment</a>
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../storage/index.html">Storage Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/lvm-operator.html">LVM Operator Installation</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/lvm-troubleshooting.html">LVM Troubleshooting</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="index.html">Networking Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="udn-primary-networks.html">UDN Primary Networks</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="localnet-secondary.html">Localnet Secondary Networks with CUDN</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="localnet-vlan.html">Localnet Secondary Networks with VLAN using NAD</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="cudn-localnet-vlan.html">Localnet VLAN with CUDN</a>
+  </li>
+  <li class="nav-item is-current-page" data-depth="2">
+    <a class="nav-link" href="linux-bridges.html">Linux Bridges</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="ovs-bridge-troubleshooting.html">Troubleshooting OVS Bridge Creation for Localnet Networks</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../vm-configuration/index.html">Virtual Machine Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/cloud-init-ip-configuration.html">Cloud-init IP Configuration</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/cloud-init-troubleshooting.html">Cloud-init Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/remote-access-linux-vms.html">Remote Access to Linux VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/remote-access-linux-troubleshooting.html">Remote Access to Linux VMs Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/remote-access-windows-vms.html">Remote Access to Windows VMs via RDP</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/custom-golden-images.html">Custom Golden Images</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/golden-images-troubleshooting.html">Golden Images Troubleshooting</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../manifests/index.html">YAML Manifests Reference</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../manifests/operators.html">Operators</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../manifests/networking.html">Networking</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../manifests/storage.html">Storage</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../manifests/vms.html">Virtual Machines</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../manifests/security.html">Security</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../lab-env/index.html">Lab Environment</a>
   </li>
 </ul>
   </li>
@@ -101,6 +197,11 @@
 <button class="nav-toggle"></button>
   <a href="../index.html" class="home-link"></a>
 <nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">OpenShift Virtualization cookbook</a></li>
+    <li><a href="index.html">Networking Configuration</a></li>
+    <li><a href="linux-bridges.html">Linux Bridges</a></li>
+  </ul>
 </nav>
 </div>
   <div class="content">
@@ -108,8 +209,8 @@
   <div class="toc-menu"></div>
 </aside>
 <article class="doc">
-<div class="sect1">
-<h2 id="_adding_a_bridge_as_a_secondary_network_adapter"><a class="anchor" href="#_adding_a_bridge_as_a_secondary_network_adapter"></a>Adding a Bridge as a Secondary Network Adapter</h2>
+<h1 class="page">Adding a Bridge as a Secondary Network Adapter</h1>
+<div id="preamble">
 <div class="sectionbody">
 <div class="paragraph">
 <p>This quick-guide describes how to add a secondary Linux bridge adapter to a VM.
@@ -206,15 +307,18 @@ This guide assumes that VMs have already been created in OpenShift Virtualizatio
 </li>
 </ul>
 </div>
-<div class="sect2">
-<h3 id="install_nmstate_operator"><a class="anchor" href="#install_nmstate_operator"></a>Install the Kubernetes NMState Operator</h3>
+</div>
+</div>
+<div class="sect1">
+<h2 id="install_nmstate_operator"><a class="anchor" href="#install_nmstate_operator"></a>Install the Kubernetes NMState Operator</h2>
+<div class="sectionbody">
 <div class="paragraph">
 <p>This operator is required to configure the Node Network Configuration Policy (NNCP) objects used to create new bridge network adapters on each node.
 The NNCP actually creates the bridge interface on all (or specific) nodes/hosts in the cluster, which of course can be filtered using labels.
 The bridge interface must exist on the nodes/hosts that the VMs are running on, before you can attach a secondary NIC to a pod/VM.</p>
 </div>
-<div class="sect3">
-<h4 id="nmstate_operator_gui_procedure"><a class="anchor" href="#nmstate_operator_gui_procedure"></a>Procedure using the OpenShift console:</h4>
+<div class="sect2">
+<h3 id="nmstate_operator_gui_procedure"><a class="anchor" href="#nmstate_operator_gui_procedure"></a>Procedure using the OpenShift console:</h3>
 <div class="paragraph">
 <p>Login to the OpenShift admin console as any user with cluster-admin privileges (such as the default <code>kubeadmin</code> account).</p>
 </div>
@@ -256,8 +360,8 @@ On later versions of OpenShift, you may instead be logged out of the OpenShift c
 These should both exist before proceeding with <a href="#create_linux_bridge_nncp">creating  NodeNetworkConfigurationPolicy (NNCP)</a>.</p>
 </div>
 </div>
-<div class="sect3">
-<h4 id="nmstate_operator_cli_procedure"><a class="anchor" href="#nmstate_operator_cli_procedure"></a>Procedure using the CLI:</h4>
+<div class="sect2">
+<h3 id="nmstate_operator_cli_procedure"><a class="anchor" href="#nmstate_operator_cli_procedure"></a>Procedure using the CLI:</h3>
 <div class="paragraph">
 <p>Before proceeding, authenticate to your OpenShift cluster&#8217;s API as a cluster-admin.</p>
 </div>
@@ -335,8 +439,10 @@ Once these APIs are available, proceed with <a href="#create_linux_bridge_nncp">
 </div>
 </div>
 </div>
-<div class="sect2">
-<h3 id="create_linux_bridge_nncp"><a class="anchor" href="#create_linux_bridge_nncp"></a>Create a Linux Bridge NodeNetworkConfigurationPolicy (NNCP)</h3>
+</div>
+<div class="sect1">
+<h2 id="create_linux_bridge_nncp"><a class="anchor" href="#create_linux_bridge_nncp"></a>Create a Linux Bridge NodeNetworkConfigurationPolicy (NNCP)</h2>
+<div class="sectionbody">
 <div class="paragraph">
 <p>The first step is to define the Linux bridge on the cluster nodes using a NodeNetworkConfigurationPolicy (NNCP).
 NNCP objects are cluster-scoped, so they do not exist in a namespace.
@@ -354,14 +460,14 @@ If you skip the NNCP step and try to boot a VM with a secondary bridge adapter, 
 </tr>
 </table>
 </div>
-<div class="sect3">
-<h4 id="create_nncp_prereqs"><a class="anchor" href="#create_nncp_prereqs"></a>Prerequisites:</h4>
+<div class="sect2">
+<h3 id="create_nncp_prereqs"><a class="anchor" href="#create_nncp_prereqs"></a>Prerequisites:</h3>
 <div class="paragraph">
 <p>You must have first installed the Kubernetes NMState Operator and created a <code>nmstate</code> CR after installation.</p>
 </div>
 </div>
-<div class="sect3">
-<h4 id="create_nncp_gui_procedure"><a class="anchor" href="#create_nncp_gui_procedure"></a>Procedure using the OpenShift console</h4>
+<div class="sect2">
+<h3 id="create_nncp_gui_procedure"><a class="anchor" href="#create_nncp_gui_procedure"></a>Procedure using the OpenShift console</h3>
 <div class="paragraph">
 <p>To create a NodeNetworkConfigurationPolicy, make sure you&#8217;re still logged into the OpenShift admin console as a cluster admin before continuing on.</p>
 </div>
@@ -421,8 +527,8 @@ As with <code>nmstate</code> objects, <code>nncp</code> objects are cluster-scop
 <p>Once the NNCP is created, proceed with <a href="#create_net_attach_def">creating a network attachment definition</a>.</p>
 </div>
 </div>
-<div class="sect3">
-<h4 id="create_nncp_cli_procedure"><a class="anchor" href="#create_nncp_cli_procedure"></a>Procedure using the CLI:</h4>
+<div class="sect2">
+<h3 id="create_nncp_cli_procedure"><a class="anchor" href="#create_nncp_cli_procedure"></a>Procedure using the CLI:</h3>
 <div class="paragraph">
 <p>Create a NodeNetworkConfigurationPolicy manifest, choosing from either a static, dhcp, or layer2-only (link-level) configuration for the bridge interface.</p>
 </div>
@@ -587,14 +693,16 @@ As with <code>nmstate</code> objects, <code>nncp</code> objects are cluster-scop
 </div>
 </div>
 </div>
-<div class="sect2">
-<h3 id="create_net_attach_def"><a class="anchor" href="#create_net_attach_def"></a>Creating a Linux Bridge Network Attachment Definition (NAD)</h3>
+</div>
+<div class="sect1">
+<h2 id="create_net_attach_def"><a class="anchor" href="#create_net_attach_def"></a>Creating a Linux Bridge Network Attachment Definition (NAD)</h2>
+<div class="sectionbody">
 <div class="paragraph">
 <p>The next step is to create a Network Attachment Definition to provides Layer 2 networking to your pods/VMs.
 The NAD is what allows pods/VMs within a specific project/namespace to connect to a secondary network.</p>
 </div>
-<div class="sect3">
-<h4 id="create_nad_prereqs"><a class="anchor" href="#create_nad_prereqs"></a>Prerequisites</h4>
+<div class="sect2">
+<h3 id="create_nad_prereqs"><a class="anchor" href="#create_nad_prereqs"></a>Prerequisites</h3>
 <div class="paragraph">
 <p>While not strictly required to create a network attachment definition, a NNCP defining the bridge interface must exist on the cluster before you attach a pod/VM to a bridge network.
 Neglecting to do so will prevent any VM with a bridge-based NIC from booting.</p>
@@ -612,8 +720,8 @@ A namespace containing VMs must either exist or be created before proceeding.
 </table>
 </div>
 </div>
-<div class="sect3">
-<h4 id="create_nad_cli_procedure"><a class="anchor" href="#create_nad_cli_procedure"></a>Procedure using the CLI:</h4>
+<div class="sect2">
+<h3 id="create_nad_cli_procedure"><a class="anchor" href="#create_nad_cli_procedure"></a>Procedure using the CLI:</h3>
 <div class="paragraph">
 <p>It is necessary to change to the project/namespace of the VMs before proceeding (replace <code>bridge-demo</code> with the namespace for where the VMs reside):</p>
 </div>
@@ -737,8 +845,8 @@ spec:
 <p>With two of the three components in place, the last step is to <a href="#configure_vm_nic">add a new virtual network adapter to the VM(s)</a>.</p>
 </div>
 </div>
-<div class="sect3">
-<h4 id="create_nad_console_procedure"><a class="anchor" href="#create_nad_console_procedure"></a>Procedure using the OpenShift console:</h4>
+<div class="sect2">
+<h3 id="create_nad_console_procedure"><a class="anchor" href="#create_nad_console_procedure"></a>Procedure using the OpenShift console:</h3>
 <div class="paragraph">
 <p>From the web console, select <strong>Networking</strong> &gt; <strong>NetworkAttachmentDefinitions</strong>.</p>
 </div>
@@ -808,13 +916,15 @@ spec:
 </div>
 </div>
 </div>
-<div class="sect2">
-<h3 id="configure_vm_nic"><a class="anchor" href="#configure_vm_nic"></a>Configuring the VM Network Interface</h3>
+</div>
+<div class="sect1">
+<h2 id="configure_vm_nic"><a class="anchor" href="#configure_vm_nic"></a>Configuring the VM Network Interface</h2>
+<div class="sectionbody">
 <div class="paragraph">
 <p>Finally, you configure the virtual machine to use the newly created Linux bridge network attachment definition.</p>
 </div>
-<div class="sect3">
-<h4 id="vm_nic_prereqs"><a class="anchor" href="#vm_nic_prereqs"></a>Prerequisites</h4>
+<div class="sect2">
+<h3 id="vm_nic_prereqs"><a class="anchor" href="#vm_nic_prereqs"></a>Prerequisites</h3>
 <div class="paragraph">
 <p>The NMState operator, along with the <code>nmstate</code>, <code>nncp</code> and <code>network-attachment-definition</code> resources, should all exist in the cluster (the latter in the respective namespace of the VMs) before proceeding.</p>
 </div>
@@ -822,8 +932,8 @@ spec:
 <p>The VMs must also already exist in OpenShift Virtualzation before proceeding. The VMs do not have to be running, but changes to running VMs will require restarting (or live migrating) before taking effect.</p>
 </div>
 </div>
-<div class="sect3">
-<h4 id="vm_nic_console_procedure"><a class="anchor" href="#vm_nic_console_procedure"></a>Procedure using the OpenShift Console:</h4>
+<div class="sect2">
+<h3 id="vm_nic_console_procedure"><a class="anchor" href="#vm_nic_console_procedure"></a>Procedure using the OpenShift Console:</h3>
 <div class="paragraph">
 <p>Navigate to <strong>Virtualization</strong> &gt; <strong>VirtualMachines</strong>.</p>
 </div>
@@ -866,8 +976,8 @@ spec:
 </ul>
 </div>
 </div>
-<div class="sect3">
-<h4 id="vm_nic_cli_procedure"><a class="anchor" href="#vm_nic_cli_procedure"></a>Procedure using the CLI:</h4>
+<div class="sect2">
+<h3 id="vm_nic_cli_procedure"><a class="anchor" href="#vm_nic_cli_procedure"></a>Procedure using the CLI:</h3>
 <div class="paragraph">
 <p>Start by fetching the existing VM configuration in yaml format. In the following example, we use a VM named <code>bridge-example-0</code> in the namespace <code>bridge-example</code>, and an output file named <code>bridge-example.vm.yaml</code>:</p>
 </div>
@@ -979,7 +1089,10 @@ If you edited a running virtual machine, you must restart or live migrate it for
 </div>
 </div>
 </div>
-</div>
+<nav class="pagination">
+  <span class="prev"><a href="cudn-localnet-vlan.html">Localnet VLAN with CUDN</a></span>
+  <span class="next"><a href="ovs-bridge-troubleshooting.html">Troubleshooting OVS Bridge Creation for Localnet Networks</a></span>
+</nav>
 </article>
   </div>
 </main>
