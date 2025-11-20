@@ -1,56 +1,103 @@
-name: Feature Request / New Idea
-description: Suggest a new tutorial, improvement, or feature for the cookbook
-title: "[Feature]: "
-labels: ["enhancement"]
+name: "New Tutorial Idea"
+description: "Suggest an idea for a new tutorial."
+title: "Tutorial: [Your Tutorial Title]"
+labels: ["tutorial-idea", "help wanted"]
 body:
   - type: markdown
     attributes:
       value: |
-        Thanks for suggesting an improvement! We'd love to hear your ideas.
+        Thanks for taking the time to suggest a new tutorial! Please fill out the sections below to help us understand your idea. NOTE: Submitting an idea or tutorial does not guarantee it will be created or merged into this repo.
+
+  - type: input
+    id: title
+    attributes:
+      label: "Tutorial Title"
+      description: "What is the main goal of this tutorial? (e.g., Configuring a Specific Feature, Solving a Common Problem)"
+      placeholder: "e.g., Configuring High-Availability for Virtual Machines"
+    validations:
+      required: true
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: "Summary"
+      description: "Provide a brief (1-3 sentence) summary of what this tutorial will cover and why it's important. This will be used as the introduction."
+      placeholder: "This tutorial demonstrates how to configure live migration for virtual machines in OpenShift Virtualization to ensure high availability and minimize downtime during node maintenance."
+    validations:
+      required: true
+
+  - type: textarea
+    id: use-case
+    attributes:
+      label: "What problem does this solve?"
+      description: "Describe the use case or problem that this tutorial addresses. Who would find this tutorial useful?"
+      placeholder: "Users who need to perform maintenance on cluster nodes without interrupting critical VM workloads. This is essential for production environments requiring high uptime."
+    validations:
+      required: true
 
   - type: dropdown
-    id: type
+    id: topology
     attributes:
-      label: What type of contribution is this?
-      description: Select the category
+      label: "Network Topology"
+      description: "What is the primary network topology this tutorial will use?"
       options:
-        - New tutorial/guide
-        - Enhancement to existing tutorial
-        - New troubleshooting section
-        - New example/manifest
-        - Documentation improvement
-        - Other
-    validations:
-      required: true
-
-  - type: textarea
-    id: description
-    attributes:
-      label: Feature Description
-      description: Describe your idea
-      placeholder: |
-        Example: Add a tutorial on how to configure SR-IOV for VMs...
-        Example: Include troubleshooting steps for network connectivity issues...
-        Example: Add RHEL VM examples with custom cloud-init...
-    validations:
-      required: true
-
-  - type: textarea
-    id: benefit
-    attributes:
-      label: Why is this valuable?
-      description: Who would benefit and how?
-      placeholder: |
-        This would help users who need high-performance networking...
-        Many users struggle with this specific scenario...
+        - Layer 2 (L2)
+        - Layer 3 (L3)
+        - Overlay (Geneve)
+        - Localnet (Physical Bridge)
+        - Other/Not Applicable
     validations:
       required: false
 
   - type: textarea
-    id: additional
+    id: prerequisites
     attributes:
-      label: Additional Context
-      description: Links to documentation, examples, or related resources
+      label: "Prerequisites"
+      description: "List any prerequisites that a user must have in place before starting this tutorial (e.g., a running OpenShift cluster, specific operators installed, command-line tools)."
+      placeholder: |
+        - OpenShift Container Platform 4.19 or later
+        - OpenShift Virtualization Operator installed
+        - `oc` and `virtctl` command-line tools installed
+        - At least two worker nodes in the cluster
     validations:
       required: false
 
+  - type: textarea
+    id: steps
+    attributes:
+      label: "Tutorial Steps"
+      description: "Outline the high-level steps required to complete the tutorial. Provide a brief description and, if possible, example commands or YAML manifests for each step."
+      placeholder: |
+        **Step 1: Enable Live Migration**
+        - Create a `MigrationPolicy` to enable live migration cluster-wide.
+        - `oc apply -f migration-policy.yaml`
+
+        **Step 2: Deploy a Virtual Machine**
+        - Deploy a sample VM to be used for testing.
+        - `oc apply -f vm.yaml`
+
+        **Step 3: Initiate Live Migration**
+        - Use `virtctl` to migrate the VM to another node.
+        - `virtctl migrate fedora-vm`
+
+        **Step 4: Verify Migration**
+        - Check the VM's status and the node it is running on.
+        - `oc get vmi fedora-vm -o wide`
+    validations:
+      required: false
+
+  - type: textarea
+    id: verification
+    attributes:
+      label: "Verification"
+      description: "How can a user verify that they have successfully completed the tutorial? What commands should they run and what is the expected output?"
+      placeholder: "Run `oc get vmi fedora-vm -o jsonpath='{.status.nodeName}'` to check the current node of the VM. The output should show a different node name than the original one, confirming the migration was successful."
+    validations:
+      required: false
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: "Additional Context"
+      description: "Add any other context, diagrams, or links to relevant documentation that might be helpful."
+      placeholder: "This is similar to the UDN tutorial but focuses on the high-availability aspect. See the official documentation on live migration for more details: [link]"
