@@ -1,67 +1,322 @@
-= Basic usage of the virtctl command
+= Using virtctl for VM Management
 :navtitle: Virtctl Basics
 
-This tutorial will provide a brief overview of the virtctl command. This document is designed to quickly cover some of the basic usage of this incredibly useful tool for controlling your virtual machines on OpenShift, but for more in-depth information on this tool, see our link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.13/html/virtualization/virt-using-the-cli-tools[official documentation,window=_blank]
+== Overview
 
-At a basic level, we have virtctl fslist <your vm name> to list the file systems available
+The virtctl CLI tool provides commands for managing virtual machines in OpenShift Virtualization. This guide covers essential VM operations.
+
+Versions tested:
+----
+OpenShift 4.20
+----
+
+== Prerequisites
+
+* OpenShift 4.18+ with OpenShift Virtualization installed
+* virtctl CLI tool installed
+
+== Downloading and Installing virtctl
+
+The `virtctl` CLI tool can be downloaded directly from the OpenShift web console.
+
+. In the OpenShift web console, navigate to *Virtualization* → *Overview* in the left sidebar.
++
+.Virtualization Overview in the OpenShift console
+image::virtualization-overview.png[Virtualization Overview menu]
+
+. In the upper right corner of the Overview page, click the *Download the virtctl command-line utility* link.
++
+.Download virtctl link
+image::virtctl-download.png[Download virtctl link in the upper right corner]
+
+. On the download page, select the appropriate `virtctl` binary for your operating system and architecture.
++
+.Available virtctl binaries
+image::virtctl-versions.png[List of virtctl binaries for different platforms]
+
+. After downloading, make the binary executable and move it to your PATH:
++
+[source,bash]
+----
+# Linux/Mac
+chmod +x virtctl
+sudo mv virtctl /usr/local/bin/
+
+# Verify installation
+virtctl version
+----
++
+For Windows, extract the executable and add its location to your system PATH.
+
+== Essential Commands
+
+=== Listing VMs
+
+Before managing VMs, list what's available in your cluster using the `oc` command:
 
 [source,bash]
 ----
-$ virtctl fslist my-vm
+# List all VMs in a specific namespace
+oc get vm -n myapp
+
+# List all VMs across all namespaces
+oc get vm -A
 ----
 
-virtctl userlist <your vm name> for a list of logged-in users
+Example output:
+
+[source,text]
+----
+NAMESPACE   NAME            AGE   STATUS    READY
+myapp       fedora-app-vm   13d   Running   True
+----
+
+To see running VM instances (VMIs) with additional details like IP address and node placement:
 
 [source,bash]
 ----
-$ virtctl userlist my-vm
+oc get vmi -A
 ----
 
-and virtctl guestosinfo <your vm name> for information about the operating system.
+Example output:
+
+[source,text]
+----
+NAMESPACE   NAME            AGE   PHASE     IP             NODENAME   READY
+myapp       fedora-app-vm   13d   Running   10.128.1.225   ocplab01   True
+----
+
+NOTE: Use `oc` for listing and querying VMs. Use `virtctl` for VM operations like start, stop, and console access.
+
+=== VM Lifecycle
+
+Start, stop, and restart VMs:
 
 [source,bash]
 ----
-$ virtctl guestosinfo my-vm
+# Start a VM
+virtctl start fedora-app-vm -n myapp
+
+# Stop a VM
+virtctl stop fedora-app-vm -n myapp
+
+# Restart a VM
+virtctl restart fedora-app-vm -n myapp
 ----
 
-You can type virtctl start <your vm name> to start a VM
+=== Accessing VMs
+
+Connect to your VM:
 
 [source,bash]
 ----
-$ virtctl start my-vm
+# Console access (press Ctrl+] to exit)
+virtctl console fedora-app-vm -n myapp
+
+# SSH access (requires SSH configured)
+virtctl ssh user@fedora-app-vm -n myapp
+
+# VNC access
+virtctl vnc fedora-app-vm -n myapp
 ----
 
-and virtctl stop <your vm> to stop a VM.
+=== VM Information
+
+Get VM details (requires QEMU guest agent installed in the VM):
 
 [source,bash]
 ----
-$ virtctl stop my-vm
+# Guest OS information
+virtctl guestosinfo fedora-app-vm -n myapp
 ----
 
-This can also be used with --force to force a stop, but be aware this can mess up the data on the VM.
+Example output:
 
-To pause a VM, keeping the machine state in memory you can run virtctl pause vm <your vm name>, and unpause it with virtctl unpause vm <name>.
-
-**Note: these commands require you to specify that you're talking about a vm, and the others don't.**
-
-One of the more useful commands is virtctl scp. Just like a regular scp command, this lets you copy files to and from your virtual machines. To use scp, you'll need to make sure your virtual machine has an SSH key to allow connections.
-
-To copy a file locally to your virtual machine, use virtctl scp -i <ssh key> <file name> <user name>@<your name>.
+[source,json]
+----
+{
+  "guestAgentVersion": "10.1.0",
+  "hostname": "fedora-app-vm",
+  "os": {
+    "name": "Fedora Linux",
+    "kernelRelease": "6.5.6-300.fc39.x86_64",
+    "version": "39",
+    "prettyName": "Fedora Linux 39 (Cloud Edition)",
+    "versionId": "39",
+    "kernelVersion": "#1 SMP PREEMPT_DYNAMIC",
+    "machine": "x86_64",
+    "id": "fedora"
+  }
+}
+----
 
 [source,bash]
 ----
-$ virtctl scp -i key myLocalFile.txt user@my-vm:myVMFileLocation.txt
+# List filesystems
+virtctl fslist fedora-app-vm -n myapp
 ----
 
-If you need a file off a VM, you just reverse the command - virtctl scp -i <ssh key> <user name>@<your name>:<file name> <destination directory>.
+Example output shows mounted filesystems with usage:
+
+[source,json]
+----
+{
+  "items": [
+    {
+      "diskName": "vda2",
+      "mountPoint": "/boot/efi",
+      "fileSystemType": "vfat",
+      "usedBytes": 21723136,
+      "totalBytes": 104607744
+    },
+    {
+      "diskName": "vda3",
+      "mountPoint": "/boot",
+      "fileSystemType": "ext4",
+      "usedBytes": 91316224,
+      "totalBytes": 1902895104
+    },
+    {
+      "diskName": "vda4",
+      "mountPoint": "/",
+      "fileSystemType": "btrfs",
+      "usedBytes": 687783936,
+      "totalBytes": 29525868544
+    }
+  ]
+}
+----
 
 [source,bash]
 ----
-$ virtctl scp -i key user@my-vm:VMFile.txt ~/Documents/
+# List logged-in users
+virtctl userlist fedora-app-vm -n myapp
 ----
+
+=== File Transfer
+
+Copy files to and from VMs using `virtctl scp`. This requires SSH to be running in the VM and one of the following authentication methods:
+
+* **SSH key** (recommended): Your public key must be in the VM's `~/.ssh/authorized_keys`
+* **Password**: The VM must have password authentication enabled in SSH
+
+[source,bash]
+----
+# Copy to VM (uses default SSH key)
+virtctl scp local-file.txt fedora@fedora-app-vm:/tmp/remote.txt -n myapp
+
+# Copy from VM
+virtctl scp fedora@fedora-app-vm:/tmp/remote.txt ./local.txt -n myapp
+
+# Specify a different SSH key
+virtctl scp -i ~/.ssh/my_key local-file.txt fedora@fedora-app-vm:/tmp/ -n myapp
+----
+
+TIP: If SSH is not configured, use `virtctl console` to access the VM first and set up SSH keys.
+
+To inject your SSH key when creating the VM, include it in the cloud-init configuration:
+
+[source,yaml]
+----
+#cloud-config
+user: fedora
+ssh_authorized_keys:
+  - ssh-rsa AAAAB3NzaC... your-key-here
+----
+
+For detailed SSH configuration options, see xref:vm-configuration:remote-access-linux-vms.adoc[].
+
+== Verifying VM Operations
+
+After starting or stopping a VM, verify the operation:
+
+[source,bash]
+----
+# Check VM status
+oc get vm fedora-app-vm -n myapp
+----
+
+Example output after successful start:
+
+[source,text]
+----
+NAME            AGE    STATUS    READY
+fedora-app-vm   7d3h   Running   True
+----
+
+[source,bash]
+----
+# Check VMI (running instance)
+oc get vmi fedora-app-vm -n myapp
+----
+
+Expected: VMI listed when running, no VMI after stop.
+
+== Quick Reference
+
+**When to use each access method:**
+
+* `virtctl console` - Text-only terminal access, works without network
+* `virtctl ssh` - Convenient SSH when you have keys configured
+* `virtctl vnc` - Graphical desktop access for GUI-based VMs
+
+**When to check VM information:**
+
+* `virtctl guestosinfo` - Verify OS version before updates
+* `virtctl fslist` - Check disk space before installing software
+* `virtctl userlist` - See who is currently logged in
+
+== Common Issues
+
+**Issue: Unable to connect to the server**
+
+Solution: Verify cluster access:
+
+[source,bash]
+----
+oc whoami
+oc get nodes
+----
+
+**Issue: Guest agent commands return no data**
+
+Solution: Install the QEMU guest agent in your VM. See link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/virtualization/managing-vms#virt-installing-qemu-guest-agent[Installing the QEMU guest agent,window=_blank] for installation instructions.
+
+**Issue: SSH/SCP commands fail**
+
+Solution: Verify SSH is configured in the VM. Use console to check:
+
+[source,bash]
+----
+# Access via console first
+virtctl console fedora-app-vm -n myapp
+
+# Inside VM, check SSH status
+systemctl status sshd
+----
+
+**Issue: Console hangs or is unresponsive**
+
+Solution: Exit with `Ctrl+]` and verify VM status:
+
+[source,bash]
+----
+oc get vmi fedora-app-vm -n myapp
+----
+
+== Best Practices
+
+* **Always specify namespace** with `-n` to avoid confusion
+* **Use console for initial setup**, then SSH for regular access
+* **Install guest agent** in all VMs for full functionality
+* **Use `oc` for VM status**, `virtctl` for VM operations
+* **Exit console properly** with `Ctrl+]` to avoid hung sessions
+* **Test with `virtctl ssh`** before setting up external access
+
+== Additional Resources
+
+* link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/virtualization/getting-started#virt-using-the-cli-tools[virtctl Commands Reference,window=_blank]
 
 == See Also
 
-* xref:vm-configuration:internal-dns-for-vms.adoc[] - Configure internal DNS resolution for VMs
-* xref:vm-configuration:remote-access-linux-vms.adoc[] - Comprehensive guide to all VM access methods
-* xref:vm-configuration:remote-access-linux-troubleshooting.adoc[]
+* xref:vm-configuration:remote-access-linux-vms.adoc[] - All VM access methods
