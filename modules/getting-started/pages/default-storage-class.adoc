@@ -3,7 +3,12 @@
 
 == Overview
 
-This tutorial provides a step-by-step guide on how to configure a default storage class for OpenShift Virtualization. Setting a default storage class ensures that virtual machines and data volumes automatically use the specified storage class when no storage class is explicitly specified, simplifying VM deployment and management.
+This tutorial guides you through configuring a default storage class for OpenShift Virtualization. A default storage class is required to automatically provision boot sources from built-in DataSource images (Fedora, RHEL, CentOS Stream, Windows)—without it, these DataSources remain pending and VMs cannot be created. Setting a default also ensures that virtual machines and data volumes automatically use the specified storage when none is explicitly defined, simplifying deployment and management.
+
+Versions tested:
+----
+OpenShift 4.19, 4.20
+----
 
 == Prerequisites
 
@@ -13,11 +18,6 @@ To get started, you'll need the following:
 * **Cluster Admin Access**: Access to the cluster with cluster-admin privileges
 * **Storage Classes**: At least one StorageClass configured in your cluster
 * **Storage Provisioner**: A storage provisioner that supports dynamic provisioning
-
-Versions tested:
-----
-OpenShift 4.19
-----
 
 == Step 1: View Available Storage Classes
 
@@ -126,10 +126,41 @@ Then verify that the PVC was created with the correct storage class:
 
 [source,bash,role=execute]
 ----
-oc get pvc test-default-storage -o yaml | grep storageClassName
+oc get pvc test-default-storage -n default
 ----
 
-You should see that the PVC was automatically assigned to your default storage class.
+Example output:
+
+----
+NAME                   STATUS    VOLUME   CAPACITY   ACCESS MODES   STORAGECLASS   AGE
+test-default-storage   Pending                                      lvms-vg1       0s
+----
+
+The PVC shows `Pending` status but was automatically assigned to the default storage class (`lvms-vg1` in this example).
+
+=== Understanding Volume Binding Modes
+
+The PVC remains in `Pending` status because most storage classes use `WaitForFirstConsumer` volume binding mode. This is expected behavior.
+
+[cols="1,2,2"]
+|===
+|Binding Mode |Behavior |Use Case
+
+|`WaitForFirstConsumer`
+|PV is provisioned only when a Pod using the PVC is scheduled
+|Ensures storage is created on the same node as the Pod; better for topology-aware storage (LVM, local storage)
+
+|`Immediate`
+|PV is provisioned as soon as the PVC is created
+|Suitable for network-attached storage accessible from any node (NFS, Ceph, cloud storage)
+|===
+
+To check the binding mode of your storage class:
+
+[source,bash,role=execute]
+----
+oc get sc <storage-class-name> -o jsonpath='{.volumeBindingMode}'
+----
 
 == Step 6: Deploy a VM Using Default Storage
 
@@ -252,6 +283,6 @@ oc get pvc --all-namespaces -o custom-columns=NAMESPACE:.metadata.namespace,NAME
 
 === OpenShift Documentation
 
-* link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.19/html/storage/understanding-persistent-storage#persistent-storage-overview_storage-classes[OpenShift - Storage Classes,window=_blank]
-* link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.19/html/virtualization/virtual-machines/virt-storage-overview[OpenShift Virtualization - Storage,window=_blank]
+* link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/storage/understanding-persistent-storage#persistent-storage-overview_storage-classes[OpenShift - Persistent Storage,window=_blank]
+* link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/virtualization/storage[OpenShift Virtualization - Storage,window=_blank]
 
