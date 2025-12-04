@@ -7,14 +7,14 @@ This tutorial demonstrates how to install and configure the LVM Storage operator
 
 == Prerequisites
 
-* **OpenShift 4.14+**: LVM Storage operator is supported
+* **OpenShift 4.18+**
 * **Local disk available**: At least one spare disk on cluster nodes
 * **Cluster admin access**: Required to install operators and create storage classes
 * **Disk can have existing data**: The operator can force-wipe disks using the `forceWipeDevicesAndDestroyAllData` parameter
 
 Versions tested:
 ----
-OpenShift 4.19
+OpenShift 4.19, 4.20
 ----
 
 == Important Warning
@@ -91,7 +91,7 @@ oc apply -f - <<EOF
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: openshift-storage
+  name: openshift-lvm-storage
 EOF
 ----
 
@@ -103,11 +103,11 @@ oc apply -f - <<EOF
 apiVersion: operators.coreos.com/v1
 kind: OperatorGroup
 metadata:
-  name: openshift-storage-operatorgroup
-  namespace: openshift-storage
+  name: openshift-lvm-storage-operatorgroup
+  namespace: openshift-lvm-storage
 spec:
   targetNamespaces:
-  - openshift-storage
+  - openshift-lvm-storage
 EOF
 ----
 
@@ -120,9 +120,9 @@ apiVersion: operators.coreos.com/v1alpha1
 kind: Subscription
 metadata:
   name: lvms-operator
-  namespace: openshift-storage
+  namespace: openshift-lvm-storage
 spec:
-  channel: stable-4.19
+  channel: stable-4.20
   name: lvms-operator
   source: redhat-operators
   sourceNamespace: openshift-marketplace
@@ -135,10 +135,10 @@ Verify operator installation:
 [source,bash,role=execute]
 ----
 # Wait for the operator to be installed (may take 2-3 minutes)
-oc get csv -n openshift-storage
+oc get csv -n openshift-lvm-storage
 
 # Check operator pod is running
-oc get pods -n openshift-storage
+oc get pods -n openshift-lvm-storage
 ----
 
 Expected output (after operator installation, before LVMCluster):
@@ -173,7 +173,7 @@ apiVersion: lvm.topolvm.io/v1alpha1
 kind: LVMCluster
 metadata:
   name: lvmcluster
-  namespace: openshift-storage
+  namespace: openshift-lvm-storage
 spec:
   storage:
     deviceClasses:
@@ -208,7 +208,7 @@ apiVersion: lvm.topolvm.io/v1alpha1
 kind: LVMCluster
 metadata:
   name: lvmcluster
-  namespace: openshift-storage
+  namespace: openshift-lvm-storage
 spec:
   storage:
     deviceClasses:
@@ -257,7 +257,7 @@ Run a quick health check to verify the LVMCluster is ready:
 [source,bash,role=execute]
 ----
 # Check LVMCluster status
-oc get lvmcluster -n openshift-storage
+oc get lvmcluster -n openshift-lvm-storage
 
 # Verify volume group was created
 oc debug node/<node-name> -- chroot /host vgs
@@ -481,7 +481,7 @@ oc delete pvc lvms-test-pvc
 
 == Troubleshooting
 
-If you encounter any issues during installation or operation of LVM storage, refer to the comprehensive xref:lvm-troubleshooting.adoc[LVM Storage Troubleshooting Guide].
+If you encounter any issues during installation or operation of LVM storage, refer to the xref:lvm-troubleshooting.adoc[LVM Storage Troubleshooting Guide].
 
 The troubleshooting guide covers:
 
@@ -490,7 +490,7 @@ The troubleshooting guide covers:
 * Device discovery and wipe problems
 * PVC provisioning issues
 * Thin pool management
-* Comprehensive diagnostic procedures
+* Diagnostic procedures
 
 == Understanding forceWipeDevicesAndDestroyAllData
 
@@ -542,6 +542,6 @@ oc debug node/<node-name> -- chroot /host lsblk -d -o NAME,SERIAL /dev/sda
 
 === OpenShift Documentation
 
-* link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.19/html/storage/persistent-storage-using-local-storage#persistent-storage-using-lvms[Persistent Storage Using LVM Storage,window=_blank]
-* link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.19/html/storage/understanding-persistent-storage#storage-classes_understanding-persistent-storage[Understanding Persistent Storage,window=_blank]
+* link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/storage/persistent-storage-using-local-storage#persistent-storage-using-lvms[Persistent Storage Using LVM Storage,window=_blank]
+* link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/storage/understanding-persistent-storage#storage-classes_understanding-persistent-storage[Understanding Persistent Storage,window=_blank]
 

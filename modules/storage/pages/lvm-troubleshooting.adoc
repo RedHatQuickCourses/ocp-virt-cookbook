@@ -3,19 +3,19 @@
 
 == Overview
 
-This guide provides comprehensive troubleshooting steps for the LVM Storage operator in OpenShift. Use these commands to diagnose and resolve common issues with LVM storage provisioning, volume groups, and persistent volume claims.
+This guide provides troubleshooting steps for the LVM Storage operator in OpenShift. Use these commands to diagnose and resolve common issues with LVM storage provisioning, volume groups, and persistent volume claims.
 
 == Quick Health Check
 
-Run this comprehensive health check to verify your LVM storage is working correctly:
+Run this health check to verify your LVM storage is working correctly:
 
 [source,bash,role=execute]
 ----
 # 1. Check LVMCluster status
-oc get lvmcluster -n openshift-storage
+oc get lvmcluster -n openshift-lvm-storage
 
 # 2. Check all pods are running
-oc get pods -n openshift-storage
+oc get pods -n openshift-lvm-storage
 
 # 3. Check StorageClass exists
 oc get storageclass | grep lvms
@@ -43,7 +43,7 @@ Expected healthy output:
 
 [source,bash,role=execute]
 ----
-oc get lvmcluster -n openshift-storage
+oc get lvmcluster -n openshift-lvm-storage
 ----
 
 Healthy output:
@@ -61,7 +61,7 @@ Unhealthy indicators:
 
 [source,bash,role=execute]
 ----
-oc get lvmcluster lvmcluster -n openshift-storage -o yaml
+oc get lvmcluster lvmcluster -n openshift-lvm-storage -o yaml
 ----
 
 What to look for:
@@ -97,7 +97,7 @@ Key fields:
 
 [source,bash,role=execute]
 ----
-oc get lvmcluster lvmcluster -n openshift-storage -o yaml | grep -A 50 "deviceClassStatuses"
+oc get lvmcluster lvmcluster -n openshift-lvm-storage -o yaml | grep -A 50 "deviceClassStatuses"
 ----
 
 Example output:
@@ -125,7 +125,7 @@ This shows which devices were selected and why others were excluded.
 
 [source,bash,role=execute]
 ----
-oc get pods -n openshift-storage
+oc get pods -n openshift-lvm-storage
 ----
 
 Healthy output:
@@ -146,13 +146,13 @@ Expected pods:
 [source,bash,role=execute]
 ----
 # Get pod details
-oc describe pod -n openshift-storage <pod-name>
+oc describe pod -n openshift-lvm-storage <pod-name>
 
 # Check specific pod logs
-oc logs -n openshift-storage <pod-name>
+oc logs -n openshift-lvm-storage <pod-name>
 
 # Check vg-manager logs (most useful for device issues)
-oc logs -n openshift-storage daemonset/vg-manager
+oc logs -n openshift-lvm-storage daemonset/vg-manager
 ----
 
 Common log errors:
@@ -167,13 +167,13 @@ Common log errors:
 [source,bash,role=execute]
 ----
 # Check ClusterServiceVersion
-oc get csv -n openshift-storage
+oc get csv -n openshift-lvm-storage
 
 # Check subscription
-oc get subscription -n openshift-storage
+oc get subscription -n openshift-lvm-storage
 
 # Check install plan
-oc get installplan -n openshift-storage
+oc get installplan -n openshift-lvm-storage
 ----
 
 === Storage Resources
@@ -430,10 +430,10 @@ Diagnosis:
 [source,bash,role=execute]
 ----
 # Check detailed status
-oc get lvmcluster lvmcluster -n openshift-storage -o yaml | grep -A 20 "conditions"
+oc get lvmcluster lvmcluster -n openshift-lvm-storage -o yaml | grep -A 20 "conditions"
 
 # Check vg-manager logs
-oc logs -n openshift-storage daemonset/vg-manager
+oc logs -n openshift-lvm-storage daemonset/vg-manager
 ----
 
 Common causes and solutions:
@@ -483,7 +483,7 @@ Diagnosis:
 oc debug node/<node-name> -- chroot /host pvs
 
 # Check vg-manager logs for errors
-oc logs -n openshift-storage daemonset/vg-manager --tail=100
+oc logs -n openshift-lvm-storage daemonset/vg-manager --tail=100
 
 # Check device visibility
 oc debug node/<node-name> -- chroot /host lsblk -o NAME,SIZE,TYPE,FSTYPE
@@ -561,7 +561,7 @@ Solution: Clean up volumes or increase thin pool size
 ----
 # Check pod node selector vs LVMCluster node selector
 oc get pod <pod-name> -o yaml | grep nodeSelector
-oc get lvmcluster lvmcluster -n openshift-storage -o yaml | grep -A 5 nodeSelector
+oc get lvmcluster lvmcluster -n openshift-lvm-storage -o yaml | grep -A 5 nodeSelector
 ----
 
 === Issue 4: Thin Pool Data% or Meta% High
@@ -640,7 +640,7 @@ Solution:
 [source,bash,role=execute]
 ----
 # Ensure forceWipeDevicesAndDestroyAllData is set
-oc edit lvmcluster lvmcluster -n openshift-storage
+oc edit lvmcluster lvmcluster -n openshift-lvm-storage
 
 # Add under deviceSelector:
 forceWipeDevicesAndDestroyAllData: true
@@ -659,10 +659,10 @@ Diagnosis:
 [source,bash,role=execute]
 ----
 # Check pod logs
-oc logs -n openshift-storage <vg-manager-pod> --previous
+oc logs -n openshift-lvm-storage <vg-manager-pod> --previous
 
 # Check pod events
-oc describe pod -n openshift-storage <vg-manager-pod>
+oc describe pod -n openshift-lvm-storage <vg-manager-pod>
 
 # Check node resources
 oc describe node <node-name>
@@ -716,14 +716,14 @@ oc patch storageclass lvms-vg1 -p '{"metadata": {"annotations":{"storageclass.ku
 
 [source,bash,role=execute]
 ----
-oc edit lvmcluster lvmcluster -n openshift-storage
+oc edit lvmcluster lvmcluster -n openshift-lvm-storage
 
 # Add under deviceClasses:
 - name: vg1
   default: true
 ----
 
-== Comprehensive Diagnostic Script
+== Diagnostic Script
 
 Save this as a shell script to quickly diagnose LVM storage issues:
 
@@ -731,7 +731,7 @@ Save this as a shell script to quickly diagnose LVM storage issues:
 ----
 #!/bin/bash
 
-NAMESPACE="openshift-storage"
+NAMESPACE="openshift-lvm-storage"
 NODE_NAME="<your-node-name>"
 
 echo "=== LVM Storage Diagnostic Report ==="
