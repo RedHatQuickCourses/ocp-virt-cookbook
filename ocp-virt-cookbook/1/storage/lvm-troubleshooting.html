@@ -217,7 +217,7 @@
 <h2 id="_overview"><a class="anchor" href="#_overview"></a>Overview</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>This guide provides comprehensive troubleshooting steps for the LVM Storage operator in OpenShift. Use these commands to diagnose and resolve common issues with LVM storage provisioning, volume groups, and persistent volume claims.</p>
+<p>This guide provides troubleshooting steps for the LVM Storage operator in OpenShift. Use these commands to diagnose and resolve common issues with LVM storage provisioning, volume groups, and persistent volume claims.</p>
 </div>
 </div>
 </div>
@@ -225,15 +225,15 @@
 <h2 id="_quick_health_check"><a class="anchor" href="#_quick_health_check"></a>Quick Health Check</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>Run this comprehensive health check to verify your LVM storage is working correctly:</p>
+<p>Run this health check to verify your LVM storage is working correctly:</p>
 </div>
 <div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># 1. Check LVMCluster status
-oc get lvmcluster -n openshift-storage
+oc get lvmcluster -n openshift-lvm-storage
 
 # 2. Check all pods are running
-oc get pods -n openshift-storage
+oc get pods -n openshift-lvm-storage
 
 # 3. Check StorageClass exists
 oc get storageclass | grep lvms
@@ -278,7 +278,7 @@ oc debug node/&lt;node-name&gt; -- chroot /host lvs</code></pre>
 <h4 id="_check_basic_status"><a class="anchor" href="#_check_basic_status"></a>Check Basic Status</h4>
 <div class="listingblock execute">
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get lvmcluster -n openshift-storage</code></pre>
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get lvmcluster -n openshift-lvm-storage</code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -308,7 +308,7 @@ lvmcluster   Ready</pre>
 <h4 id="_check_detailed_status"><a class="anchor" href="#_check_detailed_status"></a>Check Detailed Status</h4>
 <div class="listingblock execute">
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get lvmcluster lvmcluster -n openshift-storage -o yaml</code></pre>
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get lvmcluster lvmcluster -n openshift-lvm-storage -o yaml</code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -358,7 +358,7 @@ lvmcluster   Ready</pre>
 <h4 id="_view_device_discovery_and_exclusions"><a class="anchor" href="#_view_device_discovery_and_exclusions"></a>View Device Discovery and Exclusions</h4>
 <div class="listingblock execute">
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get lvmcluster lvmcluster -n openshift-storage -o yaml | grep -A 50 "deviceClassStatuses"</code></pre>
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get lvmcluster lvmcluster -n openshift-lvm-storage -o yaml | grep -A 50 "deviceClassStatuses"</code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -390,7 +390,7 @@ lvmcluster   Ready</pre>
 <h4 id="_check_all_pods"><a class="anchor" href="#_check_all_pods"></a>Check All Pods</h4>
 <div class="listingblock execute">
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get pods -n openshift-storage</code></pre>
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get pods -n openshift-lvm-storage</code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -425,13 +425,13 @@ vg-manager-xxxxx                 1/1     Running   0          5m</pre>
 <div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Get pod details
-oc describe pod -n openshift-storage &lt;pod-name&gt;
+oc describe pod -n openshift-lvm-storage &lt;pod-name&gt;
 
 # Check specific pod logs
-oc logs -n openshift-storage &lt;pod-name&gt;
+oc logs -n openshift-lvm-storage &lt;pod-name&gt;
 
 # Check vg-manager logs (most useful for device issues)
-oc logs -n openshift-storage daemonset/vg-manager</code></pre>
+oc logs -n openshift-lvm-storage daemonset/vg-manager</code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -459,13 +459,13 @@ oc logs -n openshift-storage daemonset/vg-manager</code></pre>
 <div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Check ClusterServiceVersion
-oc get csv -n openshift-storage
+oc get csv -n openshift-lvm-storage
 
 # Check subscription
-oc get subscription -n openshift-storage
+oc get subscription -n openshift-lvm-storage
 
 # Check install plan
-oc get installplan -n openshift-storage</code></pre>
+oc get installplan -n openshift-lvm-storage</code></pre>
 </div>
 </div>
 </div>
@@ -882,10 +882,10 @@ lvmcluster   NotReady</pre>
 <div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Check detailed status
-oc get lvmcluster lvmcluster -n openshift-storage -o yaml | grep -A 20 "conditions"
+oc get lvmcluster lvmcluster -n openshift-lvm-storage -o yaml | grep -A 20 "conditions"
 
 # Check vg-manager logs
-oc logs -n openshift-storage daemonset/vg-manager</code></pre>
+oc logs -n openshift-lvm-storage daemonset/vg-manager</code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -952,7 +952,7 @@ oc debug node/&lt;node-name&gt; -- chroot /host mount | grep /dev/sda</code></pr
 oc debug node/&lt;node-name&gt; -- chroot /host pvs
 
 # Check vg-manager logs for errors
-oc logs -n openshift-storage daemonset/vg-manager --tail=100
+oc logs -n openshift-lvm-storage daemonset/vg-manager --tail=100
 
 # Check device visibility
 oc debug node/&lt;node-name&gt; -- chroot /host lsblk -o NAME,SIZE,TYPE,FSTYPE</code></pre>
@@ -1073,7 +1073,7 @@ oc debug node/&lt;node-name&gt; -- chroot /host lvs | grep thin-pool</code></pre
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Check pod node selector vs LVMCluster node selector
 oc get pod &lt;pod-name&gt; -o yaml | grep nodeSelector
-oc get lvmcluster lvmcluster -n openshift-storage -o yaml | grep -A 5 nodeSelector</code></pre>
+oc get lvmcluster lvmcluster -n openshift-lvm-storage -o yaml | grep -A 5 nodeSelector</code></pre>
 </div>
 </div>
 </div>
@@ -1174,7 +1174,7 @@ oc debug node/&lt;node-name&gt; -- chroot /host lsof | grep /dev/sda</code></pre
 <div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Ensure forceWipeDevicesAndDestroyAllData is set
-oc edit lvmcluster lvmcluster -n openshift-storage
+oc edit lvmcluster lvmcluster -n openshift-lvm-storage
 
 # Add under deviceSelector:
 forceWipeDevicesAndDestroyAllData: true</code></pre>
@@ -1198,10 +1198,10 @@ vg-manager-xxx   0/1     CrashLoopBackOff   5          3m</pre>
 <div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Check pod logs
-oc logs -n openshift-storage &lt;vg-manager-pod&gt; --previous
+oc logs -n openshift-lvm-storage &lt;vg-manager-pod&gt; --previous
 
 # Check pod events
-oc describe pod -n openshift-storage &lt;vg-manager-pod&gt;
+oc describe pod -n openshift-lvm-storage &lt;vg-manager-pod&gt;
 
 # Check node resources
 oc describe node &lt;node-name&gt;</code></pre>
@@ -1292,7 +1292,7 @@ oc get storageclass lvms-vg1 -o yaml | grep is-default-class</code></pre>
 <h4 id="_or_set_default_in_lvmcluster"><a class="anchor" href="#_or_set_default_in_lvmcluster"></a>Or set default in LVMCluster</h4>
 <div class="listingblock execute">
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc edit lvmcluster lvmcluster -n openshift-storage
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc edit lvmcluster lvmcluster -n openshift-lvm-storage
 
 # Add under deviceClasses:
 - name: vg1
@@ -1304,7 +1304,7 @@ oc get storageclass lvms-vg1 -o yaml | grep is-default-class</code></pre>
 </div>
 </div>
 <div class="sect1">
-<h2 id="_comprehensive_diagnostic_script"><a class="anchor" href="#_comprehensive_diagnostic_script"></a>Comprehensive Diagnostic Script</h2>
+<h2 id="_diagnostic_script"><a class="anchor" href="#_diagnostic_script"></a>Diagnostic Script</h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>Save this as a shell script to quickly diagnose LVM storage issues:</p>
@@ -1313,7 +1313,7 @@ oc get storageclass lvms-vg1 -o yaml | grep is-default-class</code></pre>
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">#!/bin/bash
 
-NAMESPACE="openshift-storage"
+NAMESPACE="openshift-lvm-storage"
 NODE_NAME="&lt;your-node-name&gt;"
 
 echo "=== LVM Storage Diagnostic Report ==="

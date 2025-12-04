@@ -227,7 +227,7 @@
 <div class="ulist">
 <ul>
 <li>
-<p><strong>OpenShift 4.14+</strong>: LVM Storage operator is supported</p>
+<p><strong>OpenShift 4.18+</strong></p>
 </li>
 <li>
 <p><strong>Local disk available</strong>: At least one spare disk on cluster nodes</p>
@@ -245,7 +245,7 @@
 </div>
 <div class="listingblock">
 <div class="content">
-<pre>OpenShift 4.19</pre>
+<pre>OpenShift 4.19, 4.20</pre>
 </div>
 </div>
 </div>
@@ -365,7 +365,7 @@ sdc   558.4G disk                        PERC H730 Adp
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: openshift-storage
+  name: openshift-lvm-storage
 EOF</code></pre>
 </div>
 </div>
@@ -378,11 +378,11 @@ EOF</code></pre>
 apiVersion: operators.coreos.com/v1
 kind: OperatorGroup
 metadata:
-  name: openshift-storage-operatorgroup
-  namespace: openshift-storage
+  name: openshift-lvm-storage-operatorgroup
+  namespace: openshift-lvm-storage
 spec:
   targetNamespaces:
-  - openshift-storage
+  - openshift-lvm-storage
 EOF</code></pre>
 </div>
 </div>
@@ -396,9 +396,9 @@ apiVersion: operators.coreos.com/v1alpha1
 kind: Subscription
 metadata:
   name: lvms-operator
-  namespace: openshift-storage
+  namespace: openshift-lvm-storage
 spec:
-  channel: stable-4.19
+  channel: stable-4.20
   name: lvms-operator
   source: redhat-operators
   sourceNamespace: openshift-marketplace
@@ -412,10 +412,10 @@ EOF</code></pre>
 <div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Wait for the operator to be installed (may take 2-3 minutes)
-oc get csv -n openshift-storage
+oc get csv -n openshift-lvm-storage
 
 # Check operator pod is running
-oc get pods -n openshift-storage</code></pre>
+oc get pods -n openshift-lvm-storage</code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -481,7 +481,7 @@ apiVersion: lvm.topolvm.io/v1alpha1
 kind: LVMCluster
 metadata:
   name: lvmcluster
-  namespace: openshift-storage
+  namespace: openshift-lvm-storage
 spec:
   storage:
     deviceClasses:
@@ -518,7 +518,7 @@ apiVersion: lvm.topolvm.io/v1alpha1
 kind: LVMCluster
 metadata:
   name: lvmcluster
-  namespace: openshift-storage
+  namespace: openshift-lvm-storage
 spec:
   storage:
     deviceClasses:
@@ -624,7 +624,7 @@ EOF</code></pre>
 <div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Check LVMCluster status
-oc get lvmcluster -n openshift-storage
+oc get lvmcluster -n openshift-lvm-storage
 
 # Verify volume group was created
 oc debug node/&lt;node-name&gt; -- chroot /host vgs
@@ -930,7 +930,7 @@ oc delete pvc lvms-test-pvc</code></pre>
 <h2 id="_troubleshooting"><a class="anchor" href="#_troubleshooting"></a>Troubleshooting</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>If you encounter any issues during installation or operation of LVM storage, refer to the comprehensive <a href="lvm-troubleshooting.html" class="xref page">LVM Storage Troubleshooting Guide</a>.</p>
+<p>If you encounter any issues during installation or operation of LVM storage, refer to the <a href="lvm-troubleshooting.html" class="xref page">LVM Storage Troubleshooting Guide</a>.</p>
 </div>
 <div class="paragraph">
 <p>The troubleshooting guide covers:</p>
@@ -953,7 +953,7 @@ oc delete pvc lvms-test-pvc</code></pre>
 <p>Thin pool management</p>
 </li>
 <li>
-<p>Comprehensive diagnostic procedures</p>
+<p>Diagnostic procedures</p>
 </li>
 </ul>
 </div>
@@ -1056,10 +1056,10 @@ oc debug node/&lt;node-name&gt; -- chroot /host lsblk -d -o NAME,SERIAL /dev/sda
 <div class="ulist">
 <ul>
 <li>
-<p><a href="https://docs.redhat.com/en/documentation/openshift_container_platform/4.19/html/storage/persistent-storage-using-local-storage#persistent-storage-using-lvms" target="_blank" rel="noopener">Persistent Storage Using LVM Storage</a></p>
+<p><a href="https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/storage/persistent-storage-using-local-storage#persistent-storage-using-lvms" target="_blank" rel="noopener">Persistent Storage Using LVM Storage</a></p>
 </li>
 <li>
-<p><a href="https://docs.redhat.com/en/documentation/openshift_container_platform/4.19/html/storage/understanding-persistent-storage#storage-classes_understanding-persistent-storage" target="_blank" rel="noopener">Understanding Persistent Storage</a></p>
+<p><a href="https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/storage/understanding-persistent-storage#storage-classes_understanding-persistent-storage" target="_blank" rel="noopener">Understanding Persistent Storage</a></p>
 </li>
 </ul>
 </div>
