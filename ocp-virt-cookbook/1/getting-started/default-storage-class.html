@@ -217,7 +217,15 @@
 <h2 id="_overview"><a class="anchor" href="#_overview"></a>Overview</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>This tutorial provides a step-by-step guide on how to configure a default storage class for OpenShift Virtualization. Setting a default storage class ensures that virtual machines and data volumes automatically use the specified storage class when no storage class is explicitly specified, simplifying VM deployment and management.</p>
+<p>This tutorial guides you through configuring a default storage class for OpenShift Virtualization. A default storage class is required to automatically provision boot sources from built-in DataSource images (Fedora, RHEL, CentOS Stream, Windows)—without it, these DataSources remain pending and VMs cannot be created. Setting a default also ensures that virtual machines and data volumes automatically use the specified storage when none is explicitly defined, simplifying deployment and management.</p>
+</div>
+<div class="paragraph">
+<p>Versions tested:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>OpenShift 4.19, 4.20</pre>
+</div>
 </div>
 </div>
 </div>
@@ -242,14 +250,6 @@
 <p><strong>Storage Provisioner</strong>: A storage provisioner that supports dynamic provisioning</p>
 </li>
 </ul>
-</div>
-<div class="paragraph">
-<p>Versions tested:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre>OpenShift 4.19</pre>
-</div>
 </div>
 </div>
 </div>
@@ -411,11 +411,60 @@ EOF</code></pre>
 </div>
 <div class="listingblock execute">
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get pvc test-default-storage -o yaml | grep storageClassName</code></pre>
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get pvc test-default-storage -n default</code></pre>
 </div>
 </div>
 <div class="paragraph">
-<p>You should see that the PVC was automatically assigned to your default storage class.</p>
+<p>Example output:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>NAME                   STATUS    VOLUME   CAPACITY   ACCESS MODES   STORAGECLASS   AGE
+test-default-storage   Pending                                      lvms-vg1       0s</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The PVC shows <code>Pending</code> status but was automatically assigned to the default storage class (<code>lvms-vg1</code> in this example).</p>
+</div>
+<div class="sect2">
+<h3 id="_understanding_volume_binding_modes"><a class="anchor" href="#_understanding_volume_binding_modes"></a>Understanding Volume Binding Modes</h3>
+<div class="paragraph">
+<p>The PVC remains in <code>Pending</code> status because most storage classes use <code>WaitForFirstConsumer</code> volume binding mode. This is expected behavior.</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 20%;">
+<col style="width: 40%;">
+<col style="width: 40%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Binding Mode</th>
+<th class="tableblock halign-left valign-top">Behavior</th>
+<th class="tableblock halign-left valign-top">Use Case</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>WaitForFirstConsumer</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">PV is provisioned only when a Pod using the PVC is scheduled</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Ensures storage is created on the same node as the Pod; better for topology-aware storage (LVM, local storage)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Immediate</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">PV is provisioned as soon as the PVC is created</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Suitable for network-attached storage accessible from any node (NFS, Ceph, cloud storage)</p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>To check the binding mode of your storage class:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get sc &lt;storage-class-name&gt; -o jsonpath='{.volumeBindingMode}'</code></pre>
+</div>
+</div>
 </div>
 </div>
 </div>
@@ -573,10 +622,10 @@ EOF</code></pre>
 <div class="ulist">
 <ul>
 <li>
-<p><a href="https://docs.redhat.com/en/documentation/openshift_container_platform/4.19/html/storage/understanding-persistent-storage#persistent-storage-overview_storage-classes" target="_blank" rel="noopener">OpenShift - Storage Classes</a></p>
+<p><a href="https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/storage/understanding-persistent-storage#persistent-storage-overview_storage-classes" target="_blank" rel="noopener">OpenShift - Persistent Storage</a></p>
 </li>
 <li>
-<p><a href="https://docs.redhat.com/en/documentation/openshift_container_platform/4.19/html/virtualization/virtual-machines/virt-storage-overview" target="_blank" rel="noopener">OpenShift Virtualization - Storage</a></p>
+<p><a href="https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/virtualization/storage" target="_blank" rel="noopener">OpenShift Virtualization - Storage</a></p>
 </li>
 </ul>
 </div>
