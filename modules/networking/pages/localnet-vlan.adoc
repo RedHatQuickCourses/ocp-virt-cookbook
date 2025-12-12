@@ -82,6 +82,7 @@ spec:
     "type": "ovn-k8s-cni-overlay",
     "topology": "localnet",
     "netAttachDefName": "vm-guests-vlan/localnet-vlan-100",
+    "physicalNetworkName": "localnet-vlan",
     "vlanID": 100,
     "subnets": "192.168.100.0/24",
     "excludeSubnets": "192.168.100.1/32"
@@ -91,11 +92,11 @@ EOF
 
 **Configuration Details**:
 
+* `physicalNetworkName: "localnet-vlan"`: Links this NAD to the bridge mapping configured in the NNCP (must match the `localnet` name in the bridge-mappings)
 * `vlanID: 100`: Specifies VLAN tag 100 for network segmentation
-* `subnets`: Defines the expected IP subnet range for documentation and validation purposes
+* `subnets`: Defines the IP subnet range for OVN-Kubernetes IPAM
 * `excludeSubnets`: Excludes gateway IP from being assigned (typically reserved for router/gateway)
 * `topology: "localnet"`: Uses localnet topology for direct physical network access
-* **No IPAM configuration**: IP addresses require external DHCP server on the VLAN network or VMs need to be configured statically
 
 == Step 4: Deploy VM with VLAN Network Connectivity
 
