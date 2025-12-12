@@ -94,7 +94,7 @@
     <a class="nav-link" href="linux-bridges.html">Linux Bridges</a>
   </li>
   <li class="nav-item" data-depth="2">
-    <a class="nav-link" href="ovs-bridge-troubleshooting.html">Troubleshooting OVS Bridge Creation for Localnet Networks</a>
+    <a class="nav-link" href="ovs-bridge-troubleshooting.html">Troubleshooting Localnet Networks</a>
   </li>
 </ul>
   </li>
@@ -342,6 +342,7 @@ spec:
     "type": "ovn-k8s-cni-overlay",
     "topology": "localnet",
     "netAttachDefName": "vm-guests-vlan/localnet-vlan-100",
+    "physicalNetworkName": "localnet-vlan",
     "vlanID": 100,
     "subnets": "192.168.100.0/24",
     "excludeSubnets": "192.168.100.1/32"
@@ -355,19 +356,19 @@ EOF</code></pre>
 <div class="ulist">
 <ul>
 <li>
+<p><code>physicalNetworkName: "localnet-vlan"</code>: Links this NAD to the bridge mapping configured in the NNCP (must match the <code>localnet</code> name in the bridge-mappings)</p>
+</li>
+<li>
 <p><code>vlanID: 100</code>: Specifies VLAN tag 100 for network segmentation</p>
 </li>
 <li>
-<p><code>subnets</code>: Defines the expected IP subnet range for documentation and validation purposes</p>
+<p><code>subnets</code>: Defines the IP subnet range for OVN-Kubernetes IPAM</p>
 </li>
 <li>
 <p><code>excludeSubnets</code>: Excludes gateway IP from being assigned (typically reserved for router/gateway)</p>
 </li>
 <li>
 <p><code>topology: "localnet"</code>: Uses localnet topology for direct physical network access</p>
-</li>
-<li>
-<p><strong>No IPAM configuration</strong>: IP addresses require external DHCP server on the VLAN network or VMs need to be configured statically</p>
 </li>
 </ul>
 </div>
