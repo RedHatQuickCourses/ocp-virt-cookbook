@@ -17,6 +17,7 @@ This section is intended as a quick start guide for technically experienced memb
 - You have a macOS or Linux workstation. Windows has not been tested, or supported. You can try using a WSL2 based environment to run these steps - YMMV!
 - You have a somewhat recent version of the Git client installed on your workstation
 - You have a somewhat new Node.js LTS release (Node.js 16+) installed locally.
+- You have [pnpm](https://pnpm.io/installation); npm will work but not recommended
 - Install a recent version of Visual Studio Code. Other editors with asciidoc editing support may work - YMMV, and you are on your own...
 
 ### Antora Files and Folder Structure
@@ -39,23 +40,23 @@ To add a new section under a chapter create an entry in the _modules/CHAPTER/nav
 $ git clone git@github.com:RedHatQuickCourses/ocp-virt-cookbook.git
 ```
 
-2. Install the npm dependencies for the course tooling.
+2. Install the pnpm dependencies for the course tooling.
 
 ```
 $ cd ocp-virt-cookbook
-$ npm install
+$ pnpm install
 ```
 
 3. Start the asciidoc to HTML compiler in the background. This command watches for changes to the asciidoc source content in the **modules** folder and automatically re-generates the HTML content.
 
 ```
-$ npm run watch:adoc
+$ pnpm run watch:adoc
 ```
 
 4. Start a local web server to serve the generated HTML files. Navigate to the URL printed by this command to preview the generated HTML content in a web browser.
 
 ```
-$ npm run serve
+$ pnpm run serve
 ```
 
 5. Before you make any content changes, create a local Git branch based on the **main** branch. As a good practice, prefix the branch name with your GitHub ID. Use a suitable branch naming scheme that reflects the content you are creating or changing.
