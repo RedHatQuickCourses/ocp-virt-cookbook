@@ -1,11 +1,14 @@
 = OpenShift Virtualization API Component Overview
+:navtitle: API Component Overview
 
-NOTE: This guide is a simplified overview of OpenShift Virtualization (OCP-V) API components, covering the most essential material concerning these components and the overall platform architecture.
-It is _not_ a comprehensive API reference, but rather a focused quick start guide for new API developers.
+NOTE: OpenShift versions tested: v4.19, v4.20
 
-For newcomers or those coming from other virtualization platforms, OCP-V is based on the https://kubevirt.io[KubeVirt,window=_blank] upstream project and is built on top of OpenShift, which is in turn based on Kubernetes.
+IMPORTANT: This reference guide offers an overview of OpenShift Virtualization API components, covering the most essential material concerning these components and the overall platform architecture.
+It is _not_ a comprehensive API reference, but is rather intended to be a quick start guide for new API developers.
+
+For newcomers or those coming from other virtualization platforms, OpenShift Virtualization is based on the https://kubevirt.io[KubeVirt,window=_blank] upstream project and is built on top of OpenShift, which is in turn based on Kubernetes.
 The OpenShift (and therefore Kubernetes) architecture uses a declarative design defined by API objects which can be represented in json or yaml form.
-OCP-V extends this declarative API with objects specific to virtualization. For newcomers, the role of each these objects as well as their relation to one another can be confusing.
+OpenShift Virtualization extends this declarative API with objects specific to virtualization. For newcomers, the role of each these objects as well as their relation to one another can be confusing.
 
 This guide merges the typical architecture guide with that of an API guide; it is meant to clear up the role of each of these API components (also referred to as objects or resources) and the relationship between components, while also touching on the API specifics of each component.
 
@@ -20,7 +23,7 @@ Here is what's covered:
 ** <<instance_types,Instance Types>>
 ** <<vm_cluster_instance_types,VirtualMachineClusterInstanceTypes>>
 ** <<vm_instance_types,VirtualMachineInstanceTypes>>
-** <<virtual_machine_preferences,VirtualMachinePreferences>>
+** <<virtual_machine_preferences,VirtualMachinePreferences and VirtualMachineClusterPreferences>>
 ** <<preferred_cpu_topology,PreferredCPUTopology>>
 ** <<vcpu_spread_options,vCPU SpreadOptions>>
 * <<networking_apis,Networking APIs>>
@@ -47,7 +50,6 @@ Here is what's covered:
 ** <<virtual_machine_exports,VirtualMachineExports>>
 
 == Virtualization APIs [[virtualization_apis]]
-
 
 === VirtualMachines [[virtual_machines]]
 A VirtualMachine in an API object (technically, a Kubernetes Custom Resource) that represents a non-running VirtualMachine in OpenShift Virtualization.
@@ -94,7 +96,6 @@ status:
 <1> The action being requested. One of the following string values (`Stop`, `Start`).
 <2> The optional UID of the VirtualMachineInstance (_not_ the VirtualMachine) to perform the action against. This is not required for `Start` command since the VMI gets created when the VM starts.
 
-
 When performing API actions against a VirtualMachine, there are several different fields reflecting the current run state in the VM `status`:
 
 * **status.printableStatus** - this is the simplest field to check the VM power state, and reflects `Running` (started / ready), `Starting` (progressing / booting), and `Stopped` states.
@@ -122,7 +123,7 @@ status:
 
 === VirtualMachineInstances [[virtual_machine_instances]]
 
-A VirtualMachineInstance (VMI) reflects the current configuration of a running VM in OCP-V.
+A VirtualMachineInstance (VMI) reflects the current configuration of a running VM in OpenShift Virtualization.
 
 Under the hood, VirtualMachineInstances are tied to a Kubernetes Pods, which are (groups of) containers that house and run the QEMU / KVM hypervisor and mount the VM disk image (the root disk and any additional disks) as a PersistentVolumeClaim.
 
@@ -132,7 +133,6 @@ As with how a VMI gets created when a VM is started, the inverse occurs when a V
 The backing storage volumes (DataVolumes, PVCs, and PVs underlying) are kept unaffected when a VM is stopped, despite the VMI's removal.
 
 When the VM is started again, a new VMI is created from the template defined in the VM yaml/json, and the same volumes are attached to the new VMI.
-
 
 === Instance Types [[instance_types]]
 
@@ -195,7 +195,7 @@ VirtualMachineClusterInstanceTypes support the following field spec (some top-le
 A VirtualMachineInstanceType is just like a VirtualMachineClusterInstanceType, only namespace-scoped instead of being cluster-scoped. This is useful for normal (non-cluster-admin) users to define their own custom instance types,
 which are then available only to the project/namespace that they have access to.
 
-IMPORTANT: You should select or define an instance type to use for a VirtualMachine rather than specifying the `cpu` and `memory` configuration manually, as the `spec.instancetype` field is required by the OCP-V web console and can not be set if either `spec.template.spec.domain.cpu` or `spec.template.spec.domain.memory` are also set. This is because the instance type is used to populate the latter two fields of the VirtualMachineInstance when a VM is started.
+IMPORTANT: You should select or define an instance type to use for a VirtualMachine rather than specifying the `cpu` and `memory` configuration manually, as the `spec.instancetype` field is required by the OpenShift Virtualization web console and can not be set if either `spec.template.spec.domain.cpu` or `spec.template.spec.domain.memory` are also set. This is because the instance type is used to populate the latter two fields of the VirtualMachineInstance when a VM is started.
 
 === VirtualMachinePreferences and VirtualMachineClusterPreferences [[virtual_machine_preferences]]
 
@@ -439,8 +439,8 @@ A StorageClass is used in OpenShift and Kubernetes to provide automated provisio
 StorageClasses use a CSI driver to provide the implementation of a vendor's storage platform on OpenShift, abstracting vendor-specific APIs used to provision new volumes
 (such as Amazon Elastic Block Store) on a particular platform so they can be utilized using kube-native APIs (PVs and PVCs).
 
-StorageClasses aren't usually a point of direct interaction for OCP-V users or even administrators, unless for tuning vendor-specific settings in regards to provisioning,
-garbage collection and recycling or for adding an unsupported cloud or storage platform to OCP-V to extend functionality.
+StorageClasses aren't usually a point of direct interaction for OpenShift Virtualization users or even administrators, unless for tuning vendor-specific settings in regards to provisioning,
+garbage collection and recycling or for adding an unsupported cloud or storage platform to OpenShift Virtualization to extend functionality.
 
 === DataVolumes [[data_volumes]]
 
@@ -472,7 +472,7 @@ The full list of data ingest methods supported by the CDI (and in turn, DataVolu
 === DataSources [[data_sources]]
 
 DataSources can be thought of as "bootable images" and simply point to either an existing PersistentVolumeClaim or VolumeSnapshot which would be used to provision a new DataVolume.
-From the OCP-V web console, only DataSources can be chosen as root disk images, where they are labeled as "Bootable Volumes".
+From the OpenShift Virtualization web console, only DataSources can be chosen as root disk images, where they are labeled as "Bootable Volumes".
 
 There is only one field supported within a DataSource `spec`:
 
@@ -597,26 +597,26 @@ spec:
     name: example-source-vm
   patches:
   - '{ "op": "add", "path": "/spec/template/spec/domain/cpu", "value": {} }'
-  - `{ "op": "add", "path": "/spec/template/spec/domain/cpu/cores", "value": 6 }'
+  - '{ "op": "add", "path": "/spec/template/spec/domain/cpu/cores", "value": 6 }'
 ----
 
 [IMPORTANT]
 ====
 * Manually setting the `cpu` or `memory` fields in a VirtualMachine conflict with the `spec.instancetype` field.
 * Removing `spec.instancetype` will prevent the VM from displaying in the UI.
-* See the sections on <<instance_types,InstanceTypes>> to configure cpu and memory usage, and <<vm_cluster_preferences,VirtualMachineClusterPreferences>> to change cpu topology.
+* See the sections on <<instance_types,InstanceTypes>> to configure cpu and memory usage, and <<virtual_machine_preferences,VirtualMachine[Cluster]Preferences>> to change cpu topology.
 * Attempting to patch `cpu` or `memory` values on a VM with `spec.instancetype` set will prevent the VM restoration from completing, causing the clone operation to hang indefinitely.
 ====
 
 === Cloning Strategies and StorageProfiles [[vm_cloning_strategies]]
 
 In OpenShift Virtualization, a cloneStrategy can be used to tune the cloning method for a specific type of storage (defined in OpenShift/Kubernetes by the StorageClass).
-OCP-V (specifically, the CDI) stores the recommended settings for a particular StorageClass (which exposes a specific CSI driver) in a StorageProfile.
+OpenShift Virtualization (specifically, the CDI) stores the recommended settings for a particular StorageClass (which exposes a specific CSI driver) in a StorageProfile.
 A StorageProfile is created for each StorageClass on the cluster with optimized settings for that storage provider.
 
 NOTE: For storage providers not recognized by the CDI, you must configure a StorageProfile for that StorageClass, or PVCs will not be provisioned whenever DataVolumes are defined using that StorageClass.
 
-By default, cloning a VirtualMachine in OCP-V will take a snapshot of the VM (by creating a VolumeSnapshot), and then create new PVCs and associated DataVolumes to restore the snapshot.
+By default, cloning a VirtualMachine in OpenShift Virtualization will take a snapshot of the VM (by creating a VolumeSnapshot), and then create new PVCs and associated DataVolumes to restore the snapshot.
 
 You may note that the cloning process is not instantaneous, and this has more to do with the block layer implementation of the CSI driver than of the cloning (snapshot/restore) process itself.
 Some virtualization platforms (and perhaps a few CSI drivers for OpenShift/Kubernetes) support instantaneous cloning from a snapshot due to hard linking or CoW (Copy on Write) implementation at the block-level.
@@ -720,7 +720,7 @@ spec:
 
 Supported source types are:
 
-[cols="1,1]
+[cols="1,1"]
 |===
 | apiGroup |kind
 
