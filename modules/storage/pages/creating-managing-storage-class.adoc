@@ -1,0 +1,165 @@
+= Creating and Managing Storage Classes
+:navtitle: Creating and Managing Storage Classes
+
+== Overview
+
+This is a comprehensive tutorial on StorageClasses for OpenShift Container Platform (OCP). This guide focuses on OCP 4.x (often abbreviated as OCPv4), where the Container Storage Interface (CSI) is the standard for storage provisioning.These concepts also apply directly to OpenShift Virtualization (CNV), where storage classes determine how Virtual Machine disks are provisioned.
+
+== Storage Class Fundamentals
+In OpenShift, a StorageClass (SC) describes a "class" of storage available to the cluster. It allows administrators to define different tiers of storage (e.g., "fast-ssd", "cheap-hdd") without users needing to know the underlying infrastructure details.
+
+When a user creates a PersistentVolumeClaim (PVC), they specify a StorageClass. A dynamic provisioner then automatically creates the backing PersistentVolume (PV).
+
+== Key Parameters in a StorageClass Object
+* *Provisioner:* The plugin that creates the volume (e.g., `ebs.csi.aws.com` for AWS, `nfs.csi.k8s.io` for NFS).
+* *Parameters:* Key-value pairs passed to the specific provisioner (e.g., `type: gp3, encrypted: "true"`).
+* *ReclaimPolicy:* What happens to the underlying storage when the PVC is deleted.
+* *VolumeBindingMode:* Controls when the volume is actually provisioned.
+* *AllowVolumeExpansion:* If true, users can resize PVCs by editing the object.
+
+== Volume Binding Modes
+This setting is critical for performance and scheduling, especially in multi-zone clusters or when using Local Storage (LVM/HostPath).
+
+A. Immediate
+*  Behavior: The volume is created as soon as the PVC is created, regardless of whether a Pod is using it.
+*  Risk: In a multi-zone cluster (e.g., `AWS us-east-1a, 1b, 1c`), the volume might be created in Zone A. If your Pod is later scheduled to a node in Zone B, it cannot attach to the volume.
+*  Best For: Standard cloud storage in single-zone clusters; scenarios where topology doesn't matter.
+
+B. WaitForFirstConsumer (Recommended)
+*  Behavior: The volume creation is delayed until a Pod utilizing that PVC is scheduled.
+*  Advantage: The scheduler sees the Pod needs the PVC. It picks a node for the Pod first (e.g., in Zone B). Then, it triggers the storage provisioner to create the volume in Zone B specifically.
+*  Required For: Local Storage (LVM), HostPath, and Multi-AZ cloud environments.
+
+
+== Reclaim Policies
+This determines the fate of the data when a user deletes their PersistentVolumeClaim (PVC).
+
+A. Delete (Default)
+*  Behavior: When the PVC is deleted, the PV object and the actual storage infrastructure (e.g., the AWS EBS volume) are deleted.
+*  Use Case: Ephemeral data, CI/CD workspaces, testing.
+
+B. Retain
+*  Behavior: When the PVC is deleted, the PV object remains in Released state. The physical data on the storage array remains intact.
+*  Recovery: An administrator must manually clean up the data or delete the PV to reclaim space.
+*  Use Case: Databases, critical production data where accidental deletion must be prevented.
+
+== Setting a Default Storage Class
+You can mark a specific StorageClass as the default. If a user creates a PVC without specifying a storageClassName, this class is used.
+Command:
+[source,bash,role=execute]
+----
+oc patch storageclass <your-class-name> -p '{"metadata": {"annotations": {"storageclass.kubernetes.io/is-default-class": "true"}}}'
+----
+To remove the default status:
+[source,bash,role=execute]
+----
+oc patch storageclass <old-default-name> -p '{"metadata": {"annotations": {"storageclass.kubernetes.io/is-default-class": "false"}}}'
+----
+Tip: Ensure only one SC is marked as default to avoid confusion.
+
+== Storage Class Examples
+
+Scenario A: AWS EBS (High Performance) 
+This uses the CSI driver to provision a gp3 volume.
+
+[source,yaml]
+----
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: gp3-fast
+provisioner: ebs.csi.aws.com
+volumeBindingMode: WaitForFirstConsumer
+allowVolumeExpansion: true
+reclaimPolicy: Delete
+parameters:
+  type: gp3
+  iops: "3000"
+  throughput: "125"
+  encrypted: "true"
+
+----  
+Scenario B: Local Storage / LVM (For Databases/Performance)
+Requires the Local Storage Operator or LVM Storage Operator installed.
+
+[source,yaml]
+----
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: local-lvm-storage
+provisioner: topolvm.io  # Depends on the specific operator used
+volumeBindingMode: WaitForFirstConsumer # Critical for local storage!
+reclaimPolicy: Retain
+parameters:
+  "csi.storage.k8s.io/fstype": "xfs"
+
+----
+
+Scenario C: NFS (Shared Storage / RWX)
+Requires the NFS CSI Driver operator or an external NFS provisioner.
+
+[source,yaml]
+----
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: nfs-shared
+provisioner: nfs.csi.k8s.io
+parameters:
+  server: nfs-server.example.com
+  share: /exports/data
+reclaimPolicy: Delete
+volumeBindingMode: Immediate
+mountOptions:
+  - nfsvers=4.1
+----
+
+== Verification and TroubleshootingVerification Commands
+List Storage Classes:
+
+[source,bash,role=execute]
+----
+oc get sc
+# Look for the (default) marker next to the name
+----
+
+Describe a Class:
+
+[source,bash,role=execute]
+----
+oc describe sc <name>
+----
+
+Test Provisioning:Create a test PVC:
+
+[source,yaml]
+----
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: test-pvc
+spec:
+  accessModes: [ "ReadWriteOnce" ]
+  resources: { requests: { storage: 1Gi } }
+  storageClassName: gp3-fast
+----
+
+== Common Troubleshooting Scenarios
+
+* **Issue 1:** PVC remains in Pending state.
+  ** Cause A: volumeBindingMode is WaitForFirstConsumer, but no Pod is using the PVC yet.
+   *** Fix: Create a Pod that mounts this PVC.
+  ** Cause B: No nodes have enough resources to schedule the Pod, so the storage waits.
+   *** Fix: Check oc get pods to see if the pod is Pending.
+
+* **Issue 2:** Pod cannot attach volume (Topology Mismatch)
+  ** Error: Volume node affinity conflict
+  ** Cause: You used volumeBindingMode: Immediate on a multi-zone cluster. The volume was created in Zone A, but the Pod was scheduled in Zone B.
+  ** Fix: Delete the PVC and recreate it using a StorageClass with WaitForFirstConsumer.
+
+* **Issue 3:** "Provisioner not found"Cause: The CSI driver specified in provisioner: is not installed or crashing.
+  ** Fix: Check the storage operator pods in the relevant namespace (e.g., openshift-cluster-csi-drivers).
+
+* **Issue 4:** Volume Resize FailsCause: allowVolumeExpansion is set to false in the StorageClass.
+  ** Fix: Edit the StorageClass to true (note: not all provisioners support online expansion).
