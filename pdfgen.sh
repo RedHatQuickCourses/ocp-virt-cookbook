@@ -9,7 +9,7 @@
 ## - Images included in the content are not rendered in the generated PDF.
 ##
 ## TODO:
-## - A better alternative would be to use one of Antora's official npm packages for PDF generation.
+## - A better alternative would be to use one of Antora's official pnpm packages for PDF generation.
 
 count=1
 filename=$(basename $(pwd)).pdf
