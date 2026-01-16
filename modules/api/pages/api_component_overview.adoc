@@ -1,0 +1,736 @@
+= OpenShift Virtualization API Component Overview
+:navtitle: API Component Overview
+
+NOTE: OpenShift versions tested: v4.19, v4.20
+
+IMPORTANT: This reference guide offers an overview of OpenShift Virtualization API components, covering the most essential material concerning these components and the overall platform architecture.
+It is _not_ a comprehensive API reference, but is rather intended to be a quick start guide for new API developers.
+
+For newcomers or those coming from other virtualization platforms, OpenShift Virtualization is based on the https://kubevirt.io[KubeVirt,window=_blank] upstream project and is built on top of OpenShift, which is in turn based on Kubernetes.
+The OpenShift (and therefore Kubernetes) architecture uses a declarative design defined by API objects which can be represented in json or yaml form.
+OpenShift Virtualization extends this declarative API with objects specific to virtualization. For newcomers, the role of each these objects as well as their relation to one another can be confusing.
+
+This guide merges the typical architecture guide with that of an API guide; it is meant to clear up the role of each of these API components (also referred to as objects or resources) and the relationship between components, while also touching on the API specifics of each component.
+
+Thus, full yaml examples and schemas are avoided in favor of snippets and a subset of the most important fields (in `dot.notation`) of a particular object
+See the documentation for https://docs.redhat.com/en/documentation/openshift_container_platform/latest/html/virtualization/index[OpenShift Virtualization,window=_blank] and https://kubevirt.io/user-guide/[KubeVirt,window=_blank] for detailed examples, and the https://kubevirt.io/api-reference/main/index.html[KubeVirt API reference,window=_blank] for the full API schema.
+
+Here is what's covered:
+
+* <<virtualization_apis,Virtualization APIs>>
+** <<virtual_machines,VirtualMachines>>
+** <<virtual_machine_instances,VirtualMachineInstances>>
+** <<instance_types,Instance Types>>
+** <<vm_cluster_instance_types,VirtualMachineClusterInstanceTypes>>
+** <<vm_instance_types,VirtualMachineInstanceTypes>>
+** <<virtual_machine_preferences,VirtualMachinePreferences and VirtualMachineClusterPreferences>>
+** <<preferred_cpu_topology,PreferredCPUTopology>>
+** <<vcpu_spread_options,vCPU SpreadOptions>>
+* <<networking_apis,Networking APIs>>
+** <<networks,Networks>>
+** <<interfaces,Interfaces>>
+** <<default_network,The Default Network>>
+** <<multus_cni_plugin,Multus CNI Plugin>>
+** <<nmstate_operator,NMState Operator>>
+* <<storage_apis,Storage APIs>>
+** <<persistent_volumes,PersistentVolumes>>
+** <<persistent_volume_claims,PersistentVolumeClaims>>
+** <<volume_snapshots,VolumeSnapshots>>
+** <<data_volumes,DataVolumes>>
+** <<data_sources,DataSources>>
+** <<storage_classes,StorageClasses>>
+** <<virtual_machine_snapshots,VirtualMachineSnapshots>>
+** <<virtual_machine_restores,VirtualMachineRestores>>
+* <<clone_api,Clone API>>
+** <<virtual_machine_clones,VirtualMachineClones>>
+** <<mutating_vm_clones,Mutating a Cloned VM>>
+** <<patching_vm_clones,Patching a Cloned VM>>
+** <<vm_cloning_strategies,Cloning Strategies and StorageProfiles>>
+* <<export_api,Export API>>
+** <<virtual_machine_exports,VirtualMachineExports>>
+
+== Virtualization APIs [[virtualization_apis]]
+
+=== VirtualMachines [[virtual_machines]]
+A VirtualMachine in an API object (technically, a Kubernetes Custom Resource) that represents a non-running VirtualMachine in OpenShift Virtualization.
+
+VirtualMachines contain a template for a VirtualMachineInstance (covered in the next section), and reflect the run state as part of their Status.
+
+VirtualMachines contain fields within their `spec` where numerous details of the VM are defined. Several of these are:
+
+* `instanceType` - the <<instance_types,instance type>> name (t-shirt sized by RAM & CPU allotment) to use for the VirtualMachine.
+* `volumes` - a list of volumes to be attached to the VM as virtual disks. This field supports https://kubevirt.io/user-guide/storage/disks_and_volumes/#volumes[several different volume types,window=_blank], but `dataVolume` and `persistentVolumeClaims` are the most typical.
+** `dataVolume` - denotes the name of <<data_volumes,DataVolume(s)>> to be provisioned for this VM. The DataVolume(s) to be created are defined within the `dataVolumeTemplates` section.
+** `persistentVolumeClaim` - attaches a <<persistent_volume_claim,PersistentVolumeClaim>> to the VM as a disk.
+* `networks` - a list of <<networks,networks>> bound to interfaces which are attached to the VM. An empty field will get the default Pod/VM network by default.
+* `interfaces` - a list of network <<interfaces,interfaces>> attached to a VM. Interfaces can be thought of as virtualized NICs, and are used to connect a Pod/VM to a particular network.
+* `dataVolumeTemplates` - a list of <<data_volumes,DataVolume manifests>> to be created. Any DataVolumes listed here should get referenced by name in the `volumes` section.
+
+The running state of a VirtualMachine is typically managed via the `spec.runStrategy` field, which accepts these values:
+
+* **Always** - default to the powered on state, which causes the VM to start again if it is stopped for any reason (whether it was shutdown manually or had crashed).
+* **RerunOnFailure** - like Always, but only restarts the VM if it crashes and not if it was shutdown cleanly (scheduled or manual shutdown from within the guest).
+* **Once** - the VM is started once and not again, regardless of whether it crashes or is shutdown manually.
+* **Manual** - the run state is not managed automatically, but only responds to power commands POST'd to the status subresource of the VM.
+* **Halted** - causes the VM to be shutdown until the `spec.runStrategy` is either changed or a `start` command is issued against the VM (more on this topic below).
+
+NOTE: The `spec.running` field is both deprecated in favor of, and mutually exclusive with, the `spec.runStrategy` field.
+
+The `virtctl` command can also issue `start`, `stop` and `restart` commands which affect a VirtualMachine's status subresource, which is the `../status` API endpoint used by KubeVirt to reflect a VM's current state.
+
+Each of these commands, when issued, may affect the `runStrategy` of the VirtualMachine they are issued against. Each case is explained below:
+
+* **start** - starts a VM and reverts a `Halted` run strategy to `Always`. This does not affect `RerunOnFailure` or `Manual` run strategies.
+* **restart** - restarts a VM in the running state, but does not affect the run strategy. This is a No-Op for a `Halted` VM.
+* **stop** - stops a VM and reverts an `Always` run strategy to `Halted`. This does not affect `RerunOnFailure` or `Manual` run strategies.
+
+At the API level, when a power command is issued against a VM with a `Manual` run strategy, a `stateChangeRequests[]` list is added to the VirtualMachine status subresource as follows:
+
+[source,yaml]
+----
+status:
+  stateChangeRequests:
+  - action: <Stop|Start> <1>
+    uid: <uid-of-the-virtual-machine-instance> <2>
+----
+<1> The action being requested. One of the following string values (`Stop`, `Start`).
+<2> The optional UID of the VirtualMachineInstance (_not_ the VirtualMachine) to perform the action against. This is not required for `Start` command since the VMI gets created when the VM starts.
+
+When performing API actions against a VirtualMachine, there are several different fields reflecting the current run state in the VM `status`:
+
+* **status.printableStatus** - this is the simplest field to check the VM power state, and reflects `Running` (started / ready), `Starting` (progressing / booting), and `Stopped` states.
+* **status.runStrategy** - reflects the active run strategy, which reflects the `spec.runStrategy` field as well as those same values: `Always`, `RerunOnFailure`, `Once`, `Manual` and `Halted`.
+* **status.conditions["type": "Ready"]** - `conditions` accepts a list of objects containing these fields: `type` - a string value (`Ready` in this case), `status` - a boolean value, `Reason` and `Message` - optional reason code and description, respectively.
+An example "not ready yet" condition looks like this:
+
+[source,yaml]
+----
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: vm-status-example
+spec:
+  ...
+status:
+  conditions:
+    - lastProbeTime: "2025-11-10T15:00:46Z"
+      lastTransitionTime: "2025-11-10T15:00:46Z"
+      message: Guest VM is not reported as running
+      reason: GuestNotRunning
+      status: "False"
+      type: Ready
+----
+
+=== VirtualMachineInstances [[virtual_machine_instances]]
+
+A VirtualMachineInstance (VMI) reflects the current configuration of a running VM in OpenShift Virtualization.
+
+Under the hood, VirtualMachineInstances are tied to a Kubernetes Pods, which are (groups of) containers that house and run the QEMU / KVM hypervisor and mount the VM disk image (the root disk and any additional disks) as a PersistentVolumeClaim.
+
+In relation to a VirtualMachine, a VirtualMachineInstance gets spun out of the yaml (json) definition of the VM `template`, specifically `spec.template` when a VirtualMachine is started.
+
+As with how a VMI gets created when a VM is started, the inverse occurs when a VM is stopped and the VMI is removed.
+The backing storage volumes (DataVolumes, PVCs, and PVs underlying) are kept unaffected when a VM is stopped, despite the VMI's removal.
+
+When the VM is started again, a new VMI is created from the template defined in the VM yaml/json, and the same volumes are attached to the new VMI.
+
+=== Instance Types [[instance_types]]
+
+Similar to other cloud platforms, In OpenShift Virtualization, CPU and memory resources are determined according to named instance types.
+These instance types are letter-grouped according to the desired purpose or feature set and numbered by generation (ex: u1).
+Each group contains a selection of t-shirt sized (small, medium, large, xlarge, 2xlarge, etc) instance types scaled by resource allotment, with the size following the instance letter and number (ex: u1.xlarge).
+The scaling ratio for each group of instances differs according to the intended purpose (memory-intensive vs cpu-intensive).
+
+The following default instance types are available in OpenShift Virtualization:
+
+* **Network (N)** - for network-intensive workloads; requires DPDK-enabled nodes; 1:2 CPU/RAM ratio.
+* **Overcommitted (O)** - use when full RAM consumption is not expected or required; allows over-provisioning of host memory; 1:4 CPU/RAM ratio.
+* **Compute Exclusive (CX)** - for CPU-intensive workloads; runs on dedicated CPU cores/threads; 1:2 CPU/RAM ratio.
+* **General Purpose (U)** - for "universal" or general workloads; runs on shared host CPU cores/threads; 1:4 CPU/RAM ratio.
+* **Memory Intensive (M)** - for memory-intensive workloads; does not allow for over-provisioning of host memory; 1:8 CPU/RAM ratio.
+
+All sizes of every instance type above are defined at the cluster-level as a VirtualMachineClusterInstanceType.
+
+=== VirtualMachineClusterInstanceTypes [[vm_cluster_instance_types]]
+
+A VirtualMachineClusterInstanceType defines an instance type at the cluster-scope. As mentioned, these are used to provide a selection of default instance types when provisioning a new VM in OpenShift Virtualization.
+
+VirtualMachineClusterInstanceTypes support the following field spec (some top-level fields are omitted below):
+
+* **annotations** - optional set of annotations to apply to instances of this type
+* **cpu** (required) - defines cpu-related configuration of this instance type
+** **dedicatedCPUPlacement** - whether to isolate vCPUs of a VM to available physical CPU cores/threads of a host node. Defaults to `false`.
+** **guest** (required) - the number of vCPUs to expose to the guest. Defaults to `0`.
+** **isolateEmulatorThread** - whether to place the emulator thread of a VMI on an additional dedicated physical CPU core/thread. Defaults to `false`.
+** **maxSockets** - specifies the maximum amount of sockets which can be hot-plugged.
+** **model** - specifies the CPU model to use within the VMI. Defaults to `host-model`.
+** **numa** - used to configure host NUMA settings
+*** **guestMappingPassthrough** - creates a guest topology which ensures memory and CPUs on a virtual numa node never cross into another numa node on the host. Defaults to `{}`.
+** **realtime** - instructs the virt-launcher pod to tune the VMI for low-latency; optional for real-time workloads.
+*** **mask** - mask expression that defines which vCPUs are used for realtime. Matches underlying libvirt expression format such as `"0-3,^1","1,2,3","1-2"`
+* **gpu** - defines gpu devices associated with the instance type
+** **deviceName** - string value. Defaults to `""`.
+** **name** (required) - the name of the gpu device associated with a device plugin. Defaults to `""`.
+** **tag** - specified tag and virtual network interface address to expose to the guest via config drive.
+** **virtualGPUOptions** - options field for vGPU
+*** **display** - display options for vGPU
+**** **enabled** - whether to enable the display adapter backing a vGPU. Defaults to `true`.
+**** **ramFB** - whether to enable the boot framebuffer until the guest OS loads the actual GPU driver.
+***** **enabled** - Defaults to `true`.
+* **hostDevices** - optionally defines devices to expose with the instance type
+** **deviceName** (required) - resource name of the host device. Defaults to `""`.
+** **name** (required) - Defaults to `""`.
+** **tag** - specified tag and virtual interface address to expose to the guest via config drive
+* **memory** (required) - defines the memory-related configuration of this instance type
+** **guest** (required) - string value unit amount (such as `"4096Mi"` or `"6Gi"`) of memory to expose to the guest OS.
+** **hugepages** - allows the use of hugepages for the VMI instead of regular memory
+*** **pageSize** - specifies the hugepage size. Valid sizes for amd64 architecture are `1Gi` and `2Mi`.
+** **maxGuest** - specifies the max amount of memory visible inside the guest. The delta between `maxGuest` and `guest` is the hot-pluggable amount of memory.
+** **overcommitPercent** - percentage of guest memory which will be overcommitted, or the % reduction in memory required by the virt-launcher pod. Defaults to `0`.
+* **nodeSelector** - a Kubernetes selector label used to schedule desired nodes for this instance type
+** **schedulerName** - specifies a custom Kubernetes scheduler for the instance type. If empty, uses the default K8s scheduler.
+
+=== VirtualMachineInstanceTypes [[vm_instance_types]]
+
+A VirtualMachineInstanceType is just like a VirtualMachineClusterInstanceType, only namespace-scoped instead of being cluster-scoped. This is useful for normal (non-cluster-admin) users to define their own custom instance types,
+which are then available only to the project/namespace that they have access to.
+
+IMPORTANT: You should select or define an instance type to use for a VirtualMachine rather than specifying the `cpu` and `memory` configuration manually, as the `spec.instancetype` field is required by the OpenShift Virtualization web console and can not be set if either `spec.template.spec.domain.cpu` or `spec.template.spec.domain.memory` are also set. This is because the instance type is used to populate the latter two fields of the VirtualMachineInstance when a VM is started.
+
+=== VirtualMachinePreferences and VirtualMachineClusterPreferences [[virtual_machine_preferences]]
+
+Similar to VirtualMachineInstanceTypes, VirtualMachinePreferences are used to store the remaining machine-specific settings which are not covered by the instance type objects.
+However, these settings are merely _preferred_ and thus can be overridden by changing the VirtualMachine object directly.
+
+As with instance types, there are also VirtualMachineClusterPreferences which accept the same `spec` as a VirtualMachinePreference, but these apply to the cluster scope.
+
+In OpenShift Virtualization, VirtualMachineClusterPreferences are used to store settings optimized per OS, and are thus named according to the OS (`fedora`, `rhel10`, `win11`, etc).
+For instance, some OS images are built to boot using legacy BIOS instead of UEFI firmware, so this is set in the VirtualMachineClusterPreference to ensure that VMs running a particular OS can boot properly.
+
+Below is an example VirtualMachineClusterPreference configured to boot using EFI firmware with SecureBoot enabled:
+
+[source,yaml]
+----
+apiVersion: instancetype.kubevirt.io/v1beta1
+kind: VirtualMachineClusterPreference
+metadata:
+  name: rhel10-custom
+spec:
+  firmware:
+    preferredUseEfi: true
+    preferredUseSecureBoot: true
+----
+
+NOTE: To specify BIOS firmware for a VM in a VirtualMachinePreference spec, use `spec.firmware.preferredUseBios` instead of `preferredUseEfi`. Keep in mind that SecureBoot is an exclusive feature of UEFI.
+
+=== PreferredCPUTopology [[preferred_cpu_topology]]
+
+Another useful feature of VirtualMachinePreferences is the ability to adjust how the number of vCPUs defined in a VirtualMachineInstanceType are presented to the guest OS (known as the CPU topology)
+This is how the number CPU sockets, cores and threads are divvied across the vCPU count, affecting only how the guest _views_ the CPU topology from within a VM (and nothing to do with host CPU socket, core or thread allocation).
+
+There are a several different settings for the preferredCPUTopology:
+
+* **sockets** (default) - vCPUs are presented to the guest OS as sockets
+* **cores** - vCPUs are presented to the guest OS as cores
+* **threads** - vCPUs are presented to the guest OS as threads
+* **spread** - vCPUs are spread across sockets and cores by default, but can be tuned by setting `spreadOptions` (see below).
+* **any** - vCPUs are allocated to the guest OS as sockets, and that any allocation of vCPUs is required by the preference (used to define a preference without an associated instance type)
+
+=== vCPU SpreadOptions [[vcpu_spread_options]]
+
+Whenever the preferredCPUTopology is set to `spread`, you can use `spreadOptions` to adjust how vCPUs are presented across cores, threads and sockets.
+
+`spreadOptions` contains two fields:
+
+* **across** - used to define how vCPUs are spread across sockets, cores and threads
+* **ratio** (defaults to `2`) - the number of cores per socket (we'll refer to this as `N` below)
+
+The values for `across` are:
+
+* **SocketsCores** (default) - vCPUs are spread across sockets and cores at a ratio of 1 socket per `N` cores.
+* **SocketsCoresThreads** - vCPUs are spread across sockets, cores and threads at a ratio of 1 socket per `N` cores, with 2 threads per core.
+* **CoresThreads** (requires 2+ vCPUs) - vCPUs are spread across cores and threads, but at an _enforced_ ratio of 2 threads per core.
+
+An example VirtualMachinePreference using a custom `preferredCPUTopology` is below:
+
+[source,yaml]
+----
+apiVersion: instancetype.kubevirt.io/v1beta1
+kind: VirtualMachinePreference
+metadata:
+  name: cpu-topology-example
+spec:
+  cpu:
+    preferredCPUTopology: spread
+    spreadOptions:
+      across: SocketsCoresThreads
+      ratio: 6
+----
+
+== Networking APIs [[networking_apis]]
+
+This section focuses on network-related sub-APIs found within VirtualMachines and VirtualMachineInstances, but also touches on networking components external to VMs/VMIs such as Multus CNI and NMState operator.
+
+Configuring networking at the VirtualMachine level is broken into two parts (both of which are co-dependent and therefore required), `networks` and `interfaces`, each of which is covered below.
+
+=== Networks [[networks]]
+
+In a VirtualMachine, networks are configured in the pod spec (`spec.template.spec`) via the `networks[]` field. Multiple networks can be listed (as denoted by the `[]`),
+but the name of each network must be unique (as with all Kubernetes resource names of a particular `kind`). A network must have an interface (covered below) of the same name defined within the VirtualMachine manifest.
+
+Each network should be declared in `spec.template.spec.networks[]` as one of two different types:
+
+* *pod* - the default Kubernetes network; for use as the primary network only
+* *multus* - the Multus CNI plugin enables the use of additional networks; can also be used as the primary network
+
+=== Interfaces [[interfaces]]
+
+In a VirtualMachine, an interface represents a virtual network interface card (NIC) attached to that VM.
+Interfaces are presented as virtualized adapters to the guest VM running within the host Pod, and different models (fully virtualized NICs) are supported by OpenShift Virtualization on guests which don't support `virtio` (such as Windows).
+
+Interfaces are defined in `spec.domain.devices.interfaces[]` within a VirtualMachine object, and must have a `network` associated with them in order to function.
+
+Below is a non-exhaustive list of fields supported within an interface (note that only two fields are required):
+
+* **name** (required) - a name matching a `network` defined within `spec.template.spec.networks[]` of the VirtualMachine.
+* (required) - the name of one of these core bindings or a nested network `binding` plugin:
+** **bridge** - connects to the named network using a Linux bridge
+** **sriov** - connect using a pass-through SR-IOV VF (using `vfio`)
+** **masquerade** - connects to the network using a NAT or IP masquerading (using `nftables` rules) for both egress and ingress
+** **binding** - allows the use of additional (non-core) network binding plugins
+*** **name** - the name of a supported network binding plugin, specifically _one_  of the following values:
+**** **l2bridge** - creates a direct Layer 2 connection between the VM `interface` and the desired `network`
+**** **passt** (tech-preview) - Plug a Simple Socket Transport is a userspace solution which provides better integration with the pod network, and in turn the OpenShift network ecosystem.
+* **model** - name of one of these supported adapters (10/100 adapters are omitted)
+** **e1000** - virtualizes an Intel 82545EM PCI gigabit ethernet adapter
+** **e1000e** - virtualizes an Intel 82574 PCI-E gigabit ethernet adapter
+** **virtio** - this is a virtualization standard for disks and network devices which enhances performance on Linux guests (where it is recommended).
+* **macAddress** - mac address visible from inside the guest
+* *ports* - a list of ports to forward to the VM guest
+** **name** - a friendly name for the given port
+** **port** - the port number, an integer value between `0` and `65535`
+* **pciAddress** - a PCI address to assign to the adapter within the guest, such as `0000:81:00.1`
+
+See the sections on Networking for concrete usage examples when defining VMs.
+
+=== The Default Network [[default_network]]
+
+This is (as the name indicates) the default network used by pods in OpenShift and Kubernetes.
+It is chosen by simply defining an empty `pod: {}` network with an empty `masquerade: {}` interface, as in the below example:
+
+[source,yaml]
+----
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: default-network-example
+  namespace: my-namespace
+spec:
+  template:
+    spec:
+      domain:
+        devices:
+          interfaces:
+          - name: default <1>
+            masquerade: {} <2>
+      networks:
+      - name: default <1>
+        pod: {} <3>
+----
+<1> the name of the network defined under `domain.devices.interfaces` (nested under `spec.template.spec`) must match the desired network name under `networks` within the VM template spec.
+<2> the default network uses IP masquerading (NAT) to connect the NIC to the underlying network
+<3> this chooses the Kubernetes Pod network as the underlying network
+
+The benefits of using the default network are that it:
+
+* is native to OpenShift and can be configured using the native methods
+* requires no special configuration for egress or communication between pods in a namespace and on the same node
+* allows use of Kubernetes Services for load balancing and IP address stability (internally)
+* can be exposed to the outside world using an OpenShift Route or a LoadBalancer Service on supported platforms
+
+Drawbacks of the default network are few, but notable:
+
+* VM uses a masquerade IP address which is not routable from the outside world
+* can not connect to external networks, even pods on other nodes (unless using Services within the same project/namespace)
+* does not support VLANs
+* on some platforms (AWS), LoadBalancer Services do not support mixed mode (simultaneous TCP & UDP) port-forwarding
+
+=== Multus CNI Plugin [[multus_cni_plugin]]
+
+Multus is a "meta plugin" for the Container Network Interface (CNI). Whereas the CNI only allows a single plugin to be deployed,
+Multus acts as an intermediary and allows the use of multiple CNI plugins, both concurrently and interchangeably.
+
+As mentioned in the <<networks,Networks>> section, Multus allows for defining additional networks using a variety of supported CNI plugins.
+
+These plugins are:
+
+* **bridge** -  acts as a network switch between pods running on the same node, and can be linked to a host network interface for connecting to external networks.
+* **host-device** - "moves" a host network interface into a pod network namespace, causing the interface to disappear from the root network namespace.
+* **ipvlan** - pods on the network share a mac address, which is used where the number of MAC addresses per port and/or unknown mac addresses are restricted due to security restrictions (VPC networks).
+* **macvlan** - pods on the network each have their own mac address, which conforms with traditional networking connectivity.
+* **SR-IOV** - single root I/O virtualization is used to share a single physical device with multiple pods, but requires a host device which supports this function.
+
+In OpenShift (and Kubernetes), Multus uses a custom resource type named NetworkAttachmentDefinition which is used to define a network using one of the supported plugins for a particular project/namespace.
+
+Alternatively, in OpenShift (but _not_ Kubernetes) you can also edit the `cluster` Network resource and define `spec.additionalNetworks[]`,
+which would then automatically create a NetworkAttachmentDefinition in the desired project/namespace automatically.
+This is useful as a central point of management for NetworkAttachmentDefinitions across the cluster.
+
+=== NMState Operator [[nmstate_operator]]
+
+NMState ("NM" stands for NetworkManager, a network configuration tool for RHEL, Fedora and other Linux distributions) is a declarative API used to manage network settings on a Linux host.
+
+The NMState Operator is a Kubernetes operator which exposes it's own API (NodeNetworkConfigurationPolicy), which uses NMState to configure networking on node hosts within the Kubernetes (or OpenShift) cluster where it is deployed.
+
+Some Multus network configurations (such as `linux-bridge`) may require the use of NMState Operator to actually create the bridge interface on nodes where the Pods (or VMs) are intended to run.
+
+It is possible to define a network in Multus (using a NetworkAttachmentDefinition) that uses an interface which may not exist on the node hosts.
+Attaching Pods or VMs to such a network will cause them to fail unless the interface exists on the node where the Pod/VM runs.
+
+== Storage APIs [[storage_apis]]
+
+This section covers the gist of the storage related objects in OpenShift Virtualization. Each subsection below is titled according to the Kubernetes `Kind` for that particular resource.
+
+There are some API object omissions which are not interacted with directly, but worth a brief mention here:
+
+* **VolumeSnapshotContents** - represents the actual 'on-disk' snapshot object in the underlying storage system.
+* **VirtualMachineSnapshotContents** - contains references to the source VM, <<persistent_volume_claims,PVCs>> and VolumeSnapshots used to create a <<volume_snapshots,VolumeSnapshot>>.
+* **VolumeSnapshotClasses** - similar to <<storage_classes,StorageClasses>>, VolumeSnapshotClasses uses a CSI driver to facilitate VolumeSnapshot creation for a particular storage platform.
+
+The next section goes over several different objects, with seemingly redundant concepts (volumes, snapshots, data sources, etc).
+The reason is that OpenShift Virtualization uses higher level abstractions of the lower level Kubernetes-native resources.
+
+This is to simplify storage tasks at the API level (cloning, snapshots, restoration, etc) versus dealing directly with the respective lower level resources.
+This also allows for tailoring the higher level resources to better fit the virtualization use case.
+
+=== PersistentVolumes [[persistent_volumes]]
+
+A PersistentVolume (PV) is a Kubernetes-native resource which represents a mountable storage volume and can be bound to any Pod by using a <<persistent_volume_claims,PersistentVolumeClaim>> (PVC).
+PersisentVolumes have the size of the volume they represent defined within them as well as their access mode (ReadWriteOnce, ReadWriteMany, etc), recycling policy and permissions.
+
+=== PersistentVolumeClaims [[persistent_volume_claims]]
+
+A PersistentVolumeClaim (PVC) is used to bind to or request a PersistentVolume for a Pod. It is also a core Kubernetes resource,
+and is the means of actually using a PersistentVolume with container workloads in Kubernetes. A PVC binds to a single PV in a 1:1 mapping,
+and once that PV is bound (unless `ReadWriteMany` mode enabled in the PV) it cannot be claimed or used by another PVC until it is released and recycled or garbage collected.
+
+In the early days of OpenShift and Kubernetes, PersistentVolumes would have to be manually provisioned at the host (or SAN / NAS) storage level,
+and then PersistentVolumes would have to be created on the cluster for each volume provisioned on the storage host.
+However, thanks to a newer resource called <<storage_classes,StorageClasses>> the provisioning and garbage collection of PersistentVolumes are automated for most cloud platforms and storage providers.
+
+In OpenShift Virtualization, <<data_sources,DataSources>> and <<data_volumes,DataVolumes>> are used to abstract the kube-native PVs and PVCs,
+and so they are the primary storage resources used by VirtualMachines.
+
+Aside from relying on StorageClasses to provision empty volumes, you can create a PVC with data pre-populated from a VolumeSnapshot (covered later)
+by using the `dataSource` field in the PersistentVolumeClaim object.
+Cloning a PVC is also possible by creating a new PVC with an existing one listed as the `dataSource`.
+
+=== VolumeSnapshots [[volume_snapshots]]
+
+VolumeSnapshots are a point-in-time copy of a PersistentVolume state, and can be used to clone VM disk images or to restore a PersistentVolume to a previous state.
+
+VolumeSnapshots are the lower level objects used by VirtualMachineSnapshots (covered later) to save the state of a VirtualMachine,
+but could also be created manually to save the PersistentVolume state which backs a KubeVirt DataVolume or DataSource.
+
+=== StorageClasses [[storage_classes]]
+
+A StorageClass is used in OpenShift and Kubernetes to provide automated provisioning of PersistentVolumes whenever a PersistentVolumeClaim is created.
+
+StorageClasses use a CSI driver to provide the implementation of a vendor's storage platform on OpenShift, abstracting vendor-specific APIs used to provision new volumes
+(such as Amazon Elastic Block Store) on a particular platform so they can be utilized using kube-native APIs (PVs and PVCs).
+
+StorageClasses aren't usually a point of direct interaction for OpenShift Virtualization users or even administrators, unless for tuning vendor-specific settings in regards to provisioning,
+garbage collection and recycling or for adding an unsupported cloud or storage platform to OpenShift Virtualization to extend functionality.
+
+=== DataVolumes [[data_volumes]]
+
+DataVolumes provide an abstraction for PersistentVolumeClaims and provide automated provisioning and data population from a supported data source.
+
+Without DataVolumes, you would have to manually create and populate a PVC with image data before attaching it to a VM as a disk.
+DataVolumes rely on the Containerized Data Importer (CDI) to handle the actual task of importing data into the underlying PVC.
+
+DataVolumes (more specifically, CDIs) support two different image types (qcow2 and raw) and numerous means of data ingest for populating a PVC,
+with the later methods falling into one of the three main use cases:
+
+* Uploading from a client machine
+* Downloading from an external source (web server, object storage provider, or container registry)
+* Cloning from an existing source (could be a previously populated PVC, snapshot, etc)
+
+The full list of data ingest methods supported by the CDI (and in turn, DataVolumes) are:
+
+* **blank** - provision a blank volume
+* **gcs** - download an image from a GCS endpoint
+* **http** - download an image from an HTTP/S URL
+* **imageio** - download an image from a ovirt-imageio
+* **pvc** - use an existing PersistentVolumeClaim to create a new volume
+* **registry** - use a container image registry as the image download source
+* **s3** - download an image from AWS or compatible S3 (MinIO) endpoint
+* **snapshot** - use an existing VolumeSnapshot to create a new volume
+* **upload** - upload an image from the client machine
+* **vddk** - use a VMware image source
+
+=== DataSources [[data_sources]]
+
+DataSources can be thought of as "bootable images" and simply point to either an existing PersistentVolumeClaim or VolumeSnapshot which would be used to provision a new DataVolume.
+From the OpenShift Virtualization web console, only DataSources can be chosen as root disk images, where they are labeled as "Bootable Volumes".
+
+There is only one field supported within a DataSource `spec`:
+
+* **source** -  only supports either a `pvc` or `snapshot` field, which are mutually exclusive
+** **pvc** or **snapshot** - use the appropriate subfield here which depends on whether the data source is a PersistentVolumeClaim or a VolumeSnapshot
+*** **name** - name of the pvc or snapshot
+*** **namespace** - namespace that the pvc or snapshot resides in
+
+=== VirtualMachineSnapshots [[virtual_machine_snapshots]]
+
+A VirtualMachineSnapshot is a point-in-time copy of the state of all disks / volumes attached to a particular VM.
+
+When a VirtualMachineSnapshot is created, a separate VolumeSnapshot for each attached disk is created in the desired namespace,
+and the VirtualMachineSnapshot object eventually gets updated with a completed Status once the snapshot process has finished.
+
+A VirtualMachineSnapshot object accepts a `source` VM reference and optionally accepts a `failureDeadline` with a time unit suffix such as `1m`, `3600s` or `1h30m`, or even signed values such as `-1h`.
+The default deadline value is `5m`.
+
+=== VirtualMachineRestores [[virtual_machine_restores]]
+
+Creating a snapshot is only useful if the ability to restore that snapshot (going "back in time" to when the snapshot was taken) exists.
+Thus, VirtualMachineRestore objects are created when the need arises to restore from a VM snapshot.
+
+A VirtualMachineRestore accepts a `target` VM reference containing the `apiGroup`, `kind` and `name` of the desired VM to create, and accepts a `virtualMachineSnapshotName` to use as a source for the restoration.
+
+== Clone API [[clone_api]]
+
+There are three ways to clone a VM. They are listed in order, from the most difficult to the easiest method:
+
+* Take snapshots of the individual PVCs (via VolumeSnapshots) from the source VM and then copy the VirtualMachine object, replacing references such as VM name, disk names, etc.
+* Create a VirtualMachineSnapshot, which will create the volume snapshots for you, but you must still copy the VirtualMachine object and replace VM/disk names, mac addresses, and so on.
+* Leverage the Clone API to do all of these steps for you, by simply creating a VirtualMachineClone object that defines the source and target VirtualMachine (or VirtualMachineSnapshot) names.
+
+Cloning a VirtualMachine is performed by creating a <<virtual_machine_clones,VirtualMachineClones>> object.
+
+=== VirtualMachineClones [[virtual_machine_clones]]
+
+Building on the snapshot and restore APIs, a VirtualMachineClone is a higher level operation designed to simplify the snapshot process for a VirtualMachine and as well as the process of restoring copies of the VM from a snapshot
+(especially if there were multiple disks attached to the VM).
+
+Since cloning involves both the snapshot and restore operations, a VirtualMachineClone object contains both a `source` and (optionally) a `target` VirtualMachine reference, with each field containing the `apiGroup`, `kind` and `name` of the desired source or target VM object.
+
+=== Mutating a Cloned VM [[mutating_vm_clones]]
+
+It may be necessary to change the details of the VM clone, such as VM or template metadata (`labels` and/or `annotations`), mac address(es), or BIOS / UEFI serial numbers, or other details such as the CPU or RAM specs of the target VM.
+
+The object fields used for such mutation are listed below (all fields are _optional_):
+
+* **labelFilters** - used to define which labels (from `metadata.labels`) from the source VM should be, or should _not_ be copied to the clone VM
+* **annotationFilters** - used to define which annotations (from `metadata.annotations`) from the source VM should or should _not_ be copied to the VM clone
+* **template** - used to define metadata filters for the VM / VMI `template`, and supports the same two filters as with the top level:
+** **labelFilters** - used to copy or omit specified labels from `template.metadata.labels` of the source VM to that of the clone VM
+** **annotationFilters** - used to copy/omit specified annotations from `template.metadata.annotations` of the source VM to the clone VM
+* **newMacAddresses** - explicitly defines a new mac address per named `interface` of the clone VM; this field contains a one-to-one map of `<interface-name>` keys to hyphenated string (`00-01-ff-00-01-00`) MAC address values.
+* **newSMBiosSerial** - accepts a new SMBios serial number as a string value
+* **patches** (v4.20+) - accepts a list of string-ified json patch commands which can be used to mutate other fields of a cloned VM which are not supported by one of the above options.
+
+[NOTE]
+====
+* All filter fields support both wildcards (`label-or-annotation-name/*`) and negation (`!label-or-annotation-name`) for inclusion or omission (respectively), and can be combined into a single filter string.
+* By default, all MAC addresses are stripped out when cloning a VM.
+====
+
+For any mutations outside of those listed above, a `patches` field is also accepted, which accepts a list of json patches (_not_ json merge patches) as string literals, with each containing an `op`, field `path` and `value`.
+
+Below is a short example of a VirtualMachineClone spec containing each of the mentioned fields:
+
+[source,yaml]
+----
+apiVersion: clone.kubevirt.io/v1beta1
+kind: VirtualMachineClone
+metadata:
+  name: example-vm-clone
+  namespace: my-namespace
+spec:
+  source:
+    apiGroup: kubevirt.io
+    kind: VirtualMachine
+    name: my-virtual-app
+  target:
+    apiGroup: kubevirt.io
+    kind: VirtualMachine
+    name: my-clone-app
+  labelFilters:
+  - "metadata-labels-to-include/*"
+  - "!metadata-labels-to-omit/*"
+  annotationFilters:
+  - "metadata-annotations-to-include/*"
+  - "!metadata-annotations-to-omit/*"
+  template:
+    labelFilters:
+    - "template-labels-to-include/*"
+    - "!template-labels-to-omit/*"
+    annotationFilters:
+    - "template-annotations-to-include/*"
+    - "!template-annotations-to-omit/*"
+  newMacAddresses:
+    nameOfInterface: "ff-00-00-bb-aa-aa"
+  newSMBiosSerial: "S3R14LNUM83R"
+  patches:
+  - '{"op": "add", "path": "/metadata/labels/my-app", "value": "cloned"}'
+  - '{"op": "replace", "path": "/spec/instanceType/name", "value": "u1.xlarge"}'
+----
+
+=== Patching A Cloned VM [[patching_vm_clones]]
+
+If you are adding a field value that does not exist in the VirtualMachine manifest, and the field has parent objects that also do not exist, then you must add the empty parent objects prior to setting the missing field value.
+
+For example, the parent objects must be patched using an `add` command with an empty value `{}`:
+
+[source,yaml]
+----
+apiVersion: clone.kubevirt.io/v1beta1
+kind: VirtualMachineClone
+metadata:
+  name: missing-parent-patch-example
+  namespace: my-namespace
+spec:
+  source:
+    apiGroup: kubevirt.io
+    kind: VirtualMachine
+    name: example-source-vm
+  patches:
+  - '{ "op": "add", "path": "/spec/template/spec/domain/cpu", "value": {} }'
+  - '{ "op": "add", "path": "/spec/template/spec/domain/cpu/cores", "value": 6 }'
+----
+
+[IMPORTANT]
+====
+* Manually setting the `cpu` or `memory` fields in a VirtualMachine conflict with the `spec.instancetype` field.
+* Removing `spec.instancetype` will prevent the VM from displaying in the UI.
+* See the sections on <<instance_types,InstanceTypes>> to configure cpu and memory usage, and <<virtual_machine_preferences,VirtualMachine[Cluster]Preferences>> to change cpu topology.
+* Attempting to patch `cpu` or `memory` values on a VM with `spec.instancetype` set will prevent the VM restoration from completing, causing the clone operation to hang indefinitely.
+====
+
+=== Cloning Strategies and StorageProfiles [[vm_cloning_strategies]]
+
+In OpenShift Virtualization, a cloneStrategy can be used to tune the cloning method for a specific type of storage (defined in OpenShift/Kubernetes by the StorageClass).
+OpenShift Virtualization (specifically, the CDI) stores the recommended settings for a particular StorageClass (which exposes a specific CSI driver) in a StorageProfile.
+A StorageProfile is created for each StorageClass on the cluster with optimized settings for that storage provider.
+
+NOTE: For storage providers not recognized by the CDI, you must configure a StorageProfile for that StorageClass, or PVCs will not be provisioned whenever DataVolumes are defined using that StorageClass.
+
+By default, cloning a VirtualMachine in OpenShift Virtualization will take a snapshot of the VM (by creating a VolumeSnapshot), and then create new PVCs and associated DataVolumes to restore the snapshot.
+
+You may note that the cloning process is not instantaneous, and this has more to do with the block layer implementation of the CSI driver than of the cloning (snapshot/restore) process itself.
+Some virtualization platforms (and perhaps a few CSI drivers for OpenShift/Kubernetes) support instantaneous cloning from a snapshot due to hard linking or CoW (Copy on Write) implementation at the block-level.
+
+For instance, AWS EBS volumes do not support fast snapshot restoration (see link:https://github.com/kubernetes-sigs/aws-ebs-csi-driver/issues/869[this GitHub issue,window=_blank]), but certain on-prem solutions might.
+
+With that said, there are a few options for tuning the cloneStrategy of a StorageProfile:
+
+* **snapshot** (default) - the CDI will use the snapshot method if the storage provider is recognized and also supports CSI snapshots (if a VolumeSnapshotClass exists for that CSI driver).
+* **copy** - this is a fallback option which uses both a source and target pod to copy data from the source volume to the target volume. This is the least efficient method of cloning.
+* **csi-clone** - use the CSI clone API to clone an existing volume without first creating a snapshot. This is the most efficient method, but requires manual specification in the StorageProfile for a given StorageClass.
+
+An example StorageProfile object with the `cloneStrategy` set to `csi-clone`:
+
+[source,yaml]
+----
+apiVersion: cdi.kubevirt.io/v1beta1
+kind: StorageProfile
+metadata:
+  name: example-provisioner
+spec:
+  claimPropertySets:
+  - accessModes:
+    - ReadWriteOnce
+    volumeMode: Filesystem
+  cloneStrategy: csi-clone
+----
+
+== Export API [[export_api]]
+
+OpenShift Virtualization supports an export API which can be used to save or to move VMs and disk images off-cluster,
+such as when migrating to a different cluster or even another virtualization platform.
+
+VM disk images are the main concern for exporting as they contain the OS, applications and data, which altogether can be quite large in size.
+In order to support off-cluster image transfer without overloading the OpenShift API server, a proxy server is utilized which must be exposed to the internet using a Service with a connected Ingress, Route, or NodePort.
+
+NOTE: You can also use `virtctl port-forward` to connect to the export proxy server instead of using an Ingress or Route.
+
+=== Export Tokens [[export_tokens]]
+
+You must create an export token in order to authenticate users accessing the VM disk (in the same namespace as the VM itself).
+This done by creating a K8s secret storing the token string. The token gets passed as a header (`x-kubevirt-export-token`) when accessing the export proxy endpoint.
+
+NOTE: The recommended token string should be an alphanumeric value, at least 12 characters in length.
+
+An example export token is shown below:
+
+[source,yaml]
+----
+apiVersion: v1
+kind: Secret
+metadata:
+  name: export-token
+stringData:
+  token: abc098765421def
+----
+
+The token secret is referenced from the VirtualMachineExport object (explained below) used to export the VM.
+
+=== VirtualMachineExports [[virtual_machine_exports]]
+
+Any VirtualMachine, VirtualMachineSnapshot, or PersistentVolumeClaim can be exported by creating a VirtualMachineExport object.
+
+The `tokenSecretRef` containing the name of the export token secret must be defined, as well as one of the `source` types mentioned above.
+
+Exporting a VirtualMachine will export the yaml manifest of the VM, as well as any PVCs, DataVolumes or MemoryDump volumes associated with the VM,
+whereas exporting a VirtualMachineSnapshot or PVC will not provide the VM manifest.
+
+Exported artifacts are accessed by viewing the `status` block of the VirtualMachineExport and using the provided URLs to download the exported VM images, files or archives once they are ready.
+
+There are four formats provided for download:
+
+* **raw** - the bit-for-bit qcow2 disk image
+* **gzip** - the gzip-compressed disk image
+* **dir** - provides a directy listing to search for files discovered in the PVC. To access a specific file, replace `/dir` in the URL with `/path/to/file.txt`
+* **tar.gz** - the full contents of the PVC in a single gzip-compressed tar archive
+
+The content-type determines which formats are used for the export:
+
+* **KubeVirt content-type** - If a PVC is detected as a KubeVirt disk, then the `raw` and `gzip` formats are used
+* **Archive content-type** - Otherwise, the `dir` and `tar.gz` formats will be used if the PVC _does not_ contain a KubeVirt disk
+
+An example VirtualMachineExport is shown below:
+
+[source,yaml]
+----
+apiVersion: export.kubevirt.io/v1beta1
+kind: VirtualMachineExport
+metadata:
+  name: export-example <1>
+spec:
+  tokenSecretRef: export-token <2>
+  source: <3>
+    apiGroup: "kubevirt.io"
+    kind: VirtualMachine
+    name: virtual-machine-example
+----
+<1> The name of the VirtualMachineExport object being defined
+<2> The name of the secret containing the export token
+<3> The source is a named reference to a particular group/version and kind
+
+Supported source types are:
+
+[cols="1,1"]
+|===
+| apiGroup |kind
+
+|kubevirt.io
+|VirtualMachine
+
+|snapshot.kubevirt.io
+|VirtualMachineSnapshot
+
+|""
+|PersistentVolumeClaim
+|===
+
