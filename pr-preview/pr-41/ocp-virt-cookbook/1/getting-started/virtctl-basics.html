@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Using virtctl for VM Management :: OpenShift Virtualization cookbook</title>
+    <link rel="prev" href="prerequisites.html">
+    <link rel="next" href="default-storage-class.html">
+    <meta name="generator" content="Antora 3.1.3">
+    <link rel="stylesheet" href="../../../_/css/site.css">
+    <script>var uiRootPath = '../../../_'</script>
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://www.redhat.com" target="_blank"><img src="../../../_/img/redhat-logo.png" height="40px" alt="Red Hat"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="../../..">OpenShift Virtualization cookbook</a>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues" target="_blank">Report Issues</a>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="ocp-virt-cookbook" data-version="1">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="../index.html">OpenShift Virtualization cookbook</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="index.html">Getting Started</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="prerequisites.html">Prerequisites</a>
+  </li>
+  <li class="nav-item is-current-page" data-depth="2">
+    <a class="nav-link" href="virtctl-basics.html">Virtctl Basics</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="default-storage-class.html">Storage Setup</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../storage/index.html">Storage Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/lvm-operator.html">LVM Operator Installation</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/lvm-troubleshooting.html">LVM Troubleshooting</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../networking/index.html">Networking Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/udn-primary-networks.html">UDN Primary Networks</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/localnet-secondary.html">Localnet Secondary Networks with CUDN</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/localnet-vlan.html">Localnet Secondary Networks with VLAN using NAD</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/cudn-localnet-vlan.html">Localnet VLAN with CUDN</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/linux-bridges.html">Linux Bridges</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/ovs-bridge-troubleshooting.html">Troubleshooting Localnet Networks</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../vm-configuration/index.html">Virtual Machine Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/cloud-init-ip-configuration.html">Cloud-init IP Configuration</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/cloud-init-troubleshooting.html">Cloud-init Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/internal-dns-for-vms.html">Internal DNS for VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/remote-access-linux-vms.html">Remote Access to Linux VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/remote-access-linux-troubleshooting.html">Remote Access to Linux VMs Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/remote-access-windows-vms.html">Remote Access to Windows VMs via RDP</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/custom-golden-images.html">Custom Golden Images</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/golden-images-troubleshooting.html">Golden Images Troubleshooting</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../manifests/index.html">YAML Manifests Reference</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../manifests/operators.html">Operators</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../manifests/networking.html">Networking</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../manifests/storage.html">Storage</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../manifests/vms.html">Virtual Machines</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../manifests/security.html">Security</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../api/index.html">API Guide</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../api/api_component_overview.html">API Component Overview</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../lab-env/index.html">Lab Environment</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../appendix/glossary.html">Glossary</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">OpenShift Virtualization cookbook</span>
+    <span class="version">1</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <a class="title" href="../index.html">OpenShift Virtualization cookbook</a>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">1</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">OpenShift Virtualization cookbook</a></li>
+    <li><a href="index.html">Getting Started</a></li>
+    <li><a href="virtctl-basics.html">Virtctl Basics</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">Using virtctl for VM Management</h1>
+<div class="sect1">
+<h2 id="_overview"><a class="anchor" href="#_overview"></a>Overview</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The virtctl CLI tool provides commands for managing virtual machines in OpenShift Virtualization. This guide covers essential VM operations.</p>
+</div>
+<div class="paragraph">
+<p>Versions tested:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>OpenShift 4.20</pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_prerequisites"><a class="anchor" href="#_prerequisites"></a>Prerequisites</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p>OpenShift 4.18+ with OpenShift Virtualization installed</p>
+</li>
+<li>
+<p>virtctl CLI tool installed</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_downloading_and_installing_virtctl"><a class="anchor" href="#_downloading_and_installing_virtctl"></a>Downloading and Installing virtctl</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The <code>virtctl</code> CLI tool can be downloaded directly from the OpenShift web console.</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>In the OpenShift web console, navigate to <strong>Virtualization</strong> → <strong>Overview</strong> in the left sidebar.</p>
+<div class="imageblock">
+<div class="content">
+<img src="_images/virtualization-overview.png" alt="Virtualization Overview menu">
+</div>
+<div class="title">Figure 1. Virtualization Overview in the OpenShift console</div>
+</div>
+</li>
+<li>
+<p>In the upper right corner of the Overview page, click the <strong>Download the virtctl command-line utility</strong> link.</p>
+<div class="imageblock">
+<div class="content">
+<img src="_images/virtctl-download.png" alt="Download virtctl link in the upper right corner">
+</div>
+<div class="title">Figure 2. Download virtctl link</div>
+</div>
+</li>
+<li>
+<p>On the download page, select the appropriate <code>virtctl</code> binary for your operating system and architecture.</p>
+<div class="imageblock">
+<div class="content">
+<img src="_images/virtctl-versions.png" alt="List of virtctl binaries for different platforms">
+</div>
+<div class="title">Figure 3. Available virtctl binaries</div>
+</div>
+</li>
+<li>
+<p>After downloading, make the binary executable and move it to your PATH:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Linux/Mac
+chmod +x virtctl
+sudo mv virtctl /usr/local/bin/
+
+# Verify installation
+virtctl version</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>For Windows, extract the executable and add its location to your system PATH.</p>
+</div>
+</li>
+</ol>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_essential_commands"><a class="anchor" href="#_essential_commands"></a>Essential Commands</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_listing_vms"><a class="anchor" href="#_listing_vms"></a>Listing VMs</h3>
+<div class="paragraph">
+<p>Before managing VMs, list what&#8217;s available in your cluster using the <code>oc</code> command:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># List all VMs in a specific namespace
+oc get vm -n myapp
+
+# List all VMs across all namespaces
+oc get vm -A</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Example output:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">NAMESPACE   NAME            AGE   STATUS    READY
+myapp       fedora-app-vm   13d   Running   True</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>To see running VM instances (VMIs) with additional details like IP address and node placement:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vmi -A</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Example output:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">NAMESPACE   NAME            AGE   PHASE     IP             NODENAME   READY
+myapp       fedora-app-vm   13d   Running   10.128.1.225   ocplab01   True</code></pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+Use <code>oc</code> for listing and querying VMs. Use <code>virtctl</code> for VM operations like start, stop, and console access.
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_vm_lifecycle"><a class="anchor" href="#_vm_lifecycle"></a>VM Lifecycle</h3>
+<div class="paragraph">
+<p>Start, stop, and restart VMs:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Start a VM
+virtctl start fedora-app-vm -n myapp
+
+# Stop a VM
+virtctl stop fedora-app-vm -n myapp
+
+# Restart a VM
+virtctl restart fedora-app-vm -n myapp</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_accessing_vms"><a class="anchor" href="#_accessing_vms"></a>Accessing VMs</h3>
+<div class="paragraph">
+<p>Connect to your VM:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Console access (press Ctrl+] to exit)
+virtctl console fedora-app-vm -n myapp
+
+# SSH access (requires SSH configured)
+virtctl ssh user@fedora-app-vm -n myapp
+
+# VNC access
+virtctl vnc fedora-app-vm -n myapp</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_vm_information"><a class="anchor" href="#_vm_information"></a>VM Information</h3>
+<div class="paragraph">
+<p>Get VM details (requires QEMU guest agent installed in the VM):</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Guest OS information
+virtctl guestosinfo fedora-app-vm -n myapp</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Example output:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-json hljs" data-lang="json">{
+  "guestAgentVersion": "10.1.0",
+  "hostname": "fedora-app-vm",
+  "os": {
+    "name": "Fedora Linux",
+    "kernelRelease": "6.5.6-300.fc39.x86_64",
+    "version": "39",
+    "prettyName": "Fedora Linux 39 (Cloud Edition)",
+    "versionId": "39",
+    "kernelVersion": "#1 SMP PREEMPT_DYNAMIC",
+    "machine": "x86_64",
+    "id": "fedora"
+  }
+}</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># List filesystems
+virtctl fslist fedora-app-vm -n myapp</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Example output shows mounted filesystems with usage:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-json hljs" data-lang="json">{
+  "items": [
+    {
+      "diskName": "vda2",
+      "mountPoint": "/boot/efi",
+      "fileSystemType": "vfat",
+      "usedBytes": 21723136,
+      "totalBytes": 104607744
+    },
+    {
+      "diskName": "vda3",
+      "mountPoint": "/boot",
+      "fileSystemType": "ext4",
+      "usedBytes": 91316224,
+      "totalBytes": 1902895104
+    },
+    {
+      "diskName": "vda4",
+      "mountPoint": "/",
+      "fileSystemType": "btrfs",
+      "usedBytes": 687783936,
+      "totalBytes": 29525868544
+    }
+  ]
+}</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># List logged-in users
+virtctl userlist fedora-app-vm -n myapp</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_file_transfer"><a class="anchor" href="#_file_transfer"></a>File Transfer</h3>
+<div class="paragraph">
+<p>Copy files to and from VMs using <code>virtctl scp</code>. This requires SSH to be running in the VM and one of the following authentication methods:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>SSH key</strong> (recommended): Your public key must be in the VM&#8217;s <code>~/.ssh/authorized_keys</code></p>
+</li>
+<li>
+<p><strong>Password</strong>: The VM must have password authentication enabled in SSH</p>
+</li>
+</ul>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Copy to VM (uses default SSH key)
+virtctl scp local-file.txt fedora@fedora-app-vm:/tmp/remote.txt -n myapp
+
+# Copy from VM
+virtctl scp fedora@fedora-app-vm:/tmp/remote.txt ./local.txt -n myapp
+
+# Specify a different SSH key
+virtctl scp -i ~/.ssh/my_key local-file.txt fedora@fedora-app-vm:/tmp/ -n myapp</code></pre>
+</div>
+</div>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+If SSH is not configured, use <code>virtctl console</code> to access the VM first and set up SSH keys.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>To inject your SSH key when creating the VM, include it in the cloud-init configuration:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">#cloud-config
+user: fedora
+ssh_authorized_keys:
+  - ssh-rsa AAAAB3NzaC... your-key-here</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>For detailed SSH configuration options, see <a href="../vm-configuration/remote-access-linux-vms.html" class="xref page">Remote Access to Linux VMs</a>.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_verifying_vm_operations"><a class="anchor" href="#_verifying_vm_operations"></a>Verifying VM Operations</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>After starting or stopping a VM, verify the operation:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Check VM status
+oc get vm fedora-app-vm -n myapp</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Example output after successful start:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">NAME            AGE    STATUS    READY
+fedora-app-vm   7d3h   Running   True</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Check VMI (running instance)
+oc get vmi fedora-app-vm -n myapp</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Expected: VMI listed when running, no VMI after stop.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_quick_reference"><a class="anchor" href="#_quick_reference"></a>Quick Reference</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p><strong>When to use each access method:</strong></p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>virtctl console</code> - Text-only terminal access, works without network</p>
+</li>
+<li>
+<p><code>virtctl ssh</code> - Convenient SSH when you have keys configured</p>
+</li>
+<li>
+<p><code>virtctl vnc</code> - Graphical desktop access for GUI-based VMs</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p><strong>When to check VM information:</strong></p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>virtctl guestosinfo</code> - Verify OS version before updates</p>
+</li>
+<li>
+<p><code>virtctl fslist</code> - Check disk space before installing software</p>
+</li>
+<li>
+<p><code>virtctl userlist</code> - See who is currently logged in</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_common_issues"><a class="anchor" href="#_common_issues"></a>Common Issues</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p><strong>Issue: Unable to connect to the server</strong></p>
+</div>
+<div class="paragraph">
+<p>Solution: Verify cluster access:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc whoami
+oc get nodes</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Issue: Guest agent commands return no data</strong></p>
+</div>
+<div class="paragraph">
+<p>Solution: Install the QEMU guest agent in your VM. See <a href="https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/virtualization/managing-vms#virt-installing-qemu-guest-agent" target="_blank" rel="noopener">Installing the QEMU guest agent</a> for installation instructions.</p>
+</div>
+<div class="paragraph">
+<p><strong>Issue: SSH/SCP commands fail</strong></p>
+</div>
+<div class="paragraph">
+<p>Solution: Verify SSH is configured in the VM. Use console to check:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Access via console first
+virtctl console fedora-app-vm -n myapp
+
+# Inside VM, check SSH status
+systemctl status sshd</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Issue: Console hangs or is unresponsive</strong></p>
+</div>
+<div class="paragraph">
+<p>Solution: Exit with <code>Ctrl+]</code> and verify VM status:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vmi fedora-app-vm -n myapp</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_best_practices"><a class="anchor" href="#_best_practices"></a>Best Practices</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Always specify namespace</strong> with <code>-n</code> to avoid confusion</p>
+</li>
+<li>
+<p><strong>Use console for initial setup</strong>, then SSH for regular access</p>
+</li>
+<li>
+<p><strong>Install guest agent</strong> in all VMs for full functionality</p>
+</li>
+<li>
+<p><strong>Use <code>oc</code> for VM status</strong>, <code>virtctl</code> for VM operations</p>
+</li>
+<li>
+<p><strong>Exit console properly</strong> with <code>Ctrl+]</code> to avoid hung sessions</p>
+</li>
+<li>
+<p><strong>Test with <code>virtctl ssh</code></strong> before setting up external access</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_additional_resources"><a class="anchor" href="#_additional_resources"></a>Additional Resources</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p><a href="https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/virtualization/getting-started#virt-using-the-cli-tools" target="_blank" rel="noopener">virtctl Commands Reference</a></p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_see_also"><a class="anchor" href="#_see_also"></a>See Also</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p><a href="../vm-configuration/remote-access-linux-vms.html" class="xref page">Remote Access to Linux VMs</a> - All VM access methods</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<nav class="pagination">
+  <span class="prev"><a href="prerequisites.html">Prerequisites</a></span>
+  <span class="next"><a href="default-storage-class.html">Storage Setup</a></span>
+</nav>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <img src="../../../_/img/rhl-logo-red.png" height="40px" alt="Red Hat"  href="https://redhat.com" >
+</footer><script id="site-script" src="../../../_/js/site.js" data-ui-root-path="../../../_"></script>
+<script async src="../../../_/js/vendor/highlight.js"></script>
+  </body>
+</html>

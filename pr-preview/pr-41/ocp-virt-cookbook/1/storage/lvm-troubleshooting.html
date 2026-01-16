@@ -1,0 +1,1401 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Troubleshooting LVM Storage Operator :: OpenShift Virtualization cookbook</title>
+    <link rel="prev" href="lvm-operator.html">
+    <link rel="next" href="../networking/index.html">
+    <meta name="generator" content="Antora 3.1.3">
+    <link rel="stylesheet" href="../../../_/css/site.css">
+    <script>var uiRootPath = '../../../_'</script>
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://www.redhat.com" target="_blank"><img src="../../../_/img/redhat-logo.png" height="40px" alt="Red Hat"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="../../..">OpenShift Virtualization cookbook</a>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues" target="_blank">Report Issues</a>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="ocp-virt-cookbook" data-version="1">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="../index.html">OpenShift Virtualization cookbook</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../getting-started/index.html">Getting Started</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/prerequisites.html">Prerequisites</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/virtctl-basics.html">Virtctl Basics</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/default-storage-class.html">Storage Setup</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="index.html">Storage Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="lvm-operator.html">LVM Operator Installation</a>
+  </li>
+  <li class="nav-item is-current-page" data-depth="2">
+    <a class="nav-link" href="lvm-troubleshooting.html">LVM Troubleshooting</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../networking/index.html">Networking Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/udn-primary-networks.html">UDN Primary Networks</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/localnet-secondary.html">Localnet Secondary Networks with CUDN</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/localnet-vlan.html">Localnet Secondary Networks with VLAN using NAD</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/cudn-localnet-vlan.html">Localnet VLAN with CUDN</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/linux-bridges.html">Linux Bridges</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/ovs-bridge-troubleshooting.html">Troubleshooting Localnet Networks</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../vm-configuration/index.html">Virtual Machine Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/cloud-init-ip-configuration.html">Cloud-init IP Configuration</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/cloud-init-troubleshooting.html">Cloud-init Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/internal-dns-for-vms.html">Internal DNS for VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/remote-access-linux-vms.html">Remote Access to Linux VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/remote-access-linux-troubleshooting.html">Remote Access to Linux VMs Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/remote-access-windows-vms.html">Remote Access to Windows VMs via RDP</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/custom-golden-images.html">Custom Golden Images</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/golden-images-troubleshooting.html">Golden Images Troubleshooting</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../manifests/index.html">YAML Manifests Reference</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../manifests/operators.html">Operators</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../manifests/networking.html">Networking</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../manifests/storage.html">Storage</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../manifests/vms.html">Virtual Machines</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../manifests/security.html">Security</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../api/index.html">API Guide</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../api/api_component_overview.html">API Component Overview</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../lab-env/index.html">Lab Environment</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../appendix/glossary.html">Glossary</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">OpenShift Virtualization cookbook</span>
+    <span class="version">1</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <a class="title" href="../index.html">OpenShift Virtualization cookbook</a>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">1</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">OpenShift Virtualization cookbook</a></li>
+    <li><a href="index.html">Storage Configuration</a></li>
+    <li><a href="lvm-troubleshooting.html">LVM Troubleshooting</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">Troubleshooting LVM Storage Operator</h1>
+<div class="sect1">
+<h2 id="_overview"><a class="anchor" href="#_overview"></a>Overview</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>This guide provides troubleshooting steps for the LVM Storage operator in OpenShift. Use these commands to diagnose and resolve common issues with LVM storage provisioning, volume groups, and persistent volume claims.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_quick_health_check"><a class="anchor" href="#_quick_health_check"></a>Quick Health Check</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Run this health check to verify your LVM storage is working correctly:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># 1. Check LVMCluster status
+oc get lvmcluster -n openshift-lvm-storage
+
+# 2. Check all pods are running
+oc get pods -n openshift-lvm-storage
+
+# 3. Check StorageClass exists
+oc get storageclass | grep lvms
+
+# 4. Check volume group on node
+oc debug node/&lt;node-name&gt; -- chroot /host vgs
+
+# 5. Check thin pool
+oc debug node/&lt;node-name&gt; -- chroot /host lvs</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Expected healthy output:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>LVMCluster: <code>STATUS: Ready</code></p>
+</li>
+<li>
+<p>Pods: All <code>Running</code> with no restarts</p>
+</li>
+<li>
+<p>StorageClass: <code>lvms-vg1</code> exists</p>
+</li>
+<li>
+<p>VG: Shows volume group with available space</p>
+</li>
+<li>
+<p>LV: Shows thin pool with low data/meta usage</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_verification_commands_by_component"><a class="anchor" href="#_verification_commands_by_component"></a>Verification Commands by Component</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_lvmcluster_status"><a class="anchor" href="#_lvmcluster_status"></a>LVMCluster Status</h3>
+<div class="sect3">
+<h4 id="_check_basic_status"><a class="anchor" href="#_check_basic_status"></a>Check Basic Status</h4>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get lvmcluster -n openshift-lvm-storage</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Healthy output:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>NAME         STATUS
+lvmcluster   Ready</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Unhealthy indicators:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Status shows <code>NotReady</code>, <code>Degraded</code>, or <code>Error</code></p>
+</li>
+<li>
+<p>No resources found</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_check_detailed_status"><a class="anchor" href="#_check_detailed_status"></a>Check Detailed Status</h4>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get lvmcluster lvmcluster -n openshift-lvm-storage -o yaml</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>What to look for:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">status:
+  conditions:
+  - status: "True"
+    type: ResourcesAvailable
+    message: Reconciliation is complete and all the resources are available
+  - status: "True"
+    type: VolumeGroupsReady
+    message: All the VGs are ready
+  deviceClassStatuses:
+  - name: vg1
+    nodeStatus:
+    - devices:
+      - /dev/sda
+      status: Ready
+  ready: true
+  state: Ready</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Key fields:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>status.conditions</code>: Should show <code>ResourcesAvailable: True</code> and <code>VolumeGroupsReady: True</code></p>
+</li>
+<li>
+<p><code>deviceClassStatuses[].nodeStatus[].status</code>: Should be <code>Ready</code></p>
+</li>
+<li>
+<p><code>deviceClassStatuses[].nodeStatus[].devices</code>: Should list your configured disk</p>
+</li>
+<li>
+<p><code>ready: true</code> and <code>state: Ready</code></p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_view_device_discovery_and_exclusions"><a class="anchor" href="#_view_device_discovery_and_exclusions"></a>View Device Discovery and Exclusions</h4>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get lvmcluster lvmcluster -n openshift-lvm-storage -o yaml | grep -A 50 "deviceClassStatuses"</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Example output:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">deviceClassStatuses:
+- name: vg1
+  nodeStatus:
+  - devices:
+    - /dev/sda
+    excluded:
+    - name: /dev/sdc
+      reasons:
+      - /dev/sdc has children block devices and could not be considered
+      - /dev/sdc is not part of the device selector
+    status: Ready</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This shows which devices were selected and why others were excluded.</p>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_pod_status"><a class="anchor" href="#_pod_status"></a>Pod Status</h3>
+<div class="sect3">
+<h4 id="_check_all_pods"><a class="anchor" href="#_check_all_pods"></a>Check All Pods</h4>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get pods -n openshift-lvm-storage</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Healthy output:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>NAME                             READY   STATUS    RESTARTS   AGE
+lvms-operator-864b6975bb-kxt4t   1/1     Running   0          10m
+vg-manager-xxxxx                 1/1     Running   0          5m</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Expected pods:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>lvms-operator</strong>: Always present, manages the lifecycle of LVM storage</p>
+</li>
+<li>
+<p><strong>vg-manager</strong>: One per node, manages volume groups on that node</p>
+</li>
+<li>
+<p><strong>topolvm-controller</strong>: May not be present on Single Node OpenShift (SNO)</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_check_pod_details"><a class="anchor" href="#_check_pod_details"></a>Check Pod Details</h4>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Get pod details
+oc describe pod -n openshift-lvm-storage &lt;pod-name&gt;
+
+# Check specific pod logs
+oc logs -n openshift-lvm-storage &lt;pod-name&gt;
+
+# Check vg-manager logs (most useful for device issues)
+oc logs -n openshift-lvm-storage daemonset/vg-manager</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Common log errors:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>"device is in use"</code> - Disk already mounted or used by system</p>
+</li>
+<li>
+<p><code>"cannot wipe device"</code> - Need <code>forceWipeDevicesAndDestroyAllData: true</code></p>
+</li>
+<li>
+<p><code>"device not found"</code> - Wrong device path specified</p>
+</li>
+<li>
+<p><code>"no devices found"</code> - Device selector doesn&#8217;t match any available devices</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_check_operator_installation"><a class="anchor" href="#_check_operator_installation"></a>Check Operator Installation</h4>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Check ClusterServiceVersion
+oc get csv -n openshift-lvm-storage
+
+# Check subscription
+oc get subscription -n openshift-lvm-storage
+
+# Check install plan
+oc get installplan -n openshift-lvm-storage</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_storage_resources"><a class="anchor" href="#_storage_resources"></a>Storage Resources</h3>
+<div class="sect3">
+<h4 id="_check_storageclass"><a class="anchor" href="#_check_storageclass"></a>Check StorageClass</h4>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># List all StorageClasses
+oc get storageclass
+
+# Get specific LVM StorageClass
+oc get storageclass lvms-vg1 -o yaml</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Healthy output:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>NAME       PROVISIONER   RECLAIMPOLICY   VOLUMEBINDINGMODE      ALLOWVOLUMEEXPANSION   AGE
+lvms-vg1   topolvm.io    Delete          WaitForFirstConsumer   true                   10m</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Key parameters:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>PROVISIONER: topolvm.io</code> - Correct provisioner</p>
+</li>
+<li>
+<p><code>VOLUMEBINDINGMODE: WaitForFirstConsumer</code> - Efficient binding</p>
+</li>
+<li>
+<p><code>ALLOWVOLUMEEXPANSION: true</code> - Volume expansion enabled</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_check_if_storageclass_is_default"><a class="anchor" href="#_check_if_storageclass_is_default"></a>Check if StorageClass is Default</h4>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get storageclass lvms-vg1 -o jsonpath='{.metadata.annotations.storageclass\.kubernetes\.io/is-default-class}'</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Output:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>true</code> - This is the default StorageClass</p>
+</li>
+<li>
+<p>No output or <code>false</code> - Not the default</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_check_persistentvolumes"><a class="anchor" href="#_check_persistentvolumes"></a>Check PersistentVolumes</h4>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># List all PVs
+oc get pv
+
+# Check PVs using LVM storage
+oc get pv | grep topolvm</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_volume_group_verification"><a class="anchor" href="#_volume_group_verification"></a>Volume Group Verification</h3>
+<div class="sect3">
+<h4 id="_check_volume_group_status"><a class="anchor" href="#_check_volume_group_status"></a>Check Volume Group Status</h4>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc debug node/&lt;node-name&gt; -- chroot /host vgs</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Healthy output:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>VG   #PV #LV #SN Attr   VSize   VFree
+vg1    1   1   0 wz--n- 558.37g &lt;55.84g</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>What to verify:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>VG name matches your LVMCluster configuration (e.g., <code>vg1</code>)</p>
+</li>
+<li>
+<p><code>VSize</code> shows total disk size</p>
+</li>
+<li>
+<p><code>VFree</code> shows available space</p>
+</li>
+<li>
+<p><code>Attr</code> should include <code>wz&#8212;&#8203;n-</code> (writeable, resizable, normal)</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_check_volume_group_details"><a class="anchor" href="#_check_volume_group_details"></a>Check Volume Group Details</h4>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc debug node/&lt;node-name&gt; -- chroot /host vgdisplay vg1</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Example output:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>--- Volume group ---
+VG Name               vg1
+System ID
+Format                lvm2
+Metadata Areas        1
+Metadata Sequence No  2
+VG Access             read/write
+VG Status             resizable
+MAX LV                0
+Cur LV                1
+Open LV               0
+Max PV                0
+Cur PV                1
+Act PV                1
+VG Size               558.37 GiB
+PE Size               4.00 MiB
+Total PE              142942
+Alloc PE / Size       128517 / 502.04 GiB
+Free  PE / Size       14425 / 56.35 GiB
+VG UUID               abc123...</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Key indicators of health:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>VG Status: resizable</code></p>
+</li>
+<li>
+<p><code>VG Access: read/write</code></p>
+</li>
+<li>
+<p><code>Free PE / Size</code> shows available space</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_thin_pool_verification"><a class="anchor" href="#_thin_pool_verification"></a>Thin Pool Verification</h3>
+<div class="sect3">
+<h4 id="_check_thin_pool_status"><a class="anchor" href="#_check_thin_pool_status"></a>Check Thin Pool Status</h4>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc debug node/&lt;node-name&gt; -- chroot /host lvs</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Healthy output:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>LV          VG  Attr       LSize    Pool Origin Data%  Meta%
+thin-pool-1 vg1 twi-a-tz-- &lt;502.04g             0.00   6.76</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Attribute breakdown (twi-a-tz--):</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>t</code> - thin pool</p>
+</li>
+<li>
+<p><code>w</code> - writeable</p>
+</li>
+<li>
+<p><code>i</code> - inherited</p>
+</li>
+<li>
+<p><code>a</code> - active</p>
+</li>
+<li>
+<p><code>t</code> - thin</p>
+</li>
+<li>
+<p><code>z</code> - zero</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Data% and Meta% thresholds:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Data%</strong>: Shows how much thin pool data is used</p>
+<div class="ulist">
+<ul>
+<li>
+<p><code>&lt; 80%</code> - Healthy</p>
+</li>
+<li>
+<p><code>80-90%</code> - Monitor closely</p>
+</li>
+<li>
+<p><code>&gt; 90%</code> - Consider expanding or cleaning up</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p><strong>Meta%</strong>: Shows metadata usage</p>
+<div class="ulist">
+<ul>
+<li>
+<p><code>&lt; 80%</code> - Healthy</p>
+</li>
+<li>
+<p><code>&gt; 80%</code> - May need metadata expansion</p>
+</li>
+</ul>
+</div>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_check_thin_pool_details"><a class="anchor" href="#_check_thin_pool_details"></a>Check Thin Pool Details</h4>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc debug node/&lt;node-name&gt; -- chroot /host lvdisplay vg1/thin-pool-1</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_physical_volume_verification"><a class="anchor" href="#_physical_volume_verification"></a>Physical Volume Verification</h3>
+<div class="sect3">
+<h4 id="_check_physical_volume"><a class="anchor" href="#_check_physical_volume"></a>Check Physical Volume</h4>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc debug node/&lt;node-name&gt; -- chroot /host pvs</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Healthy output:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>PV         VG  Fmt  Attr PSize   PFree
+/dev/sda   vg1 lvm2 a--  558.37g &lt;55.84g</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Attribute breakdown (a--):</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>a</code> - allocatable</p>
+</li>
+<li>
+<p><code>-</code> - not exported</p>
+</li>
+<li>
+<p><code>-</code> - not missing</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_check_physical_volume_details"><a class="anchor" href="#_check_physical_volume_details"></a>Check Physical Volume Details</h4>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc debug node/&lt;node-name&gt; -- chroot /host pvdisplay /dev/sda</code></pre>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_verify_device_path"><a class="anchor" href="#_verify_device_path"></a>Verify Device Path</h4>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Check device exists
+oc debug node/&lt;node-name&gt; -- chroot /host ls -la /dev/sda
+
+# Check device is a block device
+oc debug node/&lt;node-name&gt; -- chroot /host lsblk /dev/sda
+
+# Check device is not mounted
+oc debug node/&lt;node-name&gt; -- chroot /host mount | grep /dev/sda</code></pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+If device is mounted, it cannot be used for LVM storage. Unmount or choose a different device.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_disk_and_device_information"><a class="anchor" href="#_disk_and_device_information"></a>Disk and Device Information</h3>
+<div class="sect3">
+<h4 id="_list_all_block_devices"><a class="anchor" href="#_list_all_block_devices"></a>List All Block Devices</h4>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc debug node/&lt;node-name&gt; -- chroot /host lsblk -o NAME,SIZE,TYPE,FSTYPE,MOUNTPOINT,MODEL</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Example output:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>NAME    SIZE TYPE FSTYPE      MOUNTPOINT MODEL
+sda   558.4G disk LVM2_member            PERC H730 Adp
+sdc   558.4G disk                        PERC H730 Adp
+|-sdc1   1M part
+|-sdc2 127M part vfat
+|-sdc3 384M part ext4        /boot
+`-sdc4 557.9G part xfs        /sysroot</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>How to identify usable disks:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>No MOUNTPOINT - disk not in use</p>
+</li>
+<li>
+<p>No FSTYPE or shows <code>LVM2_member</code> (if wiping is intended)</p>
+</li>
+<li>
+<p>Has MOUNTPOINT - disk in use by system</p>
+</li>
+<li>
+<p>Has partitions (children) - may need wiping</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_check_disk_serial_numbers"><a class="anchor" href="#_check_disk_serial_numbers"></a>Check Disk Serial Numbers</h4>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc debug node/&lt;node-name&gt; -- chroot /host lsblk -d -o NAME,SIZE,SERIAL</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Use this to ensure you&#8217;re targeting the correct disk.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_check_device_persistent_paths"><a class="anchor" href="#_check_device_persistent_paths"></a>Check Device Persistent Paths</h4>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># By path
+oc debug node/&lt;node-name&gt; -- chroot /host ls -la /dev/disk/by-path/ | grep sda
+
+# By ID
+oc debug node/&lt;node-name&gt; -- chroot /host ls -la /dev/disk/by-id/ | grep sda</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_common_issues_and_solutions"><a class="anchor" href="#_common_issues_and_solutions"></a>Common Issues and Solutions</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_issue_1_lvmcluster_shows_notready"><a class="anchor" href="#_issue_1_lvmcluster_shows_notready"></a>Issue 1: LVMCluster Shows "NotReady"</h3>
+<div class="paragraph">
+<p>Symptoms:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>NAME         STATUS
+lvmcluster   NotReady</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Diagnosis:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Check detailed status
+oc get lvmcluster lvmcluster -n openshift-lvm-storage -o yaml | grep -A 20 "conditions"
+
+# Check vg-manager logs
+oc logs -n openshift-lvm-storage daemonset/vg-manager</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Common causes and solutions:</p>
+</div>
+<div class="sect3">
+<h4 id="_device_not_found_or_wrong_path"><a class="anchor" href="#_device_not_found_or_wrong_path"></a>Device not found or wrong path</h4>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Verify device exists
+oc debug node/&lt;node-name&gt; -- chroot /host ls -la /dev/sda</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Solution: Update LVMCluster with correct device path</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_device_has_existing_datafilesystem"><a class="anchor" href="#_device_has_existing_datafilesystem"></a>Device has existing data/filesystem</h4>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Check for existing filesystem
+oc debug node/&lt;node-name&gt; -- chroot /host lsblk -f /dev/sda</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Solution: Add <code>forceWipeDevicesAndDestroyAllData: true</code> to deviceSelector</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_device_is_in_use"><a class="anchor" href="#_device_is_in_use"></a>Device is in use</h4>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Check if mounted
+oc debug node/&lt;node-name&gt; -- chroot /host mount | grep /dev/sda</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Solution: Unmount device or use different disk</p>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_issue_2_no_volume_group_created"><a class="anchor" href="#_issue_2_no_volume_group_created"></a>Issue 2: No Volume Group Created</h3>
+<div class="paragraph">
+<p>Symptoms:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>LVMCluster exists but <code>vgs</code> shows no volume group</p>
+</li>
+<li>
+<p>Device not showing in deviceClassStatuses</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Diagnosis:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Check if disk was wiped
+oc debug node/&lt;node-name&gt; -- chroot /host pvs
+
+# Check vg-manager logs for errors
+oc logs -n openshift-lvm-storage daemonset/vg-manager --tail=100
+
+# Check device visibility
+oc debug node/&lt;node-name&gt; -- chroot /host lsblk -o NAME,SIZE,TYPE,FSTYPE</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Solutions:</p>
+</div>
+<div class="sect3">
+<h4 id="_device_not_being_selected"><a class="anchor" href="#_device_not_being_selected"></a>Device not being selected</h4>
+<div class="ulist">
+<ul>
+<li>
+<p>Verify deviceSelector paths match actual device</p>
+</li>
+<li>
+<p>Check device is not excluded (see deviceClassStatuses.excluded)</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_permissions_issues"><a class="anchor" href="#_permissions_issues"></a>Permissions issues</h4>
+<div class="ulist">
+<ul>
+<li>
+<p>Ensure vg-manager pod has necessary privileges</p>
+</li>
+<li>
+<p>Check SELinux is not blocking access</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_device_wipe_failed"><a class="anchor" href="#_device_wipe_failed"></a>Device wipe failed</h4>
+<div class="ulist">
+<ul>
+<li>
+<p>Set <code>forceWipeDevicesAndDestroyAllData: true</code></p>
+</li>
+<li>
+<p>Manually wipe device and restart operator</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_issue_3_pvc_stuck_in_pending"><a class="anchor" href="#_issue_3_pvc_stuck_in_pending"></a>Issue 3: PVC Stuck in Pending</h3>
+<div class="paragraph">
+<p>Symptoms:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>NAME            STATUS    VOLUME   CAPACITY   ACCESS MODES   STORAGECLASS   AGE
+test-pvc        Pending                                      lvms-vg1       5m</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Diagnosis:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Check PVC events
+oc describe pvc &lt;pvc-name&gt;
+
+# Check if pod using PVC exists
+oc get pods --all-namespaces -o wide | grep &lt;pvc-name&gt;
+
+# Check available space in VG
+oc debug node/&lt;node-name&gt; -- chroot /host vgs</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Common causes:</p>
+</div>
+<div class="sect3">
+<h4 id="_waitforfirstconsumer_no_pod_scheduled_yet"><a class="anchor" href="#_waitforfirstconsumer_no_pod_scheduled_yet"></a>WaitForFirstConsumer - No pod scheduled yet</h4>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Normal behavior</strong>: PVC stays Pending until a pod using it is scheduled</p>
+</li>
+<li>
+<p><strong>Solution</strong>: Create a pod that uses the PVC</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_insufficient_space"><a class="anchor" href="#_insufficient_space"></a>Insufficient space</h4>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Check VG free space
+oc debug node/&lt;node-name&gt; -- chroot /host vgdisplay vg1 | grep "Free"</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Solution: Delete unused PVs or expand volume group</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_thin_pool_full"><a class="anchor" href="#_thin_pool_full"></a>Thin pool full</h4>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Check thin pool usage
+oc debug node/&lt;node-name&gt; -- chroot /host lvs | grep thin-pool</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Solution: Clean up volumes or increase thin pool size</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_node_selector_mismatch"><a class="anchor" href="#_node_selector_mismatch"></a>Node selector mismatch</h4>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Check pod node selector vs LVMCluster node selector
+oc get pod &lt;pod-name&gt; -o yaml | grep nodeSelector
+oc get lvmcluster lvmcluster -n openshift-lvm-storage -o yaml | grep -A 5 nodeSelector</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_issue_4_thin_pool_data_or_meta_high"><a class="anchor" href="#_issue_4_thin_pool_data_or_meta_high"></a>Issue 4: Thin Pool Data% or Meta% High</h3>
+<div class="paragraph">
+<p>Symptoms:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>LV          VG  Attr       LSize    Data%  Meta%
+thin-pool-1 vg1 twi-a-tz-- 502.04g  92.00  85.00</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Diagnosis:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Check thin pool details
+oc debug node/&lt;node-name&gt; -- chroot /host lvs -a | grep thin-pool
+
+# List all thin volumes
+oc debug node/&lt;node-name&gt; -- chroot /host lvs -a -o lv_name,lv_size,data_percent,pool_lv | grep thin-pool
+
+# Check which PVs are consuming space
+oc get pv -o custom-columns=NAME:.metadata.name,SIZE:.spec.capacity.storage,STORAGECLASS:.spec.storageClassName | grep lvms</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Solutions:</p>
+</div>
+<div class="sect3">
+<h4 id="_delete_unused_pvcs"><a class="anchor" href="#_delete_unused_pvcs"></a>Delete unused PVCs</h4>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Find PVCs not in use
+oc get pvc --all-namespaces
+
+# Delete PVC
+oc delete pvc &lt;pvc-name&gt; -n &lt;namespace&gt;</code></pre>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_expand_thin_pool_if_vg_has_free_space"><a class="anchor" href="#_expand_thin_pool_if_vg_has_free_space"></a>Expand thin pool (if VG has free space)</h4>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Check VG free space
+oc debug node/&lt;node-name&gt; -- chroot /host vgs
+
+# Extend thin pool (if needed manually)
+# Usually handled automatically by LVM operator</code></pre>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_adjust_overprovisioning_ratio"><a class="anchor" href="#_adjust_overprovisioning_ratio"></a>Adjust overprovisioning ratio</h4>
+<div class="paragraph">
+<p>Edit LVMCluster to reduce <code>overprovisionRatio</code></p>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_issue_5_device_wipe_failed"><a class="anchor" href="#_issue_5_device_wipe_failed"></a>Issue 5: Device Wipe Failed</h3>
+<div class="paragraph">
+<p>Symptoms:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>LVMCluster created but device not being used</p>
+</li>
+<li>
+<p>Logs show "cannot wipe device" or "device busy"</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Diagnosis:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Check current filesystem/partition
+oc debug node/&lt;node-name&gt; -- chroot /host lsblk -f /dev/sda
+
+# Check for LVM signatures
+oc debug node/&lt;node-name&gt; -- chroot /host pvs | grep /dev/sda
+
+# Check if device is open
+oc debug node/&lt;node-name&gt; -- chroot /host lsof | grep /dev/sda</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Solution:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Ensure forceWipeDevicesAndDestroyAllData is set
+oc edit lvmcluster lvmcluster -n openshift-lvm-storage
+
+# Add under deviceSelector:
+forceWipeDevicesAndDestroyAllData: true</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_issue_6_vg_manager_pod_crashlooping"><a class="anchor" href="#_issue_6_vg_manager_pod_crashlooping"></a>Issue 6: vg-manager Pod CrashLooping</h3>
+<div class="paragraph">
+<p>Symptoms:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>NAME             READY   STATUS             RESTARTS   AGE
+vg-manager-xxx   0/1     CrashLoopBackOff   5          3m</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Diagnosis:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Check pod logs
+oc logs -n openshift-lvm-storage &lt;vg-manager-pod&gt; --previous
+
+# Check pod events
+oc describe pod -n openshift-lvm-storage &lt;vg-manager-pod&gt;
+
+# Check node resources
+oc describe node &lt;node-name&gt;</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Common causes:</p>
+</div>
+<div class="sect3">
+<h4 id="_device_permissions"><a class="anchor" href="#_device_permissions"></a>Device permissions</h4>
+<div class="ulist">
+<ul>
+<li>
+<p>vg-manager may lack permissions to access device</p>
+</li>
+<li>
+<p>Check SELinux denials in node logs</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_missing_device"><a class="anchor" href="#_missing_device"></a>Missing device</h4>
+<div class="ulist">
+<ul>
+<li>
+<p>Device path in config doesn&#8217;t exist</p>
+</li>
+<li>
+<p>Device removed or changed name</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_resource_constraints"><a class="anchor" href="#_resource_constraints"></a>Resource constraints</h4>
+<div class="ulist">
+<ul>
+<li>
+<p>Node running out of memory or CPU</p>
+</li>
+<li>
+<p>Check node capacity</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_issue_7_storageclass_not_default"><a class="anchor" href="#_issue_7_storageclass_not_default"></a>Issue 7: StorageClass Not Default</h3>
+<div class="paragraph">
+<p>Symptoms:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>PVCs without explicit storageClassName fail to bind</p>
+</li>
+<li>
+<p>Warning: "no default deviceClass was specified"</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Diagnosis:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Check if any StorageClass is default
+oc get storageclass | grep default
+
+# Check lvms StorageClass annotations
+oc get storageclass lvms-vg1 -o yaml | grep is-default-class</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Solutions:</p>
+</div>
+<div class="sect3">
+<h4 id="_set_lvm_storageclass_as_default"><a class="anchor" href="#_set_lvm_storageclass_as_default"></a>Set LVM StorageClass as default</h4>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc patch storageclass lvms-vg1 -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}'</code></pre>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_or_set_default_in_lvmcluster"><a class="anchor" href="#_or_set_default_in_lvmcluster"></a>Or set default in LVMCluster</h4>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc edit lvmcluster lvmcluster -n openshift-lvm-storage
+
+# Add under deviceClasses:
+- name: vg1
+  default: true</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_diagnostic_script"><a class="anchor" href="#_diagnostic_script"></a>Diagnostic Script</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Save this as a shell script to quickly diagnose LVM storage issues:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">#!/bin/bash
+
+NAMESPACE="openshift-lvm-storage"
+NODE_NAME="&lt;your-node-name&gt;"
+
+echo "=== LVM Storage Diagnostic Report ==="
+echo ""
+
+echo "1. LVMCluster Status:"
+oc get lvmcluster -n $NAMESPACE
+echo ""
+
+echo "2. Pods Status:"
+oc get pods -n $NAMESPACE
+echo ""
+
+echo "3. StorageClass:"
+oc get storageclass | grep lvms
+echo ""
+
+echo "4. PVs:"
+oc get pv | grep topolvm
+echo ""
+
+echo "5. Volume Groups:"
+oc debug node/$NODE_NAME -- chroot /host vgs
+echo ""
+
+echo "6. Logical Volumes:"
+oc debug node/$NODE_NAME -- chroot /host lvs
+echo ""
+
+echo "7. Physical Volumes:"
+oc debug node/$NODE_NAME -- chroot /host pvs
+echo ""
+
+echo "8. Block Devices:"
+oc debug node/$NODE_NAME -- chroot /host lsblk -o NAME,SIZE,TYPE,FSTYPE,MOUNTPOINT
+echo ""
+
+echo "9. Recent vg-manager logs:"
+oc logs -n $NAMESPACE daemonset/vg-manager --tail=20
+echo ""
+
+echo "=== End of Diagnostic Report ==="</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_related_guides"><a class="anchor" href="#_related_guides"></a>Related Guides</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p><a href="lvm-operator.html" class="xref page">LVM Operator Local Disk Installation Tutorial</a> - Installation guide with detailed configuration</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<nav class="pagination">
+  <span class="prev"><a href="lvm-operator.html">LVM Operator Installation</a></span>
+  <span class="next"><a href="../networking/index.html">Networking Configuration</a></span>
+</nav>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <img src="../../../_/img/rhl-logo-red.png" height="40px" alt="Red Hat"  href="https://redhat.com" >
+</footer><script id="site-script" src="../../../_/js/site.js" data-ui-root-path="../../../_"></script>
+<script async src="../../../_/js/vendor/highlight.js"></script>
+  </body>
+</html>

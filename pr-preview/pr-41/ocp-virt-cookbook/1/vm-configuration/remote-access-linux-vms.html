@@ -1,0 +1,1278 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Remote Access to Linux VMs :: OpenShift Virtualization cookbook</title>
+    <link rel="prev" href="internal-dns-for-vms.html">
+    <link rel="next" href="remote-access-linux-troubleshooting.html">
+    <meta name="generator" content="Antora 3.1.3">
+    <link rel="stylesheet" href="../../../_/css/site.css">
+    <script>var uiRootPath = '../../../_'</script>
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://www.redhat.com" target="_blank"><img src="../../../_/img/redhat-logo.png" height="40px" alt="Red Hat"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="../../..">OpenShift Virtualization cookbook</a>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues" target="_blank">Report Issues</a>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="ocp-virt-cookbook" data-version="1">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="../index.html">OpenShift Virtualization cookbook</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../getting-started/index.html">Getting Started</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/prerequisites.html">Prerequisites</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/virtctl-basics.html">Virtctl Basics</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/default-storage-class.html">Storage Setup</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../storage/index.html">Storage Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/lvm-operator.html">LVM Operator Installation</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/lvm-troubleshooting.html">LVM Troubleshooting</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../networking/index.html">Networking Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/udn-primary-networks.html">UDN Primary Networks</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/localnet-secondary.html">Localnet Secondary Networks with CUDN</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/localnet-vlan.html">Localnet Secondary Networks with VLAN using NAD</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/cudn-localnet-vlan.html">Localnet VLAN with CUDN</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/linux-bridges.html">Linux Bridges</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/ovs-bridge-troubleshooting.html">Troubleshooting Localnet Networks</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="index.html">Virtual Machine Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="cloud-init-ip-configuration.html">Cloud-init IP Configuration</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="cloud-init-troubleshooting.html">Cloud-init Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="internal-dns-for-vms.html">Internal DNS for VMs</a>
+  </li>
+  <li class="nav-item is-current-page" data-depth="2">
+    <a class="nav-link" href="remote-access-linux-vms.html">Remote Access to Linux VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="remote-access-linux-troubleshooting.html">Remote Access to Linux VMs Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="remote-access-windows-vms.html">Remote Access to Windows VMs via RDP</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="custom-golden-images.html">Custom Golden Images</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="golden-images-troubleshooting.html">Golden Images Troubleshooting</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../manifests/index.html">YAML Manifests Reference</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../manifests/operators.html">Operators</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../manifests/networking.html">Networking</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../manifests/storage.html">Storage</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../manifests/vms.html">Virtual Machines</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../manifests/security.html">Security</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../api/index.html">API Guide</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../api/api_component_overview.html">API Component Overview</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../lab-env/index.html">Lab Environment</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../appendix/glossary.html">Glossary</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">OpenShift Virtualization cookbook</span>
+    <span class="version">1</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <a class="title" href="../index.html">OpenShift Virtualization cookbook</a>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">1</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">OpenShift Virtualization cookbook</a></li>
+    <li><a href="index.html">Virtual Machine Configuration</a></li>
+    <li><a href="remote-access-linux-vms.html">Remote Access to Linux VMs</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">Remote Access to Linux VMs</h1>
+<div class="sect1">
+<h2 id="_overview"><a class="anchor" href="#_overview"></a>Overview</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>This tutorial demonstrates various methods to access Linux virtual machines running on OpenShift Virtualization. Each method suits different use cases, from quick troubleshooting to production-grade access patterns.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_access_methods_and_use_cases"><a class="anchor" href="#_access_methods_and_use_cases"></a>Access Methods and Use Cases</h2>
+<div class="sectionbody">
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 25%;">
+<col style="width: 50%;">
+<col style="width: 25%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Method</th>
+<th class="tableblock halign-left valign-top">Use Case</th>
+<th class="tableblock halign-left valign-top">SSH Keys Required</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Console</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Initial setup, troubleshooting</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">No</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">VNC</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">GUI access</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">No</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">virtctl SSH</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Quick admin access</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Yes</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">NodePort Service</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">External access</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Yes</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Port Forward</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Development, testing</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Yes</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Secondary Network</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Traditional infrastructure</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Yes</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_prerequisites"><a class="anchor" href="#_prerequisites"></a>Prerequisites</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p>OpenShift 4.18+ with OpenShift Virtualization operator installed</p>
+</li>
+<li>
+<p>CLI tools: <code>oc</code>, <code>virtctl</code>, <code>kubectl</code></p>
+</li>
+<li>
+<p>At least one running Linux VM (we&#8217;ll create one for this tutorial)</p>
+</li>
+<li>
+<p>Basic understanding of SSH and networking</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_setup_deploy_test_vm"><a class="anchor" href="#_setup_deploy_test_vm"></a>Setup: Deploy Test VM</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Create a namespace and deploy a Fedora VM:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc create namespace vm-access-demo</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Create VM with SSH enabled:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: fedora-access-vm
+  namespace: vm-access-demo
+spec:
+  dataVolumeTemplates:
+    - apiVersion: cdi.kubevirt.io/v1beta1
+      kind: DataVolume
+      metadata:
+        name: fedora-access-vm-disk
+      spec:
+        sourceRef:
+          kind: DataSource
+          name: fedora
+          namespace: openshift-virtualization-os-images
+        storage:
+          resources:
+            requests:
+              storage: 30Gi
+  runStrategy: RerunOnFailure
+  template:
+    metadata:
+      labels:
+        kubevirt.io/domain: fedora-access-vm
+    spec:
+      domain:
+        cpu:
+          cores: 2
+        devices:
+          disks:
+            - disk:
+                bus: virtio
+              name: rootdisk
+            - disk:
+                bus: virtio
+              name: cloudinitdisk
+          interfaces:
+            - masquerade: {}
+              name: default
+          rng: {}
+        machine:
+          type: pc-q35-rhel9.4.0
+        memory:
+          guest: 4Gi
+      networks:
+        - name: default
+          pod: {}
+      volumes:
+        - dataVolume:
+            name: fedora-access-vm-disk
+          name: rootdisk
+        - cloudInitNoCloud:
+            userData: |-
+              #cloud-config
+              user: fedora
+              password: fedora123
+              chpasswd: { expire: false }
+              ssh_pwauth: true
+              ssh_authorized_keys:
+                - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC... your-public-key-here
+          name: cloudinitdisk</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Note: Replace <code>your-public-key-here</code> with your actual SSH public key, or use password authentication for testing.</p>
+</div>
+<div class="paragraph">
+<p>Deploy the VM:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f fedora-access-vm.yaml</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Wait for the VM to be ready:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vmi -n vm-access-demo</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_method_1_console_access_with_virtctl"><a class="anchor" href="#_method_1_console_access_with_virtctl"></a>Method 1: Console Access with virtctl</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The most basic access method - direct console access to the VM.</p>
+</div>
+<div class="sect2">
+<h3 id="_access_the_console"><a class="anchor" href="#_access_the_console"></a>Access the Console</h3>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">virtctl console fedora-access-vm -n vm-access-demo</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_exit_the_console"><a class="anchor" href="#_exit_the_console"></a>Exit the Console</h3>
+<div class="paragraph">
+<p>Press <code>Ctrl+]</code> to exit.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_when_to_use"><a class="anchor" href="#_when_to_use"></a>When to Use</h3>
+<div class="ulist">
+<ul>
+<li>
+<p>Initial VM setup and configuration</p>
+</li>
+<li>
+<p>No network connectivity troubleshooting</p>
+</li>
+<li>
+<p>VM doesn&#8217;t respond to SSH</p>
+</li>
+<li>
+<p>Emergency access when network is broken</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_limitations"><a class="anchor" href="#_limitations"></a>Limitations</h3>
+<div class="ulist">
+<ul>
+<li>
+<p>No copy/paste support (limited)</p>
+</li>
+<li>
+<p>No scroll-back</p>
+</li>
+<li>
+<p>Text-only interface</p>
+</li>
+<li>
+<p>Single session at a time</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_method_2_vnc_access"><a class="anchor" href="#_method_2_vnc_access"></a>Method 2: VNC Access</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>For VMs with graphical desktop environments.</p>
+</div>
+<div class="sect2">
+<h3 id="_start_vnc_session"><a class="anchor" href="#_start_vnc_session"></a>Start VNC Session</h3>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">virtctl vnc fedora-access-vm -n vm-access-demo</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This launches a VNC viewer connecting to the VM&#8217;s display.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_when_to_use_2"><a class="anchor" href="#_when_to_use_2"></a>When to Use</h3>
+<div class="ulist">
+<ul>
+<li>
+<p>Accessing desktop Linux VMs</p>
+</li>
+<li>
+<p>Running GUI applications</p>
+</li>
+<li>
+<p>Installing software that requires GUI</p>
+</li>
+<li>
+<p>Troubleshooting display issues</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_requirements"><a class="anchor" href="#_requirements"></a>Requirements</h3>
+<div class="ulist">
+<ul>
+<li>
+<p>VNC viewer installed locally</p>
+</li>
+<li>
+<p>VM with desktop environment (GNOME, KDE, etc.)</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_method_3_ssh_via_virtctl"><a class="anchor" href="#_method_3_ssh_via_virtctl"></a>Method 3: SSH via virtctl</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Quick SSH access through virtctl command. This method uses port-forwarding under the hood to connect to the VM&#8217;s SSH port.</p>
+</div>
+<div class="sect2">
+<h3 id="_prerequisites_2"><a class="anchor" href="#_prerequisites_2"></a>Prerequisites</h3>
+<div class="ulist">
+<ul>
+<li>
+<p>SSH key configured in VM (via cloud-init)</p>
+</li>
+<li>
+<p>SSH service running in the VM</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_connect_via_ssh"><a class="anchor" href="#_connect_via_ssh"></a>Connect via SSH</h3>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">virtctl ssh fedora@fedora-access-vm -n vm-access-demo</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_skip_host_key_checking_for_testing"><a class="anchor" href="#_skip_host_key_checking_for_testing"></a>Skip Host Key Checking (for testing)</h3>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">virtctl ssh fedora@fedora-access-vm -n vm-access-demo --local-ssh-opts="-o StrictHostKeyChecking=no"</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_when_to_use_3"><a class="anchor" href="#_when_to_use_3"></a>When to Use</h3>
+<div class="ulist">
+<ul>
+<li>
+<p>Quick administrative access</p>
+</li>
+<li>
+<p>Development and testing</p>
+</li>
+<li>
+<p>Temporary access needs</p>
+</li>
+<li>
+<p>When you have cluster access via oc/kubectl</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_limitations_2"><a class="anchor" href="#_limitations_2"></a>Limitations</h3>
+<div class="ulist">
+<ul>
+<li>
+<p>Requires cluster access</p>
+</li>
+<li>
+<p>Uses port-forwarding, which may add slight latency</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_method_4_direct_ssh_via_nodeport_service"><a class="anchor" href="#_method_4_direct_ssh_via_nodeport_service"></a>Method 4: Direct SSH via NodePort Service</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Expose SSH port externally using a NodePort Service.</p>
+</div>
+<div class="sect2">
+<h3 id="_create_nodeport_service"><a class="anchor" href="#_create_nodeport_service"></a>Create NodePort Service</h3>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: v1
+kind: Service
+metadata:
+  name: fedora-ssh-nodeport
+  namespace: vm-access-demo
+spec:
+  type: NodePort
+  selector:
+    kubevirt.io/domain: fedora-access-vm
+  ports:
+    - protocol: TCP
+      port: 22
+      targetPort: 22
+      nodePort: 30022</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Apply the service:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f fedora-ssh-nodeport.yaml</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_verify_the_service"><a class="anchor" href="#_verify_the_service"></a>Verify the Service</h3>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get svc fedora-ssh-nodeport -n vm-access-demo</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_connect_via_ssh_2"><a class="anchor" href="#_connect_via_ssh_2"></a>Connect via SSH</h3>
+<div class="paragraph">
+<p>Get your cluster node IP:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get nodes -o wide</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Connect using the NodePort:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">ssh fedora@&lt;node-ip&gt; -p 30022</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_when_to_use_4"><a class="anchor" href="#_when_to_use_4"></a>When to Use</h3>
+<div class="ulist">
+<ul>
+<li>
+<p>External access required</p>
+</li>
+<li>
+<p>Simple deployment without load balancer</p>
+</li>
+<li>
+<p>Development/testing clusters</p>
+</li>
+<li>
+<p>Quick external access setup</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_security_considerations"><a class="anchor" href="#_security_considerations"></a>Security Considerations</h3>
+<div class="ulist">
+<ul>
+<li>
+<p>Exposes SSH port on all cluster nodes</p>
+</li>
+<li>
+<p>Use strong authentication (SSH keys only)</p>
+</li>
+<li>
+<p>Consider firewall rules</p>
+</li>
+<li>
+<p>Not recommended for production</p>
+</li>
+<li>
+<p>Monitor for unauthorized access attempts</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_method_5_ssh_via_port_forward"><a class="anchor" href="#_method_5_ssh_via_port_forward"></a>Method 5: SSH via Port-Forward</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Temporary SSH access using kubectl/oc port-forward.</p>
+</div>
+<div class="sect2">
+<h3 id="_find_the_vm_pod"><a class="anchor" href="#_find_the_vm_pod"></a>Find the VM Pod</h3>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get pods -n vm-access-demo</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Output:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">NAME                                   READY   STATUS    RESTARTS   AGE
+virt-launcher-fedora-access-vm-xxxxx   2/2     Running   0          10m</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_forward_ssh_port"><a class="anchor" href="#_forward_ssh_port"></a>Forward SSH Port</h3>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc port-forward -n vm-access-demo virt-launcher-fedora-access-vm-xxxxx 2222:22</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_connect_via_ssh_in_another_terminal"><a class="anchor" href="#_connect_via_ssh_in_another_terminal"></a>Connect via SSH (in another terminal)</h3>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">ssh fedora@localhost -p 2222</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_when_to_use_5"><a class="anchor" href="#_when_to_use_5"></a>When to Use</h3>
+<div class="ulist">
+<ul>
+<li>
+<p>Quick temporary access</p>
+</li>
+<li>
+<p>Development and testing</p>
+</li>
+<li>
+<p>Troubleshooting specific VMs</p>
+</li>
+<li>
+<p>When NodePort/LoadBalancer unavailable</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_limitations_3"><a class="anchor" href="#_limitations_3"></a>Limitations</h3>
+<div class="ulist">
+<ul>
+<li>
+<p>Port-forward must stay active</p>
+</li>
+<li>
+<p>Single connection at a time</p>
+</li>
+<li>
+<p>Not suitable for production</p>
+</li>
+<li>
+<p>Requires active terminal session</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_method_6_direct_network_access_via_secondary_networks"><a class="anchor" href="#_method_6_direct_network_access_via_secondary_networks"></a>Method 6: Direct Network Access via Secondary Networks</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>For VMs on bridge or localnet networks, access directly via IP.</p>
+</div>
+<div class="sect2">
+<h3 id="_prerequisites_3"><a class="anchor" href="#_prerequisites_3"></a>Prerequisites</h3>
+<div class="ulist">
+<ul>
+<li>
+<p>VM attached to secondary network (bridge, localnet, VLAN)</p>
+</li>
+<li>
+<p>Network reachable from your location</p>
+</li>
+<li>
+<p>Static IP configured or DHCP with reserved address</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_vm_with_secondary_network"><a class="anchor" href="#_vm_with_secondary_network"></a>VM with Secondary Network</h3>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: fedora-vlan-vm
+  namespace: vm-access-demo
+spec:
+  dataVolumeTemplates:
+    - apiVersion: cdi.kubevirt.io/v1beta1
+      kind: DataVolume
+      metadata:
+        name: fedora-vlan-vm-disk
+      spec:
+        sourceRef:
+          kind: DataSource
+          name: fedora
+          namespace: openshift-virtualization-os-images
+        storage:
+          resources:
+            requests:
+              storage: 30Gi
+  runStrategy: RerunOnFailure
+  template:
+    metadata:
+      labels:
+        kubevirt.io/domain: fedora-vlan-vm
+    spec:
+      domain:
+        cpu:
+          cores: 2
+        devices:
+          disks:
+            - disk:
+                bus: virtio
+              name: rootdisk
+            - disk:
+                bus: virtio
+              name: cloudinitdisk
+          interfaces:
+            - masquerade: {}
+              name: default
+            - bridge: {}
+              name: vlan-network
+          rng: {}
+        machine:
+          type: pc-q35-rhel9.4.0
+        memory:
+          guest: 4Gi
+      networks:
+        - name: default
+          pod: {}
+        - name: vlan-network
+          multus:
+            networkName: localnet-vlan-100
+      volumes:
+        - dataVolume:
+            name: fedora-vlan-vm-disk
+          name: rootdisk
+        - cloudInitNoCloud:
+            userData: |-
+              #cloud-config
+              user: fedora
+              password: fedora123
+              chpasswd: { expire: false }
+              ssh_pwauth: true
+              ssh_authorized_keys:
+                - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC... your-public-key-here
+            networkData: |-
+              version: 2
+              ethernets:
+                enp1s0:
+                  dhcp4: true
+                enp2s0:
+                  dhcp4: false
+                  dhcp6: false
+                  addresses:
+                    - 192.168.100.100/24
+          name: cloudinitdisk</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_connect_via_ssh_3"><a class="anchor" href="#_connect_via_ssh_3"></a>Connect via SSH</h3>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">ssh fedora@192.168.100.100</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_when_to_use_6"><a class="anchor" href="#_when_to_use_6"></a>When to Use</h3>
+<div class="ulist">
+<ul>
+<li>
+<p>Production environments</p>
+</li>
+<li>
+<p>Traditional infrastructure patterns</p>
+</li>
+<li>
+<p>VMs needing persistent, predictable access</p>
+</li>
+<li>
+<p>Integration with existing networks</p>
+</li>
+<li>
+<p>Multiple VMs on same network segment</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_advantages"><a class="anchor" href="#_advantages"></a>Advantages</h3>
+<div class="ulist">
+<ul>
+<li>
+<p>Native network access</p>
+</li>
+<li>
+<p>No port-forwarding overhead</p>
+</li>
+<li>
+<p>Multiple simultaneous connections</p>
+</li>
+<li>
+<p>Standard network tooling works</p>
+</li>
+<li>
+<p>Fits traditional architecture</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_ssh_key_configuration"><a class="anchor" href="#_ssh_key_configuration"></a>SSH Key Configuration</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_generate_ssh_key_if_needed"><a class="anchor" href="#_generate_ssh_key_if_needed"></a>Generate SSH Key (if needed)</h3>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">ssh-keygen -t rsa -b 4096 -f ~/.ssh/ocp-virt-key</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_add_key_to_cloud_init"><a class="anchor" href="#_add_key_to_cloud_init"></a>Add Key to Cloud-init</h3>
+<div class="paragraph">
+<p>Include in the VM&#8217;s userData section:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">ssh_authorized_keys:
+  - ssh-rsa AAAAB3NzaC... your-key-here</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_disable_password_authentication"><a class="anchor" href="#_disable_password_authentication"></a>Disable Password Authentication</h3>
+<div class="paragraph">
+<p>For production, disable password authentication and root login. Add these settings to the <code>userData</code> section of your cloud-init configuration:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">volumes:
+  - cloudInitNoCloud:
+      userData: |-
+        #cloud-config
+        user: fedora
+        ssh_pwauth: false
+        disable_root: true
+        ssh_authorized_keys:
+          - ssh-rsa AAAAB3NzaC... your-key-here
+    name: cloudinitdisk</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This configuration:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>ssh_pwauth: false</code> - Disables password authentication for SSH</p>
+</li>
+<li>
+<p><code>disable_root: true</code> - Prevents root login via SSH</p>
+</li>
+<li>
+<p>Requires SSH key authentication only</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_verification_commands"><a class="anchor" href="#_verification_commands"></a>Verification Commands</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_check_vm_status"><a class="anchor" href="#_check_vm_status"></a>Check VM Status</h3>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># VirtualMachine
+oc get vm -n vm-access-demo
+
+# VirtualMachineInstance
+oc get vmi -n vm-access-demo
+
+# Detailed VM info
+oc describe vmi fedora-access-vm -n vm-access-demo</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_check_ssh_service_in_vm"><a class="anchor" href="#_check_ssh_service_in_vm"></a>Check SSH Service in VM</h3>
+<div class="paragraph">
+<p>Via console:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">virtctl console fedora-access-vm -n vm-access-demo</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Inside the VM:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Check SSH service
+sudo systemctl status sshd
+
+# Check SSH is listening
+sudo ss -tlnp | grep :22
+
+# Check firewall
+sudo firewall-cmd --list-all</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_test_network_connectivity"><a class="anchor" href="#_test_network_connectivity"></a>Test Network Connectivity</h3>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># From inside VM
+ping -c 3 8.8.8.8
+
+# From outside (if on same network)
+ping -c 3 192.168.100.100</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_common_issues_and_solutions"><a class="anchor" href="#_common_issues_and_solutions"></a>Common Issues and Solutions</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>For troubleshooting of all access methods, see <a href="remote-access-linux-troubleshooting.html" class="xref page">Troubleshooting Remote Access to Linux VMs</a>.</p>
+</div>
+<div class="sect2">
+<h3 id="_issue_virtctl_console_shows_no_login_prompt"><a class="anchor" href="#_issue_virtctl_console_shows_no_login_prompt"></a>Issue: virtctl console shows no login prompt</h3>
+<div class="paragraph">
+<p><strong>Problem</strong>: VM not fully booted or display issue.</p>
+</div>
+<div class="paragraph">
+<p><strong>Solution</strong>: Wait longer, check VM status, verify VM is running.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_issue_ssh_connection_refused"><a class="anchor" href="#_issue_ssh_connection_refused"></a>Issue: SSH connection refused</h3>
+<div class="paragraph">
+<p><strong>Problem</strong>: SSH service not running or firewall blocking.</p>
+</div>
+<div class="paragraph">
+<p><strong>Solution</strong>:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Check sshd status: <code>sudo systemctl status sshd</code></p>
+</li>
+<li>
+<p>Start if needed: <code>sudo systemctl start sshd</code></p>
+</li>
+<li>
+<p>Check firewall: <code>sudo firewall-cmd --list-services</code></p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_issue_virtctl_ssh_connection_fails"><a class="anchor" href="#_issue_virtctl_ssh_connection_fails"></a>Issue: virtctl ssh connection fails</h3>
+<div class="paragraph">
+<p><strong>Problem</strong>: SSH service not running or authentication failure.</p>
+</div>
+<div class="paragraph">
+<p><strong>Solution</strong>:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Verify SSH service is running in the VM</p>
+</li>
+<li>
+<p>Check that SSH keys are properly configured</p>
+</li>
+<li>
+<p>Ensure the VM has network connectivity</p>
+</li>
+<li>
+<p>Test SSH from within the cluster using port-forward method</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_issue_nodeport_not_accessible"><a class="anchor" href="#_issue_nodeport_not_accessible"></a>Issue: NodePort not accessible</h3>
+<div class="paragraph">
+<p><strong>Problem</strong>: Firewall on cluster nodes blocking port.</p>
+</div>
+<div class="paragraph">
+<p><strong>Solution</strong>: Check node firewall rules, ensure NodePort range is open.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_issue_cant_connect_to_secondary_network_ip"><a class="anchor" href="#_issue_cant_connect_to_secondary_network_ip"></a>Issue: Can&#8217;t connect to secondary network IP</h3>
+<div class="paragraph">
+<p><strong>Problem</strong>: Network not reachable or routing issue.</p>
+</div>
+<div class="paragraph">
+<p><strong>Solution</strong>: Verify network configuration, check routes, ensure VLAN/bridge is properly configured.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_security_best_practices"><a class="anchor" href="#_security_best_practices"></a>Security Best Practices</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_authentication"><a class="anchor" href="#_authentication"></a>Authentication</h3>
+<div class="ulist">
+<ul>
+<li>
+<p>Use SSH keys only, disable password authentication</p>
+</li>
+<li>
+<p>Rotate SSH keys regularly</p>
+</li>
+<li>
+<p>Use different keys for different environments</p>
+</li>
+<li>
+<p>Implement key management policies</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_network_security"><a class="anchor" href="#_network_security"></a>Network Security</h3>
+<div class="ulist">
+<ul>
+<li>
+<p>Limit NodePort exposure to specific IPs if possible</p>
+</li>
+<li>
+<p>Use network policies to restrict VM access</p>
+</li>
+<li>
+<p>Configure VM firewall appropriately</p>
+</li>
+<li>
+<p>Monitor access logs regularly</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_access_control"><a class="anchor" href="#_access_control"></a>Access Control</h3>
+<div class="ulist">
+<ul>
+<li>
+<p>Implement RBAC for virtctl access</p>
+</li>
+<li>
+<p>Use separate namespaces for different environments</p>
+</li>
+<li>
+<p>Document who has access to what VMs</p>
+</li>
+<li>
+<p>Regular access audits</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_cleanup"><a class="anchor" href="#_cleanup"></a>Cleanup</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Remove all resources created in this tutorial:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Delete VMs
+oc delete vm fedora-access-vm fedora-vlan-vm -n vm-access-demo
+
+# Delete Service
+oc delete svc fedora-ssh-nodeport -n vm-access-demo
+
+# Delete namespace
+oc delete namespace vm-access-demo</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_summary"><a class="anchor" href="#_summary"></a>Summary</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>In this tutorial, you learned:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Multiple methods to access Linux VMs in OpenShift Virtualization</p>
+</li>
+<li>
+<p>When to use each access method</p>
+</li>
+<li>
+<p>How to configure SSH keys via cloud-init</p>
+</li>
+<li>
+<p>How to expose VMs externally using Services</p>
+</li>
+<li>
+<p>How to use port-forwarding for temporary access</p>
+</li>
+<li>
+<p>How to access VMs on secondary networks</p>
+</li>
+<li>
+<p>Security best practices for VM access</p>
+</li>
+<li>
+<p>Common issues and troubleshooting steps</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_references"><a class="anchor" href="#_references"></a>References</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p><a href="https://docs.redhat.com/en/documentation/openshift_container_platform/4.19/html/virtualization/managing-vms" target="_blank" rel="noopener">Managing VMs</a></p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<nav class="pagination">
+  <span class="prev"><a href="internal-dns-for-vms.html">Internal DNS for VMs</a></span>
+  <span class="next"><a href="remote-access-linux-troubleshooting.html">Remote Access to Linux VMs Troubleshooting</a></span>
+</nav>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <img src="../../../_/img/rhl-logo-red.png" height="40px" alt="Red Hat"  href="https://redhat.com" >
+</footer><script id="site-script" src="../../../_/js/site.js" data-ui-root-path="../../../_"></script>
+<script async src="../../../_/js/vendor/highlight.js"></script>
+  </body>
+</html>

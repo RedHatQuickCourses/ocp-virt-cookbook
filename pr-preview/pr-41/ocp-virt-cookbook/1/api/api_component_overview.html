@@ -1,0 +1,1801 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>OpenShift Virtualization API Component Overview :: OpenShift Virtualization cookbook</title>
+    <link rel="prev" href="index.html">
+    <link rel="next" href="../lab-env/index.html">
+    <meta name="generator" content="Antora 3.1.3">
+    <link rel="stylesheet" href="../../../_/css/site.css">
+    <script>var uiRootPath = '../../../_'</script>
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://www.redhat.com" target="_blank"><img src="../../../_/img/redhat-logo.png" height="40px" alt="Red Hat"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="../../..">OpenShift Virtualization cookbook</a>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues" target="_blank">Report Issues</a>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="ocp-virt-cookbook" data-version="1">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="../index.html">OpenShift Virtualization cookbook</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../getting-started/index.html">Getting Started</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/prerequisites.html">Prerequisites</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/virtctl-basics.html">Virtctl Basics</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/default-storage-class.html">Storage Setup</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../storage/index.html">Storage Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/lvm-operator.html">LVM Operator Installation</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/lvm-troubleshooting.html">LVM Troubleshooting</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../networking/index.html">Networking Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/udn-primary-networks.html">UDN Primary Networks</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/localnet-secondary.html">Localnet Secondary Networks with CUDN</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/localnet-vlan.html">Localnet Secondary Networks with VLAN using NAD</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/cudn-localnet-vlan.html">Localnet VLAN with CUDN</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/linux-bridges.html">Linux Bridges</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/ovs-bridge-troubleshooting.html">Troubleshooting Localnet Networks</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../vm-configuration/index.html">Virtual Machine Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/cloud-init-ip-configuration.html">Cloud-init IP Configuration</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/cloud-init-troubleshooting.html">Cloud-init Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/internal-dns-for-vms.html">Internal DNS for VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/remote-access-linux-vms.html">Remote Access to Linux VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/remote-access-linux-troubleshooting.html">Remote Access to Linux VMs Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/remote-access-windows-vms.html">Remote Access to Windows VMs via RDP</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/custom-golden-images.html">Custom Golden Images</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/golden-images-troubleshooting.html">Golden Images Troubleshooting</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../manifests/index.html">YAML Manifests Reference</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../manifests/operators.html">Operators</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../manifests/networking.html">Networking</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../manifests/storage.html">Storage</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../manifests/vms.html">Virtual Machines</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../manifests/security.html">Security</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="index.html">API Guide</a>
+<ul class="nav-list">
+  <li class="nav-item is-current-page" data-depth="2">
+    <a class="nav-link" href="api_component_overview.html">API Component Overview</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../lab-env/index.html">Lab Environment</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../appendix/glossary.html">Glossary</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">OpenShift Virtualization cookbook</span>
+    <span class="version">1</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <a class="title" href="../index.html">OpenShift Virtualization cookbook</a>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">1</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">OpenShift Virtualization cookbook</a></li>
+    <li><a href="index.html">API Guide</a></li>
+    <li><a href="api_component_overview.html">API Component Overview</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">OpenShift Virtualization API Component Overview</h1>
+<div id="preamble">
+<div class="sectionbody">
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+OpenShift versions tested: v4.19, v4.20
+</td>
+</tr>
+</table>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-important" title="Important"></i>
+</td>
+<td class="content">
+This reference guide offers an overview of OpenShift Virtualization API components, covering the most essential material concerning these components and the overall platform architecture.
+It is <em>not</em> a comprehensive API reference, but is rather intended to be a quick start guide for new API developers.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>For newcomers or those coming from other virtualization platforms, OpenShift Virtualization is based on the <a href="https://kubevirt.io" target="_blank" rel="noopener">KubeVirt</a> upstream project and is built on top of OpenShift, which is in turn based on Kubernetes.
+The OpenShift (and therefore Kubernetes) architecture uses a declarative design defined by API objects which can be represented in json or yaml form.
+OpenShift Virtualization extends this declarative API with objects specific to virtualization. For newcomers, the role of each these objects as well as their relation to one another can be confusing.</p>
+</div>
+<div class="paragraph">
+<p>This guide merges the typical architecture guide with that of an API guide; it is meant to clear up the role of each of these API components (also referred to as objects or resources) and the relationship between components, while also touching on the API specifics of each component.</p>
+</div>
+<div class="paragraph">
+<p>Thus, full yaml examples and schemas are avoided in favor of snippets and a subset of the most important fields (in <code>dot.notation</code>) of a particular object
+See the documentation for <a href="https://docs.redhat.com/en/documentation/openshift_container_platform/latest/html/virtualization/index" target="_blank" rel="noopener">OpenShift Virtualization</a> and <a href="https://kubevirt.io/user-guide/" target="_blank" rel="noopener">KubeVirt</a> for detailed examples, and the <a href="https://kubevirt.io/api-reference/main/index.html" target="_blank" rel="noopener">KubeVirt API reference</a> for the full API schema.</p>
+</div>
+<div class="paragraph">
+<p>Here is what&#8217;s covered:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><a href="#virtualization_apis">Virtualization APIs</a></p>
+<div class="ulist">
+<ul>
+<li>
+<p><a href="#virtual_machines">VirtualMachines</a></p>
+</li>
+<li>
+<p><a href="#virtual_machine_instances">VirtualMachineInstances</a></p>
+</li>
+<li>
+<p><a href="#instance_types">Instance Types</a></p>
+</li>
+<li>
+<p><a href="#vm_cluster_instance_types">VirtualMachineClusterInstanceTypes</a></p>
+</li>
+<li>
+<p><a href="#vm_instance_types">VirtualMachineInstanceTypes</a></p>
+</li>
+<li>
+<p><a href="#virtual_machine_preferences">VirtualMachinePreferences and VirtualMachineClusterPreferences</a></p>
+</li>
+<li>
+<p><a href="#preferred_cpu_topology">PreferredCPUTopology</a></p>
+</li>
+<li>
+<p><a href="#vcpu_spread_options">vCPU SpreadOptions</a></p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p><a href="#networking_apis">Networking APIs</a></p>
+<div class="ulist">
+<ul>
+<li>
+<p><a href="#networks">Networks</a></p>
+</li>
+<li>
+<p><a href="#interfaces">Interfaces</a></p>
+</li>
+<li>
+<p><a href="#default_network">The Default Network</a></p>
+</li>
+<li>
+<p><a href="#multus_cni_plugin">Multus CNI Plugin</a></p>
+</li>
+<li>
+<p><a href="#nmstate_operator">NMState Operator</a></p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p><a href="#storage_apis">Storage APIs</a></p>
+<div class="ulist">
+<ul>
+<li>
+<p><a href="#persistent_volumes">PersistentVolumes</a></p>
+</li>
+<li>
+<p><a href="#persistent_volume_claims">PersistentVolumeClaims</a></p>
+</li>
+<li>
+<p><a href="#volume_snapshots">VolumeSnapshots</a></p>
+</li>
+<li>
+<p><a href="#data_volumes">DataVolumes</a></p>
+</li>
+<li>
+<p><a href="#data_sources">DataSources</a></p>
+</li>
+<li>
+<p><a href="#storage_classes">StorageClasses</a></p>
+</li>
+<li>
+<p><a href="#virtual_machine_snapshots">VirtualMachineSnapshots</a></p>
+</li>
+<li>
+<p><a href="#virtual_machine_restores">VirtualMachineRestores</a></p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p><a href="#clone_api">Clone API</a></p>
+<div class="ulist">
+<ul>
+<li>
+<p><a href="#virtual_machine_clones">VirtualMachineClones</a></p>
+</li>
+<li>
+<p><a href="#mutating_vm_clones">Mutating a Cloned VM</a></p>
+</li>
+<li>
+<p><a href="#patching_vm_clones">Patching a Cloned VM</a></p>
+</li>
+<li>
+<p><a href="#vm_cloning_strategies">Cloning Strategies and StorageProfiles</a></p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p><a href="#export_api">Export API</a></p>
+<div class="ulist">
+<ul>
+<li>
+<p><a href="#virtual_machine_exports">VirtualMachineExports</a></p>
+</li>
+</ul>
+</div>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="virtualization_apis"><a class="anchor" href="#virtualization_apis"></a>Virtualization APIs</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="virtual_machines"><a class="anchor" href="#virtual_machines"></a>VirtualMachines</h3>
+<div class="paragraph">
+<p>A VirtualMachine in an API object (technically, a Kubernetes Custom Resource) that represents a non-running VirtualMachine in OpenShift Virtualization.</p>
+</div>
+<div class="paragraph">
+<p>VirtualMachines contain a template for a VirtualMachineInstance (covered in the next section), and reflect the run state as part of their Status.</p>
+</div>
+<div class="paragraph">
+<p>VirtualMachines contain fields within their <code>spec</code> where numerous details of the VM are defined. Several of these are:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>instanceType</code> - the <a href="#instance_types">instance type</a> name (t-shirt sized by RAM &amp; CPU allotment) to use for the VirtualMachine.</p>
+</li>
+<li>
+<p><code>volumes</code> - a list of volumes to be attached to the VM as virtual disks. This field supports <a href="https://kubevirt.io/user-guide/storage/disks_and_volumes/#volumes" target="_blank" rel="noopener">several different volume types</a>, but <code>dataVolume</code> and <code>persistentVolumeClaims</code> are the most typical.</p>
+<div class="ulist">
+<ul>
+<li>
+<p><code>dataVolume</code> - denotes the name of <a href="#data_volumes">DataVolume(s)</a> to be provisioned for this VM. The DataVolume(s) to be created are defined within the <code>dataVolumeTemplates</code> section.</p>
+</li>
+<li>
+<p><code>persistentVolumeClaim</code> - attaches a <a href="#persistent_volume_claim">PersistentVolumeClaim</a> to the VM as a disk.</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p><code>networks</code> - a list of <a href="#networks">networks</a> bound to interfaces which are attached to the VM. An empty field will get the default Pod/VM network by default.</p>
+</li>
+<li>
+<p><code>interfaces</code> - a list of network <a href="#interfaces">interfaces</a> attached to a VM. Interfaces can be thought of as virtualized NICs, and are used to connect a Pod/VM to a particular network.</p>
+</li>
+<li>
+<p><code>dataVolumeTemplates</code> - a list of <a href="#data_volumes">DataVolume manifests</a> to be created. Any DataVolumes listed here should get referenced by name in the <code>volumes</code> section.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>The running state of a VirtualMachine is typically managed via the <code>spec.runStrategy</code> field, which accepts these values:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Always</strong> - default to the powered on state, which causes the VM to start again if it is stopped for any reason (whether it was shutdown manually or had crashed).</p>
+</li>
+<li>
+<p><strong>RerunOnFailure</strong> - like Always, but only restarts the VM if it crashes and not if it was shutdown cleanly (scheduled or manual shutdown from within the guest).</p>
+</li>
+<li>
+<p><strong>Once</strong> - the VM is started once and not again, regardless of whether it crashes or is shutdown manually.</p>
+</li>
+<li>
+<p><strong>Manual</strong> - the run state is not managed automatically, but only responds to power commands POST&#8217;d to the status subresource of the VM.</p>
+</li>
+<li>
+<p><strong>Halted</strong> - causes the VM to be shutdown until the <code>spec.runStrategy</code> is either changed or a <code>start</code> command is issued against the VM (more on this topic below).</p>
+</li>
+</ul>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+The <code>spec.running</code> field is both deprecated in favor of, and mutually exclusive with, the <code>spec.runStrategy</code> field.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>The <code>virtctl</code> command can also issue <code>start</code>, <code>stop</code> and <code>restart</code> commands which affect a VirtualMachine&#8217;s status subresource, which is the <code>../status</code> API endpoint used by KubeVirt to reflect a VM&#8217;s current state.</p>
+</div>
+<div class="paragraph">
+<p>Each of these commands, when issued, may affect the <code>runStrategy</code> of the VirtualMachine they are issued against. Each case is explained below:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>start</strong> - starts a VM and reverts a <code>Halted</code> run strategy to <code>Always</code>. This does not affect <code>RerunOnFailure</code> or <code>Manual</code> run strategies.</p>
+</li>
+<li>
+<p><strong>restart</strong> - restarts a VM in the running state, but does not affect the run strategy. This is a No-Op for a <code>Halted</code> VM.</p>
+</li>
+<li>
+<p><strong>stop</strong> - stops a VM and reverts an <code>Always</code> run strategy to <code>Halted</code>. This does not affect <code>RerunOnFailure</code> or <code>Manual</code> run strategies.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>At the API level, when a power command is issued against a VM with a <code>Manual</code> run strategy, a <code>stateChangeRequests[]</code> list is added to the VirtualMachine status subresource as follows:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">status:
+  stateChangeRequests:
+  - action: &lt;Stop|Start&gt; <i class="conum" data-value="1"></i><b>(1)</b>
+    uid: &lt;uid-of-the-virtual-machine-instance&gt; <i class="conum" data-value="2"></i><b>(2)</b></code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>The action being requested. One of the following string values (<code>Stop</code>, <code>Start</code>).</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>The optional UID of the VirtualMachineInstance (<em>not</em> the VirtualMachine) to perform the action against. This is not required for <code>Start</code> command since the VMI gets created when the VM starts.</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>When performing API actions against a VirtualMachine, there are several different fields reflecting the current run state in the VM <code>status</code>:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>status.printableStatus</strong> - this is the simplest field to check the VM power state, and reflects <code>Running</code> (started / ready), <code>Starting</code> (progressing / booting), and <code>Stopped</code> states.</p>
+</li>
+<li>
+<p><strong>status.runStrategy</strong> - reflects the active run strategy, which reflects the <code>spec.runStrategy</code> field as well as those same values: <code>Always</code>, <code>RerunOnFailure</code>, <code>Once</code>, <code>Manual</code> and <code>Halted</code>.</p>
+</li>
+<li>
+<p><strong>status.conditions["type": "Ready"]</strong> - <code>conditions</code> accepts a list of objects containing these fields: <code>type</code> - a string value (<code>Ready</code> in this case), <code>status</code> - a boolean value, <code>Reason</code> and <code>Message</code> - optional reason code and description, respectively.
+An example "not ready yet" condition looks like this:</p>
+</li>
+</ul>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: vm-status-example
+spec:
+  ...
+status:
+  conditions:
+    - lastProbeTime: "2025-11-10T15:00:46Z"
+      lastTransitionTime: "2025-11-10T15:00:46Z"
+      message: Guest VM is not reported as running
+      reason: GuestNotRunning
+      status: "False"
+      type: Ready</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="virtual_machine_instances"><a class="anchor" href="#virtual_machine_instances"></a>VirtualMachineInstances</h3>
+<div class="paragraph">
+<p>A VirtualMachineInstance (VMI) reflects the current configuration of a running VM in OpenShift Virtualization.</p>
+</div>
+<div class="paragraph">
+<p>Under the hood, VirtualMachineInstances are tied to a Kubernetes Pods, which are (groups of) containers that house and run the QEMU / KVM hypervisor and mount the VM disk image (the root disk and any additional disks) as a PersistentVolumeClaim.</p>
+</div>
+<div class="paragraph">
+<p>In relation to a VirtualMachine, a VirtualMachineInstance gets spun out of the yaml (json) definition of the VM <code>template</code>, specifically <code>spec.template</code> when a VirtualMachine is started.</p>
+</div>
+<div class="paragraph">
+<p>As with how a VMI gets created when a VM is started, the inverse occurs when a VM is stopped and the VMI is removed.
+The backing storage volumes (DataVolumes, PVCs, and PVs underlying) are kept unaffected when a VM is stopped, despite the VMI&#8217;s removal.</p>
+</div>
+<div class="paragraph">
+<p>When the VM is started again, a new VMI is created from the template defined in the VM yaml/json, and the same volumes are attached to the new VMI.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="instance_types"><a class="anchor" href="#instance_types"></a>Instance Types</h3>
+<div class="paragraph">
+<p>Similar to other cloud platforms, In OpenShift Virtualization, CPU and memory resources are determined according to named instance types.
+These instance types are letter-grouped according to the desired purpose or feature set and numbered by generation (ex: u1).
+Each group contains a selection of t-shirt sized (small, medium, large, xlarge, 2xlarge, etc) instance types scaled by resource allotment, with the size following the instance letter and number (ex: u1.xlarge).
+The scaling ratio for each group of instances differs according to the intended purpose (memory-intensive vs cpu-intensive).</p>
+</div>
+<div class="paragraph">
+<p>The following default instance types are available in OpenShift Virtualization:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Network (N)</strong> - for network-intensive workloads; requires DPDK-enabled nodes; 1:2 CPU/RAM ratio.</p>
+</li>
+<li>
+<p><strong>Overcommitted (O)</strong> - use when full RAM consumption is not expected or required; allows over-provisioning of host memory; 1:4 CPU/RAM ratio.</p>
+</li>
+<li>
+<p><strong>Compute Exclusive (CX)</strong> - for CPU-intensive workloads; runs on dedicated CPU cores/threads; 1:2 CPU/RAM ratio.</p>
+</li>
+<li>
+<p><strong>General Purpose (U)</strong> - for "universal" or general workloads; runs on shared host CPU cores/threads; 1:4 CPU/RAM ratio.</p>
+</li>
+<li>
+<p><strong>Memory Intensive (M)</strong> - for memory-intensive workloads; does not allow for over-provisioning of host memory; 1:8 CPU/RAM ratio.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>All sizes of every instance type above are defined at the cluster-level as a VirtualMachineClusterInstanceType.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="vm_cluster_instance_types"><a class="anchor" href="#vm_cluster_instance_types"></a>VirtualMachineClusterInstanceTypes</h3>
+<div class="paragraph">
+<p>A VirtualMachineClusterInstanceType defines an instance type at the cluster-scope. As mentioned, these are used to provide a selection of default instance types when provisioning a new VM in OpenShift Virtualization.</p>
+</div>
+<div class="paragraph">
+<p>VirtualMachineClusterInstanceTypes support the following field spec (some top-level fields are omitted below):</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>annotations</strong> - optional set of annotations to apply to instances of this type</p>
+</li>
+<li>
+<p><strong>cpu</strong> (required) - defines cpu-related configuration of this instance type</p>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>dedicatedCPUPlacement</strong> - whether to isolate vCPUs of a VM to available physical CPU cores/threads of a host node. Defaults to <code>false</code>.</p>
+</li>
+<li>
+<p><strong>guest</strong> (required) - the number of vCPUs to expose to the guest. Defaults to <code>0</code>.</p>
+</li>
+<li>
+<p><strong>isolateEmulatorThread</strong> - whether to place the emulator thread of a VMI on an additional dedicated physical CPU core/thread. Defaults to <code>false</code>.</p>
+</li>
+<li>
+<p><strong>maxSockets</strong> - specifies the maximum amount of sockets which can be hot-plugged.</p>
+</li>
+<li>
+<p><strong>model</strong> - specifies the CPU model to use within the VMI. Defaults to <code>host-model</code>.</p>
+</li>
+<li>
+<p><strong>numa</strong> - used to configure host NUMA settings</p>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>guestMappingPassthrough</strong> - creates a guest topology which ensures memory and CPUs on a virtual numa node never cross into another numa node on the host. Defaults to <code>{}</code>.</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p><strong>realtime</strong> - instructs the virt-launcher pod to tune the VMI for low-latency; optional for real-time workloads.</p>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>mask</strong> - mask expression that defines which vCPUs are used for realtime. Matches underlying libvirt expression format such as <code>"0-3,^1","1,2,3","1-2"</code></p>
+</li>
+</ul>
+</div>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p><strong>gpu</strong> - defines gpu devices associated with the instance type</p>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>deviceName</strong> - string value. Defaults to <code>""</code>.</p>
+</li>
+<li>
+<p><strong>name</strong> (required) - the name of the gpu device associated with a device plugin. Defaults to <code>""</code>.</p>
+</li>
+<li>
+<p><strong>tag</strong> - specified tag and virtual network interface address to expose to the guest via config drive.</p>
+</li>
+<li>
+<p><strong>virtualGPUOptions</strong> - options field for vGPU</p>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>display</strong> - display options for vGPU</p>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>enabled</strong> - whether to enable the display adapter backing a vGPU. Defaults to <code>true</code>.</p>
+</li>
+<li>
+<p><strong>ramFB</strong> - whether to enable the boot framebuffer until the guest OS loads the actual GPU driver.</p>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>enabled</strong> - Defaults to <code>true</code>.</p>
+</li>
+</ul>
+</div>
+</li>
+</ul>
+</div>
+</li>
+</ul>
+</div>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p><strong>hostDevices</strong> - optionally defines devices to expose with the instance type</p>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>deviceName</strong> (required) - resource name of the host device. Defaults to <code>""</code>.</p>
+</li>
+<li>
+<p><strong>name</strong> (required) - Defaults to <code>""</code>.</p>
+</li>
+<li>
+<p><strong>tag</strong> - specified tag and virtual interface address to expose to the guest via config drive</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p><strong>memory</strong> (required) - defines the memory-related configuration of this instance type</p>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>guest</strong> (required) - string value unit amount (such as <code>"4096Mi"</code> or <code>"6Gi"</code>) of memory to expose to the guest OS.</p>
+</li>
+<li>
+<p><strong>hugepages</strong> - allows the use of hugepages for the VMI instead of regular memory</p>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>pageSize</strong> - specifies the hugepage size. Valid sizes for amd64 architecture are <code>1Gi</code> and <code>2Mi</code>.</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p><strong>maxGuest</strong> - specifies the max amount of memory visible inside the guest. The delta between <code>maxGuest</code> and <code>guest</code> is the hot-pluggable amount of memory.</p>
+</li>
+<li>
+<p><strong>overcommitPercent</strong> - percentage of guest memory which will be overcommitted, or the % reduction in memory required by the virt-launcher pod. Defaults to <code>0</code>.</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p><strong>nodeSelector</strong> - a Kubernetes selector label used to schedule desired nodes for this instance type</p>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>schedulerName</strong> - specifies a custom Kubernetes scheduler for the instance type. If empty, uses the default K8s scheduler.</p>
+</li>
+</ul>
+</div>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="vm_instance_types"><a class="anchor" href="#vm_instance_types"></a>VirtualMachineInstanceTypes</h3>
+<div class="paragraph">
+<p>A VirtualMachineInstanceType is just like a VirtualMachineClusterInstanceType, only namespace-scoped instead of being cluster-scoped. This is useful for normal (non-cluster-admin) users to define their own custom instance types,
+which are then available only to the project/namespace that they have access to.</p>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-important" title="Important"></i>
+</td>
+<td class="content">
+You should select or define an instance type to use for a VirtualMachine rather than specifying the <code>cpu</code> and <code>memory</code> configuration manually, as the <code>spec.instancetype</code> field is required by the OpenShift Virtualization web console and can not be set if either <code>spec.template.spec.domain.cpu</code> or <code>spec.template.spec.domain.memory</code> are also set. This is because the instance type is used to populate the latter two fields of the VirtualMachineInstance when a VM is started.
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="virtual_machine_preferences"><a class="anchor" href="#virtual_machine_preferences"></a>VirtualMachinePreferences and VirtualMachineClusterPreferences</h3>
+<div class="paragraph">
+<p>Similar to VirtualMachineInstanceTypes, VirtualMachinePreferences are used to store the remaining machine-specific settings which are not covered by the instance type objects.
+However, these settings are merely <em>preferred</em> and thus can be overridden by changing the VirtualMachine object directly.</p>
+</div>
+<div class="paragraph">
+<p>As with instance types, there are also VirtualMachineClusterPreferences which accept the same <code>spec</code> as a VirtualMachinePreference, but these apply to the cluster scope.</p>
+</div>
+<div class="paragraph">
+<p>In OpenShift Virtualization, VirtualMachineClusterPreferences are used to store settings optimized per OS, and are thus named according to the OS (<code>fedora</code>, <code>rhel10</code>, <code>win11</code>, etc).
+For instance, some OS images are built to boot using legacy BIOS instead of UEFI firmware, so this is set in the VirtualMachineClusterPreference to ensure that VMs running a particular OS can boot properly.</p>
+</div>
+<div class="paragraph">
+<p>Below is an example VirtualMachineClusterPreference configured to boot using EFI firmware with SecureBoot enabled:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: instancetype.kubevirt.io/v1beta1
+kind: VirtualMachineClusterPreference
+metadata:
+  name: rhel10-custom
+spec:
+  firmware:
+    preferredUseEfi: true
+    preferredUseSecureBoot: true</code></pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+To specify BIOS firmware for a VM in a VirtualMachinePreference spec, use <code>spec.firmware.preferredUseBios</code> instead of <code>preferredUseEfi</code>. Keep in mind that SecureBoot is an exclusive feature of UEFI.
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="preferred_cpu_topology"><a class="anchor" href="#preferred_cpu_topology"></a>PreferredCPUTopology</h3>
+<div class="paragraph">
+<p>Another useful feature of VirtualMachinePreferences is the ability to adjust how the number of vCPUs defined in a VirtualMachineInstanceType are presented to the guest OS (known as the CPU topology)
+This is how the number CPU sockets, cores and threads are divvied across the vCPU count, affecting only how the guest <em>views</em> the CPU topology from within a VM (and nothing to do with host CPU socket, core or thread allocation).</p>
+</div>
+<div class="paragraph">
+<p>There are a several different settings for the preferredCPUTopology:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>sockets</strong> (default) - vCPUs are presented to the guest OS as sockets</p>
+</li>
+<li>
+<p><strong>cores</strong> - vCPUs are presented to the guest OS as cores</p>
+</li>
+<li>
+<p><strong>threads</strong> - vCPUs are presented to the guest OS as threads</p>
+</li>
+<li>
+<p><strong>spread</strong> - vCPUs are spread across sockets and cores by default, but can be tuned by setting <code>spreadOptions</code> (see below).</p>
+</li>
+<li>
+<p><strong>any</strong> - vCPUs are allocated to the guest OS as sockets, and that any allocation of vCPUs is required by the preference (used to define a preference without an associated instance type)</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="vcpu_spread_options"><a class="anchor" href="#vcpu_spread_options"></a>vCPU SpreadOptions</h3>
+<div class="paragraph">
+<p>Whenever the preferredCPUTopology is set to <code>spread</code>, you can use <code>spreadOptions</code> to adjust how vCPUs are presented across cores, threads and sockets.</p>
+</div>
+<div class="paragraph">
+<p><code>spreadOptions</code> contains two fields:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>across</strong> - used to define how vCPUs are spread across sockets, cores and threads</p>
+</li>
+<li>
+<p><strong>ratio</strong> (defaults to <code>2</code>) - the number of cores per socket (we&#8217;ll refer to this as <code>N</code> below)</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>The values for <code>across</code> are:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>SocketsCores</strong> (default) - vCPUs are spread across sockets and cores at a ratio of 1 socket per <code>N</code> cores.</p>
+</li>
+<li>
+<p><strong>SocketsCoresThreads</strong> - vCPUs are spread across sockets, cores and threads at a ratio of 1 socket per <code>N</code> cores, with 2 threads per core.</p>
+</li>
+<li>
+<p><strong>CoresThreads</strong> (requires 2+ vCPUs) - vCPUs are spread across cores and threads, but at an <em>enforced</em> ratio of 2 threads per core.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>An example VirtualMachinePreference using a custom <code>preferredCPUTopology</code> is below:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: instancetype.kubevirt.io/v1beta1
+kind: VirtualMachinePreference
+metadata:
+  name: cpu-topology-example
+spec:
+  cpu:
+    preferredCPUTopology: spread
+    spreadOptions:
+      across: SocketsCoresThreads
+      ratio: 6</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="networking_apis"><a class="anchor" href="#networking_apis"></a>Networking APIs</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>This section focuses on network-related sub-APIs found within VirtualMachines and VirtualMachineInstances, but also touches on networking components external to VMs/VMIs such as Multus CNI and NMState operator.</p>
+</div>
+<div class="paragraph">
+<p>Configuring networking at the VirtualMachine level is broken into two parts (both of which are co-dependent and therefore required), <code>networks</code> and <code>interfaces</code>, each of which is covered below.</p>
+</div>
+<div class="sect2">
+<h3 id="networks"><a class="anchor" href="#networks"></a>Networks</h3>
+<div class="paragraph">
+<p>In a VirtualMachine, networks are configured in the pod spec (<code>spec.template.spec</code>) via the <code>networks[]</code> field. Multiple networks can be listed (as denoted by the <code>[]</code>),
+but the name of each network must be unique (as with all Kubernetes resource names of a particular <code>kind</code>). A network must have an interface (covered below) of the same name defined within the VirtualMachine manifest.</p>
+</div>
+<div class="paragraph">
+<p>Each network should be declared in <code>spec.template.spec.networks[]</code> as one of two different types:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>pod</strong> - the default Kubernetes network; for use as the primary network only</p>
+</li>
+<li>
+<p><strong>multus</strong> - the Multus CNI plugin enables the use of additional networks; can also be used as the primary network</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="interfaces"><a class="anchor" href="#interfaces"></a>Interfaces</h3>
+<div class="paragraph">
+<p>In a VirtualMachine, an interface represents a virtual network interface card (NIC) attached to that VM.
+Interfaces are presented as virtualized adapters to the guest VM running within the host Pod, and different models (fully virtualized NICs) are supported by OpenShift Virtualization on guests which don&#8217;t support <code>virtio</code> (such as Windows).</p>
+</div>
+<div class="paragraph">
+<p>Interfaces are defined in <code>spec.domain.devices.interfaces[]</code> within a VirtualMachine object, and must have a <code>network</code> associated with them in order to function.</p>
+</div>
+<div class="paragraph">
+<p>Below is a non-exhaustive list of fields supported within an interface (note that only two fields are required):</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>name</strong> (required) - a name matching a <code>network</code> defined within <code>spec.template.spec.networks[]</code> of the VirtualMachine.</p>
+</li>
+<li>
+<p>(required) - the name of one of these core bindings or a nested network <code>binding</code> plugin:</p>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>bridge</strong> - connects to the named network using a Linux bridge</p>
+</li>
+<li>
+<p><strong>sriov</strong> - connect using a pass-through SR-IOV VF (using <code>vfio</code>)</p>
+</li>
+<li>
+<p><strong>masquerade</strong> - connects to the network using a NAT or IP masquerading (using <code>nftables</code> rules) for both egress and ingress</p>
+</li>
+<li>
+<p><strong>binding</strong> - allows the use of additional (non-core) network binding plugins</p>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>name</strong> - the name of a supported network binding plugin, specifically <em>one</em>  of the following values:</p>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>l2bridge</strong> - creates a direct Layer 2 connection between the VM <code>interface</code> and the desired <code>network</code></p>
+</li>
+<li>
+<p><strong>passt</strong> (tech-preview) - Plug a Simple Socket Transport is a userspace solution which provides better integration with the pod network, and in turn the OpenShift network ecosystem.</p>
+</li>
+</ul>
+</div>
+</li>
+</ul>
+</div>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p><strong>model</strong> - name of one of these supported adapters (10/100 adapters are omitted)</p>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>e1000</strong> - virtualizes an Intel 82545EM PCI gigabit ethernet adapter</p>
+</li>
+<li>
+<p><strong>e1000e</strong> - virtualizes an Intel 82574 PCI-E gigabit ethernet adapter</p>
+</li>
+<li>
+<p><strong>virtio</strong> - this is a virtualization standard for disks and network devices which enhances performance on Linux guests (where it is recommended).</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p><strong>macAddress</strong> - mac address visible from inside the guest</p>
+</li>
+<li>
+<p><strong>ports</strong> - a list of ports to forward to the VM guest</p>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>name</strong> - a friendly name for the given port</p>
+</li>
+<li>
+<p><strong>port</strong> - the port number, an integer value between <code>0</code> and <code>65535</code></p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p><strong>pciAddress</strong> - a PCI address to assign to the adapter within the guest, such as <code>0000:81:00.1</code></p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>See the sections on Networking for concrete usage examples when defining VMs.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="default_network"><a class="anchor" href="#default_network"></a>The Default Network</h3>
+<div class="paragraph">
+<p>This is (as the name indicates) the default network used by pods in OpenShift and Kubernetes.
+It is chosen by simply defining an empty <code>pod: {}</code> network with an empty <code>masquerade: {}</code> interface, as in the below example:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: default-network-example
+  namespace: my-namespace
+spec:
+  template:
+    spec:
+      domain:
+        devices:
+          interfaces:
+          - name: default <i class="conum" data-value="1"></i><b>(1)</b>
+            masquerade: {} <i class="conum" data-value="2"></i><b>(2)</b>
+      networks:
+      - name: default <i class="conum" data-value="1"></i><b>(1)</b>
+        pod: {} <i class="conum" data-value="3"></i><b>(3)</b></code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>the name of the network defined under <code>domain.devices.interfaces</code> (nested under <code>spec.template.spec</code>) must match the desired network name under <code>networks</code> within the VM template spec.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>the default network uses IP masquerading (NAT) to connect the NIC to the underlying network</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="3"></i><b>3</b></td>
+<td>this chooses the Kubernetes Pod network as the underlying network</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>The benefits of using the default network are that it:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>is native to OpenShift and can be configured using the native methods</p>
+</li>
+<li>
+<p>requires no special configuration for egress or communication between pods in a namespace and on the same node</p>
+</li>
+<li>
+<p>allows use of Kubernetes Services for load balancing and IP address stability (internally)</p>
+</li>
+<li>
+<p>can be exposed to the outside world using an OpenShift Route or a LoadBalancer Service on supported platforms</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Drawbacks of the default network are few, but notable:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>VM uses a masquerade IP address which is not routable from the outside world</p>
+</li>
+<li>
+<p>can not connect to external networks, even pods on other nodes (unless using Services within the same project/namespace)</p>
+</li>
+<li>
+<p>does not support VLANs</p>
+</li>
+<li>
+<p>on some platforms (AWS), LoadBalancer Services do not support mixed mode (simultaneous TCP &amp; UDP) port-forwarding</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="multus_cni_plugin"><a class="anchor" href="#multus_cni_plugin"></a>Multus CNI Plugin</h3>
+<div class="paragraph">
+<p>Multus is a "meta plugin" for the Container Network Interface (CNI). Whereas the CNI only allows a single plugin to be deployed,
+Multus acts as an intermediary and allows the use of multiple CNI plugins, both concurrently and interchangeably.</p>
+</div>
+<div class="paragraph">
+<p>As mentioned in the <a href="#networks">Networks</a> section, Multus allows for defining additional networks using a variety of supported CNI plugins.</p>
+</div>
+<div class="paragraph">
+<p>These plugins are:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>bridge</strong> -  acts as a network switch between pods running on the same node, and can be linked to a host network interface for connecting to external networks.</p>
+</li>
+<li>
+<p><strong>host-device</strong> - "moves" a host network interface into a pod network namespace, causing the interface to disappear from the root network namespace.</p>
+</li>
+<li>
+<p><strong>ipvlan</strong> - pods on the network share a mac address, which is used where the number of MAC addresses per port and/or unknown mac addresses are restricted due to security restrictions (VPC networks).</p>
+</li>
+<li>
+<p><strong>macvlan</strong> - pods on the network each have their own mac address, which conforms with traditional networking connectivity.</p>
+</li>
+<li>
+<p><strong>SR-IOV</strong> - single root I/O virtualization is used to share a single physical device with multiple pods, but requires a host device which supports this function.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>In OpenShift (and Kubernetes), Multus uses a custom resource type named NetworkAttachmentDefinition which is used to define a network using one of the supported plugins for a particular project/namespace.</p>
+</div>
+<div class="paragraph">
+<p>Alternatively, in OpenShift (but <em>not</em> Kubernetes) you can also edit the <code>cluster</code> Network resource and define <code>spec.additionalNetworks[]</code>,
+which would then automatically create a NetworkAttachmentDefinition in the desired project/namespace automatically.
+This is useful as a central point of management for NetworkAttachmentDefinitions across the cluster.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="nmstate_operator"><a class="anchor" href="#nmstate_operator"></a>NMState Operator</h3>
+<div class="paragraph">
+<p>NMState ("NM" stands for NetworkManager, a network configuration tool for RHEL, Fedora and other Linux distributions) is a declarative API used to manage network settings on a Linux host.</p>
+</div>
+<div class="paragraph">
+<p>The NMState Operator is a Kubernetes operator which exposes it&#8217;s own API (NodeNetworkConfigurationPolicy), which uses NMState to configure networking on node hosts within the Kubernetes (or OpenShift) cluster where it is deployed.</p>
+</div>
+<div class="paragraph">
+<p>Some Multus network configurations (such as <code>linux-bridge</code>) may require the use of NMState Operator to actually create the bridge interface on nodes where the Pods (or VMs) are intended to run.</p>
+</div>
+<div class="paragraph">
+<p>It is possible to define a network in Multus (using a NetworkAttachmentDefinition) that uses an interface which may not exist on the node hosts.
+Attaching Pods or VMs to such a network will cause them to fail unless the interface exists on the node where the Pod/VM runs.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="storage_apis"><a class="anchor" href="#storage_apis"></a>Storage APIs</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>This section covers the gist of the storage related objects in OpenShift Virtualization. Each subsection below is titled according to the Kubernetes <code>Kind</code> for that particular resource.</p>
+</div>
+<div class="paragraph">
+<p>There are some API object omissions which are not interacted with directly, but worth a brief mention here:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>VolumeSnapshotContents</strong> - represents the actual 'on-disk' snapshot object in the underlying storage system.</p>
+</li>
+<li>
+<p><strong>VirtualMachineSnapshotContents</strong> - contains references to the source VM, <a href="#persistent_volume_claims">PVCs</a> and VolumeSnapshots used to create a <a href="#volume_snapshots">VolumeSnapshot</a>.</p>
+</li>
+<li>
+<p><strong>VolumeSnapshotClasses</strong> - similar to <a href="#storage_classes">StorageClasses</a>, VolumeSnapshotClasses uses a CSI driver to facilitate VolumeSnapshot creation for a particular storage platform.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>The next section goes over several different objects, with seemingly redundant concepts (volumes, snapshots, data sources, etc).
+The reason is that OpenShift Virtualization uses higher level abstractions of the lower level Kubernetes-native resources.</p>
+</div>
+<div class="paragraph">
+<p>This is to simplify storage tasks at the API level (cloning, snapshots, restoration, etc) versus dealing directly with the respective lower level resources.
+This also allows for tailoring the higher level resources to better fit the virtualization use case.</p>
+</div>
+<div class="sect2">
+<h3 id="persistent_volumes"><a class="anchor" href="#persistent_volumes"></a>PersistentVolumes</h3>
+<div class="paragraph">
+<p>A PersistentVolume (PV) is a Kubernetes-native resource which represents a mountable storage volume and can be bound to any Pod by using a <a href="#persistent_volume_claims">PersistentVolumeClaim</a> (PVC).
+PersisentVolumes have the size of the volume they represent defined within them as well as their access mode (ReadWriteOnce, ReadWriteMany, etc), recycling policy and permissions.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="persistent_volume_claims"><a class="anchor" href="#persistent_volume_claims"></a>PersistentVolumeClaims</h3>
+<div class="paragraph">
+<p>A PersistentVolumeClaim (PVC) is used to bind to or request a PersistentVolume for a Pod. It is also a core Kubernetes resource,
+and is the means of actually using a PersistentVolume with container workloads in Kubernetes. A PVC binds to a single PV in a 1:1 mapping,
+and once that PV is bound (unless <code>ReadWriteMany</code> mode enabled in the PV) it cannot be claimed or used by another PVC until it is released and recycled or garbage collected.</p>
+</div>
+<div class="paragraph">
+<p>In the early days of OpenShift and Kubernetes, PersistentVolumes would have to be manually provisioned at the host (or SAN / NAS) storage level,
+and then PersistentVolumes would have to be created on the cluster for each volume provisioned on the storage host.
+However, thanks to a newer resource called <a href="#storage_classes">StorageClasses</a> the provisioning and garbage collection of PersistentVolumes are automated for most cloud platforms and storage providers.</p>
+</div>
+<div class="paragraph">
+<p>In OpenShift Virtualization, <a href="#data_sources">DataSources</a> and <a href="#data_volumes">DataVolumes</a> are used to abstract the kube-native PVs and PVCs,
+and so they are the primary storage resources used by VirtualMachines.</p>
+</div>
+<div class="paragraph">
+<p>Aside from relying on StorageClasses to provision empty volumes, you can create a PVC with data pre-populated from a VolumeSnapshot (covered later)
+by using the <code>dataSource</code> field in the PersistentVolumeClaim object.
+Cloning a PVC is also possible by creating a new PVC with an existing one listed as the <code>dataSource</code>.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="volume_snapshots"><a class="anchor" href="#volume_snapshots"></a>VolumeSnapshots</h3>
+<div class="paragraph">
+<p>VolumeSnapshots are a point-in-time copy of a PersistentVolume state, and can be used to clone VM disk images or to restore a PersistentVolume to a previous state.</p>
+</div>
+<div class="paragraph">
+<p>VolumeSnapshots are the lower level objects used by VirtualMachineSnapshots (covered later) to save the state of a VirtualMachine,
+but could also be created manually to save the PersistentVolume state which backs a KubeVirt DataVolume or DataSource.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="storage_classes"><a class="anchor" href="#storage_classes"></a>StorageClasses</h3>
+<div class="paragraph">
+<p>A StorageClass is used in OpenShift and Kubernetes to provide automated provisioning of PersistentVolumes whenever a PersistentVolumeClaim is created.</p>
+</div>
+<div class="paragraph">
+<p>StorageClasses use a CSI driver to provide the implementation of a vendor&#8217;s storage platform on OpenShift, abstracting vendor-specific APIs used to provision new volumes
+(such as Amazon Elastic Block Store) on a particular platform so they can be utilized using kube-native APIs (PVs and PVCs).</p>
+</div>
+<div class="paragraph">
+<p>StorageClasses aren&#8217;t usually a point of direct interaction for OpenShift Virtualization users or even administrators, unless for tuning vendor-specific settings in regards to provisioning,
+garbage collection and recycling or for adding an unsupported cloud or storage platform to OpenShift Virtualization to extend functionality.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="data_volumes"><a class="anchor" href="#data_volumes"></a>DataVolumes</h3>
+<div class="paragraph">
+<p>DataVolumes provide an abstraction for PersistentVolumeClaims and provide automated provisioning and data population from a supported data source.</p>
+</div>
+<div class="paragraph">
+<p>Without DataVolumes, you would have to manually create and populate a PVC with image data before attaching it to a VM as a disk.
+DataVolumes rely on the Containerized Data Importer (CDI) to handle the actual task of importing data into the underlying PVC.</p>
+</div>
+<div class="paragraph">
+<p>DataVolumes (more specifically, CDIs) support two different image types (qcow2 and raw) and numerous means of data ingest for populating a PVC,
+with the later methods falling into one of the three main use cases:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Uploading from a client machine</p>
+</li>
+<li>
+<p>Downloading from an external source (web server, object storage provider, or container registry)</p>
+</li>
+<li>
+<p>Cloning from an existing source (could be a previously populated PVC, snapshot, etc)</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>The full list of data ingest methods supported by the CDI (and in turn, DataVolumes) are:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>blank</strong> - provision a blank volume</p>
+</li>
+<li>
+<p><strong>gcs</strong> - download an image from a GCS endpoint</p>
+</li>
+<li>
+<p><strong>http</strong> - download an image from an HTTP/S URL</p>
+</li>
+<li>
+<p><strong>imageio</strong> - download an image from a ovirt-imageio</p>
+</li>
+<li>
+<p><strong>pvc</strong> - use an existing PersistentVolumeClaim to create a new volume</p>
+</li>
+<li>
+<p><strong>registry</strong> - use a container image registry as the image download source</p>
+</li>
+<li>
+<p><strong>s3</strong> - download an image from AWS or compatible S3 (MinIO) endpoint</p>
+</li>
+<li>
+<p><strong>snapshot</strong> - use an existing VolumeSnapshot to create a new volume</p>
+</li>
+<li>
+<p><strong>upload</strong> - upload an image from the client machine</p>
+</li>
+<li>
+<p><strong>vddk</strong> - use a VMware image source</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="data_sources"><a class="anchor" href="#data_sources"></a>DataSources</h3>
+<div class="paragraph">
+<p>DataSources can be thought of as "bootable images" and simply point to either an existing PersistentVolumeClaim or VolumeSnapshot which would be used to provision a new DataVolume.
+From the OpenShift Virtualization web console, only DataSources can be chosen as root disk images, where they are labeled as "Bootable Volumes".</p>
+</div>
+<div class="paragraph">
+<p>There is only one field supported within a DataSource <code>spec</code>:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>source</strong> -  only supports either a <code>pvc</code> or <code>snapshot</code> field, which are mutually exclusive</p>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>pvc</strong> or <strong>snapshot</strong> - use the appropriate subfield here which depends on whether the data source is a PersistentVolumeClaim or a VolumeSnapshot</p>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>name</strong> - name of the pvc or snapshot</p>
+</li>
+<li>
+<p><strong>namespace</strong> - namespace that the pvc or snapshot resides in</p>
+</li>
+</ul>
+</div>
+</li>
+</ul>
+</div>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="virtual_machine_snapshots"><a class="anchor" href="#virtual_machine_snapshots"></a>VirtualMachineSnapshots</h3>
+<div class="paragraph">
+<p>A VirtualMachineSnapshot is a point-in-time copy of the state of all disks / volumes attached to a particular VM.</p>
+</div>
+<div class="paragraph">
+<p>When a VirtualMachineSnapshot is created, a separate VolumeSnapshot for each attached disk is created in the desired namespace,
+and the VirtualMachineSnapshot object eventually gets updated with a completed Status once the snapshot process has finished.</p>
+</div>
+<div class="paragraph">
+<p>A VirtualMachineSnapshot object accepts a <code>source</code> VM reference and optionally accepts a <code>failureDeadline</code> with a time unit suffix such as <code>1m</code>, <code>3600s</code> or <code>1h30m</code>, or even signed values such as <code>-1h</code>.
+The default deadline value is <code>5m</code>.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="virtual_machine_restores"><a class="anchor" href="#virtual_machine_restores"></a>VirtualMachineRestores</h3>
+<div class="paragraph">
+<p>Creating a snapshot is only useful if the ability to restore that snapshot (going "back in time" to when the snapshot was taken) exists.
+Thus, VirtualMachineRestore objects are created when the need arises to restore from a VM snapshot.</p>
+</div>
+<div class="paragraph">
+<p>A VirtualMachineRestore accepts a <code>target</code> VM reference containing the <code>apiGroup</code>, <code>kind</code> and <code>name</code> of the desired VM to create, and accepts a <code>virtualMachineSnapshotName</code> to use as a source for the restoration.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="clone_api"><a class="anchor" href="#clone_api"></a>Clone API</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>There are three ways to clone a VM. They are listed in order, from the most difficult to the easiest method:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Take snapshots of the individual PVCs (via VolumeSnapshots) from the source VM and then copy the VirtualMachine object, replacing references such as VM name, disk names, etc.</p>
+</li>
+<li>
+<p>Create a VirtualMachineSnapshot, which will create the volume snapshots for you, but you must still copy the VirtualMachine object and replace VM/disk names, mac addresses, and so on.</p>
+</li>
+<li>
+<p>Leverage the Clone API to do all of these steps for you, by simply creating a VirtualMachineClone object that defines the source and target VirtualMachine (or VirtualMachineSnapshot) names.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Cloning a VirtualMachine is performed by creating a <a href="#virtual_machine_clones">VirtualMachineClones</a> object.</p>
+</div>
+<div class="sect2">
+<h3 id="virtual_machine_clones"><a class="anchor" href="#virtual_machine_clones"></a>VirtualMachineClones</h3>
+<div class="paragraph">
+<p>Building on the snapshot and restore APIs, a VirtualMachineClone is a higher level operation designed to simplify the snapshot process for a VirtualMachine and as well as the process of restoring copies of the VM from a snapshot
+(especially if there were multiple disks attached to the VM).</p>
+</div>
+<div class="paragraph">
+<p>Since cloning involves both the snapshot and restore operations, a VirtualMachineClone object contains both a <code>source</code> and (optionally) a <code>target</code> VirtualMachine reference, with each field containing the <code>apiGroup</code>, <code>kind</code> and <code>name</code> of the desired source or target VM object.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="mutating_vm_clones"><a class="anchor" href="#mutating_vm_clones"></a>Mutating a Cloned VM</h3>
+<div class="paragraph">
+<p>It may be necessary to change the details of the VM clone, such as VM or template metadata (<code>labels</code> and/or <code>annotations</code>), mac address(es), or BIOS / UEFI serial numbers, or other details such as the CPU or RAM specs of the target VM.</p>
+</div>
+<div class="paragraph">
+<p>The object fields used for such mutation are listed below (all fields are <em>optional</em>):</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>labelFilters</strong> - used to define which labels (from <code>metadata.labels</code>) from the source VM should be, or should <em>not</em> be copied to the clone VM</p>
+</li>
+<li>
+<p><strong>annotationFilters</strong> - used to define which annotations (from <code>metadata.annotations</code>) from the source VM should or should <em>not</em> be copied to the VM clone</p>
+</li>
+<li>
+<p><strong>template</strong> - used to define metadata filters for the VM / VMI <code>template</code>, and supports the same two filters as with the top level:</p>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>labelFilters</strong> - used to copy or omit specified labels from <code>template.metadata.labels</code> of the source VM to that of the clone VM</p>
+</li>
+<li>
+<p><strong>annotationFilters</strong> - used to copy/omit specified annotations from <code>template.metadata.annotations</code> of the source VM to the clone VM</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p><strong>newMacAddresses</strong> - explicitly defines a new mac address per named <code>interface</code> of the clone VM; this field contains a one-to-one map of <code>&lt;interface-name&gt;</code> keys to hyphenated string (<code>00-01-ff-00-01-00</code>) MAC address values.</p>
+</li>
+<li>
+<p><strong>newSMBiosSerial</strong> - accepts a new SMBios serial number as a string value</p>
+</li>
+<li>
+<p><strong>patches</strong> (v4.20+) - accepts a list of string-ified json patch commands which can be used to mutate other fields of a cloned VM which are not supported by one of the above options.</p>
+</li>
+</ul>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="ulist">
+<ul>
+<li>
+<p>All filter fields support both wildcards (<code>label-or-annotation-name/*</code>) and negation (<code>!label-or-annotation-name</code>) for inclusion or omission (respectively), and can be combined into a single filter string.</p>
+</li>
+<li>
+<p>By default, all MAC addresses are stripped out when cloning a VM.</p>
+</li>
+</ul>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>For any mutations outside of those listed above, a <code>patches</code> field is also accepted, which accepts a list of json patches (<em>not</em> json merge patches) as string literals, with each containing an <code>op</code>, field <code>path</code> and <code>value</code>.</p>
+</div>
+<div class="paragraph">
+<p>Below is a short example of a VirtualMachineClone spec containing each of the mentioned fields:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: clone.kubevirt.io/v1beta1
+kind: VirtualMachineClone
+metadata:
+  name: example-vm-clone
+  namespace: my-namespace
+spec:
+  source:
+    apiGroup: kubevirt.io
+    kind: VirtualMachine
+    name: my-virtual-app
+  target:
+    apiGroup: kubevirt.io
+    kind: VirtualMachine
+    name: my-clone-app
+  labelFilters:
+  - "metadata-labels-to-include/*"
+  - "!metadata-labels-to-omit/*"
+  annotationFilters:
+  - "metadata-annotations-to-include/*"
+  - "!metadata-annotations-to-omit/*"
+  template:
+    labelFilters:
+    - "template-labels-to-include/*"
+    - "!template-labels-to-omit/*"
+    annotationFilters:
+    - "template-annotations-to-include/*"
+    - "!template-annotations-to-omit/*"
+  newMacAddresses:
+    nameOfInterface: "ff-00-00-bb-aa-aa"
+  newSMBiosSerial: "S3R14LNUM83R"
+  patches:
+  - '{"op": "add", "path": "/metadata/labels/my-app", "value": "cloned"}'
+  - '{"op": "replace", "path": "/spec/instanceType/name", "value": "u1.xlarge"}'</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="patching_vm_clones"><a class="anchor" href="#patching_vm_clones"></a>Patching A Cloned VM</h3>
+<div class="paragraph">
+<p>If you are adding a field value that does not exist in the VirtualMachine manifest, and the field has parent objects that also do not exist, then you must add the empty parent objects prior to setting the missing field value.</p>
+</div>
+<div class="paragraph">
+<p>For example, the parent objects must be patched using an <code>add</code> command with an empty value <code>{}</code>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: clone.kubevirt.io/v1beta1
+kind: VirtualMachineClone
+metadata:
+  name: missing-parent-patch-example
+  namespace: my-namespace
+spec:
+  source:
+    apiGroup: kubevirt.io
+    kind: VirtualMachine
+    name: example-source-vm
+  patches:
+  - '{ "op": "add", "path": "/spec/template/spec/domain/cpu", "value": {} }'
+  - '{ "op": "add", "path": "/spec/template/spec/domain/cpu/cores", "value": 6 }'</code></pre>
+</div>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-important" title="Important"></i>
+</td>
+<td class="content">
+<div class="ulist">
+<ul>
+<li>
+<p>Manually setting the <code>cpu</code> or <code>memory</code> fields in a VirtualMachine conflict with the <code>spec.instancetype</code> field.</p>
+</li>
+<li>
+<p>Removing <code>spec.instancetype</code> will prevent the VM from displaying in the UI.</p>
+</li>
+<li>
+<p>See the sections on <a href="#instance_types">InstanceTypes</a> to configure cpu and memory usage, and <a href="#virtual_machine_preferences">VirtualMachine[Cluster]Preferences</a> to change cpu topology.</p>
+</li>
+<li>
+<p>Attempting to patch <code>cpu</code> or <code>memory</code> values on a VM with <code>spec.instancetype</code> set will prevent the VM restoration from completing, causing the clone operation to hang indefinitely.</p>
+</li>
+</ul>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="vm_cloning_strategies"><a class="anchor" href="#vm_cloning_strategies"></a>Cloning Strategies and StorageProfiles</h3>
+<div class="paragraph">
+<p>In OpenShift Virtualization, a cloneStrategy can be used to tune the cloning method for a specific type of storage (defined in OpenShift/Kubernetes by the StorageClass).
+OpenShift Virtualization (specifically, the CDI) stores the recommended settings for a particular StorageClass (which exposes a specific CSI driver) in a StorageProfile.
+A StorageProfile is created for each StorageClass on the cluster with optimized settings for that storage provider.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+For storage providers not recognized by the CDI, you must configure a StorageProfile for that StorageClass, or PVCs will not be provisioned whenever DataVolumes are defined using that StorageClass.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>By default, cloning a VirtualMachine in OpenShift Virtualization will take a snapshot of the VM (by creating a VolumeSnapshot), and then create new PVCs and associated DataVolumes to restore the snapshot.</p>
+</div>
+<div class="paragraph">
+<p>You may note that the cloning process is not instantaneous, and this has more to do with the block layer implementation of the CSI driver than of the cloning (snapshot/restore) process itself.
+Some virtualization platforms (and perhaps a few CSI drivers for OpenShift/Kubernetes) support instantaneous cloning from a snapshot due to hard linking or CoW (Copy on Write) implementation at the block-level.</p>
+</div>
+<div class="paragraph">
+<p>For instance, AWS EBS volumes do not support fast snapshot restoration (see <a href="https://github.com/kubernetes-sigs/aws-ebs-csi-driver/issues/869" target="_blank" rel="noopener">this GitHub issue</a>), but certain on-prem solutions might.</p>
+</div>
+<div class="paragraph">
+<p>With that said, there are a few options for tuning the cloneStrategy of a StorageProfile:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>snapshot</strong> (default) - the CDI will use the snapshot method if the storage provider is recognized and also supports CSI snapshots (if a VolumeSnapshotClass exists for that CSI driver).</p>
+</li>
+<li>
+<p><strong>copy</strong> - this is a fallback option which uses both a source and target pod to copy data from the source volume to the target volume. This is the least efficient method of cloning.</p>
+</li>
+<li>
+<p><strong>csi-clone</strong> - use the CSI clone API to clone an existing volume without first creating a snapshot. This is the most efficient method, but requires manual specification in the StorageProfile for a given StorageClass.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>An example StorageProfile object with the <code>cloneStrategy</code> set to <code>csi-clone</code>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: cdi.kubevirt.io/v1beta1
+kind: StorageProfile
+metadata:
+  name: example-provisioner
+spec:
+  claimPropertySets:
+  - accessModes:
+    - ReadWriteOnce
+    volumeMode: Filesystem
+  cloneStrategy: csi-clone</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="export_api"><a class="anchor" href="#export_api"></a>Export API</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>OpenShift Virtualization supports an export API which can be used to save or to move VMs and disk images off-cluster,
+such as when migrating to a different cluster or even another virtualization platform.</p>
+</div>
+<div class="paragraph">
+<p>VM disk images are the main concern for exporting as they contain the OS, applications and data, which altogether can be quite large in size.
+In order to support off-cluster image transfer without overloading the OpenShift API server, a proxy server is utilized which must be exposed to the internet using a Service with a connected Ingress, Route, or NodePort.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+You can also use <code>virtctl port-forward</code> to connect to the export proxy server instead of using an Ingress or Route.
+</td>
+</tr>
+</table>
+</div>
+<div class="sect2">
+<h3 id="export_tokens"><a class="anchor" href="#export_tokens"></a>Export Tokens</h3>
+<div class="paragraph">
+<p>You must create an export token in order to authenticate users accessing the VM disk (in the same namespace as the VM itself).
+This done by creating a K8s secret storing the token string. The token gets passed as a header (<code>x-kubevirt-export-token</code>) when accessing the export proxy endpoint.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+The recommended token string should be an alphanumeric value, at least 12 characters in length.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>An example export token is shown below:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: v1
+kind: Secret
+metadata:
+  name: export-token
+stringData:
+  token: abc098765421def</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The token secret is referenced from the VirtualMachineExport object (explained below) used to export the VM.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="virtual_machine_exports"><a class="anchor" href="#virtual_machine_exports"></a>VirtualMachineExports</h3>
+<div class="paragraph">
+<p>Any VirtualMachine, VirtualMachineSnapshot, or PersistentVolumeClaim can be exported by creating a VirtualMachineExport object.</p>
+</div>
+<div class="paragraph">
+<p>The <code>tokenSecretRef</code> containing the name of the export token secret must be defined, as well as one of the <code>source</code> types mentioned above.</p>
+</div>
+<div class="paragraph">
+<p>Exporting a VirtualMachine will export the yaml manifest of the VM, as well as any PVCs, DataVolumes or MemoryDump volumes associated with the VM,
+whereas exporting a VirtualMachineSnapshot or PVC will not provide the VM manifest.</p>
+</div>
+<div class="paragraph">
+<p>Exported artifacts are accessed by viewing the <code>status</code> block of the VirtualMachineExport and using the provided URLs to download the exported VM images, files or archives once they are ready.</p>
+</div>
+<div class="paragraph">
+<p>There are four formats provided for download:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>raw</strong> - the bit-for-bit qcow2 disk image</p>
+</li>
+<li>
+<p><strong>gzip</strong> - the gzip-compressed disk image</p>
+</li>
+<li>
+<p><strong>dir</strong> - provides a directy listing to search for files discovered in the PVC. To access a specific file, replace <code>/dir</code> in the URL with <code>/path/to/file.txt</code></p>
+</li>
+<li>
+<p><strong>tar.gz</strong> - the full contents of the PVC in a single gzip-compressed tar archive</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>The content-type determines which formats are used for the export:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>KubeVirt content-type</strong> - If a PVC is detected as a KubeVirt disk, then the <code>raw</code> and <code>gzip</code> formats are used</p>
+</li>
+<li>
+<p><strong>Archive content-type</strong> - Otherwise, the <code>dir</code> and <code>tar.gz</code> formats will be used if the PVC <em>does not</em> contain a KubeVirt disk</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>An example VirtualMachineExport is shown below:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: export.kubevirt.io/v1beta1
+kind: VirtualMachineExport
+metadata:
+  name: export-example <i class="conum" data-value="1"></i><b>(1)</b>
+spec:
+  tokenSecretRef: export-token <i class="conum" data-value="2"></i><b>(2)</b>
+  source: <i class="conum" data-value="3"></i><b>(3)</b>
+    apiGroup: "kubevirt.io"
+    kind: VirtualMachine
+    name: virtual-machine-example</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>The name of the VirtualMachineExport object being defined</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>The name of the secret containing the export token</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="3"></i><b>3</b></td>
+<td>The source is a named reference to a particular group/version and kind</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Supported source types are:</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 50%;">
+<col style="width: 50%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">apiGroup</th>
+<th class="tableblock halign-left valign-top">kind</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">kubevirt.io</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">VirtualMachine</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">snapshot.kubevirt.io</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">VirtualMachineSnapshot</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">""</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">PersistentVolumeClaim</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+<nav class="pagination">
+  <span class="prev"><a href="index.html">API Guide</a></span>
+  <span class="next"><a href="../lab-env/index.html">Lab Environment</a></span>
+</nav>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <img src="../../../_/img/rhl-logo-red.png" height="40px" alt="Red Hat"  href="https://redhat.com" >
+</footer><script id="site-script" src="../../../_/js/site.js" data-ui-root-path="../../../_"></script>
+<script async src="../../../_/js/vendor/highlight.js"></script>
+  </body>
+</html>

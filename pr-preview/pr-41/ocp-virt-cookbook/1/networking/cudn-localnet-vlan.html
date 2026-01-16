@@ -1,0 +1,933 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Configuring Localnet Secondary Networks with VLAN using ClusterUserDefinedNetwork in OpenShift Virtualization :: OpenShift Virtualization cookbook</title>
+    <link rel="prev" href="localnet-vlan.html">
+    <link rel="next" href="linux-bridges.html">
+    <meta name="generator" content="Antora 3.1.3">
+    <link rel="stylesheet" href="../../../_/css/site.css">
+    <script>var uiRootPath = '../../../_'</script>
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://www.redhat.com" target="_blank"><img src="../../../_/img/redhat-logo.png" height="40px" alt="Red Hat"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="../../..">OpenShift Virtualization cookbook</a>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues" target="_blank">Report Issues</a>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="ocp-virt-cookbook" data-version="1">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="../index.html">OpenShift Virtualization cookbook</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../getting-started/index.html">Getting Started</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/prerequisites.html">Prerequisites</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/virtctl-basics.html">Virtctl Basics</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/default-storage-class.html">Storage Setup</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../storage/index.html">Storage Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/lvm-operator.html">LVM Operator Installation</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/lvm-troubleshooting.html">LVM Troubleshooting</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="index.html">Networking Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="udn-primary-networks.html">UDN Primary Networks</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="localnet-secondary.html">Localnet Secondary Networks with CUDN</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="localnet-vlan.html">Localnet Secondary Networks with VLAN using NAD</a>
+  </li>
+  <li class="nav-item is-current-page" data-depth="2">
+    <a class="nav-link" href="cudn-localnet-vlan.html">Localnet VLAN with CUDN</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="linux-bridges.html">Linux Bridges</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="ovs-bridge-troubleshooting.html">Troubleshooting Localnet Networks</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../vm-configuration/index.html">Virtual Machine Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/cloud-init-ip-configuration.html">Cloud-init IP Configuration</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/cloud-init-troubleshooting.html">Cloud-init Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/internal-dns-for-vms.html">Internal DNS for VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/remote-access-linux-vms.html">Remote Access to Linux VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/remote-access-linux-troubleshooting.html">Remote Access to Linux VMs Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/remote-access-windows-vms.html">Remote Access to Windows VMs via RDP</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/custom-golden-images.html">Custom Golden Images</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/golden-images-troubleshooting.html">Golden Images Troubleshooting</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../manifests/index.html">YAML Manifests Reference</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../manifests/operators.html">Operators</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../manifests/networking.html">Networking</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../manifests/storage.html">Storage</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../manifests/vms.html">Virtual Machines</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../manifests/security.html">Security</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../api/index.html">API Guide</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../api/api_component_overview.html">API Component Overview</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../lab-env/index.html">Lab Environment</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../appendix/glossary.html">Glossary</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">OpenShift Virtualization cookbook</span>
+    <span class="version">1</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <a class="title" href="../index.html">OpenShift Virtualization cookbook</a>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">1</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">OpenShift Virtualization cookbook</a></li>
+    <li><a href="index.html">Networking Configuration</a></li>
+    <li><a href="cudn-localnet-vlan.html">Localnet VLAN with CUDN</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">Configuring Localnet Secondary Networks with VLAN using ClusterUserDefinedNetwork in OpenShift Virtualization</h1>
+<div id="preamble">
+<div class="sectionbody">
+<div class="paragraph">
+<p>This tutorial demonstrates how to configure localnet secondary networks with VLAN tagging using ClusterUserDefinedNetwork (CUDN) in OpenShift Virtualization. This approach provides direct access to physical network infrastructure with VLAN segmentation across multiple namespaces, enabling VMs to communicate with specific VLAN-tagged networks while maintaining pod network connectivity. CUDN offers centralized management and cross-namespace network availability, making it ideal for enterprise environments requiring consistent VLAN-based network infrastructure.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_prerequisites"><a class="anchor" href="#_prerequisites"></a>Prerequisites</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p><strong>NMState Operator</strong>: Must be installed and running in the cluster</p>
+</li>
+<li>
+<p><strong>NMState CR</strong>: The nmstate instance must be created after the operator is running</p>
+</li>
+<li>
+<p><strong>Worker nodes</strong>: The bridge mapping will be applied to worker nodes</p>
+</li>
+<li>
+<p><strong>VLAN Infrastructure</strong>: Physical network infrastructure must support VLAN tagging</p>
+</li>
+<li>
+<p><strong>Switch Configuration</strong>: Physical switch ports connected to OpenShift worker nodes must be configured in <strong>trunk mode</strong> to handle multiple VLAN-tagged traffic streams</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Versions tested:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>OpenShift 4.19</pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_network_configuration_requirements"><a class="anchor" href="#_network_configuration_requirements"></a>Network Configuration Requirements</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_physical_switch_configuration_trunk_mode"><a class="anchor" href="#_physical_switch_configuration_trunk_mode"></a>Physical Switch Configuration: TRUNK MODE</h3>
+<div class="paragraph">
+<p>The physical switch ports connected to OpenShift worker nodes <strong>must be configured in trunk mode</strong> for localnet VLAN configuration to work properly:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Trunk mode</strong>: Allows switch ports to carry traffic for multiple VLANs</p>
+</li>
+<li>
+<p><strong>VLAN tagging</strong>: Each VLAN is identified by its unique VLAN ID (e.g., 100, 200, 300)</p>
+</li>
+<li>
+<p><strong>Multiple networks</strong>: Essential for supporting multiple VLAN-based secondary networks</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_1_create_vm_namespaces"><a class="anchor" href="#_step_1_create_vm_namespaces"></a>Step 1: Create VM Namespaces</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Create namespaces for VMs that will use the localnet secondary network with VLAN configuration. CUDN allows the same network to be available across multiple namespaces.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Create first namespace
+oc apply -f - &lt;&lt;EOF
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: vm-guests-vlan-prod
+EOF
+
+# Create second namespace
+oc apply -f - &lt;&lt;EOF
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: vm-guests-vlan-dev
+EOF</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_2_create_custom_ovs_bridge_on_extra_nic"><a class="anchor" href="#_step_2_create_custom_ovs_bridge_on_extra_nic"></a>Step 2: Create Custom OVS Bridge on Extra NIC</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>First, create a custom OVS bridge on an additional physical network interface (NIC) to isolate VLAN traffic from the primary cluster network.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">oc apply -f - &lt;&lt;EOF
+apiVersion: nmstate.io/v1
+kind: NodeNetworkConfigurationPolicy
+metadata:
+  name: br-vlan-creation
+spec:
+  nodeSelector:
+    node-role.kubernetes.io/worker: ''
+  desiredState:
+    interfaces:
+    - name: enp11s0f0np0  # Replace with your physical interface name
+      type: ethernet
+      state: up
+      ipv4:
+        enabled: false
+      ipv6:
+        enabled: false
+      description: "Physical interface for VLAN localnet"
+    - name: br-vlan
+      type: ovs-bridge
+      state: up
+      bridge:
+        port:
+        - name: enp11s0f0np0
+      description: "OVS bridge for VLAN traffic"
+EOF</code></pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+Replace <code>enp11s0f0np0</code> with the name of your extra physical interface. You can find available interfaces by running:
+</td>
+</tr>
+</table>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc debug node/&lt;node-name&gt; -- ip link show</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Verify the bridge creation:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get nncp br-vlan-creation
+# Expected output: STATUS: Available</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_3_configure_bridge_mapping"><a class="anchor" href="#_step_3_configure_bridge_mapping"></a>Step 3: Configure Bridge Mapping</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Configure the bridge mapping that connects the logical network interface name <code>localnet-vlan</code> to the <code>br-vlan</code> OVS bridge on worker nodes. This mapping tells OVN-Kubernetes which physical bridge interface handles localnet traffic with VLAN support.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">oc apply -f - &lt;&lt;EOF
+apiVersion: nmstate.io/v1
+kind: NodeNetworkConfigurationPolicy
+metadata:
+  name: cudn-localnet-vlan-bridge-mapping
+spec:
+  nodeSelector:
+    node-role.kubernetes.io/worker: ''
+  desiredState:
+    ovn:
+      bridge-mappings:
+      - localnet: localnet-vlan
+        bridge: br-vlan
+        state: present
+EOF</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_4_create_clusteruserdefinednetwork_with_vlan"><a class="anchor" href="#_step_4_create_clusteruserdefinednetwork_with_vlan"></a>Step 4: Create ClusterUserDefinedNetwork with VLAN</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Create a ClusterUserDefinedNetwork that configures localnet topology with VLAN tagging for secondary network connectivity across multiple namespaces.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">oc apply -f - &lt;&lt;EOF
+apiVersion: k8s.ovn.org/v1
+kind: ClusterUserDefinedNetwork
+metadata:
+  name: cudn-localnet-vlan-100
+spec:
+  namespaceSelector:
+    matchExpressions:
+    - key: kubernetes.io/metadata.name
+      operator: In
+      values: ["vm-guests-vlan-prod", "vm-guests-vlan-dev"]
+  network:
+    topology: Localnet
+    localnet:
+      role: Secondary
+      physicalNetworkName: localnet-vlan
+      vlanID: 100
+      ipam:
+        mode: Disabled
+EOF</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Configuration Details</strong>:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>vlanID: 100</code>: Specifies VLAN tag 100 for network segmentation</p>
+</li>
+<li>
+<p><code>physicalNetworkName</code>: References the logical network interface name from bridge mapping (<code>localnet-vlan</code>)</p>
+</li>
+<li>
+<p><code>role: Secondary</code>: Defines this as a secondary network (VMs keep pod network as primary)</p>
+</li>
+<li>
+<p><code>namespaceSelector</code>: Defines which namespaces can use this network</p>
+</li>
+<li>
+<p><strong>IPAM Disabled</strong>: IP addresses must be configured via cloud-init (static) or external DHCP server</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_5_deploy_vm_with_vlan_network_connectivity_and_static_ip"><a class="anchor" href="#_step_5_deploy_vm_with_vlan_network_connectivity_and_static_ip"></a>Step 5: Deploy VM with VLAN Network Connectivity and Static IP</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Create a VM in one of the configured namespaces that connects to both the pod network and the VLAN-tagged localnet secondary network.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">oc apply -f - &lt;&lt;EOF
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: fedora-cudn-vlan-vm
+  namespace: vm-guests-vlan-prod
+  labels:
+    app: fedora-cudn-vlan-vm
+spec:
+  runStrategy: Always
+  dataVolumeTemplates:
+  - metadata:
+      name: fedora-cudn-vlan-volume
+    spec:
+      pvc:
+        accessModes:
+        - ReadWriteOnce
+        resources:
+          requests:
+            storage: 33Gi
+      sourceRef:
+        kind: DataSource
+        name: fedora
+        namespace: openshift-virtualization-os-images
+  template:
+    metadata:
+      labels:
+        app: fedora-cudn-vlan-vm
+    spec:
+      domain:
+        devices:
+          disks:
+          - name: datavolumedisk
+            disk:
+              bus: virtio
+          - name: cloudinitdisk
+            disk:
+              bus: virtio
+          interfaces:
+          - name: default
+            bridge: {}
+          - name: cudn_vlan_network
+            bridge: {}
+        resources:
+          requests:
+            memory: 2Gi
+            cpu: 1
+      networks:
+      - name: default
+        pod: {}
+      - name: cudn_vlan_network
+        multus:
+          networkName: cudn-localnet-vlan-100
+      volumes:
+      - name: datavolumedisk
+        dataVolume:
+          name: fedora-cudn-vlan-volume
+      - name: cloudinitdisk
+        cloudInitNoCloud:
+          networkData: |
+            version: 2
+            ethernets:
+              enp2s0:
+                addresses: ["192.168.100.10/24"]
+          userData: |
+            #cloud-config
+            user: fedora
+            password: fedora
+            chpasswd: { expire: False }
+            packages:
+            - python3
+            - tcpdump
+            - net-tools
+            write_files:
+            - path: /root/index.html
+              content: |
+                &lt;h1&gt;Welcome to OpenShift Virtualization CUDN VLAN Network!&lt;/h1&gt;
+                &lt;p&gt;VLAN ID: 100&lt;/p&gt;
+                &lt;p&gt;Static IP: 192.168.100.10/24&lt;/p&gt;
+                &lt;p&gt;Network: CUDN Localnet&lt;/p&gt;
+                &lt;p&gt;Namespace: vm-guests-vlan-prod&lt;/p&gt;
+              permissions: '0644'
+            runcmd:
+            - nohup python3 -m http.server 8080 --directory /root &gt; /dev/null 2&gt;&amp;1 &amp;
+EOF</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_6_deploy_vm_in_second_namespace"><a class="anchor" href="#_step_6_deploy_vm_in_second_namespace"></a>Step 6: Deploy VM in Second Namespace</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Demonstrate cross-namespace network availability by creating a VM in the second namespace using the same CUDN with a different static IP.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">oc apply -f - &lt;&lt;EOF
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: fedora-cudn-vlan-vm-dev
+  namespace: vm-guests-vlan-dev
+  labels:
+    app: fedora-cudn-vlan-vm-dev
+spec:
+  runStrategy: Always
+  dataVolumeTemplates:
+  - metadata:
+      name: fedora-cudn-vlan-volume-dev
+    spec:
+      pvc:
+        accessModes:
+        - ReadWriteOnce
+        resources:
+          requests:
+            storage: 33Gi
+      sourceRef:
+        kind: DataSource
+        name: fedora
+        namespace: openshift-virtualization-os-images
+  template:
+    metadata:
+      labels:
+        app: fedora-cudn-vlan-vm-dev
+    spec:
+      domain:
+        devices:
+          disks:
+          - name: datavolumedisk
+            disk:
+              bus: virtio
+          - name: cloudinitdisk
+            disk:
+              bus: virtio
+          interfaces:
+          - name: default
+            bridge: {}
+          - name: cudn_vlan_network
+            bridge: {}
+        resources:
+          requests:
+            memory: 2Gi
+            cpu: 1
+      networks:
+      - name: default
+        pod: {}
+      - name: cudn_vlan_network
+        multus:
+          networkName: cudn-localnet-vlan-100
+      volumes:
+      - name: datavolumedisk
+        dataVolume:
+          name: fedora-cudn-vlan-volume-dev
+      - name: cloudinitdisk
+        cloudInitNoCloud:
+          networkData: |
+            version: 2
+            ethernets:
+              enp2s0:
+                addresses: ["192.168.100.20/24"]
+          userData: |
+            #cloud-config
+            user: fedora
+            password: fedora
+            chpasswd: { expire: False }
+            packages:
+            - python3
+            - tcpdump
+            - net-tools
+            write_files:
+            - path: /root/index.html
+              content: |
+                &lt;h1&gt;Welcome to OpenShift Virtualization CUDN VLAN Network!&lt;/h1&gt;
+                &lt;p&gt;VLAN ID: 100&lt;/p&gt;
+                &lt;p&gt;Static IP: 192.168.100.20/24&lt;/p&gt;
+                &lt;p&gt;Network: CUDN Localnet&lt;/p&gt;
+                &lt;p&gt;Namespace: vm-guests-vlan-dev&lt;/p&gt;
+              permissions: '0644'
+            runcmd:
+            - nohup python3 -m http.server 8080 --directory /root &gt; /dev/null 2&gt;&amp;1 &amp;
+EOF</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_7_verify_vlan_network_connectivity"><a class="anchor" href="#_step_7_verify_vlan_network_connectivity"></a>Step 7: Verify VLAN Network Connectivity</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Access the VM consoles to verify dual network connectivity with VLAN configuration across namespaces.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Check VMs in production namespace
+oc get vm -n vm-guests-vlan-prod
+oc get vmi -n vm-guests-vlan-prod
+
+# Check VMs in development namespace
+oc get vm -n vm-guests-vlan-dev
+oc get vmi -n vm-guests-vlan-dev
+
+# Access production VM console (credentials: fedora/fedora via cloud-init)
+virtctl console -n vm-guests-vlan-prod fedora-cudn-vlan-vm
+
+# Access development VM console (credentials: fedora/fedora via cloud-init)
+virtctl console -n vm-guests-vlan-dev fedora-cudn-vlan-vm-dev</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Inside each VM console, verify the VLAN network configuration:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Check network interfaces - primary (pod network) and secondary (VLAN network)
+ip addr show
+
+# Check routes
+ip route show
+
+# Expected output example (primary network via DHCP):
+default via 10.128.0.1 dev enp1s0 proto dhcp src 10.128.0.174 metric 100
+
+# Test external connectivity
+ping 8.8.8.8
+
+# Verify the web service is running
+curl localhost:8080
+
+# Verify static IP assignment on VLAN interface
+ip addr show enp2s0
+# Expected: inet 192.168.100.10/24 (prod) or 192.168.100.20/24 (dev)
+
+# Test VLAN interface connectivity between VMs
+# From production VM (192.168.100.10) ping development VM:
+ping 192.168.100.20
+
+# Verify VLAN tagging (if tcpdump is available)
+# This will show VLAN-tagged traffic on the secondary interface
+sudo tcpdump -i enp2s0 -nn vlan 100</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_8_test_cross_namespace_connectivity"><a class="anchor" href="#_step_8_test_cross_namespace_connectivity"></a>Step 8: Test Cross-Namespace Connectivity</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Verify that VMs in different namespaces can communicate over the shared CUDN VLAN network:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># From production VM (192.168.100.10), test connectivity to development VM
+ping 192.168.100.20
+
+# Test web service connectivity between namespaces
+curl 192.168.100.20:8080
+
+# From development VM (192.168.100.20), test connectivity to production VM
+ping 192.168.100.10
+curl 192.168.100.10:8080</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_troubleshooting"><a class="anchor" href="#_troubleshooting"></a>Troubleshooting</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>For OVS bridge and bridge mapping troubleshooting, including CUDN-specific verification steps, see the <a href="ovs-bridge-troubleshooting.html#_clusteruserdefinednetwork_cudn_verification" class="xref page">OVS Bridge Verification Troubleshooting Guide</a>.</p>
+</div>
+<div class="sect2">
+<h3 id="_common_issues"><a class="anchor" href="#_common_issues"></a>Common Issues</h3>
+<div class="sect3">
+<h4 id="_vlan_traffic_not_reaching_vm"><a class="anchor" href="#_vlan_traffic_not_reaching_vm"></a>VLAN Traffic Not Reaching VM</h4>
+<div class="ulist">
+<ul>
+<li>
+<p>Verify physical switch configuration supports VLAN tagging</p>
+</li>
+<li>
+<p>Check bridge mapping configuration on worker nodes</p>
+</li>
+<li>
+<p>Ensure VLAN ID matches network infrastructure</p>
+</li>
+<li>
+<p>Verify custom OVS bridge (<code>br-vlan</code>) is created: <code>oc get nncp br-vlan-creation</code></p>
+</li>
+<li>
+<p>Confirm physical interface is attached to bridge</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_ip_address_assignment_issues"><a class="anchor" href="#_ip_address_assignment_issues"></a>IP Address Assignment Issues</h4>
+<div class="ulist">
+<ul>
+<li>
+<p>Verify static IP is configured correctly in cloud-init networkData</p>
+</li>
+<li>
+<p>Check that the interface name matches (enp2s0 for second interface)</p>
+</li>
+<li>
+<p>Verify cloud-init logs inside the VM: <code>cat /var/log/cloud-init.log</code></p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_network_connectivity_problems"><a class="anchor" href="#_network_connectivity_problems"></a>Network Connectivity Problems</h4>
+<div class="ulist">
+<ul>
+<li>
+<p>Check that the physical network supports the configured VLAN</p>
+</li>
+<li>
+<p>Test connectivity from physical network to VLAN subnet</p>
+</li>
+<li>
+<p>Verify physical switch port is in trunk mode</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_cross_namespace_issues"><a class="anchor" href="#_cross_namespace_issues"></a>Cross-Namespace Issues</h4>
+<div class="ulist">
+<ul>
+<li>
+<p>Verify namespace selector in CUDN configuration</p>
+</li>
+<li>
+<p>Check that both namespaces are listed in the values array</p>
+</li>
+<li>
+<p>Confirm NADs are auto-created in target namespaces</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_cudn_specific_issues"><a class="anchor" href="#_cudn_specific_issues"></a>CUDN-Specific Issues</h4>
+<div class="ulist">
+<ul>
+<li>
+<p>Verify <code>physicalNetworkName</code> in CUDN matches bridge mapping logical name (<code>localnet-vlan</code>)</p>
+</li>
+<li>
+<p>Check CUDN created NADs in selected namespaces: <code>oc get network-attachment-definitions -A | grep cudn-localnet-vlan-100</code></p>
+</li>
+<li>
+<p>Verify IPAM mode is set correctly (<code>Disabled</code> for static IPs via cloud-init)</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_verification_commands"><a class="anchor" href="#_verification_commands"></a>Verification Commands</h3>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Check ClusterUserDefinedNetwork status
+oc get clusteruserdefinednetwork
+
+# Verify bridge mapping on worker nodes
+oc get nncp cudn-localnet-vlan-bridge-mapping -o yaml
+
+# Check VM network status in both namespaces
+oc get vmi -n vm-guests-vlan-prod -o yaml | grep -A 10 networks
+oc get vmi -n vm-guests-vlan-dev -o yaml | grep -A 10 networks
+
+# View OVN-Kubernetes logs for troubleshooting
+oc logs -n openshift-ovn-kubernetes -l app=ovnkube-node
+
+# Check CUDN network attachment across namespaces
+oc get network-attachment-definitions -A | grep cudn-localnet-vlan-100</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_cudn_vs_networkattachmentdefinition_comparison"><a class="anchor" href="#_cudn_vs_networkattachmentdefinition_comparison"></a>CUDN vs NetworkAttachmentDefinition Comparison</h2>
+<div class="sectionbody">
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 33.3333%;">
+<col style="width: 33.3333%;">
+<col style="width: 33.3334%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Feature</th>
+<th class="tableblock halign-left valign-top">CUDN</th>
+<th class="tableblock halign-left valign-top">NetworkAttachmentDefinition</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Scope</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Cluster-wide, multi-namespace</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Namespace-specific</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Management</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Centralized configuration</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Per-namespace configuration</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>VLAN Support</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Native vlanID parameter</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Native vlanID parameter</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>IP Management</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Static/Disabled modes</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Static/DHCP via IPAM</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Use Case</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Enterprise, consistent networks</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Application-specific networks</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_references"><a class="anchor" href="#_references"></a>References</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_openshift_documentation"><a class="anchor" href="#_openshift_documentation"></a>OpenShift Documentation</h3>
+<div class="ulist">
+<ul>
+<li>
+<p><a href="https://docs.redhat.com/en/documentation/openshift_container_platform/4.19/html/multiple_networks/understanding-multiple-networks" target="_blank" rel="noopener">OpenShift - Understanding Multiple Networks</a></p>
+</li>
+<li>
+<p><a href="https://docs.redhat.com/en/documentation/openshift_container_platform/4.19/html/virtualization/networking#virt-creating-secondary-localnet-cudn_virt-connecting-vm-to-secondary-cudn" target="_blank" rel="noopener">ClusterUserDefinedNetwork Configuration</a></p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<nav class="pagination">
+  <span class="prev"><a href="localnet-vlan.html">Localnet Secondary Networks with VLAN using NAD</a></span>
+  <span class="next"><a href="linux-bridges.html">Linux Bridges</a></span>
+</nav>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <img src="../../../_/img/rhl-logo-red.png" height="40px" alt="Red Hat"  href="https://redhat.com" >
+</footer><script id="site-script" src="../../../_/js/site.js" data-ui-root-path="../../../_"></script>
+<script async src="../../../_/js/vendor/highlight.js"></script>
+  </body>
+</html>

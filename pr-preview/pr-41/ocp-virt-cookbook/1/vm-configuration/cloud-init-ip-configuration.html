@@ -1,0 +1,1174 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Configuring IP Addresses with Cloud-init :: OpenShift Virtualization cookbook</title>
+    <link rel="prev" href="index.html">
+    <link rel="next" href="cloud-init-troubleshooting.html">
+    <meta name="generator" content="Antora 3.1.3">
+    <link rel="stylesheet" href="../../../_/css/site.css">
+    <script>var uiRootPath = '../../../_'</script>
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://www.redhat.com" target="_blank"><img src="../../../_/img/redhat-logo.png" height="40px" alt="Red Hat"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="../../..">OpenShift Virtualization cookbook</a>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues" target="_blank">Report Issues</a>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="ocp-virt-cookbook" data-version="1">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="../index.html">OpenShift Virtualization cookbook</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../getting-started/index.html">Getting Started</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/prerequisites.html">Prerequisites</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/virtctl-basics.html">Virtctl Basics</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/default-storage-class.html">Storage Setup</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../storage/index.html">Storage Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/lvm-operator.html">LVM Operator Installation</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/lvm-troubleshooting.html">LVM Troubleshooting</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../networking/index.html">Networking Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/udn-primary-networks.html">UDN Primary Networks</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/localnet-secondary.html">Localnet Secondary Networks with CUDN</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/localnet-vlan.html">Localnet Secondary Networks with VLAN using NAD</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/cudn-localnet-vlan.html">Localnet VLAN with CUDN</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/linux-bridges.html">Linux Bridges</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/ovs-bridge-troubleshooting.html">Troubleshooting Localnet Networks</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="index.html">Virtual Machine Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item is-current-page" data-depth="2">
+    <a class="nav-link" href="cloud-init-ip-configuration.html">Cloud-init IP Configuration</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="cloud-init-troubleshooting.html">Cloud-init Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="internal-dns-for-vms.html">Internal DNS for VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="remote-access-linux-vms.html">Remote Access to Linux VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="remote-access-linux-troubleshooting.html">Remote Access to Linux VMs Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="remote-access-windows-vms.html">Remote Access to Windows VMs via RDP</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="custom-golden-images.html">Custom Golden Images</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="golden-images-troubleshooting.html">Golden Images Troubleshooting</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../manifests/index.html">YAML Manifests Reference</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../manifests/operators.html">Operators</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../manifests/networking.html">Networking</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../manifests/storage.html">Storage</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../manifests/vms.html">Virtual Machines</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../manifests/security.html">Security</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../api/index.html">API Guide</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../api/api_component_overview.html">API Component Overview</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../lab-env/index.html">Lab Environment</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../appendix/glossary.html">Glossary</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">OpenShift Virtualization cookbook</span>
+    <span class="version">1</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <a class="title" href="../index.html">OpenShift Virtualization cookbook</a>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">1</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">OpenShift Virtualization cookbook</a></li>
+    <li><a href="index.html">Virtual Machine Configuration</a></li>
+    <li><a href="cloud-init-ip-configuration.html">Cloud-init IP Configuration</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">Configuring IP Addresses with Cloud-init</h1>
+<div class="sect1">
+<h2 id="_overview"><a class="anchor" href="#_overview"></a>Overview</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>This tutorial demonstrates how to configure static and dynamic IP addresses for virtual machines in OpenShift Virtualization using cloud-init. Cloud-init is a standard method for initializing cloud instances with custom configurations, including network settings.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_what_is_cloud_init"><a class="anchor" href="#_what_is_cloud_init"></a>What is Cloud-init?</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Cloud-init is an industry-standard initialization tool that runs during VM boot to:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Configure network interfaces</p>
+</li>
+<li>
+<p>Set hostnames</p>
+</li>
+<li>
+<p>Create users and SSH keys</p>
+</li>
+<li>
+<p>Run custom scripts</p>
+</li>
+<li>
+<p>Install packages</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>For networking, cloud-init supports both userData (generic configuration) and networkData (dedicated network configuration) sections.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_prerequisites"><a class="anchor" href="#_prerequisites"></a>Prerequisites</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p>OpenShift 4.18+ with OpenShift Virtualization operator installed</p>
+</li>
+<li>
+<p>CLI tools: <code>oc</code>, <code>virtctl</code>, <code>kubectl</code></p>
+</li>
+<li>
+<p>At least one configured network (primary pod network)</p>
+</li>
+<li>
+<p>For VLAN scenarios: secondary network configured (see localnet VLAN tutorial)</p>
+</li>
+<li>
+<p>Basic understanding of networking (IP, subnet, gateway, DNS)</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_cloud_init_network_configuration_basics"><a class="anchor" href="#_cloud_init_network_configuration_basics"></a>Cloud-init Network Configuration Basics</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_userdata_vs_networkdata"><a class="anchor" href="#_userdata_vs_networkdata"></a>userData vs networkData</h3>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>userData</strong>: General cloud-init configuration (users, packages, scripts)</p>
+</li>
+<li>
+<p><strong>networkData</strong>: Dedicated network interface configuration (preferred for networking)</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_configuration_format"><a class="anchor" href="#_configuration_format"></a>Configuration Format</h3>
+<div class="paragraph">
+<p>Cloud-init network configuration supports version 2 format, which uses netplan-compatible schema:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">networkData: |
+  version: 2
+  ethernets:
+    enp1s0:
+      dhcp4: true</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_precedence_order"><a class="anchor" href="#_precedence_order"></a>Precedence Order</h3>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>networkData configuration (highest priority)</p>
+</li>
+<li>
+<p>Datasource network configuration</p>
+</li>
+<li>
+<p>Fallback to DHCP (default)</p>
+</li>
+</ol>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_scenario_1_single_interface_with_dhcp_default"><a class="anchor" href="#_scenario_1_single_interface_with_dhcp_default"></a>Scenario 1: Single Interface with DHCP (Default)</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The simplest configuration - VM uses DHCP on the primary pod network.</p>
+</div>
+<div class="paragraph">
+<p>Create namespace:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc create namespace cloud-init-demo</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>VM manifest without explicit network configuration:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: fedora-dhcp-vm
+  namespace: cloud-init-demo
+spec:
+  dataVolumeTemplates:
+    - apiVersion: cdi.kubevirt.io/v1beta1
+      kind: DataVolume
+      metadata:
+        name: fedora-dhcp-vm-disk
+      spec:
+        sourceRef:
+          kind: DataSource
+          name: fedora
+          namespace: openshift-virtualization-os-images
+        storage:
+          resources:
+            requests:
+              storage: 30Gi
+  runStrategy: RerunOnFailure
+  template:
+    metadata:
+      labels:
+        kubevirt.io/domain: fedora-dhcp-vm
+    spec:
+      domain:
+        cpu:
+          cores: 2
+        devices:
+          disks:
+            - disk:
+                bus: virtio
+              name: rootdisk
+            - disk:
+                bus: virtio
+              name: cloudinitdisk
+          interfaces:
+            - masquerade: {}
+              name: default
+          rng: {}
+        machine:
+          type: pc-q35-rhel9.4.0
+        memory:
+          guest: 4Gi
+      networks:
+        - name: default
+          pod: {}
+      volumes:
+        - dataVolume:
+            name: fedora-dhcp-vm-disk
+          name: rootdisk
+        - cloudInitNoCloud:
+            userData: |-
+              #cloud-config
+              user: fedora
+              password: fedora123
+              chpasswd: { expire: False }
+              ssh_pwauth: True
+          name: cloudinitdisk</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Deploy and verify:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f fedora-dhcp-vm.yaml
+oc get vmi -n cloud-init-demo</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Access the VM and check the IP:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">virtctl console fedora-dhcp-vm -n cloud-init-demo</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Inside the VM:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">ip addr show enp1s0</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The interface will have an IP from the pod network (typically 10.128.x.x range).</p>
+</div>
+<div class="paragraph">
+<p>When to use: Development environments, simple deployments, when DHCP is sufficient.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_scenario_2_single_interface_with_static_ip"><a class="anchor" href="#_scenario_2_single_interface_with_static_ip"></a>Scenario 2: Single Interface with Static IP</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Configure a static IP on the primary interface. Note: This is not common for pod networks but useful for understanding the syntax.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: fedora-static-vm
+  namespace: cloud-init-demo
+spec:
+  dataVolumeTemplates:
+    - apiVersion: cdi.kubevirt.io/v1beta1
+      kind: DataVolume
+      metadata:
+        name: fedora-static-vm-disk
+      spec:
+        sourceRef:
+          kind: DataSource
+          name: fedora
+          namespace: openshift-virtualization-os-images
+        storage:
+          resources:
+            requests:
+              storage: 30Gi
+  runStrategy: RerunOnFailure
+  template:
+    metadata:
+      labels:
+        kubevirt.io/domain: fedora-static-vm
+    spec:
+      domain:
+        cpu:
+          cores: 2
+        devices:
+          disks:
+            - disk:
+                bus: virtio
+              name: rootdisk
+            - disk:
+                bus: virtio
+              name: cloudinitdisk
+          interfaces:
+            - masquerade: {}
+              name: default
+          rng: {}
+        machine:
+          type: pc-q35-rhel9.4.0
+        memory:
+          guest: 4Gi
+      networks:
+        - name: default
+          pod: {}
+      volumes:
+        - dataVolume:
+            name: fedora-static-vm-disk
+          name: rootdisk
+        - cloudInitNoCloud:
+            userData: |-
+              #cloud-config
+              user: fedora
+              password: fedora123
+              chpasswd: { expire: False }
+              ssh_pwauth: True
+            networkData: |-
+              version: 2
+              ethernets:
+                enp1s0:
+                  dhcp4: false
+                  dhcp6: false
+                  addresses:
+                    - 10.128.1.100/23
+                  routes:
+                    - to: default
+                      via: 10.128.1.1
+                  nameservers:
+                    addresses:
+                      - 8.8.8.8
+                      - 8.8.4.4
+          name: cloudinitdisk</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Key points:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>dhcp4: false</code> and <code>dhcp6: false</code> disable DHCP</p>
+</li>
+<li>
+<p><code>addresses</code> sets the static IP with CIDR notation</p>
+</li>
+<li>
+<p><code>routes</code> with <code>to: default</code> sets the default gateway</p>
+</li>
+<li>
+<p><code>nameservers</code> configures DNS servers</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_scenario_3_multiple_interfaces_primary_dhcp_secondary_static"><a class="anchor" href="#_scenario_3_multiple_interfaces_primary_dhcp_secondary_static"></a>Scenario 3: Multiple Interfaces - Primary DHCP + Secondary Static</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>This is the most common real-world scenario. Primary interface uses DHCP, secondary interface (on VLAN or bridge) uses static IP.</p>
+</div>
+<div class="paragraph">
+<p>Prerequisites: Ensure you have a secondary network configured (e.g., localnet VLAN 100).</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: fedora-multi-vm
+  namespace: cloud-init-demo
+spec:
+  dataVolumeTemplates:
+    - apiVersion: cdi.kubevirt.io/v1beta1
+      kind: DataVolume
+      metadata:
+        name: fedora-multi-vm-disk
+      spec:
+        sourceRef:
+          kind: DataSource
+          name: fedora
+          namespace: openshift-virtualization-os-images
+        storage:
+          resources:
+            requests:
+              storage: 30Gi
+  runStrategy: RerunOnFailure
+  template:
+    metadata:
+      labels:
+        kubevirt.io/domain: fedora-multi-vm
+    spec:
+      domain:
+        cpu:
+          cores: 2
+        devices:
+          disks:
+            - disk:
+                bus: virtio
+              name: rootdisk
+            - disk:
+                bus: virtio
+              name: cloudinitdisk
+          interfaces:
+            - masquerade: {}
+              name: default
+            - bridge: {}
+              name: vlan-network
+          rng: {}
+        machine:
+          type: pc-q35-rhel9.4.0
+        memory:
+          guest: 4Gi
+      networks:
+        - name: default
+          pod: {}
+        - name: vlan-network
+          multus:
+            networkName: localnet-vlan-100
+      volumes:
+        - dataVolume:
+            name: fedora-multi-vm-disk
+          name: rootdisk
+        - cloudInitNoCloud:
+            userData: |-
+              #cloud-config
+              user: fedora
+              password: fedora123
+              chpasswd: { expire: False }
+              ssh_pwauth: True
+            networkData: |-
+              version: 2
+              ethernets:
+                enp1s0:
+                  dhcp4: true
+                enp2s0:
+                  dhcp4: false
+                  dhcp6: false
+                  addresses:
+                    - 192.168.100.50/24
+                  nameservers:
+                    addresses:
+                      - 192.168.100.1
+          name: cloudinitdisk</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Important notes:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>enp1s0</code> (first interface) uses DHCP and gets the default route automatically</p>
+</li>
+<li>
+<p><code>enp2s0</code> (second interface) has static IP without default route</p>
+</li>
+<li>
+<p>DNS servers on secondary interface are optional</p>
+</li>
+<li>
+<p>Do not set default route on secondary interface</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Verification:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">virtctl console fedora-multi-vm -n cloud-init-demo</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Inside the VM:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Check both interfaces
+ip addr show
+
+# Verify routing table (only one default route via enp1s0)
+ip route show
+
+# Test secondary network
+ping 192.168.100.1</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_scenario_4_vlan_interface_with_static_ip"><a class="anchor" href="#_scenario_4_vlan_interface_with_static_ip"></a>Scenario 4: VLAN Interface with Static IP</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Similar to Scenario 3 but specifically for VLAN networks.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: fedora-vlan-vm
+  namespace: cloud-init-demo
+spec:
+  dataVolumeTemplates:
+    - apiVersion: cdi.kubevirt.io/v1beta1
+      kind: DataVolume
+      metadata:
+        name: fedora-vlan-vm-disk
+      spec:
+        sourceRef:
+          kind: DataSource
+          name: fedora
+          namespace: openshift-virtualization-os-images
+        storage:
+          resources:
+            requests:
+              storage: 30Gi
+  runStrategy: RerunOnFailure
+  template:
+    metadata:
+      labels:
+        kubevirt.io/domain: fedora-vlan-vm
+    spec:
+      domain:
+        cpu:
+          cores: 2
+        devices:
+          disks:
+            - disk:
+                bus: virtio
+              name: rootdisk
+            - disk:
+                bus: virtio
+              name: cloudinitdisk
+          interfaces:
+            - masquerade: {}
+              name: default
+            - bridge: {}
+              name: vlan-100
+          rng: {}
+        machine:
+          type: pc-q35-rhel9.4.0
+        memory:
+          guest: 4Gi
+      networks:
+        - name: default
+          pod: {}
+        - name: vlan-100
+          multus:
+            networkName: localnet-vlan-100
+      volumes:
+        - dataVolume:
+            name: fedora-vlan-vm-disk
+          name: rootdisk
+        - cloudInitNoCloud:
+            userData: |-
+              #cloud-config
+              user: fedora
+              password: fedora123
+              chpasswd: { expire: False }
+              ssh_pwauth: True
+              write_files:
+                - path: /var/www/html/index.html
+                  content: |
+                    &lt;html&gt;
+                    &lt;body&gt;
+                      &lt;h1&gt;VM on VLAN 100&lt;/h1&gt;
+                      &lt;p&gt;IP: 192.168.100.50&lt;/p&gt;
+                    &lt;/body&gt;
+                    &lt;/html&gt;
+                  permissions: '0644'
+              runcmd:
+                - dnf install -y python3
+                - cd /var/www/html &amp;&amp; python3 -m http.server 80 &amp;
+            networkData: |-
+              version: 2
+              ethernets:
+                enp1s0:
+                  dhcp4: true
+                enp2s0:
+                  dhcp4: false
+                  dhcp6: false
+                  addresses:
+                    - 192.168.100.50/24
+          name: cloudinitdisk</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This example also demonstrates:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Using <code>write_files</code> to create content</p>
+</li>
+<li>
+<p>Using <code>runcmd</code> to start a simple web server</p>
+</li>
+<li>
+<p>Static IP on VLAN interface</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_verification_commands"><a class="anchor" href="#_verification_commands"></a>Verification Commands</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>After deploying any scenario, use these commands to verify:</p>
+</div>
+<div class="sect2">
+<h3 id="_check_vm_status"><a class="anchor" href="#_check_vm_status"></a>Check VM Status</h3>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Check VirtualMachine
+oc get vm -n cloud-init-demo
+
+# Check VirtualMachineInstance
+oc get vmi -n cloud-init-demo
+
+# Get detailed VMI info
+oc describe vmi &lt;vm-name&gt; -n cloud-init-demo</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_access_vm_console"><a class="anchor" href="#_access_vm_console"></a>Access VM Console</h3>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">virtctl console &lt;vm-name&gt; -n cloud-init-demo</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Exit console with <code>Ctrl+]</code>.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_inside_the_vm"><a class="anchor" href="#_inside_the_vm"></a>Inside the VM</h3>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Show all interfaces
+ip addr show
+
+# Show routing table
+ip route show
+
+# Show DNS configuration
+cat /etc/resolv.conf
+
+# Test connectivity
+ping -c 3 8.8.8.8
+ping -c 3 google.com
+
+# Check cloud-init status
+cloud-init status
+
+# View cloud-init logs
+sudo cat /var/log/cloud-init.log
+sudo cat /var/log/cloud-init-output.log
+
+# Check applied network configuration
+nmcli device show
+nmcli connection show</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_common_issues_and_solutions"><a class="anchor" href="#_common_issues_and_solutions"></a>Common Issues and Solutions</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_issue_interface_names_dont_match"><a class="anchor" href="#_issue_interface_names_dont_match"></a>Issue: Interface names don&#8217;t match</h3>
+<div class="paragraph">
+<p><strong>Problem</strong>: Used <code>eth0</code> instead of <code>enp1s0</code> in networkData.</p>
+</div>
+<div class="paragraph">
+<p><strong>Solution</strong>: Use the interface names as they appear in your guest operating system. Modern Linux distributions (RHEL 8+, Fedora, Ubuntu 16.04+) use predictable naming: <code>enp1s0</code>, <code>enp2s0</code>, etc.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_issue_vm_has_no_connectivity_on_secondary_interface"><a class="anchor" href="#_issue_vm_has_no_connectivity_on_secondary_interface"></a>Issue: VM has no connectivity on secondary interface</h3>
+<div class="paragraph">
+<p><strong>Problem</strong>: Forgot to disable DHCP on static interface.</p>
+</div>
+<div class="paragraph">
+<p><strong>Solution</strong>: Always set <code>dhcp4: false</code> and <code>dhcp6: false</code> when using static IPs.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_issue_multiple_default_routes"><a class="anchor" href="#_issue_multiple_default_routes"></a>Issue: Multiple default routes</h3>
+<div class="paragraph">
+<p><strong>Problem</strong>: Set default route on both interfaces.</p>
+</div>
+<div class="paragraph">
+<p><strong>Solution</strong>: Only set default route on primary interface (usually the first interface). Secondary interfaces should not have default routes.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_issue_cloud_init_configuration_not_applied"><a class="anchor" href="#_issue_cloud_init_configuration_not_applied"></a>Issue: Cloud-init configuration not applied</h3>
+<div class="paragraph">
+<p><strong>Problem</strong>: Syntax error in YAML or cloud-init configuration.</p>
+</div>
+<div class="paragraph">
+<p><strong>Solution</strong>:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Check cloud-init logs: <code>/var/log/cloud-init.log</code></p>
+</li>
+<li>
+<p>Verify YAML indentation</p>
+</li>
+<li>
+<p>Use <code>cloud-init status</code> to check for errors</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_issue_dns_not_resolving_on_secondary_network"><a class="anchor" href="#_issue_dns_not_resolving_on_secondary_network"></a>Issue: DNS not resolving on secondary network</h3>
+<div class="paragraph">
+<p><strong>Problem</strong>: Nameservers not configured or wrong nameservers.</p>
+</div>
+<div class="paragraph">
+<p><strong>Solution</strong>: Add appropriate nameservers in the networkData for the interface. If secondary interface is for isolated network, may not need external DNS.</p>
+</div>
+<div class="paragraph">
+<p>For detailed troubleshooting, see the <a href="cloud-init-troubleshooting.html" class="xref page">Cloud-init Troubleshooting Guide</a>.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_best_practices"><a class="anchor" href="#_best_practices"></a>Best Practices</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_network_configuration"><a class="anchor" href="#_network_configuration"></a>Network Configuration</h3>
+<div class="ulist">
+<ul>
+<li>
+<p>Use networkData for all network interface configurations</p>
+</li>
+<li>
+<p>Always disable DHCP explicitly when using static IPs</p>
+</li>
+<li>
+<p>Only configure default route on primary interface</p>
+</li>
+<li>
+<p>Verify interface names in your guest OS before configuring</p>
+</li>
+<li>
+<p>Test configurations in dev environment first</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_cloud_init_usage"><a class="anchor" href="#_cloud_init_usage"></a>Cloud-init Usage</h3>
+<div class="ulist">
+<ul>
+<li>
+<p>Keep configurations simple and readable</p>
+</li>
+<li>
+<p>Use write_files for complex file content</p>
+</li>
+<li>
+<p>Avoid complex shell scripts in runcmd</p>
+</li>
+<li>
+<p>Validate YAML syntax before deploying</p>
+</li>
+<li>
+<p>Check cloud-init logs when troubleshooting</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_ip_address_planning"><a class="anchor" href="#_ip_address_planning"></a>IP Address Planning</h3>
+<div class="ulist">
+<ul>
+<li>
+<p>Document IP assignments for all VMs</p>
+</li>
+<li>
+<p>Use consistent IP ranges for different purposes</p>
+</li>
+<li>
+<p>Avoid IP conflicts by maintaining IP inventory</p>
+</li>
+<li>
+<p>Consider using DHCP reservations for dynamic scenarios</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_security"><a class="anchor" href="#_security"></a>Security</h3>
+<div class="ulist">
+<ul>
+<li>
+<p>Don&#8217;t hardcode passwords in production</p>
+</li>
+<li>
+<p>Use SSH keys instead of passwords</p>
+</li>
+<li>
+<p>Restrict access to appropriate networks</p>
+</li>
+<li>
+<p>Configure firewall rules via cloud-init if needed</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_when_to_use_each_approach"><a class="anchor" href="#_when_to_use_each_approach"></a>When to Use Each Approach</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_use_dhcp_when"><a class="anchor" href="#_use_dhcp_when"></a>Use DHCP when:</h3>
+<div class="ulist">
+<ul>
+<li>
+<p>Quick development and testing</p>
+</li>
+<li>
+<p>IP address doesn&#8217;t need to be predictable</p>
+</li>
+<li>
+<p>DHCP server is available and reliable</p>
+</li>
+<li>
+<p>VM is ephemeral</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_use_static_ip_when"><a class="anchor" href="#_use_static_ip_when"></a>Use Static IP when:</h3>
+<div class="ulist">
+<ul>
+<li>
+<p>VM hosts a service that needs consistent addressing</p>
+</li>
+<li>
+<p>Integration with external systems requires fixed IP</p>
+</li>
+<li>
+<p>DHCP is not available on the network</p>
+</li>
+<li>
+<p>Production environments requiring predictability</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_use_multiple_interfaces_when"><a class="anchor" href="#_use_multiple_interfaces_when"></a>Use Multiple Interfaces when:</h3>
+<div class="ulist">
+<ul>
+<li>
+<p>Separating management and data traffic</p>
+</li>
+<li>
+<p>Connecting to multiple networks (pod network + VLAN)</p>
+</li>
+<li>
+<p>Implementing network segmentation</p>
+</li>
+<li>
+<p>Compliance requirements for network isolation</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_cleanup"><a class="anchor" href="#_cleanup"></a>Cleanup</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>To remove all resources created in this tutorial:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Delete VMs
+oc delete vm fedora-dhcp-vm fedora-static-vm fedora-multi-vm fedora-vlan-vm -n cloud-init-demo
+
+# Delete namespace
+oc delete namespace cloud-init-demo</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_summary"><a class="anchor" href="#_summary"></a>Summary</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>In this tutorial, you learned:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>How cloud-init network configuration works in OpenShift Virtualization</p>
+</li>
+<li>
+<p>KubeVirt&#8217;s predictable network interface naming</p>
+</li>
+<li>
+<p>How to configure DHCP and static IP addresses</p>
+</li>
+<li>
+<p>How to configure multiple network interfaces</p>
+</li>
+<li>
+<p>How to verify network configuration</p>
+</li>
+<li>
+<p>Best practices for cloud-init networking</p>
+</li>
+<li>
+<p>Common issues and solutions</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_references"><a class="anchor" href="#_references"></a>References</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p><a href="https://cloudinit.readthedocs.io/" target="_blank" rel="noopener">Cloud-init Documentation</a></p>
+</li>
+<li>
+<p><a href="https://cloudinit.readthedocs.io/en/latest/reference/network-config.html" target="_blank" rel="noopener">Cloud-init Network Configuration</a></p>
+</li>
+<li>
+<p><a href="https://docs.openshift.com/container-platform/latest/virt/about_virt/about-virt.html" target="_blank" rel="noopener">OpenShift Virtualization Documentation</a></p>
+</li>
+<li>
+<p><a href="https://kubevirt.io/user-guide/" target="_blank" rel="noopener">KubeVirt Documentation</a></p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<nav class="pagination">
+  <span class="prev"><a href="index.html">Virtual Machine Configuration</a></span>
+  <span class="next"><a href="cloud-init-troubleshooting.html">Cloud-init Troubleshooting</a></span>
+</nav>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <img src="../../../_/img/rhl-logo-red.png" height="40px" alt="Red Hat"  href="https://redhat.com" >
+</footer><script id="site-script" src="../../../_/js/site.js" data-ui-root-path="../../../_"></script>
+<script async src="../../../_/js/vendor/highlight.js"></script>
+  </body>
+</html>

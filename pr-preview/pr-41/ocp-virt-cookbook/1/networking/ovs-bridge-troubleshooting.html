@@ -1,0 +1,1535 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Troubleshooting OVS Bridge Creation for Localnet Networks :: OpenShift Virtualization cookbook</title>
+    <link rel="prev" href="linux-bridges.html">
+    <link rel="next" href="../vm-configuration/index.html">
+    <meta name="generator" content="Antora 3.1.3">
+    <link rel="stylesheet" href="../../../_/css/site.css">
+    <script>var uiRootPath = '../../../_'</script>
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://www.redhat.com" target="_blank"><img src="../../../_/img/redhat-logo.png" height="40px" alt="Red Hat"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="../../..">OpenShift Virtualization cookbook</a>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues" target="_blank">Report Issues</a>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="ocp-virt-cookbook" data-version="1">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="../index.html">OpenShift Virtualization cookbook</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../getting-started/index.html">Getting Started</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/prerequisites.html">Prerequisites</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/virtctl-basics.html">Virtctl Basics</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/default-storage-class.html">Storage Setup</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../storage/index.html">Storage Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/lvm-operator.html">LVM Operator Installation</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/lvm-troubleshooting.html">LVM Troubleshooting</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="index.html">Networking Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="udn-primary-networks.html">UDN Primary Networks</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="localnet-secondary.html">Localnet Secondary Networks with CUDN</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="localnet-vlan.html">Localnet Secondary Networks with VLAN using NAD</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="cudn-localnet-vlan.html">Localnet VLAN with CUDN</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="linux-bridges.html">Linux Bridges</a>
+  </li>
+  <li class="nav-item is-current-page" data-depth="2">
+    <a class="nav-link" href="ovs-bridge-troubleshooting.html">Troubleshooting Localnet Networks</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../vm-configuration/index.html">Virtual Machine Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/cloud-init-ip-configuration.html">Cloud-init IP Configuration</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/cloud-init-troubleshooting.html">Cloud-init Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/internal-dns-for-vms.html">Internal DNS for VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/remote-access-linux-vms.html">Remote Access to Linux VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/remote-access-linux-troubleshooting.html">Remote Access to Linux VMs Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/remote-access-windows-vms.html">Remote Access to Windows VMs via RDP</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/custom-golden-images.html">Custom Golden Images</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/golden-images-troubleshooting.html">Golden Images Troubleshooting</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../manifests/index.html">YAML Manifests Reference</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../manifests/operators.html">Operators</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../manifests/networking.html">Networking</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../manifests/storage.html">Storage</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../manifests/vms.html">Virtual Machines</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../manifests/security.html">Security</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../api/index.html">API Guide</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../api/api_component_overview.html">API Component Overview</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../lab-env/index.html">Lab Environment</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../appendix/glossary.html">Glossary</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">OpenShift Virtualization cookbook</span>
+    <span class="version">1</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <a class="title" href="../index.html">OpenShift Virtualization cookbook</a>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">1</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">OpenShift Virtualization cookbook</a></li>
+    <li><a href="index.html">Networking Configuration</a></li>
+    <li><a href="ovs-bridge-troubleshooting.html">Troubleshooting Localnet Networks</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">Troubleshooting OVS Bridge Creation for Localnet Networks</h1>
+<div id="preamble">
+<div class="sectionbody">
+<div class="paragraph">
+<p>Versions tested:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>OpenShift 4.20</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This guide helps you verify that OVS (Open vSwitch) bridges are correctly created and configured for localnet secondary networks in OpenShift Virtualization.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_understanding_ovs_bridges_vs_linux_bridges"><a class="anchor" href="#_understanding_ovs_bridges_vs_linux_bridges"></a>Understanding OVS Bridges vs Linux Bridges</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p><strong>Important</strong>: OVS bridges behave differently from Linux bridges:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>OVS bridges</strong> are visible using <code>ovs-vsctl</code> commands</p>
+</li>
+<li>
+<p><strong>OVS bridges</strong> may NOT appear as regular network interfaces in <code>ip addr show</code> or <code>ip link show</code></p>
+</li>
+<li>
+<p>This is <strong>normal and expected behavior</strong> - OVS bridges exist in the OVS database, not as standard Linux network devices</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_verification_process"><a class="anchor" href="#_verification_process"></a>Verification Process</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_step_1_check_nodenetworkconfigurationpolicy_status"><a class="anchor" href="#_step_1_check_nodenetworkconfigurationpolicy_status"></a>Step 1: Check NodeNetworkConfigurationPolicy Status</h3>
+<div class="paragraph">
+<p>First, verify that your NNCP was applied and configured successfully:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># List all NNCPs
+oc get nncp
+
+# Check specific NNCP status
+oc get nncp br-vlan-creation</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Expected Output:</strong></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>NAME               STATUS      REASON
+br-vlan-creation   Available   SuccessfullyConfigured</pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_step_2_get_detailed_nncp_information"><a class="anchor" href="#_step_2_get_detailed_nncp_information"></a>Step 2: Get Detailed NNCP Information</h3>
+<div class="paragraph">
+<p>Review the full NNCP configuration and status:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get nncp br-vlan-creation -o yaml</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Look for these key indicators in the output:</strong></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">status:
+  conditions:
+  - lastHeartbeatTime: "2025-10-06T20:38:57Z"
+    lastTransitionTime: "2025-10-06T20:38:57Z"
+    message: 1/1 nodes successfully configured
+    reason: SuccessfullyConfigured
+    status: "True"
+    type: Available
+  - reason: SuccessfullyConfigured
+    status: "False"
+    type: Degraded</code></pre>
+</div>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>Available: True</code> with <code>SuccessfullyConfigured</code> = Configuration applied</p>
+</li>
+<li>
+<p><code>Degraded: False</code> = No issues detected</p>
+</li>
+<li>
+<p><code>message: X/X nodes successfully configured</code> = All nodes configured</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_step_3_verify_ovs_bridge_exists"><a class="anchor" href="#_step_3_verify_ovs_bridge_exists"></a>Step 3: Verify OVS Bridge Exists</h3>
+<div class="paragraph">
+<p><strong>This is the correct way to check for OVS bridges:</strong></p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Get your node name
+oc get nodes
+
+# List all OVS bridges
+oc debug node/&lt;node-name&gt; -- chroot /host ovs-vsctl list-br</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Example Output:</strong></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>Starting pod/ocplab01-debug-k7bfc ...
+To use host binaries, run `chroot /host`
+br-ex
+br-int
+br-vlan
+
+Removing debug pod ...</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If you see <code>br-vlan</code> in this list, your bridge was created successfully!</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_step_4_verify_bridge_configuration_details"><a class="anchor" href="#_step_4_verify_bridge_configuration_details"></a>Step 4: Verify Bridge Configuration Details</h3>
+<div class="paragraph">
+<p>Check the complete OVS configuration to see bridge ports and interfaces:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc debug node/&lt;node-name&gt; -- chroot /host ovs-vsctl show</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Example Output (relevant section):</strong></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>Bridge br-vlan
+    Port enp11s0f0np0
+        Interface enp11s0f0np0
+            type: system</pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>What to verify:</strong></p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Bridge name (<code>br-vlan</code>) appears in the output</p>
+</li>
+<li>
+<p>Your physical interface (e.g., <code>enp11s0f0np0</code>) is listed as a Port</p>
+</li>
+<li>
+<p>Interface type is <code>system</code> for physical interfaces</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_step_5_verify_physical_interface_status"><a class="anchor" href="#_step_5_verify_physical_interface_status"></a>Step 5: Verify Physical Interface Status</h3>
+<div class="paragraph">
+<p>Ensure the physical interface is attached to the bridge and in UP state:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc debug node/&lt;node-name&gt; -- chroot /host ip link show &lt;interface-name&gt;</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Example Output:</strong></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>4: enp11s0f0np0: &lt;BROADCAST,MULTICAST,UP,LOWER_UP&gt; mtu 1500 qdisc mq master ovs-system state UP mode DEFAULT group default qlen 1000
+    link/ether e8:eb:d3:13:06:16 brd ff:ff:ff:ff:ff:ff</pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>What to verify:</strong></p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>UP,LOWER_UP</code> - interface is operational</p>
+</li>
+<li>
+<p><code>master ovs-system</code> - interface is managed by OVS</p>
+</li>
+<li>
+<p><code>state UP</code> - interface state is up</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_step_6_why_ip_addr_show_br_vlan_fails"><a class="anchor" href="#_step_6_why_ip_addr_show_br_vlan_fails"></a>Step 6: Why "ip addr show br-vlan" Fails</h3>
+<div class="paragraph">
+<p><strong>This is NORMAL behavior:</strong></p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc debug node/&lt;node-name&gt; -- chroot /host ip addr show br-vlan</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Expected Result:</strong></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>Device "br-vlan" does not exist.</pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Why this happens:</strong></p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>OVS bridges exist in the OVS database, not as regular Linux network devices</p>
+</li>
+<li>
+<p>They won&#8217;t appear in standard <code>ip</code> command outputs unless they have an internal interface</p>
+</li>
+<li>
+<p>This does NOT mean your bridge creation failed</p>
+</li>
+<li>
+<p>Always use <code>ovs-vsctl</code> commands to verify OVS bridges</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_common_issues_and_solutions"><a class="anchor" href="#_common_issues_and_solutions"></a>Common Issues and Solutions</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_issue_1_bridge_not_appearing_in_ovs_vsctl_list_br"><a class="anchor" href="#_issue_1_bridge_not_appearing_in_ovs_vsctl_list_br"></a>Issue 1: Bridge Not Appearing in ovs-vsctl list-br</h3>
+<div class="paragraph">
+<p><strong>Symptoms:</strong></p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>NNCP shows <code>Available: True</code> but bridge not in <code>ovs-vsctl list-br</code></p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p><strong>Troubleshooting:</strong></p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Check NNCP conditions
+oc get nncp br-vlan-creation -o jsonpath='{.status.conditions[?(@.type=="Available")]}' | jq
+
+# Check NMState operator logs
+oc logs -n openshift-nmstate -l app=kubernetes-nmstate-operator
+
+# Check if there are any node network states with issues
+oc get nns -A</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Common causes:</strong></p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Physical interface name mismatch (verify with <code>ip link show</code>)</p>
+</li>
+<li>
+<p>OVS not running properly on the node</p>
+</li>
+<li>
+<p>NMState operator issues</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_issue_2_physical_interface_not_attached_to_bridge"><a class="anchor" href="#_issue_2_physical_interface_not_attached_to_bridge"></a>Issue 2: Physical Interface Not Attached to Bridge</h3>
+<div class="paragraph">
+<p><strong>Symptoms:</strong></p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Bridge exists but <code>ovs-vsctl show</code> doesn&#8217;t show your interface as a port</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p><strong>Troubleshooting:</strong></p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># List all ports on the bridge
+oc debug node/&lt;node-name&gt; -- chroot /host ovs-vsctl list-ports br-vlan
+
+# Check interface status
+oc debug node/&lt;node-name&gt; -- chroot /host ip link show &lt;interface-name&gt;
+
+# Verify NNCP configuration has correct interface name
+oc get nncp br-vlan-creation -o yaml | grep -A 5 "name: &lt;interface-name&gt;"</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Solutions:</strong></p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Verify physical interface name is correct in NNCP</p>
+</li>
+<li>
+<p>Check that interface is not already in use by another bridge</p>
+</li>
+<li>
+<p>Ensure interface exists and is available on the node</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_issue_3_node_selector_mismatch"><a class="anchor" href="#_issue_3_node_selector_mismatch"></a>Issue 3: Node Selector Mismatch</h3>
+<div class="paragraph">
+<p><strong>Symptoms:</strong></p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>NNCP shows successful but bridge doesn&#8217;t exist</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p><strong>Troubleshooting:</strong></p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Check node labels
+oc get nodes --show-labels
+
+# Check NNCP node selector
+oc get nncp br-vlan-creation -o jsonpath='{.spec.nodeSelector}'</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Common issue:</strong></p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Single Node OpenShift (SNO) nodes have <code>control-plane,master,worker</code> roles</p>
+</li>
+<li>
+<p>NNCP with <code>node-role.kubernetes.io/worker: ""</code> selector will still match</p>
+</li>
+<li>
+<p>Verify the NNCP status shows "X/X nodes successfully configured"</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_issue_4_bridge_created_but_not_working"><a class="anchor" href="#_issue_4_bridge_created_but_not_working"></a>Issue 4: Bridge Created But Not Working</h3>
+<div class="paragraph">
+<p><strong>Symptoms:</strong></p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Bridge exists, interface attached, but traffic not flowing</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p><strong>Troubleshooting:</strong></p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Check interface carrier status
+oc debug node/&lt;node-name&gt; -- chroot /host cat /sys/class/net/&lt;interface-name&gt;/carrier
+
+# Check for interface errors
+oc debug node/&lt;node-name&gt; -- chroot /host ethtool -S &lt;interface-name&gt;
+
+# Verify physical link is up
+oc debug node/&lt;node-name&gt; -- chroot /host ethtool &lt;interface-name&gt; | grep "Link detected"</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Common causes:</strong></p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Physical cable not connected</p>
+</li>
+<li>
+<p>Switch port disabled or misconfigured</p>
+</li>
+<li>
+<p>Interface speed/duplex mismatch</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_verifying_bridge_mappings_for_localnet"><a class="anchor" href="#_verifying_bridge_mappings_for_localnet"></a>Verifying Bridge Mappings for Localnet</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>After creating the OVS bridge, you need to verify that the bridge mapping to OVN-Kubernetes is working correctly.</p>
+</div>
+<div class="sect2">
+<h3 id="_what_are_bridge_mappings"><a class="anchor" href="#_what_are_bridge_mappings"></a>What Are Bridge Mappings?</h3>
+<div class="paragraph">
+<p>Bridge mappings connect a <strong>logical network name</strong> (used in NetworkAttachmentDefinitions) to a <strong>physical OVS bridge</strong>. For example:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Logical name: <code>localnet-vlan</code></p>
+</li>
+<li>
+<p>Physical bridge: <code>br-vlan</code></p>
+</li>
+<li>
+<p>Mapping: <code>localnet-vlan:br-vlan</code></p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_step_1_verify_bridge_mapping_nncp_status"><a class="anchor" href="#_step_1_verify_bridge_mapping_nncp_status"></a>Step 1: Verify Bridge Mapping NNCP Status</h3>
+<div class="paragraph">
+<p>Check that the bridge mapping NNCP was applied successfully:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># List all NNCPs
+oc get nncp | grep mapping
+
+# Check specific bridge mapping NNCP
+oc get nncp localnet-vlan-bridge-mapping</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Expected Output:</strong></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>localnet-vlan-bridge-mapping   Available   SuccessfullyConfigured</pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_step_2_get_detailed_bridge_mapping_configuration"><a class="anchor" href="#_step_2_get_detailed_bridge_mapping_configuration"></a>Step 2: Get Detailed Bridge Mapping Configuration</h3>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get nncp localnet-vlan-bridge-mapping -o yaml</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Look for these key sections in the output:</strong></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">spec:
+  desiredState:
+    ovn:
+      bridge-mappings:
+      - bridge: br-vlan
+        localnet: localnet-vlan
+        state: present
+  nodeSelector:
+    node-role.kubernetes.io/worker: ""
+status:
+  conditions:
+  - message: 1/1 nodes successfully configured
+    reason: SuccessfullyConfigured
+    status: "True"
+    type: Available</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_step_3_verify_ovn_bridge_mappings_on_the_node"><a class="anchor" href="#_step_3_verify_ovn_bridge_mappings_on_the_node"></a>Step 3: Verify OVN Bridge Mappings on the Node</h3>
+<div class="paragraph">
+<p>This is the <strong>critical verification</strong> - check that OVN-Kubernetes has the bridge mapping configured:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc debug node/&lt;node-name&gt; -- chroot /host ovs-vsctl get Open_vSwitch . external_ids:ovn-bridge-mappings</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Expected Output:</strong></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>"localnet-vlan:br-vlan,physnet:br-ex"</pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>What this means:</strong></p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>localnet-vlan:br-vlan</code> = Your custom mapping</p>
+</li>
+<li>
+<p><code>physnet:br-ex</code> = Default OpenShift mapping</p>
+</li>
+<li>
+<p>Multiple mappings are comma-separated</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_step_4_verify_complete_ovs_external_ids"><a class="anchor" href="#_step_4_verify_complete_ovs_external_ids"></a>Step 4: Verify Complete OVS External IDs</h3>
+<div class="paragraph">
+<p>Get all OVS external IDs to see the full configuration:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc debug node/&lt;node-name&gt; -- chroot /host ovs-vsctl list Open_vSwitch | grep -A 2 external_ids</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Example Output:</strong></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>external_ids        : {hostname=ocplab01, ovn-bridge-mappings="localnet-vlan:br-vlan,physnet:br-ex", ovn-bridge-remote-probe-interval="0", ovn-enable-lflow-cache="true", ovn-encap-ip="192.168.2.241", ovn-encap-type=geneve, ovn-is-interconn="true", ovn-memlimit-lflow-cache-kb="1048576", ovn-monitor-all="true", ovn-ofctrl-wait-before-clear="0", ovn-remote="unix:/var/run/ovn/ovnsb_db.sock", ovn-remote-probe-interval="180000", ovn-set-local-ip="true", rundir="/var/run/openvswitch", system-id="1b41fc3f-f597-4cd9-b508-e8247c209d97"}</pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Verify:</strong></p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>ovn-bridge-mappings</code> includes your mapping</p>
+</li>
+<li>
+<p><code>hostname</code> matches your node</p>
+</li>
+<li>
+<p><code>ovn-encap-type=geneve</code> is present</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_step_5_verify_physical_interface_is_attached"><a class="anchor" href="#_step_5_verify_physical_interface_is_attached"></a>Step 5: Verify Physical Interface is Attached</h3>
+<div class="paragraph">
+<p>Confirm the physical interface is attached to the bridge:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc debug node/&lt;node-name&gt; -- chroot /host ovs-vsctl list-ports br-vlan</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Expected Output:</strong></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>enp11s0f0np0</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This confirms your physical interface is a port on the bridge and ready to carry traffic.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_bridge_mapping_traffic_flow"><a class="anchor" href="#_bridge_mapping_traffic_flow"></a>Bridge Mapping Traffic Flow</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Understanding how traffic flows through bridge mappings:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>┌─────────────────────────────────────────────────────────────────┐
+│ Virtual Machine                                                  │
+│   └─&gt; eth1 (secondary network interface)                        │
+└────────────────────────┬────────────────────────────────────────┘
+                         │
+                         ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ NetworkAttachmentDefinition                                      │
+│   - name: localnet-vlan-100                                      │
+│   - topology: localnet                                           │
+│   - vlanID: 100                                                  │
+└────────────────────────┬────────────────────────────────────────┘
+                         │
+                         ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ OVN-Kubernetes (looks up bridge mapping)                         │
+│   localnet-vlan → br-vlan                                        │
+└────────────────────────┬────────────────────────────────────────┘
+                         │
+                         ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ OVS Bridge: br-vlan                                              │
+│   - Adds VLAN tag 100                                            │
+│   - Routes to physical interface                                 │
+└────────────────────────┬────────────────────────────────────────┘
+                         │
+                         ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ Physical Interface: enp11s0f0np0                                 │
+│   - Sends VLAN-tagged traffic to physical network               │
+└─────────────────────────────────────────────────────────────────┘</pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_troubleshooting_bridge_mapping_issues"><a class="anchor" href="#_troubleshooting_bridge_mapping_issues"></a>Troubleshooting Bridge Mapping Issues</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_issue_1_bridge_mapping_not_in_ovn_external_ids"><a class="anchor" href="#_issue_1_bridge_mapping_not_in_ovn_external_ids"></a>Issue 1: Bridge Mapping Not in OVN External IDs</h3>
+<div class="paragraph">
+<p><strong>Symptoms:</strong></p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>NNCP shows successful but <code>ovs-vsctl get Open_vSwitch . external_ids:ovn-bridge-mappings</code> doesn&#8217;t include your mapping</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p><strong>Troubleshooting:</strong></p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Check NNCP was applied
+oc get nncp localnet-vlan-bridge-mapping -o yaml
+
+# Restart NMState operator
+oc delete pod -n openshift-nmstate -l app=kubernetes-nmstate-operator
+
+# Check NMState handler logs
+oc logs -n openshift-nmstate -l component=kubernetes-nmstate-handler</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Common causes:</strong></p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>NNCP applied before bridge was created</p>
+</li>
+<li>
+<p>NMState handler not running properly</p>
+</li>
+<li>
+<p>OVS service issues</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p><strong>Solution:</strong></p>
+</div>
+<div class="paragraph">
+<p>Delete and recreate the bridge mapping NNCP after confirming the bridge exists.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_issue_2_wrong_bridge_name_in_mapping"><a class="anchor" href="#_issue_2_wrong_bridge_name_in_mapping"></a>Issue 2: Wrong Bridge Name in Mapping</h3>
+<div class="paragraph">
+<p><strong>Symptoms:</strong></p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Bridge mapping exists but uses wrong bridge name</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p><strong>Verification:</strong></p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Check what bridges exist
+oc debug node/&lt;node-name&gt; -- chroot /host ovs-vsctl list-br
+
+# Check what mapping references
+oc get nncp localnet-vlan-bridge-mapping -o jsonpath='{.spec.desiredState.ovn.bridge-mappings[0].bridge}'</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Solution:</strong></p>
+</div>
+<div class="paragraph">
+<p>Ensure the bridge name in the mapping NNCP matches the actual OVS bridge name exactly.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_issue_3_logical_name_mismatch"><a class="anchor" href="#_issue_3_logical_name_mismatch"></a>Issue 3: Logical Name Mismatch</h3>
+<div class="paragraph">
+<p><strong>Symptoms:</strong></p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>VMs can&#8217;t connect to network even though bridge mapping exists</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p><strong>Verification:</strong></p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Check logical name in bridge mapping
+oc get nncp localnet-vlan-bridge-mapping -o jsonpath='{.spec.desiredState.ovn.bridge-mappings[0].localnet}'
+
+# Check NetworkAttachmentDefinition or CUDN references the same name
+oc get network-attachment-definitions &lt;nad-name&gt; -n &lt;namespace&gt; -o yaml</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Solution:</strong></p>
+</div>
+<div class="paragraph">
+<p>The logical network name in the bridge mapping must match the name used in your NetworkAttachmentDefinition or ClusterUserDefinedNetwork configuration.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_issue_4_multiple_mappings_conflict"><a class="anchor" href="#_issue_4_multiple_mappings_conflict"></a>Issue 4: Multiple Mappings Conflict</h3>
+<div class="paragraph">
+<p><strong>Symptoms:</strong></p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Multiple bridge mappings configured but traffic goes to wrong bridge</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p><strong>Verification:</strong></p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># List all bridge mappings
+oc debug node/&lt;node-name&gt; -- chroot /host ovs-vsctl get Open_vSwitch . external_ids:ovn-bridge-mappings</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Expected format:</strong></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>"mapping1:bridge1,mapping2:bridge2,mapping3:bridge3"</pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Solution:</strong></p>
+</div>
+<div class="paragraph">
+<p>Ensure each logical network name is unique and maps to the correct bridge. OVN will use the first matching mapping.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_complete_verification_checklist"><a class="anchor" href="#_complete_verification_checklist"></a>Complete Verification Checklist</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Use this checklist to verify your OVS bridge and bridge mappings are correctly configured:</p>
+</div>
+<div class="sect2">
+<h3 id="_bridge_creation"><a class="anchor" href="#_bridge_creation"></a>Bridge Creation</h3>
+<div class="ulist checklist">
+<ul class="checklist">
+<li>
+<p><i class="fa fa-square-o"></i> NNCP status shows <code>Available: True</code> with <code>SuccessfullyConfigured</code></p>
+</li>
+<li>
+<p><i class="fa fa-square-o"></i> NNCP message shows all nodes successfully configured</p>
+</li>
+<li>
+<p><i class="fa fa-square-o"></i> <code>ovs-vsctl list-br</code> includes your bridge name</p>
+</li>
+<li>
+<p><i class="fa fa-square-o"></i> <code>ovs-vsctl show</code> displays bridge with physical interface as port</p>
+</li>
+<li>
+<p><i class="fa fa-square-o"></i> Physical interface shows <code>UP,LOWER_UP</code> status</p>
+</li>
+<li>
+<p><i class="fa fa-square-o"></i> Physical interface shows <code>master ovs-system</code></p>
+</li>
+<li>
+<p><i class="fa fa-square-o"></i> Physical link has carrier (cable connected)</p>
+</li>
+<li>
+<p><i class="fa fa-square-o"></i> No errors in NMState operator logs</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_bridge_mapping"><a class="anchor" href="#_bridge_mapping"></a>Bridge Mapping</h3>
+<div class="ulist checklist">
+<ul class="checklist">
+<li>
+<p><i class="fa fa-square-o"></i> Bridge mapping NNCP shows <code>Available: True</code></p>
+</li>
+<li>
+<p><i class="fa fa-square-o"></i> <code>ovs-vsctl get Open_vSwitch . external_ids:ovn-bridge-mappings</code> includes your mapping</p>
+</li>
+<li>
+<p><i class="fa fa-square-o"></i> Mapping format is correct: <code>logical-name:bridge-name</code></p>
+</li>
+<li>
+<p><i class="fa fa-square-o"></i> Logical network name matches what you&#8217;ll use in NAD/CUDN</p>
+</li>
+<li>
+<p><i class="fa fa-square-o"></i> Bridge name in mapping matches actual OVS bridge</p>
+</li>
+<li>
+<p><i class="fa fa-square-o"></i> Physical interface is attached to the bridge (<code>ovs-vsctl list-ports</code>)</p>
+</li>
+<li>
+<p><i class="fa fa-square-o"></i> No conflicts with other bridge mappings</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_additional_verification_commands"><a class="anchor" href="#_additional_verification_commands"></a>Additional Verification Commands</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_check_ovs_service_status"><a class="anchor" href="#_check_ovs_service_status"></a>Check OVS Service Status</h3>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc debug node/&lt;node-name&gt; -- chroot /host systemctl status openvswitch</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_view_ovs_logs"><a class="anchor" href="#_view_ovs_logs"></a>View OVS Logs</h3>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc debug node/&lt;node-name&gt; -- chroot /host journalctl -u openvswitch -n 50</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_list_all_ovs_interfaces"><a class="anchor" href="#_list_all_ovs_interfaces"></a>List All OVS Interfaces</h3>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc debug node/&lt;node-name&gt; -- chroot /host ovs-vsctl list interface</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_check_ovs_database"><a class="anchor" href="#_check_ovs_database"></a>Check OVS Database</h3>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc debug node/&lt;node-name&gt; -- chroot /host ovs-vsctl list bridge</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_monitor_ovs_bridge_traffic_optional"><a class="anchor" href="#_monitor_ovs_bridge_traffic_optional"></a>Monitor OVS Bridge Traffic (Optional)</h3>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># View ports and their statistics
+oc debug node/&lt;node-name&gt; -- chroot /host ovs-ofctl dump-ports br-vlan</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_clusteruserdefinednetwork_cudn_verification"><a class="anchor" href="#_clusteruserdefinednetwork_cudn_verification"></a>ClusterUserDefinedNetwork (CUDN) Verification</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>When using ClusterUserDefinedNetwork instead of NetworkAttachmentDefinition, additional verification steps are needed.</p>
+</div>
+<div class="sect2">
+<h3 id="_step_1_verify_cudn_resource"><a class="anchor" href="#_step_1_verify_cudn_resource"></a>Step 1: Verify CUDN Resource</h3>
+<div class="paragraph">
+<p>Check that the ClusterUserDefinedNetwork was created successfully:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># List all CUDNs
+oc get clusteruserdefinednetwork
+
+# Get detailed CUDN information
+oc get clusteruserdefinednetwork &lt;cudn-name&gt; -o yaml</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Expected Output:</strong></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>NAME                     AGE
+cudn-localnet-vlan-100   5m</pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_step_2_verify_cudn_configuration"><a class="anchor" href="#_step_2_verify_cudn_configuration"></a>Step 2: Verify CUDN Configuration</h3>
+<div class="paragraph">
+<p>Check the CUDN spec to ensure proper configuration:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get clusteruserdefinednetwork cudn-localnet-vlan-100 -o yaml</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Key fields to verify:</strong></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">spec:
+  namespaceSelector:
+    matchExpressions:
+    - key: kubernetes.io/metadata.name
+      operator: In
+      values: ["vm-guests-vlan-prod", "vm-guests-vlan-dev"]
+  network:
+    topology: Localnet
+    localnet:
+      role: Secondary
+      physicalNetworkName: localnet-vlan  # Must match bridge mapping logical name
+      vlanID: 100
+      ipam:
+        mode: Disabled  # Or Static depending on your needs</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_step_3_verify_auto_created_networkattachmentdefinitions"><a class="anchor" href="#_step_3_verify_auto_created_networkattachmentdefinitions"></a>Step 3: Verify Auto-Created NetworkAttachmentDefinitions</h3>
+<div class="paragraph">
+<p>CUDNs automatically create NetworkAttachmentDefinitions in the selected namespaces:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># List NADs in all namespaces
+oc get network-attachment-definitions -A | grep &lt;cudn-name&gt;
+
+# Check specific namespace
+oc get network-attachment-definitions -n &lt;namespace&gt;</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Expected Output:</strong></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>NAMESPACE             NAME                     AGE
+vm-guests-vlan-dev    cudn-localnet-vlan-100   5m
+vm-guests-vlan-prod   cudn-localnet-vlan-100   5m</pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_step_4_verify_physicalnetworkname_matches_bridge_mapping"><a class="anchor" href="#_step_4_verify_physicalnetworkname_matches_bridge_mapping"></a>Step 4: Verify physicalNetworkName Matches Bridge Mapping</h3>
+<div class="paragraph">
+<p>The <code>physicalNetworkName</code> in CUDN must match the logical network name in your bridge mapping:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Get CUDN physicalNetworkName
+oc get clusteruserdefinednetwork &lt;cudn-name&gt; -o jsonpath='{.spec.network.localnet.physicalNetworkName}'
+
+# Get bridge mapping logical name
+oc get nncp &lt;bridge-mapping-nncp&gt; -o jsonpath='{.spec.desiredState.ovn.bridge-mappings[0].localnet}'
+
+# Verify they match in OVN
+oc debug node/&lt;node-name&gt; -- chroot /host ovs-vsctl get Open_vSwitch . external_ids:ovn-bridge-mappings</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>All three should show the same name</strong> (e.g., <code>localnet-vlan</code>).</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_step_5_verify_cross_namespace_network_availability"><a class="anchor" href="#_step_5_verify_cross_namespace_network_availability"></a>Step 5: Verify Cross-Namespace Network Availability</h3>
+<div class="paragraph">
+<p>Test that VMs in different namespaces can both use the CUDN:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Check VMs in first namespace
+oc get vmi -n vm-guests-vlan-prod -o jsonpath='{.items[*].status.interfaces[?(@.name=="cudn_vlan_network")].ipAddress}'
+
+# Check VMs in second namespace
+oc get vmi -n vm-guests-vlan-dev -o jsonpath='{.items[*].status.interfaces[?(@.name=="cudn_vlan_network")].ipAddress}'</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Both should return IP addresses if VMs are connected to the CUDN network.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_cudn_specific_common_issues"><a class="anchor" href="#_cudn_specific_common_issues"></a>CUDN-Specific Common Issues</h3>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p><strong>NADs Not Created in Selected Namespaces</strong>:</p>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Symptom</strong>: CUDN exists but <code>oc get network-attachment-definitions -n &lt;namespace&gt;</code> shows nothing</p>
+</li>
+<li>
+<p><strong>Cause</strong>: Namespace selector doesn&#8217;t match namespace labels</p>
+</li>
+<li>
+<p><strong>Solution</strong>: Verify namespace labels match the CUDN selector</p>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Check namespace labels
+oc get namespace &lt;namespace-name&gt; -o jsonpath='{.metadata.labels}'
+
+# Check CUDN selector
+oc get clusteruserdefinednetwork &lt;cudn-name&gt; -o jsonpath='{.spec.namespaceSelector}'</code></pre>
+</div>
+</div>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p><strong>VM Fails with "failed bridge mapping validation"</strong>:</p>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Symptom</strong>: VM pod fails even though CUDN exists</p>
+</li>
+<li>
+<p><strong>Cause</strong>: <code>physicalNetworkName</code> in CUDN doesn&#8217;t match bridge mapping logical name</p>
+</li>
+<li>
+<p><strong>Solution</strong>: Ensure they match exactly (case-sensitive)</p>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Compare the names
+oc get clusteruserdefinednetwork &lt;cudn-name&gt; -o jsonpath='{.spec.network.localnet.physicalNetworkName}'
+oc get nncp &lt;bridge-mapping-nncp&gt; -o jsonpath='{.spec.desiredState.ovn.bridge-mappings[0].localnet}'</code></pre>
+</div>
+</div>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p><strong>IPAM Mode Issues</strong>:</p>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Symptom</strong>: VMs not getting expected IP addresses</p>
+</li>
+<li>
+<p><strong>Cause</strong>: IPAM mode misconfigured or cloud-init not working</p>
+</li>
+<li>
+<p><strong>For Static IP via cloud-init</strong>: Set <code>ipam.mode: Disabled</code> in CUDN</p>
+</li>
+<li>
+<p><strong>For OVN IPAM</strong>: Set <code>ipam.mode: Static</code> with <code>staticIPAMConfig</code></p>
+</li>
+<li>
+<p><strong>Verification</strong>:</p>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Check IPAM mode
+oc get clusteruserdefinednetwork &lt;cudn-name&gt; -o jsonpath='{.spec.network.localnet.ipam.mode}'
+
+# Check cloud-init logs in VM
+virtctl console -n &lt;namespace&gt; &lt;vm-name&gt;
+# Inside VM: cat /var/log/cloud-init.log</code></pre>
+</div>
+</div>
+</li>
+</ul>
+</div>
+</li>
+</ol>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_localnet_vlan_network_troubleshooting"><a class="anchor" href="#_localnet_vlan_network_troubleshooting"></a>Localnet VLAN Network Troubleshooting</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_common_issues"><a class="anchor" href="#_common_issues"></a>Common Issues</h3>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p><strong>VLAN Traffic Not Reaching VM</strong>:</p>
+<div class="ulist">
+<ul>
+<li>
+<p>Verify physical switch configuration supports VLAN tagging</p>
+</li>
+<li>
+<p>Check bridge mapping configuration on worker nodes</p>
+</li>
+<li>
+<p>Ensure VLAN ID matches network infrastructure</p>
+</li>
+<li>
+<p>Verify the physical NIC is connected and UP</p>
+</li>
+<li>
+<p>Check that the OVS bridge includes the physical interface as a port</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p><strong>IP Address Assignment Issues</strong>:</p>
+<div class="ulist">
+<ul>
+<li>
+<p>Verify DHCP server is available on the VLAN network</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p><strong>Network Connectivity Problems</strong>:</p>
+<div class="ulist">
+<ul>
+<li>
+<p>Check that the physical network supports the configured VLAN</p>
+</li>
+<li>
+<p>Test connectivity from physical network to VLAN subnet</p>
+</li>
+<li>
+<p>Verify the physical switch port is in trunk mode</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p><strong>Custom Bridge Creation Issues</strong>:</p>
+<div class="ulist">
+<ul>
+<li>
+<p>Remember: OVS bridges won&#8217;t show in <code>ip addr show</code> - use <code>ovs-vsctl list-br</code> instead</p>
+</li>
+<li>
+<p>Ensure the physical interface name is correct</p>
+</li>
+<li>
+<p>Verify NMState operator is running properly</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p><strong>Bridge Mapping Not Working</strong>:</p>
+<div class="ulist">
+<ul>
+<li>
+<p>Verify the bridge name in the mapping matches the created bridge</p>
+</li>
+<li>
+<p>Check OVN bridge mappings: <code>ovs-vsctl get Open_vSwitch . external_ids:ovn-bridge-mappings</code></p>
+</li>
+<li>
+<p>Ensure the localnet name in the mapping matches the NAD configuration</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p><strong>VM Pod Fails with "failed bridge mapping validation" Error</strong>:</p>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Symptom</strong>: VM pod fails with error: <code>failed to find OVN bridge-mapping for network: "localnet-vlan-100"</code></p>
+</li>
+<li>
+<p><strong>Cause</strong>: Missing <code>physicalNetworkName</code> parameter in NetworkAttachmentDefinition</p>
+</li>
+<li>
+<p><strong>Solution</strong>: Ensure NAD includes <code>"physicalNetworkName": "localnet-vlan"</code> that matches the bridge mapping logical name from bridge mapping configuration</p>
+</li>
+<li>
+<p><strong>Verification</strong>: After updating NAD, recreate it with <code>oc delete</code> and <code>oc apply</code></p>
+</li>
+</ul>
+</div>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_verification_commands"><a class="anchor" href="#_verification_commands"></a>Verification Commands</h3>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Check NetworkAttachmentDefinition status
+oc get network-attachment-definitions -n vm-guests-vlan
+
+# Verify all NodeNetworkConfigurationPolicies
+oc get nncp
+
+# Check bridge creation status (if using custom bridge)
+oc get nncp br-vlan-creation -o yaml
+
+# Verify bridge mapping on worker nodes
+oc get nncp localnet-vlan-bridge-mapping -o yaml
+
+# Check physical interface status on worker node
+oc debug node/&lt;worker-node-name&gt; -- chroot /host ip link show ens224
+
+# Verify OVS bridge configuration
+oc debug node/&lt;worker-node-name&gt; -- chroot /host ovs-vsctl show
+
+# Check OVN bridge mappings
+oc debug node/&lt;worker-node-name&gt; -- chroot /host ovs-vsctl get Open_vSwitch . external_ids:ovn-bridge-mappings
+
+# List all ports on the custom bridge
+oc debug node/&lt;worker-node-name&gt; -- chroot /host ovs-vsctl list-ports br-vlan
+
+# Check VM network status
+oc get vmi -n vm-guests-vlan -o yaml | grep -A 10 networks
+
+# View OVN-Kubernetes logs for troubleshooting
+oc logs -n openshift-ovn-kubernetes -l app=ovnkube-node
+
+# Check NMState operator logs if bridge creation fails
+oc logs -n openshift-nmstate -l app=kubernetes-nmstate-operator</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_references"><a class="anchor" href="#_references"></a>References</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p><a href="https://nmstate.io/" target="_blank" rel="noopener">NMState Documentation</a></p>
+</li>
+<li>
+<p><a href="http://www.openvswitch.org/support/dist-docs/" target="_blank" rel="noopener">Open vSwitch Documentation</a></p>
+</li>
+<li>
+<p><a href="https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/networking_operators/k8s-nmstate-about-the-k8s-nmstate-operator" target="_blank" rel="noopener">OpenShift NMState Operator</a></p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<nav class="pagination">
+  <span class="prev"><a href="linux-bridges.html">Linux Bridges</a></span>
+  <span class="next"><a href="../vm-configuration/index.html">Virtual Machine Configuration</a></span>
+</nav>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <img src="../../../_/img/rhl-logo-red.png" height="40px" alt="Red Hat"  href="https://redhat.com" >
+</footer><script id="site-script" src="../../../_/js/site.js" data-ui-root-path="../../../_"></script>
+<script async src="../../../_/js/vendor/highlight.js"></script>
+  </body>
+</html>
