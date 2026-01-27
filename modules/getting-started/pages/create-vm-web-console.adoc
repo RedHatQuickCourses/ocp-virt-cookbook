@@ -1,0 +1,358 @@
+= Creating VMs from Web Console Using Templates
+:navtitle: Create VM from Web Console
+
+== Overview
+
+This tutorial demonstrates how to create virtual machines using the OpenShift web console and pre-built templates. The web console provides an intuitive graphical interface for VM management, making it an ideal starting point for new users.
+
+== Prerequisites
+
+* OpenShift 4.20+ with OpenShift Virtualization operator installed (see link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/virtualization/installing[Installing OpenShift Virtualization,window=_blank])
+* Access to the OpenShift web console with permissions to create VMs
+* A default StorageClass configured for VM disk provisioning
+* Available boot source images (DataSources) in the cluster
+
+Verify boot sources are available:
+
+[source,bash,role=execute]
+----
+oc get datasources -n openshift-virtualization-os-images
+----
+
+== Step 1: Access the Virtualization Section
+
+. Log in to the OpenShift web console
+. In the left navigation menu, click **Virtualization**
+. Click **VirtualMachines** to see the VM management interface
+
+[NOTE]
+====
+*SCREENSHOT NEEDED:* `virtualization-menu.png`
+
+Show the left navigation menu with Virtualization expanded and VirtualMachines selected.
+====
+
+The VirtualMachines page displays all VMs in the selected project, along with their status and basic information.
+
+== Step 2: Browse Available Templates
+
+OpenShift Virtualization includes pre-configured templates for common operating systems.
+
+. From the VirtualMachines page, click **Create** -> **From template**
+. Browse the available templates organized by operating system:
+** **Red Hat Enterprise Linux** - Various RHEL versions
+** **Fedora** - Latest Fedora releases
+** **CentOS Stream** - CentOS Stream versions
+** **Microsoft Windows** - Windows Server and Desktop versions
+
+[NOTE]
+====
+*SCREENSHOT NEEDED:* `vm-templates-catalog.png`
+
+Show the template catalog with various OS options visible.
+====
+
+Each template includes:
+
+* Pre-configured CPU and memory settings
+* Appropriate disk size for the OS
+* Boot source reference (DataSource)
+* Cloud-init or sysprep configuration (where applicable)
+
+== Step 3: Create a VM from a Template
+
+This example creates a Fedora VM. The process is similar for other operating systems.
+
+=== Select the Template
+
+. Click on the **Fedora** template tile
+. Review the template details shown in the side panel
+. Click **Customize VirtualMachine**
+
+[NOTE]
+====
+*SCREENSHOT NEEDED:* `fedora-template-details.png`
+
+Show the Fedora template selected with the details side panel visible.
+====
+
+=== Configure VM Details
+
+On the **Customize VirtualMachine** page, configure the basic VM settings:
+
+. **Name**: Enter a name for your VM (e.g., `fedora-test-vm`)
+. **Project**: Select the project (namespace) where the VM will be created
+. **Boot source**: Should show the Fedora DataSource by default
+
+[NOTE]
+====
+*SCREENSHOT NEEDED:* `vm-customize-overview.png`
+
+Show the customize VM page with the Overview tab selected.
+====
+
+=== Customize Hardware (Optional)
+
+Click the **Scheduling** tab to adjust CPU and memory:
+
+. **CPU**: Adjust the number of CPU cores (default is typically 1)
+. **Memory**: Adjust RAM allocation (default varies by template)
+
+[NOTE]
+====
+*SCREENSHOT NEEDED:* `vm-customize-scheduling.png`
+
+Show the Scheduling tab with CPU and memory options visible.
+====
+
+Click the **Disks** tab to modify storage:
+
+. Review the root disk configuration
+. Optionally adjust disk size or add additional disks
+. Verify the StorageClass is appropriate for your needs
+
+[NOTE]
+====
+*SCREENSHOT NEEDED:* `vm-customize-disks.png`
+
+Show the Disks tab with the root disk listed.
+====
+
+=== Review and Create
+
+. Review all settings across the tabs
+. Click **Create VirtualMachine**
+. Optionally check **Start this VirtualMachine after creation** to boot immediately
+
+[NOTE]
+====
+*SCREENSHOT NEEDED:* `vm-create-button.png`
+
+Show the bottom of the customize page with the Create button and start checkbox.
+====
+
+== Step 4: Monitor VM Creation
+
+After clicking Create, you are redirected to the VM details page.
+
+=== Track Provisioning Progress
+
+The VM goes through several phases during creation:
+
+. **Provisioning** - The disk is being cloned from the boot source
+. **Starting** - The VM is booting (if start was selected)
+. **Running** - The VM is fully operational
+
+[NOTE]
+====
+*SCREENSHOT NEEDED:* `vm-provisioning-status.png`
+
+Show the VM details page during provisioning with status indicators.
+====
+
+Monitor the **Events** tab to see detailed provisioning steps:
+
+[source,bash,role=execute]
+----
+# Alternatively, watch events from CLI
+oc get events -n <your-namespace> --field-selector involvedObject.name=<vm-name> -w
+----
+
+=== Verify VM is Running
+
+Once provisioning completes, the status changes to **Running**.
+
+[NOTE]
+====
+*SCREENSHOT NEEDED:* `vm-running-status.png`
+
+Show the VM details page with Running status.
+====
+
+== Step 5: Access the VM Console
+
+The web console provides direct access to the VM's graphical console.
+
+=== Open the Console
+
+. On the VM details page, click the **Console** tab
+. The VNC console loads directly in the browser
+
+[NOTE]
+====
+*SCREENSHOT NEEDED:* `vm-console-tab.png`
+
+Show the Console tab with VNC console displaying the VM desktop/login.
+====
+
+=== Console Options
+
+The console toolbar provides several options:
+
+* **Send key** - Send special key combinations (Ctrl+Alt+Del, etc.)
+* **Disconnect** - Close the console connection
+* **Open in new window** - Pop out the console to a separate window
+
+TIP: For better performance, consider using SSH access for Linux VMs or RDP for Windows VMs instead of the web console for regular work.
+
+=== Guest Login
+
+For Fedora and other cloud images, the default credentials depend on cloud-init configuration:
+
+* If no cloud-init user data was provided, you may need to set up a user
+* Check the template documentation for default credentials
+* Consider customizing cloud-init in the template for automated user setup
+
+== Step 6: Basic VM Operations
+
+The web console provides easy access to common VM operations.
+
+=== VM Actions Menu
+
+From the VM details page or the VirtualMachines list, access the actions menu:
+
+[NOTE]
+====
+*SCREENSHOT NEEDED:* `vm-actions-menu.png`
+
+Show the Actions dropdown menu with all available options.
+====
+
+=== Stop a VM
+
+. Click **Actions** -> **Stop**
+. Confirm the action if prompted
+. The VM gracefully shuts down
+
+[source,bash,role=execute]
+----
+# CLI equivalent
+virtctl stop <vm-name>
+----
+
+=== Restart a VM
+
+. Click **Actions** -> **Restart**
+. The VM performs a graceful restart
+
+[source,bash,role=execute]
+----
+# CLI equivalent
+virtctl restart <vm-name>
+----
+
+=== Pause and Unpause
+
+Pausing a VM freezes its state without shutting down:
+
+. Click **Actions** -> **Pause**
+. The VM state is preserved in memory
+. Click **Actions** -> **Unpause** to resume
+
+NOTE: Paused VMs still consume memory resources on the node.
+
+=== Delete a VM
+
+. Click **Actions** -> **Delete**
+. Choose whether to delete associated disks (PVCs)
+. Confirm the deletion
+
+[NOTE]
+====
+*SCREENSHOT NEEDED:* `vm-delete-confirmation.png`
+
+Show the delete confirmation dialog with disk deletion option.
+====
+
+WARNING: Deleting a VM with its disks is permanent. Ensure you have backups if needed.
+
+== Step 7: View VM Details and Metrics
+
+The VM details page provides monitoring and configuration information.
+
+=== Overview Tab
+
+Shows key information at a glance:
+
+* VM status and conditions
+* IP addresses (when guest agent is installed)
+* CPU and memory utilization
+* Boot order and devices
+
+[NOTE]
+====
+*SCREENSHOT NEEDED:* `vm-overview-tab.png`
+
+Show the Overview tab with status, IP, and resource information.
+====
+
+=== Metrics Tab
+
+Displays real-time performance metrics:
+
+* CPU usage over time
+* Memory utilization
+* Network throughput
+* Storage I/O
+
+[NOTE]
+====
+*SCREENSHOT NEEDED:* `vm-metrics-tab.png`
+
+Show the Metrics tab with CPU and memory graphs.
+====
+
+NOTE: Full metrics require the QEMU guest agent to be installed in the VM.
+
+=== YAML Tab
+
+View and edit the VM definition directly:
+
+. Click the **YAML** tab
+. Review or modify the VirtualMachine manifest
+. Click **Save** to apply changes
+
+== Creating VMs with Quick Create
+
+For faster VM creation with defaults, use the quick create option.
+
+. From the VirtualMachines page, click **Create** -> **From template**
+. Select a template
+. Instead of **Customize VirtualMachine**, click **Quick create VirtualMachine**
+. The VM is created immediately with default settings
+
+[NOTE]
+====
+*SCREENSHOT NEEDED:* `vm-quick-create.png`
+
+Show the template panel with Quick create button highlighted.
+====
+
+This is useful for:
+
+* Testing and development environments
+* When default template settings are acceptable
+* Rapid prototyping
+
+== Summary
+
+You have learned how to:
+
+* Navigate to the Virtualization section in the web console
+* Browse and select VM templates
+* Create a VM with customized settings
+* Monitor VM provisioning progress
+* Access the VM console through the web browser
+* Perform basic VM operations (stop, start, restart, delete)
+* View VM details and metrics
+
+== Next Steps
+
+* xref:virtctl-basics.adoc[Learn virtctl CLI] - Command-line VM management
+* xref:vm-configuration:cloud-init-ip-configuration.adoc[Configure cloud-init] - Automate VM configuration
+* xref:vm-configuration:remote-access-linux-vms.adoc[Set up SSH access] - Connect to Linux VMs via SSH
+
+== See Also
+
+* link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/virtualization/creating-a-virtual-machine[Creating a Virtual Machine - Official Documentation,window=_blank]
+* link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/virtualization/managing-vms[Managing Virtual Machines - Official Documentation,window=_blank]
