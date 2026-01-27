@@ -5,74 +5,26 @@
 
 This tutorial demonstrates how to install and configure the OpenShift Virtualization operator, which enables you to run virtual machines alongside container workloads on your OpenShift cluster. OpenShift Virtualization is based on the upstream KubeVirt project and provides enterprise-grade virtualization capabilities.
 
+* <<Installing via Web Console>>
+* <<Installing via Command Line>>
+
 == Prerequisites
 
-* **OpenShift 4.18+** installed and running
+* **OpenShift 4.18+** installed and running on a supported platform
 * **Cluster admin access**: Required to install operators and configure cluster resources
-* **Supported platform**: One of the following:
-** On-premise bare metal servers
-** Amazon Web Services (AWS) bare metal instances
-** IBM Cloud Bare Metal Servers
-** IBM Z or IBM LinuxONE (s390x) in LPAR mode
 
 Versions tested:
 ----
 OpenShift 4.18, 4.19, 4.20
 ----
 
-== Hardware Requirements
+== Hardware and Software Requirements
 
-Before installing OpenShift Virtualization, verify your cluster meets the following requirements:
+Before installing OpenShift Virtualization, ensure your cluster meets the hardware, operating system, storage, and network requirements.
 
-=== CPU Requirements
+For detailed requirements including CPU specifications, supported platforms, storage considerations, and resource overhead, see link:https://docs.redhat.com/en/documentation/openshift_container_platform/latest/html/virtualization/installing#virt-preparing-cluster-for-virt_preparing-cluster-for-virt[Preparing your cluster for OpenShift Virtualization,window=_blank].
 
-* Intel 64 or AMD64 CPU extensions (x86-64-v2)
-* Intel VT or AMD-V hardware virtualization extensions enabled
-* NX (no execute) flag enabled
-* CPU must be supported by Red Hat Enterprise Linux 9
-
-Verify virtualization support on worker nodes:
-
-[source,bash,role=execute]
-----
-# Check if virtualization extensions are enabled
-oc debug node/<worker-node-name> -- chroot /host grep -E 'vmx|svm' /proc/cpuinfo | head -1
-----
-
-Expected output should show `vmx` (Intel) or `svm` (AMD).
-
-=== Operating System Requirements
-
-* Red Hat Enterprise Linux CoreOS (RHCOS) installed on worker nodes
-* Worker nodes must not have any other hypervisor software installed
-
-=== Storage Requirements
-
-* At least one StorageClass configured in the cluster
-* A default StorageClass is recommended for automatic provisioning
-* For live migration support, storage must support ReadWriteMany (RWX) access mode
-* Block volume mode is recommended for better performance
-
-Check available storage classes:
-
-[source,bash,role=execute]
-----
-oc get storageclass
-----
-
-=== Network Requirements
-
-* Cluster networking must be functional
-* For live migration, a dedicated Multus network is recommended
-* Sufficient network bandwidth for VM traffic and migrations
-
-=== Resource Overhead
-
-Account for the following resource overhead when planning your cluster:
-
-* **Memory**: Approximately 2179 MiB across all infrastructure nodes for OpenShift Virtualization services
-* **CPU**: 4 additional cores distributed across infrastructure nodes, plus 2 cores per worker node hosting VMs
-* **Storage**: Approximately 10 GiB per node for OpenShift Virtualization components
+TIP: For storage configuration, see xref:default-storage-class.adoc[] after completing the operator installation.
 
 == Installing via Web Console
 
@@ -82,33 +34,54 @@ The web console provides a guided installation experience for OpenShift Virtuali
 
 . Log in to the OpenShift web console as a user with `cluster-admin` privileges
 . Navigate to **Operators** -> **OperatorHub**
++
+image::install-1-software-catalog.png[OperatorHub in the OpenShift web console]
+
 . In the **Filter by keyword** field, type `Virtualization`
++
+image::install-2-find-openshift-virtualization.png[Filtering for OpenShift Virtualization in OperatorHub]
 
 === Step 2: Install the Operator
 
 . Select the **OpenShift Virtualization** tile with the **Red Hat** source label
 . Review the operator information and click **Install**
-. On the Install Operator page, configure the following:
-** **Update Channel**: Select `stable` to ensure compatibility with your OpenShift version
-** **Installed Namespace**: Keep the default `openshift-cnv` (automatically created)
-** **Approval Strategy**: Select `Automatic` (recommended) for automatic updates
++
+image::install-3-click-install.png[OpenShift Virtualization operator details with Install button]
+
+. On the Install Operator page, keep the default settings and click **Install**
++
+image::install-4-let-default-click-install.png[Install Operator page with default configuration]
 
 IMPORTANT: While Manual approval is available, it is not recommended due to the risk of running unsupported version combinations. Only select Manual if you fully understand the implications.
 
 [start=4]
-. Click **Install** and wait for the operator to install
+. Wait for the operator to install
++
+image::install-5-wait-for-install-ready.png[Operator installation in progress]
 
 === Step 3: Create HyperConverged Resource
 
 . When the operator installation completes, click **Create HyperConverged**
-. Optionally configure node placement for infrastructure and workload components
++
+image::install-6-create-hyperconverged.png[Create HyperConverged button after operator installation]
+
+. Keep the default configuration and scroll to the bottom
++
+image::install-7-let-default-roll-to-the-bottom.png[HyperConverged configuration with default settings]
+
 . Click **Create** to deploy OpenShift Virtualization
++
+image::install-8-click-create.png[Create button for HyperConverged resource]
 
 === Step 4: Verify Installation
 
-. Navigate to **Workloads** -> **Pods**
-. Select the `openshift-cnv` namespace from the project dropdown
-. Monitor the pods until all reach the `Running` state
+Wait for all conditions to report success. The HyperConverged resource status shows the deployment progress.
+
+image::install-9-wait-for-conditions.png[HyperConverged conditions showing successful deployment]
+
+Once complete, the operator appears as installed in the Operators list.
+
+image::install-10-installed-operator.png[OpenShift Virtualization operator successfully installed]
 
 == Installing via Command Line
 
@@ -162,8 +135,8 @@ oc get csv -n openshift-cnv -w
 Expected output when installation is complete:
 
 ----
-NAME                                      DISPLAY                    VERSION   REPLACES   PHASE
-kubevirt-hyperconverged-operator.v4.18.0  OpenShift Virtualization   4.18.0               Succeeded
+NAME                                       DISPLAY                    VERSION   REPLACES                                   PHASE
+kubevirt-hyperconverged-operator.v4.20.3   OpenShift Virtualization   4.20.3    kubevirt-hyperconverged-operator.v4.20.1   Succeeded
 ----
 
 Press `Ctrl+C` to stop watching once you see `Succeeded`.
@@ -184,280 +157,108 @@ spec:
 EOF
 ----
 
-NOTE: The minimal HyperConverged spec above uses all default settings. See the Configuration Options section below for customization options.
+NOTE: The minimal HyperConverged spec above uses all default settings. For advanced configuration options, see the https://docs.openshift.com/container-platform/latest/virt/install/installing-virt.html#virt-customizing-storage-profile_installing-virt[official documentation,window=_blank].
 
-=== Step 4: Monitor Deployment Progress
+=== Step 4: Wait for Installation to Complete
 
-Watch the deployment progress:
+Wait for the HyperConverged resource to become available:
 
 [source,bash,role=execute]
 ----
-# Monitor pods in the openshift-cnv namespace
+oc wait hyperconverged kubevirt-hyperconverged -n openshift-cnv --for=condition=Available --timeout=15m
+----
+
+The installation typically takes 5-10 minutes.
+
+=== Step 5: Verify Installation
+
+Verify all conditions are healthy:
+
+[source,bash,role=execute]
+----
+oc get hyperconverged kubevirt-hyperconverged -n openshift-cnv -o jsonpath='{range .status.conditions[*]}{.type}: {.status}{"\n"}{end}'
+----
+
+Expected output when installation is complete:
+
+----
+ReconcileComplete: True
+Available: True
+Progressing: False
+Degraded: False
+Upgradeable: True
+----
+
+== Uninstalling OpenShift Virtualization
+
+If you need to remove OpenShift Virtualization from your cluster, follow these steps in order. The uninstallation process takes several minutes as it gracefully terminates all virtualization components.
+
+IMPORTANT: Deleting only the operator subscription does not remove the deployed resources. You must delete the HyperConverged resource first to properly clean up all components.
+
+=== Step 1: Delete All Virtual Machines
+
+Before uninstalling, ensure all VMs are stopped and deleted:
+
+[source,bash,role=execute]
+----
+# List all VMs across namespaces
+oc get vm -A
+
+# Delete VMs (repeat for each namespace)
+oc delete vm --all -n <namespace>
+----
+
+WARNING: Any running VMs will be forcefully terminated during uninstallation.
+
+=== Step 2: Delete the HyperConverged Resource
+
+This step removes all OpenShift Virtualization components:
+
+[source,bash,role=execute]
+----
+oc delete hyperconverged kubevirt-hyperconverged -n openshift-cnv
+----
+
+Monitor the cleanup progress:
+
+[source,bash,role=execute]
+----
+# Watch pods being terminated (this may take 5-10 minutes)
 oc get pods -n openshift-cnv -w
 ----
 
-The installation typically takes 5-10 minutes. Wait until all pods show `Running` or `Completed` status.
+Wait until all pods are terminated before proceeding.
 
-== Verification
-
-After installation, verify that OpenShift Virtualization is functioning correctly.
-
-=== Check Operator Status
+=== Step 3: Delete the Operator Subscription and CSV
 
 [source,bash,role=execute]
 ----
-# Verify the CSV is in Succeeded phase
-oc get csv -n openshift-cnv
+# Delete the subscription
+oc delete subscription hco-operatorhub -n openshift-cnv
 
-# Check the HyperConverged resource status
-oc get hyperconverged kubevirt-hyperconverged -n openshift-cnv -o jsonpath='{.status.conditions}' | jq .
+# Delete the ClusterServiceVersion
+oc delete csv -n openshift-cnv -l operators.coreos.com/kubevirt-hyperconverged.openshift-cnv
 ----
 
-=== Verify All Pods are Running
+=== Step 4: Delete the Namespace (Optional)
+
+For a complete cleanup, delete the namespace:
 
 [source,bash,role=execute]
 ----
-# List all pods in the openshift-cnv namespace
+oc delete namespace openshift-cnv
+----
+
+=== Step 5: Verify Cleanup
+
+Confirm all resources are removed:
+
+[source,bash,role=execute]
+----
+# Should return empty or "No resources found"
 oc get pods -n openshift-cnv
-
-# Check for any pods not in Running/Completed state
-oc get pods -n openshift-cnv --field-selector=status.phase!=Running,status.phase!=Succeeded
+oc get csv -n openshift-cnv
 ----
-
-Expected state: All pods should be in `Running` or `Completed` status with no restarts.
-
-=== Verify Virtualization Components
-
-[source,bash,role=execute]
-----
-# Check virt-handler pods (one per worker node)
-oc get pods -n openshift-cnv -l kubevirt.io=virt-handler
-
-# Check virt-api deployment
-oc get deployment virt-api -n openshift-cnv
-
-# Check virt-controller deployment
-oc get deployment virt-controller -n openshift-cnv
-----
-
-=== Check Available VM Templates
-
-[source,bash,role=execute]
-----
-# List available DataSources for VM images
-oc get datasources -n openshift-virtualization-os-images
-----
-
-NOTE: DataSources provide pre-configured boot images for common operating systems. These require a default StorageClass to provision storage automatically.
-
-=== Verify virtctl CLI Access
-
-If you have the `virtctl` CLI installed, verify it can communicate with the cluster:
-
-[source,bash,role=execute]
-----
-virtctl version
-----
-
-== Configuration Options
-
-The HyperConverged resource supports various configuration options. Below are common customizations.
-
-=== Custom HyperConverged Configuration
-
-[source,yaml]
-----
-apiVersion: hco.kubevirt.io/v1beta1
-kind: HyperConverged
-metadata:
-  name: kubevirt-hyperconverged
-  namespace: openshift-cnv
-spec:
-  # Configure live migration settings
-  liveMigrationConfig:
-    completionTimeoutPerGiB: 800
-    parallelMigrationsPerCluster: 5
-    parallelOutboundMigrationsPerNode: 2
-    progressTimeout: 150
-  # Enable or disable specific features
-  featureGates:
-    enableCommonBootImageImport: true
-    withHostPassthroughCPU: false
-  # Configure resource requirements for infrastructure components
-  infra:
-    nodePlacement:
-      nodeSelector:
-        node-role.kubernetes.io/infra: ""
-      tolerations:
-      - key: node-role.kubernetes.io/infra
-        operator: Exists
-        effect: NoSchedule
-  # Configure workload placement
-  workloads:
-    nodePlacement:
-      nodeSelector:
-        node-role.kubernetes.io/worker: ""
-EOF
-----
-
-=== Node Placement for Infrastructure Components
-
-To run OpenShift Virtualization infrastructure components on dedicated infrastructure nodes:
-
-[source,yaml]
-----
-spec:
-  infra:
-    nodePlacement:
-      nodeSelector:
-        node-role.kubernetes.io/infra: ""
-      tolerations:
-      - key: node-role.kubernetes.io/infra
-        operator: Exists
-        effect: NoSchedule
-----
-
-=== Live Migration Network Configuration
-
-For production environments, configure a dedicated network for live migrations to avoid impacting tenant workloads:
-
-[source,yaml]
-----
-spec:
-  liveMigrationConfig:
-    network: migration-network
-    bandwidthPerMigration: 64Mi
-    completionTimeoutPerGiB: 800
-    parallelMigrationsPerCluster: 5
-    parallelOutboundMigrationsPerNode: 2
-----
-
-== Enabling Nested Virtualization
-
-Nested virtualization allows VMs to run their own hypervisor. This is useful for development and testing scenarios.
-
-NOTE: Nested virtualization is not recommended for production workloads due to performance overhead.
-
-=== Check Current Nested Virtualization Status
-
-[source,bash,role=execute]
-----
-# For Intel processors
-oc debug node/<node-name> -- chroot /host cat /sys/module/kvm_intel/parameters/nested
-
-# For AMD processors
-oc debug node/<node-name> -- chroot /host cat /sys/module/kvm_amd/parameters/nested
-----
-
-Output of `Y` or `1` indicates nested virtualization is enabled.
-
-=== Enable Nested Virtualization
-
-Nested virtualization must be enabled at the host level through a MachineConfig:
-
-[source,yaml]
-----
-oc apply -f - <<EOF
-apiVersion: machineconfiguration.openshift.io/v1
-kind: MachineConfig
-metadata:
-  labels:
-    machineconfiguration.openshift.io/role: worker
-  name: 99-worker-enable-nested-virtualization
-spec:
-  config:
-    ignition:
-      version: 3.2.0
-    storage:
-      files:
-      - contents:
-          source: data:text/plain;charset=utf-8;base64,b3B0aW9ucyBrdm1faW50ZWwgbmVzdGVkPTEKb3B0aW9ucyBrdm1fYW1kIG5lc3RlZD0xCg==
-        mode: 0644
-        path: /etc/modprobe.d/kvm-nested.conf
-EOF
-----
-
-WARNING: Applying this MachineConfig will trigger a rolling reboot of all worker nodes. Plan for maintenance window accordingly.
-
-== Troubleshooting
-
-=== Operator Installation Issues
-
-If the operator fails to install, check the following:
-
-[source,bash,role=execute]
-----
-# Check subscription status
-oc get subscription hco-operatorhub -n openshift-cnv -o yaml
-
-# Check for failed install plans
-oc get installplan -n openshift-cnv
-
-# View operator logs
-oc logs -n openshift-cnv -l name=hyperconverged-cluster-operator
-----
-
-=== HyperConverged Deployment Issues
-
-If pods are not starting or are in error states:
-
-[source,bash,role=execute]
-----
-# Check HyperConverged conditions
-oc get hyperconverged kubevirt-hyperconverged -n openshift-cnv -o jsonpath='{.status.conditions}' | jq .
-
-# Check for events in the namespace
-oc get events -n openshift-cnv --sort-by='.lastTimestamp'
-
-# Describe problematic pods
-oc describe pod <pod-name> -n openshift-cnv
-----
-
-=== Virtualization Not Available on Nodes
-
-If virtualization extensions are not detected:
-
-[source,bash,role=execute]
-----
-# Check virt-handler logs for hardware detection issues
-oc logs -n openshift-cnv -l kubevirt.io=virt-handler --tail=100
-
-# Verify hardware virtualization is enabled in BIOS/UEFI
-oc debug node/<node-name> -- chroot /host dmesg | grep -i kvm
-----
-
-Common causes:
-
-* Hardware virtualization (VT-x/AMD-V) disabled in BIOS/UEFI
-* Running on virtualized infrastructure without nested virtualization support
-* Conflicting hypervisor software installed on nodes
-
-=== Storage Issues
-
-If DataSources are not provisioning:
-
-[source,bash,role=execute]
-----
-# Check DataImportCron status
-oc get dataimportcron -n openshift-virtualization-os-images
-
-# Verify default StorageClass exists
-oc get storageclass | grep "(default)"
-
-# Check CDI (Containerized Data Importer) logs
-oc logs -n openshift-cnv -l app=containerized-data-importer --tail=100
-----
-
-== Single Node OpenShift Considerations
-
-When installing on Single Node OpenShift (SNO), be aware of the following limitations:
-
-* **No high availability**: Single point of failure for all components
-* **No live migration**: Requires multiple nodes
-* **No pod disruption budgets**: Cannot evict pods to another node
-* **Eviction strategy**: VMs should not have eviction strategy configured
-
-These limitations are acceptable for development, testing, and edge deployment scenarios.
 
 == Summary
 
@@ -467,10 +268,12 @@ You have successfully installed and configured OpenShift Virtualization. Your cl
 
 * xref:virtctl-basics.adoc[Learn virtctl basics] - Command-line tool for VM management
 * xref:default-storage-class.adoc[Configure default storage] - Set up storage for VMs
-* xref:vm-configuration:cloud-init-ip-configuration.adoc[Configure VM networking with cloud-init]
+* xref:vm-configuration:cloud-init-ip-configuration.adoc[Configure VM networking with cloud-init] - Static IP and network configuration for VMs
 
 == See Also
 
-* link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.18/html/virtualization/installing[OpenShift Virtualization Installation Documentation,window=_blank]
-* link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.18/html/virtualization/getting-started[OpenShift Virtualization Getting Started,window=_blank]
+For troubleshooting, advanced configuration options, and Single Node OpenShift considerations, refer to the official documentation:
+
+* link:https://docs.redhat.com/en/documentation/openshift_container_platform/latest/html/virtualization/installing[OpenShift Virtualization Installation Documentation,window=_blank]
+* link:https://docs.redhat.com/en/documentation/openshift_container_platform/latest/html/virtualization/getting-started[OpenShift Virtualization Getting Started,window=_blank]
 * link:https://kubevirt.io/[KubeVirt Project,window=_blank]
