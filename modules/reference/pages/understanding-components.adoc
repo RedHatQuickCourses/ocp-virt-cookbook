@@ -1,0 +1,283 @@
+= Understanding OpenShift Virtualization Components
+
+This reference document provides a comprehensive overview of all OpenShift Virtualization components, their functions, and how they work together to enable virtual machine workloads on OpenShift.
+
+== Architecture Overview
+
+The following diagram shows the relationships between OpenShift Virtualization components:
+
+[source]
+----
+                         OpenShift Virtualization Architecture
+┌─────────────────────────────────────────────────────────────────────────────────────┐
+│                              HyperConverged Operator (HCO)                          │
+│                         Deploys & Manages All Components Below                       │
+└───────────────┬─────────────────────┬─────────────────────┬────────────────────────┘
+                │                     │                     │
+                ▼                     ▼                     ▼
+┌───────────────────────┐ ┌─────────────────────┐ ┌─────────────────────────┐
+│       KubeVirt        │ │         CDI         │ │          SSP            │
+│  (Virtualization)     │ │   (Data Import)     │ │ (Templates & Labeling)  │
+└───────────┬───────────┘ └──────────┬──────────┘ └────────────┬────────────┘
+            │                        │                         │
+            ▼                        ▼                         ▼
+┌───────────────────────────────────────────────────────────────────────────────────┐
+│                                 Control Plane                                      │
+│  ┌─────────────┐  ┌──────────────┐  ┌─────────────┐  ┌──────────────────────────┐ │
+│  │  virt-api   │  │virt-controller│  │cdi-controller│  │     ssp-operator        │ │
+│  │  (REST API) │  │ (VM Lifecycle)│  │ (DV Lifecycle)│  │(Templates/Node Labels) │ │
+│  └──────┬──────┘  └───────┬───────┘  └──────┬───────┘  └──────────────────────────┘ │
+│         │                 │                 │                                       │
+│         │      ┌──────────┴─────────┐       │                                       │
+│         │      │                    │       │                                       │
+│         ▼      ▼                    ▼       ▼                                       │
+│  ┌─────────────────┐         ┌─────────────────┐                                   │
+│  │   cdi-apiserver │         │  cdi-uploadproxy │                                   │
+│  │   (Validation)  │         │  (Image Upload)  │                                   │
+│  └─────────────────┘         └─────────────────┘                                   │
+└───────────────────────────────────────────────────────────────────────────────────┘
+                                        │
+                    ┌───────────────────┼───────────────────┐
+                    ▼                   ▼                   ▼
+┌─────────────────────────────────────────────────────────────────────────────────────┐
+│                              Worker Nodes (DaemonSets)                              │
+│                                                                                     │
+│   ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐                │
+│   │   virt-handler  │    │  bridge-marker  │    │   node-labeller │                │
+│   │ (VM Management) │    │(Bridge Discovery)│    │ (CPU Features)  │                │
+│   └────────┬────────┘    └─────────────────┘    └─────────────────┘                │
+│            │                                                                        │
+└────────────┼────────────────────────────────────────────────────────────────────────┘
+             │
+             ▼
+┌─────────────────────────────────────────────────────────────────────────────────────┐
+│                               Per-VM Resources                                      │
+│                                                                                     │
+│   ┌───────────────────────────────────────────────────────────────────────────┐    │
+│   │                         virt-launcher Pod                                  │    │
+│   │  ┌─────────────────────────────────────────────────────────────────────┐  │    │
+│   │  │                        QEMU/KVM Process                              │  │    │
+│   │  │  ┌─────────────────┐  ┌─────────────────┐  ┌─────────┐  ┌────────┐  │  │    │
+│   │  │  │     vCPUs       │  │     Memory      │  │  Disks  │  │  NICs  │  │  │    │
+│   │  │  └─────────────────┘  └─────────────────┘  └────┬────┘  └────┬───┘  │  │    │
+│   │  └─────────────────────────────────────────────────┼────────────┼──────┘  │    │
+│   └────────────────────────────────────────────────────┼────────────┼─────────┘    │
+│                                                        │            │              │
+└────────────────────────────────────────────────────────┼────────────┼──────────────┘
+                                                         │            │
+                    ┌────────────────────────────────────┘            │
+                    ▼                                                 ▼
+┌─────────────────────────────────────────┐    ┌─────────────────────────────────────┐
+│              Storage                     │    │              Networking             │
+│  ┌─────────────────────────────────┐    │    │  ┌─────────────────────────────────┐│
+│  │        PVC (VM Disk)            │    │    │  │     Pod Network (default)       ││
+│  │  ┌───────────────────────────┐  │    │    │  └─────────────────────────────────┘│
+│  │  │  DataVolume (manages PVC) │  │    │    │  ┌─────────────────────────────────┐│
+│  │  └───────────────────────────┘  │    │    │  │  Secondary Networks (Multus)    ││
+│  └─────────────────────────────────┘    │    │  │  - Linux Bridge                 ││
+│  ┌─────────────────────────────────┐    │    │  │  - OVS Bridge                   ││
+│  │  DataSource (Boot Source Ref)   │    │    │  │  - SR-IOV                       ││
+│  └─────────────────────────────────┘    │    │  │  - Localnet/UDN                 ││
+│  ┌─────────────────────────────────┐    │    │  └─────────────────────────────────┘│
+│  │  StorageClass / CSI Driver      │    │    │  ┌─────────────────────────────────┐│
+│  └─────────────────────────────────┘    │    │  │  NetworkAttachmentDefinition    ││
+└─────────────────────────────────────────┘    │  └─────────────────────────────────┘│
+                                               │  ┌─────────────────────────────────┐│
+                                               │  │  kubemacpool (MAC Management)   ││
+                                               │  └─────────────────────────────────┘│
+                                               └─────────────────────────────────────┘
+----
+
+== Data Flow
+
+The following diagram shows how requests flow through the system:
+
+[source]
+----
+┌──────────────┐     ┌──────────────┐     ┌──────────────┐     ┌──────────────┐
+│   User/API   │────▶│   virt-api   │────▶│virt-controller│────▶│ virt-handler │
+│  (kubectl/   │     │              │     │              │     │  (per node)  │
+│   virtctl)   │     │              │     │              │     │              │
+└──────────────┘     └──────────────┘     └──────────────┘     └──────┬───────┘
+                                                                      │
+                                                                      ▼
+                                                               ┌──────────────┐
+                                                               │virt-launcher │
+                                                               │   (per VM)   │
+                                                               │  QEMU/KVM    │
+                                                               └──────────────┘
+----
+
+== Component Reference
+
+=== Operators
+
+[cols="1,3,1"]
+|===
+|Component |Function |Documentation
+
+|*HyperConverged Operator (HCO)*
+|Top-level operator that deploys and manages all OpenShift Virtualization components. Creates the `HyperConverged` custom resource that serves as the single configuration point.
+|https://docs.redhat.com/en/documentation/openshift_container_platform/latest/html/virtualization/installing#virt-about-hco-operator_installing-virt[HCO Documentation,window=_blank]
+
+|*KubeVirt Operator*
+|Core virtualization operator that manages the KubeVirt deployment, including virt-api, virt-controller, and virt-handler components.
+|https://kubevirt.io/user-guide/architecture/[KubeVirt Architecture,window=_blank]
+
+|*CDI Operator*
+|Containerized Data Importer operator that manages data import, upload, and cloning capabilities for VM disks.
+|https://github.com/kubevirt/containerized-data-importer[CDI Project,window=_blank]
+
+|*SSP Operator*
+|Scheduling, Scale, and Performance operator that manages common VM templates and node labeling.
+|https://github.com/kubevirt/ssp-operator[SSP Operator Project,window=_blank]
+|===
+
+=== KubeVirt Control Plane Components
+
+[cols="1,3,1"]
+|===
+|Component |Function |Documentation
+
+|*virt-api*
+|REST API server that validates and processes VM-related requests. Implements Kubernetes admission webhooks for VirtualMachine resources.
+|https://kubevirt.io/user-guide/architecture/#virt-api[virt-api Reference,window=_blank]
+
+|*virt-controller*
+|Cluster-level controller that watches VirtualMachine objects and manages VirtualMachineInstance lifecycle. Handles scheduling decisions and creates virt-launcher pods.
+|https://kubevirt.io/user-guide/architecture/#virt-controller[virt-controller Reference,window=_blank]
+
+|*virt-handler*
+|DaemonSet running on each node. Manages the lifecycle of VMs on its node, communicates with libvirt/QEMU, and handles live migration.
+|https://kubevirt.io/user-guide/architecture/#virt-handler[virt-handler Reference,window=_blank]
+
+|*virt-launcher*
+|Per-VM pod that runs the QEMU/KVM process. Each running VM has its own virt-launcher pod containing the actual virtual machine.
+|https://kubevirt.io/user-guide/architecture/#virt-launcher[virt-launcher Reference,window=_blank]
+|===
+
+=== CDI Components
+
+[cols="1,3,1"]
+|===
+|Component |Function |Documentation
+
+|*cdi-controller*
+|Manages DataVolume lifecycle, orchestrates import/upload/clone operations, and creates importer/uploader pods.
+|https://github.com/kubevirt/containerized-data-importer/blob/main/doc/design.md[CDI Design,window=_blank]
+
+|*cdi-apiserver*
+|API server for CDI that handles validation webhooks and token generation for uploads.
+|https://github.com/kubevirt/containerized-data-importer/blob/main/doc/upload.md[CDI Upload,window=_blank]
+
+|*cdi-uploadproxy*
+|Proxy service that handles disk image uploads from clients to PVCs.
+|https://github.com/kubevirt/containerized-data-importer/blob/main/doc/upload.md[CDI Upload,window=_blank]
+
+|*cdi-importer*
+|Ephemeral pod created to import disk images from HTTP, S3, or registry sources into PVCs.
+|https://github.com/kubevirt/containerized-data-importer/blob/main/doc/datavolumes.md[DataVolumes,window=_blank]
+|===
+
+=== SSP Components
+
+[cols="1,3,1"]
+|===
+|Component |Function |Documentation
+
+|*ssp-operator*
+|Manages common VM templates and the node-labeller component.
+|https://github.com/kubevirt/ssp-operator[SSP Operator,window=_blank]
+
+|*common-templates*
+|Pre-defined VirtualMachine templates for common operating systems (RHEL, Fedora, Windows, etc.).
+|https://docs.redhat.com/en/documentation/openshift_container_platform/latest/html/virtualization/virtual-machines#virt-creating-vm-from-template_virt-creating-vms-from-templates[VM Templates,window=_blank]
+
+|*node-labeller*
+|DaemonSet that detects CPU features and applies labels to nodes for VM scheduling decisions.
+|https://github.com/kubevirt/ssp-operator[SSP Operator,window=_blank]
+|===
+
+=== Networking Components
+
+[cols="1,3,1"]
+|===
+|Component |Function |Documentation
+
+|*kubemacpool*
+|Manages MAC address allocation for VM network interfaces to prevent conflicts.
+|https://github.com/k8snetworkplumbingwg/kubemacpool[kubemacpool Project,window=_blank]
+
+|*bridge-marker*
+|DaemonSet that discovers Linux bridges on nodes and creates corresponding labels.
+|https://github.com/kubevirt/bridge-marker[bridge-marker Project,window=_blank]
+
+|*Multus CNI*
+|CNI plugin that enables attaching multiple network interfaces to pods/VMs.
+|https://docs.redhat.com/en/documentation/openshift_container_platform/latest/html/networking/multiple-networks[Multiple Networks,window=_blank]
+|===
+
+=== Custom Resources (CRDs)
+
+[cols="1,3,1"]
+|===
+|Resource |Function |Documentation
+
+|*VirtualMachine (VM)*
+|Declarative definition of a VM including its configuration, disks, and network interfaces. Manages VirtualMachineInstance lifecycle.
+|https://kubevirt.io/api-reference/main/definitions.html#_v1_virtualmachine[VM API Reference,window=_blank]
+
+|*VirtualMachineInstance (VMI)*
+|Represents a running VM instance. Created automatically when a VirtualMachine is started.
+|https://kubevirt.io/api-reference/main/definitions.html#_v1_virtualmachineinstance[VMI API Reference,window=_blank]
+
+|*DataVolume (DV)*
+|Orchestrates the creation of a PVC and the import/clone/upload of disk data.
+|https://github.com/kubevirt/containerized-data-importer/blob/main/doc/datavolumes.md[DataVolume Reference,window=_blank]
+
+|*DataSource*
+|Points to a source for boot disk data (typically a DataVolume in a golden images namespace).
+|https://docs.redhat.com/en/documentation/openshift_container_platform/latest/html/virtualization/virtual-machines#virt-about-datavolumes_virt-using-preallocation-for-datavolumes[DataSource Reference,window=_blank]
+
+|*VirtualMachineSnapshot*
+|Point-in-time snapshot of a VM including its disks and configuration.
+|https://docs.redhat.com/en/documentation/openshift_container_platform/latest/html/virtualization/virtual-machines#virt-about-vm-snapshots_virt-backup-restore-snapshots[Snapshots Reference,window=_blank]
+
+|*VirtualMachineRestore*
+|Restores a VM from a VirtualMachineSnapshot.
+|https://docs.redhat.com/en/documentation/openshift_container_platform/latest/html/virtualization/virtual-machines#virt-about-vm-snapshots_virt-backup-restore-snapshots[Restore Reference,window=_blank]
+
+|*VirtualMachineInstanceMigration*
+|Triggers and tracks live migration of a running VM between nodes.
+|https://docs.redhat.com/en/documentation/openshift_container_platform/latest/html/virtualization/live-migration[Live Migration,window=_blank]
+
+|*HyperConverged*
+|Top-level configuration resource for OpenShift Virtualization deployment.
+|https://docs.redhat.com/en/documentation/openshift_container_platform/latest/html/virtualization/installing#virt-about-hco-operator_installing-virt[HyperConverged Reference,window=_blank]
+|===
+
+=== CLI Tools
+
+[cols="1,3,1"]
+|===
+|Tool |Function |Documentation
+
+|*virtctl*
+|Command-line tool for VM operations: console access, start/stop, migration, SSH, image upload.
+|https://docs.redhat.com/en/documentation/openshift_container_platform/latest/html/virtualization/getting-started#virt-using-the-cli-tools_virt-using-the-cli-tools[virtctl Reference,window=_blank]
+|===
+
+== Component Interaction Summary
+
+. *User Request*: User creates a VirtualMachine resource via `oc`, `kubectl`, `virtctl`, or the web console
+. *API Validation*: `virt-api` validates the request via admission webhooks
+. *Scheduling*: `virt-controller` watches the VM, creates a `VirtualMachineInstance`, and schedules a `virt-launcher` pod
+. *Node Execution*: `virt-handler` on the target node receives the VMI and instructs `virt-launcher` to start QEMU/KVM
+. *Storage*: CDI components handle disk provisioning if DataVolumes are used
+. *Networking*: kubemacpool assigns MAC addresses; Multus configures additional network interfaces
+
+== See Also
+
+* https://docs.redhat.com/en/documentation/openshift_container_platform/latest/html/virtualization/about[About OpenShift Virtualization,window=_blank]
+* https://kubevirt.io/user-guide/[KubeVirt User Guide,window=_blank]
+* xref:getting-started:index.adoc[Getting Started with OpenShift Virtualization]
