@@ -1,0 +1,279 @@
+= Installing and Configuring OpenShift Virtualization Operator
+:navtitle: Install OpenShift Virtualization
+
+== Overview
+
+This tutorial demonstrates how to install and configure the OpenShift Virtualization operator, which enables you to run virtual machines alongside container workloads on your OpenShift cluster. OpenShift Virtualization is based on the upstream KubeVirt project and provides enterprise-grade virtualization capabilities.
+
+* <<Installing via Web Console>>
+* <<Installing via Command Line>>
+
+== Prerequisites
+
+* **OpenShift 4.18+** installed and running on a supported platform
+* **Cluster admin access**: Required to install operators and configure cluster resources
+
+Versions tested:
+----
+OpenShift 4.18, 4.19, 4.20
+----
+
+== Hardware and Software Requirements
+
+Before installing OpenShift Virtualization, ensure your cluster meets the hardware, operating system, storage, and network requirements.
+
+For detailed requirements including CPU specifications, supported platforms, storage considerations, and resource overhead, see link:https://docs.redhat.com/en/documentation/openshift_container_platform/latest/html/virtualization/installing#virt-preparing-cluster-for-virt_preparing-cluster-for-virt[Preparing your cluster for OpenShift Virtualization,window=_blank].
+
+TIP: For storage configuration, see xref:default-storage-class.adoc[] after completing the operator installation.
+
+== Installing via Web Console
+
+The web console provides a guided installation experience for OpenShift Virtualization.
+
+=== Step 1: Access OperatorHub
+
+. Log in to the OpenShift web console as a user with `cluster-admin` privileges
+. Navigate to **Operators** -> **OperatorHub**
++
+image::install-1-software-catalog.png[OperatorHub in the OpenShift web console]
+
+. In the **Filter by keyword** field, type `Virtualization`
++
+image::install-2-find-openshift-virtualization.png[Filtering for OpenShift Virtualization in OperatorHub]
+
+=== Step 2: Install the Operator
+
+. Select the **OpenShift Virtualization** tile with the **Red Hat** source label
+. Review the operator information and click **Install**
++
+image::install-3-click-install.png[OpenShift Virtualization operator details with Install button]
+
+. On the Install Operator page, keep the default settings and click **Install**
++
+image::install-4-let-default-click-install.png[Install Operator page with default configuration]
+
+IMPORTANT: While Manual approval is available, it is not recommended due to the risk of running unsupported version combinations. Only select Manual if you fully understand the implications.
+
+[start=4]
+. Wait for the operator to install
++
+image::install-5-wait-for-install-ready.png[Operator installation in progress]
+
+=== Step 3: Create HyperConverged Resource
+
+. When the operator installation completes, click **Create HyperConverged**
++
+image::install-6-create-hyperconverged.png[Create HyperConverged button after operator installation]
+
+. Keep the default configuration and scroll to the bottom
++
+image::install-7-let-default-roll-to-the-bottom.png[HyperConverged configuration with default settings]
+
+. Click **Create** to deploy OpenShift Virtualization
++
+image::install-8-click-create.png[Create button for HyperConverged resource]
+
+=== Step 4: Verify Installation
+
+Wait for all conditions to report success. The HyperConverged resource status shows the deployment progress.
+
+image::install-9-wait-for-conditions.png[HyperConverged conditions showing successful deployment]
+
+Once complete, the operator appears as installed in the Operators list.
+
+image::install-10-installed-operator.png[OpenShift Virtualization operator successfully installed]
+
+== Installing via Command Line
+
+For automated deployments or environments without web console access, use the CLI installation method.
+
+=== Step 1: Create the Namespace, OperatorGroup, and Subscription
+
+Create a single manifest file that contains all required resources:
+
+[source,yaml]
+----
+oc apply -f - <<EOF
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: openshift-cnv
+---
+apiVersion: operators.coreos.com/v1
+kind: OperatorGroup
+metadata:
+  name: kubevirt-hyperconverged-group
+  namespace: openshift-cnv
+spec:
+  targetNamespaces:
+  - openshift-cnv
+---
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: hco-operatorhub
+  namespace: openshift-cnv
+spec:
+  source: redhat-operators
+  sourceNamespace: openshift-marketplace
+  name: kubevirt-hyperconverged
+  channel: stable
+  installPlanApproval: Automatic
+EOF
+----
+
+=== Step 2: Verify Operator Installation
+
+Wait for the operator to install and verify its status:
+
+[source,bash,role=execute]
+----
+# Watch the CSV status until it shows Succeeded
+oc get csv -n openshift-cnv -w
+----
+
+Expected output when installation is complete:
+
+----
+NAME                                       DISPLAY                    VERSION   REPLACES                                   PHASE
+kubevirt-hyperconverged-operator.v4.20.3   OpenShift Virtualization   4.20.3    kubevirt-hyperconverged-operator.v4.20.1   Succeeded
+----
+
+Press `Ctrl+C` to stop watching once you see `Succeeded`.
+
+=== Step 3: Create the HyperConverged Resource
+
+Deploy the HyperConverged custom resource to complete the installation:
+
+[source,yaml]
+----
+oc apply -f - <<EOF
+apiVersion: hco.kubevirt.io/v1beta1
+kind: HyperConverged
+metadata:
+  name: kubevirt-hyperconverged
+  namespace: openshift-cnv
+spec:
+EOF
+----
+
+NOTE: The minimal HyperConverged spec above uses all default settings. For advanced configuration options, see the https://docs.openshift.com/container-platform/latest/virt/install/installing-virt.html#virt-customizing-storage-profile_installing-virt[official documentation,window=_blank].
+
+=== Step 4: Wait for Installation to Complete
+
+Wait for the HyperConverged resource to become available:
+
+[source,bash,role=execute]
+----
+oc wait hyperconverged kubevirt-hyperconverged -n openshift-cnv --for=condition=Available --timeout=15m
+----
+
+The installation typically takes 5-10 minutes.
+
+=== Step 5: Verify Installation
+
+Verify all conditions are healthy:
+
+[source,bash,role=execute]
+----
+oc get hyperconverged kubevirt-hyperconverged -n openshift-cnv -o jsonpath='{range .status.conditions[*]}{.type}: {.status}{"\n"}{end}'
+----
+
+Expected output when installation is complete:
+
+----
+ReconcileComplete: True
+Available: True
+Progressing: False
+Degraded: False
+Upgradeable: True
+----
+
+== Uninstalling OpenShift Virtualization
+
+If you need to remove OpenShift Virtualization from your cluster, follow these steps in order. The uninstallation process takes several minutes as it gracefully terminates all virtualization components.
+
+IMPORTANT: Deleting only the operator subscription does not remove the deployed resources. You must delete the HyperConverged resource first to properly clean up all components.
+
+=== Step 1: Delete All Virtual Machines
+
+Before uninstalling, ensure all VMs are stopped and deleted:
+
+[source,bash,role=execute]
+----
+# List all VMs across namespaces
+oc get vm -A
+
+# Delete VMs (repeat for each namespace)
+oc delete vm --all -n <namespace>
+----
+
+WARNING: Any running VMs will be forcefully terminated during uninstallation.
+
+=== Step 2: Delete the HyperConverged Resource
+
+This step removes all OpenShift Virtualization components:
+
+[source,bash,role=execute]
+----
+oc delete hyperconverged kubevirt-hyperconverged -n openshift-cnv
+----
+
+Monitor the cleanup progress:
+
+[source,bash,role=execute]
+----
+# Watch pods being terminated (this may take 5-10 minutes)
+oc get pods -n openshift-cnv -w
+----
+
+Wait until all pods are terminated before proceeding.
+
+=== Step 3: Delete the Operator Subscription and CSV
+
+[source,bash,role=execute]
+----
+# Delete the subscription
+oc delete subscription hco-operatorhub -n openshift-cnv
+
+# Delete the ClusterServiceVersion
+oc delete csv -n openshift-cnv -l operators.coreos.com/kubevirt-hyperconverged.openshift-cnv
+----
+
+=== Step 4: Delete the Namespace (Optional)
+
+For a complete cleanup, delete the namespace:
+
+[source,bash,role=execute]
+----
+oc delete namespace openshift-cnv
+----
+
+=== Step 5: Verify Cleanup
+
+Confirm all resources are removed:
+
+[source,bash,role=execute]
+----
+# Should return empty or "No resources found"
+oc get pods -n openshift-cnv
+oc get csv -n openshift-cnv
+----
+
+== Summary
+
+You have successfully installed and configured OpenShift Virtualization. Your cluster can now run virtual machines alongside container workloads.
+
+== Next Steps
+
+* xref:virtctl-basics.adoc[Learn virtctl basics] - Command-line tool for VM management
+* xref:default-storage-class.adoc[Configure default storage] - Set up storage for VMs
+* xref:vm-configuration:cloud-init-ip-configuration.adoc[Configure VM networking with cloud-init] - Static IP and network configuration for VMs
+
+== See Also
+
+For troubleshooting, advanced configuration options, and Single Node OpenShift considerations, refer to the official documentation:
+
+* link:https://docs.redhat.com/en/documentation/openshift_container_platform/latest/html/virtualization/installing[OpenShift Virtualization Installation Documentation,window=_blank]
+* link:https://docs.redhat.com/en/documentation/openshift_container_platform/latest/html/virtualization/getting-started[OpenShift Virtualization Getting Started,window=_blank]
+* link:https://kubevirt.io/[KubeVirt Project,window=_blank]
