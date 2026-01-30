@@ -1,0 +1,17 @@
+apiVersion: cdi.kubevirt.io/v1beta1
+kind: DataVolume
+metadata:
+  name: fedora-from-datasource
+  namespace: vms-prod
+spec:
+  sourceRef:
+    kind: DataSource
+    name: fedora
+    namespace: openshift-virtualization-os-images
+  storage:
+    accessModes:
+      - ReadWriteOnce
+    resources:
+      requests:
+        storage: 30Gi
+    storageClassName: lvms-vg1

@@ -11,6 +11,8 @@ Network Policies control traffic flow between pods and VMs in OpenShift.
 
 === Allow All Traffic to VMs
 
+xref:attachment$security/networkpolicy-allow-all.yaml[Download networkpolicy-allow-all.yaml]
+
 [source,yaml]
 ----
 apiVersion: networking.k8s.io/v1
@@ -35,6 +37,8 @@ spec:
 NOTE: This is permissive. Use restrictive policies in production.
 
 === Allow Traffic from Specific Namespace
+
+xref:attachment$security/networkpolicy-from-namespace.yaml[Download networkpolicy-from-namespace.yaml]
 
 [source,yaml]
 ----
@@ -61,6 +65,8 @@ spec:
 **When to use:** Isolating VMs to specific application namespaces.
 
 === Allow Specific Ports
+
+xref:attachment$security/networkpolicy-web-traffic.yaml[Download networkpolicy-web-traffic.yaml]
 
 [source,yaml]
 ----
@@ -91,6 +97,8 @@ spec:
 **When to use:** Web-facing VMs requiring restricted access.
 
 === Deny All Traffic (Default Deny)
+
+xref:attachment$security/networkpolicy-default-deny.yaml[Download networkpolicy-default-deny.yaml]
 
 [source,yaml]
 ----
@@ -160,6 +168,8 @@ RBAC controls who can perform actions on OpenShift resources.
 
 === VM Viewer Role
 
+xref:attachment$security/role-vm-viewer.yaml[Download role-vm-viewer.yaml]
+
 [source,yaml]
 ----
 apiVersion: rbac.authorization.k8s.io/v1
@@ -196,6 +206,8 @@ rules:
 * No modify permissions
 
 === VM Operator Role
+
+xref:attachment$security/role-vm-operator.yaml[Download role-vm-operator.yaml]
 
 [source,yaml]
 ----
@@ -282,6 +294,8 @@ NOTE: Very permissive. Use sparingly and only for administrators.
 
 Bind roles to users or groups:
 
+xref:attachment$security/rolebinding-vm-operators.yaml[Download rolebinding-vm-operators.yaml]
+
 [source,yaml]
 ----
 apiVersion: rbac.authorization.k8s.io/v1
@@ -305,6 +319,8 @@ roleRef:
 **Purpose:** Grants `vm-operator` role to user Alice and group vm-operators.
 
 === ClusterRole for VM Management Across Namespaces
+
+xref:attachment$security/clusterrole-vm-operator.yaml[Download clusterrole-vm-operator.yaml]
 
 [source,yaml]
 ----
@@ -424,6 +440,8 @@ volumes:
 Service accounts for VM management automation.
 
 === VM Management Service Account
+
+xref:attachment$security/serviceaccount-vm-manager.yaml[Download serviceaccount-vm-manager.yaml]
 
 [source,yaml]
 ----

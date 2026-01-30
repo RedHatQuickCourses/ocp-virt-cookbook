@@ -1,0 +1,21 @@
+apiVersion: nmstate.io/v1
+kind: NodeNetworkConfigurationPolicy
+metadata:
+  name: ovs-br-mapping
+spec:
+  nodeSelector:
+    node-role.kubernetes.io/worker: ""
+  desiredState:
+    interfaces:
+      - name: ens224
+        description: Physical interface for OVS localnet
+        type: ethernet
+        state: up
+        ipv4:
+          enabled: false
+        ipv6:
+          enabled: false
+    ovs-db:
+      external_ids:
+        ovn-bridge-mappings: "physnet1:br-ex"
+        ovn-cms-options: "enable-chassis-as-gw"
