@@ -11,6 +11,8 @@ This page provides storage-related YAML manifests for OpenShift Virtualization, 
 
 After installing the LVM operator, create an LVMCluster to configure local storage:
 
+xref:attachment$storage/lvmcluster.yaml[Download lvmcluster.yaml]
+
 [source,yaml]
 ----
 apiVersion: lvm.topolvm.io/v1alpha1
@@ -94,6 +96,8 @@ oc get pods -n openshift-storage -l app.kubernetes.io/name=topolvm-node
 
 The LVM operator automatically creates StorageClass:
 
+xref:attachment$storage/storageclass-lvms.yaml[Download storageclass-lvms.yaml]
+
 [source,yaml]
 ----
 apiVersion: storage.k8s.io/v1
@@ -137,6 +141,8 @@ oc get storageclass
 
 === Basic PVC
 
+xref:attachment$storage/pvc-basic.yaml[Download pvc-basic.yaml]
+
 [source,yaml]
 ----
 apiVersion: v1
@@ -163,6 +169,8 @@ spec:
 
 === PVC with Volume Mode Block
 
+xref:attachment$storage/pvc-block-mode.yaml[Download pvc-block-mode.yaml]
+
 [source,yaml]
 ----
 apiVersion: v1
@@ -188,6 +196,8 @@ DataVolumes are OpenShift Virtualization's preferred way to provision storage fo
 
 === DataVolume from Container Image
 
+xref:attachment$storage/datavolume-registry.yaml[Download datavolume-registry.yaml]
+
 [source,yaml]
 ----
 apiVersion: cdi.kubevirt.io/v1beta1
@@ -212,6 +222,8 @@ spec:
 
 === DataVolume from HTTP Source
 
+xref:attachment$storage/datavolume-http.yaml[Download datavolume-http.yaml]
+
 [source,yaml]
 ----
 apiVersion: cdi.kubevirt.io/v1beta1
@@ -235,6 +247,8 @@ spec:
 **Purpose:** Creates VM disk from qcow2 image via HTTP.
 
 === DataVolume from DataSource
+
+xref:attachment$storage/datavolume-datasource.yaml[Download datavolume-datasource.yaml]
 
 [source,yaml]
 ----
@@ -266,6 +280,8 @@ spec:
 * Automatically updated images
 
 === DataVolume Clone
+
+xref:attachment$storage/datavolume-clone.yaml[Download datavolume-clone.yaml]
 
 [source,yaml]
 ----

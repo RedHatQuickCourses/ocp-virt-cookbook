@@ -16,6 +16,8 @@ Create a namespace with the UDN primary network label to enable User Defined Net
 
 NOTE: The namespace must be created and labeled before any workload deployment happens and cannot be changed once created.
 
+xref:attachment$udn-primary-namespace.yaml[Download udn-primary-namespace.yaml]
+
 [source,yaml]
 ----
 oc apply -f - <<EOF
@@ -31,6 +33,8 @@ EOF
 == Step 2: Configure the UserDefinedNetwork Resource
 
 Define the primary UDN with Layer2 topology and custom subnet configuration. This resource specifies the network characteristics including IP range, IPAM lifecycle, and primary role designation to override default cluster networking for pods in the namespace.
+
+xref:attachment$udn-primary.yaml[Download udn-primary.yaml]
 
 [source,yaml]
 ----
@@ -54,6 +58,8 @@ EOF
 == Step 3: Deploy Workload with Primary UDN
 
 Create a virtual machine that utilizes the primary UDN configuration and runs a simple Python HTTP server for testing connectivity. The workload automatically receives an IP address from the 192.168.100.0/24 subnet via the UDN's IPAM and uses the UDN as its primary network interface.
+
+xref:attachment$fedora-vm-with-udn.yaml[Download fedora-vm-with-udn.yaml]
 
 [source,yaml]
 ----
@@ -137,6 +143,8 @@ EOF
 Create a Kubernetes Service to expose the VM's Python HTTP server with a LoadBalancer.
 
 NOTE: Cloud services like AWS automatically deploy a load balancer for this configuration. For bare metal deployments, consider using link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.19/html/ingress_and_load_balancing/load-balancing-with-metallb[MetalLB,window=_blank] as your load balancer.
+
+xref:attachment$fedora-vm-web-service.yaml[Download fedora-vm-web-service.yaml]
 
 [source,yaml]
 ----

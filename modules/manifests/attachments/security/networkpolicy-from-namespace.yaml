@@ -1,0 +1,16 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-from-app-namespace
+  namespace: vms-prod
+spec:
+  podSelector:
+    matchLabels:
+      kubevirt.io/domain: ""
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: app-frontend
