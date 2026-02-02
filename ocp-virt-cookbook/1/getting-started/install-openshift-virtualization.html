@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Installing and Configuring OpenShift Virtualization Operator :: OpenShift Virtualization cookbook</title>
+    <link rel="prev" href="index.html">
+    <link rel="next" href="prerequisites.html">
+    <meta name="generator" content="Antora 3.1.3">
+    <link rel="stylesheet" href="../../../_/css/site.css">
+    <script>var uiRootPath = '../../../_'</script>
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://www.redhat.com" target="_blank"><img src="../../../_/img/redhat-logo.png" height="40px" alt="Red Hat"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="../../..">OpenShift Virtualization cookbook</a>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues" target="_blank">Report Issues</a>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="ocp-virt-cookbook" data-version="1">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="../index.html">OpenShift Virtualization cookbook</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="index.html">Getting Started</a>
+<ul class="nav-list">
+  <li class="nav-item is-current-page" data-depth="2">
+    <a class="nav-link" href="install-openshift-virtualization.html">Install OpenShift Virtualization</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="prerequisites.html">Prerequisites</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="virtctl-basics.html">Virtctl Basics</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="default-storage-class.html">Storage Setup</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../storage/index.html">Storage Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/lvm-operator.html">LVM Operator Installation</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/lvm-troubleshooting.html">LVM Troubleshooting</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../networking/index.html">Networking Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/udn-primary-networks.html">UDN Primary Networks</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/localnet-secondary.html">Localnet Secondary Networks with CUDN</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/localnet-vlan.html">Localnet Secondary Networks with VLAN using NAD</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/cudn-localnet-vlan.html">Localnet VLAN with CUDN</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/linux-bridges.html">Linux Bridges</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/ovs-bridge-troubleshooting.html">Troubleshooting Localnet Networks</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../vm-configuration/index.html">Virtual Machine Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/cloud-init-ip-configuration.html">Cloud-init IP Configuration</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/cloud-init-troubleshooting.html">Cloud-init Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/internal-dns-for-vms.html">Internal DNS for VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/remote-access-linux-vms.html">Remote Access to Linux VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/remote-access-linux-troubleshooting.html">Remote Access to Linux VMs Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/remote-access-windows-vms.html">Remote Access to Windows VMs via RDP</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/custom-golden-images.html">Custom Golden Images</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/golden-images-troubleshooting.html">Golden Images Troubleshooting</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../manifests/index.html">YAML Manifests Reference</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../manifests/operators.html">Operators</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../manifests/networking.html">Networking</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../manifests/storage.html">Storage</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../manifests/vms.html">Virtual Machines</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../manifests/security.html">Security</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../api/index.html">API Guide</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../api/api_component_overview.html">API Component Overview</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../lab-env/index.html">Lab Environment</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../appendix/glossary.html">Glossary</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">OpenShift Virtualization cookbook</span>
+    <span class="version">1</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <a class="title" href="../index.html">OpenShift Virtualization cookbook</a>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">1</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">OpenShift Virtualization cookbook</a></li>
+    <li><a href="index.html">Getting Started</a></li>
+    <li><a href="install-openshift-virtualization.html">Install OpenShift Virtualization</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">Installing and Configuring OpenShift Virtualization Operator</h1>
+<div class="sect1">
+<h2 id="_overview"><a class="anchor" href="#_overview"></a>Overview</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>This tutorial demonstrates how to install and configure the OpenShift Virtualization operator, which enables you to run virtual machines alongside container workloads on your OpenShift cluster. OpenShift Virtualization is based on the upstream KubeVirt project and provides enterprise-grade virtualization capabilities.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><a href="#_installing_via_web_console">Installing via Web Console</a></p>
+</li>
+<li>
+<p><a href="#_installing_via_command_line">Installing via Command Line</a></p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_prerequisites"><a class="anchor" href="#_prerequisites"></a>Prerequisites</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p><strong>OpenShift 4.18+</strong> installed and running on a supported platform</p>
+</li>
+<li>
+<p><strong>Cluster admin access</strong>: Required to install operators and configure cluster resources</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Versions tested:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>OpenShift 4.18, 4.19, 4.20</pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_hardware_and_software_requirements"><a class="anchor" href="#_hardware_and_software_requirements"></a>Hardware and Software Requirements</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Before installing OpenShift Virtualization, ensure your cluster meets the hardware, operating system, storage, and network requirements.</p>
+</div>
+<div class="paragraph">
+<p>For detailed requirements including CPU specifications, supported platforms, storage considerations, and resource overhead, see <a href="https://docs.redhat.com/en/documentation/openshift_container_platform/latest/html/virtualization/installing#virt-preparing-cluster-for-virt_preparing-cluster-for-virt" target="_blank" rel="noopener">Preparing your cluster for OpenShift Virtualization</a>.</p>
+</div>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+For storage configuration, see <a href="default-storage-class.html" class="xref page">Configuring Default Storage Class</a> after completing the operator installation.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_installing_via_web_console"><a class="anchor" href="#_installing_via_web_console"></a>Installing via Web Console</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The web console provides a guided installation experience for OpenShift Virtualization.</p>
+</div>
+<div class="sect2">
+<h3 id="_step_1_access_operatorhub"><a class="anchor" href="#_step_1_access_operatorhub"></a>Step 1: Access OperatorHub</h3>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Log in to the OpenShift web console as a user with <code>cluster-admin</code> privileges</p>
+</li>
+<li>
+<p>Navigate to <strong>Operators</strong> &#8594; <strong>OperatorHub</strong></p>
+<div class="imageblock">
+<div class="content">
+<img src="_images/install-1-software-catalog.png" alt="OperatorHub in the OpenShift web console">
+</div>
+</div>
+</li>
+<li>
+<p>In the <strong>Filter by keyword</strong> field, type <code>Virtualization</code></p>
+<div class="imageblock">
+<div class="content">
+<img src="_images/install-2-find-openshift-virtualization.png" alt="Filtering for OpenShift Virtualization in OperatorHub">
+</div>
+</div>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_step_2_install_the_operator"><a class="anchor" href="#_step_2_install_the_operator"></a>Step 2: Install the Operator</h3>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Select the <strong>OpenShift Virtualization</strong> tile with the <strong>Red Hat</strong> source label</p>
+</li>
+<li>
+<p>Review the operator information and click <strong>Install</strong></p>
+<div class="imageblock">
+<div class="content">
+<img src="_images/install-3-click-install.png" alt="OpenShift Virtualization operator details with Install button">
+</div>
+</div>
+</li>
+<li>
+<p>On the Install Operator page, keep the default settings and click <strong>Install</strong></p>
+<div class="imageblock">
+<div class="content">
+<img src="_images/install-4-let-default-click-install.png" alt="Install Operator page with default configuration">
+</div>
+</div>
+</li>
+</ol>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-important" title="Important"></i>
+</td>
+<td class="content">
+While Manual approval is available, it is not recommended due to the risk of running unsupported version combinations. Only select Manual if you fully understand the implications.
+</td>
+</tr>
+</table>
+</div>
+<div class="olist arabic">
+<ol class="arabic" start="4">
+<li>
+<p>Wait for the operator to install</p>
+<div class="imageblock">
+<div class="content">
+<img src="_images/install-5-wait-for-install-ready.png" alt="Operator installation in progress">
+</div>
+</div>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_step_3_create_hyperconverged_resource"><a class="anchor" href="#_step_3_create_hyperconverged_resource"></a>Step 3: Create HyperConverged Resource</h3>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>When the operator installation completes, click <strong>Create HyperConverged</strong></p>
+<div class="imageblock">
+<div class="content">
+<img src="_images/install-6-create-hyperconverged.png" alt="Create HyperConverged button after operator installation">
+</div>
+</div>
+</li>
+<li>
+<p>Keep the default configuration and scroll to the bottom</p>
+<div class="imageblock">
+<div class="content">
+<img src="_images/install-7-let-default-roll-to-the-bottom.png" alt="HyperConverged configuration with default settings">
+</div>
+</div>
+</li>
+<li>
+<p>Click <strong>Create</strong> to deploy OpenShift Virtualization</p>
+<div class="imageblock">
+<div class="content">
+<img src="_images/install-8-click-create.png" alt="Create button for HyperConverged resource">
+</div>
+</div>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_step_4_verify_installation"><a class="anchor" href="#_step_4_verify_installation"></a>Step 4: Verify Installation</h3>
+<div class="paragraph">
+<p>Wait for all conditions to report success. The HyperConverged resource status shows the deployment progress.</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="_images/install-9-wait-for-conditions.png" alt="HyperConverged conditions showing successful deployment">
+</div>
+</div>
+<div class="paragraph">
+<p>Once complete, the operator appears as installed in the Operators list.</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="_images/install-10-installed-operator.png" alt="OpenShift Virtualization operator successfully installed">
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_installing_via_command_line"><a class="anchor" href="#_installing_via_command_line"></a>Installing via Command Line</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>For automated deployments or environments without web console access, use the CLI installation method.</p>
+</div>
+<div class="sect2">
+<h3 id="_step_1_create_the_namespace_operatorgroup_and_subscription"><a class="anchor" href="#_step_1_create_the_namespace_operatorgroup_and_subscription"></a>Step 1: Create the Namespace, OperatorGroup, and Subscription</h3>
+<div class="paragraph">
+<p>Create a single manifest file that contains all required resources:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">oc apply -f - &lt;&lt;EOF
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: openshift-cnv
+---
+apiVersion: operators.coreos.com/v1
+kind: OperatorGroup
+metadata:
+  name: kubevirt-hyperconverged-group
+  namespace: openshift-cnv
+spec:
+  targetNamespaces:
+  - openshift-cnv
+---
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: hco-operatorhub
+  namespace: openshift-cnv
+spec:
+  source: redhat-operators
+  sourceNamespace: openshift-marketplace
+  name: kubevirt-hyperconverged
+  channel: stable
+  installPlanApproval: Automatic
+EOF</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_step_2_verify_operator_installation"><a class="anchor" href="#_step_2_verify_operator_installation"></a>Step 2: Verify Operator Installation</h3>
+<div class="paragraph">
+<p>Wait for the operator to install and verify its status:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Watch the CSV status until it shows Succeeded
+oc get csv -n openshift-cnv -w</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Expected output when installation is complete:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>NAME                                       DISPLAY                    VERSION   REPLACES                                   PHASE
+kubevirt-hyperconverged-operator.v4.20.3   OpenShift Virtualization   4.20.3    kubevirt-hyperconverged-operator.v4.20.1   Succeeded</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Press <code>Ctrl+C</code> to stop watching once you see <code>Succeeded</code>.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_step_3_create_the_hyperconverged_resource"><a class="anchor" href="#_step_3_create_the_hyperconverged_resource"></a>Step 3: Create the HyperConverged Resource</h3>
+<div class="paragraph">
+<p>Deploy the HyperConverged custom resource to complete the installation:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">oc apply -f - &lt;&lt;EOF
+apiVersion: hco.kubevirt.io/v1beta1
+kind: HyperConverged
+metadata:
+  name: kubevirt-hyperconverged
+  namespace: openshift-cnv
+spec:
+EOF</code></pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+The minimal HyperConverged spec above uses all default settings. For advanced configuration options, see the <a href="https://docs.openshift.com/container-platform/latest/virt/install/installing-virt.html#virt-customizing-storage-profile_installing-virt" target="_blank" rel="noopener">official documentation</a>.
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_step_4_wait_for_installation_to_complete"><a class="anchor" href="#_step_4_wait_for_installation_to_complete"></a>Step 4: Wait for Installation to Complete</h3>
+<div class="paragraph">
+<p>Wait for the HyperConverged resource to become available:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc wait hyperconverged kubevirt-hyperconverged -n openshift-cnv --for=condition=Available --timeout=15m</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The installation typically takes 5-10 minutes.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_step_5_verify_installation"><a class="anchor" href="#_step_5_verify_installation"></a>Step 5: Verify Installation</h3>
+<div class="paragraph">
+<p>Verify all conditions are healthy:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get hyperconverged kubevirt-hyperconverged -n openshift-cnv -o jsonpath='{range .status.conditions[*]}{.type}: {.status}{"\n"}{end}'</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Expected output when installation is complete:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>ReconcileComplete: True
+Available: True
+Progressing: False
+Degraded: False
+Upgradeable: True</pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_uninstalling_openshift_virtualization"><a class="anchor" href="#_uninstalling_openshift_virtualization"></a>Uninstalling OpenShift Virtualization</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>If you need to remove OpenShift Virtualization from your cluster, follow these steps in order. The uninstallation process takes several minutes as it gracefully terminates all virtualization components.</p>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-important" title="Important"></i>
+</td>
+<td class="content">
+Deleting only the operator subscription does not remove the deployed resources. You must delete the HyperConverged resource first to properly clean up all components.
+</td>
+</tr>
+</table>
+</div>
+<div class="sect2">
+<h3 id="_step_1_delete_all_virtual_machines"><a class="anchor" href="#_step_1_delete_all_virtual_machines"></a>Step 1: Delete All Virtual Machines</h3>
+<div class="paragraph">
+<p>Before uninstalling, ensure all VMs are stopped and deleted:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># List all VMs across namespaces
+oc get vm -A
+
+# Delete VMs (repeat for each namespace)
+oc delete vm --all -n &lt;namespace&gt;</code></pre>
+</div>
+</div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+Any running VMs will be forcefully terminated during uninstallation.
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_step_2_delete_the_hyperconverged_resource"><a class="anchor" href="#_step_2_delete_the_hyperconverged_resource"></a>Step 2: Delete the HyperConverged Resource</h3>
+<div class="paragraph">
+<p>This step removes all OpenShift Virtualization components:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc delete hyperconverged kubevirt-hyperconverged -n openshift-cnv</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Monitor the cleanup progress:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Watch pods being terminated (this may take 5-10 minutes)
+oc get pods -n openshift-cnv -w</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Wait until all pods are terminated before proceeding.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_step_3_delete_the_operator_subscription_and_csv"><a class="anchor" href="#_step_3_delete_the_operator_subscription_and_csv"></a>Step 3: Delete the Operator Subscription and CSV</h3>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Delete the subscription
+oc delete subscription hco-operatorhub -n openshift-cnv
+
+# Delete the ClusterServiceVersion
+oc delete csv -n openshift-cnv -l operators.coreos.com/kubevirt-hyperconverged.openshift-cnv</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_step_4_delete_the_namespace_optional"><a class="anchor" href="#_step_4_delete_the_namespace_optional"></a>Step 4: Delete the Namespace (Optional)</h3>
+<div class="paragraph">
+<p>For a complete cleanup, delete the namespace:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc delete namespace openshift-cnv</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_step_5_verify_cleanup"><a class="anchor" href="#_step_5_verify_cleanup"></a>Step 5: Verify Cleanup</h3>
+<div class="paragraph">
+<p>Confirm all resources are removed:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Should return empty or "No resources found"
+oc get pods -n openshift-cnv
+oc get csv -n openshift-cnv</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_summary"><a class="anchor" href="#_summary"></a>Summary</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>You have successfully installed and configured OpenShift Virtualization. Your cluster can now run virtual machines alongside container workloads.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_next_steps"><a class="anchor" href="#_next_steps"></a>Next Steps</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p><a href="virtctl-basics.html" class="xref page">Learn virtctl basics</a> - Command-line tool for VM management</p>
+</li>
+<li>
+<p><a href="default-storage-class.html" class="xref page">Configure default storage</a> - Set up storage for VMs</p>
+</li>
+<li>
+<p><a href="../vm-configuration/cloud-init-ip-configuration.html" class="xref page">Configure VM networking with cloud-init</a> - Static IP and network configuration for VMs</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_see_also"><a class="anchor" href="#_see_also"></a>See Also</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>For troubleshooting, advanced configuration options, and Single Node OpenShift considerations, refer to the official documentation:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><a href="https://docs.redhat.com/en/documentation/openshift_container_platform/latest/html/virtualization/installing" target="_blank" rel="noopener">OpenShift Virtualization Installation Documentation</a></p>
+</li>
+<li>
+<p><a href="https://docs.redhat.com/en/documentation/openshift_container_platform/latest/html/virtualization/getting-started" target="_blank" rel="noopener">OpenShift Virtualization Getting Started</a></p>
+</li>
+<li>
+<p><a href="https://kubevirt.io/" target="_blank" rel="noopener">KubeVirt Project</a></p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<nav class="pagination">
+  <span class="prev"><a href="index.html">Getting Started</a></span>
+  <span class="next"><a href="prerequisites.html">Prerequisites</a></span>
+</nav>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <img src="../../../_/img/rhl-logo-red.png" height="40px" alt="Red Hat"  href="https://redhat.com" >
+</footer><script id="site-script" src="../../../_/js/site.js" data-ui-root-path="../../../_"></script>
+<script async src="../../../_/js/vendor/highlight.js"></script>
+  </body>
+</html>
