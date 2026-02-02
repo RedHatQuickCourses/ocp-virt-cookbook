@@ -1,0 +1,529 @@
+= Understanding VM Lifecycle States and Basic Operations
+:navtitle: VM Lifecycle States
+
+== Overview
+
+Understanding the lifecycle of virtual machines in OpenShift Virtualization is essential for effective VM management, troubleshooting, and automation. This guide explains the relationship between VirtualMachine and VirtualMachineInstance resources, the various states a VM can be in, and how to manage VMs throughout their lifecycle.
+
+Versions tested:
+----
+OpenShift 4.20
+----
+
+== Prerequisites
+
+* OpenShift 4.18+ with OpenShift Virtualization installed
+* Access to the OpenShift web console or CLI tools (`oc`, `virtctl`)
+* At least one VM created in your cluster (see xref:create-vm-web-console.adoc[])
+
+== VirtualMachine vs VirtualMachineInstance
+
+OpenShift Virtualization uses two primary resources to manage virtual machines:
+
+=== VirtualMachine (VM)
+
+The `VirtualMachine` resource is the persistent definition of your VM. Think of it as a template or specification that defines:
+
+* VM name and namespace
+* CPU and memory configuration
+* Disk and network attachments
+* Boot order and firmware settings
+* Run strategy (how the VM should behave)
+
+The VirtualMachine resource exists whether the VM is running or not.
+
+[source,bash,role=execute]
+----
+# List VirtualMachine resources
+oc get vm -n <namespace>
+----
+
+Example output:
+[source,text]
+----
+NAME            AGE   STATUS    READY
+fedora-app-vm   7d    Running   True
+test-vm         2d    Stopped   False
+----
+
+=== VirtualMachineInstance (VMI)
+
+The `VirtualMachineInstance` resource represents an actual running instance of a VM. It is created when a VM starts and deleted when the VM stops. The VMI contains:
+
+* Runtime information (IP address, node placement)
+* Current phase/state
+* Guest agent information (when installed)
+
+[source,bash,role=execute]
+----
+# List VirtualMachineInstance resources
+oc get vmi -n <namespace>
+----
+
+Example output:
+[source,text]
+----
+NAME            AGE   PHASE     IP             NODENAME     READY
+fedora-app-vm   7d    Running   10.128.1.225   worker-01    True
+----
+
+NOTE: A stopped VM has a VirtualMachine resource but no VirtualMachineInstance. When you start the VM, a VMI is created. When you stop it, the VMI is deleted but the VM resource remains.
+
+=== Relationship Diagram
+
+The following diagram shows the relationship between VM and VMI resources:
+
+[source,text]
+----
++------------------+                      +------------------------+
+|  VirtualMachine  |                      | VirtualMachineInstance |
+|  (VM)            |                      | (VMI)                  |
++------------------+                      +------------------------+
+|                  |                      |                        |
+| - Persistent     |   start VM           | - Exists only when     |
+| - Definition     | ------------------>  |   VM is running        |
+| - Always exists  |                      | - Runtime info         |
+|                  |   stop VM            | - Deleted on stop      |
+|                  | <------------------  |                        |
++------------------+                      +------------------------+
+
+Example:
+  VM: fedora-app-vm (always exists)
+       |
+       +-- VMI: fedora-app-vm (created on start, deleted on stop)
+----
+
+== VM Lifecycle States
+
+A VM transitions through several states during its lifecycle. Understanding these states helps with monitoring and troubleshooting.
+
+=== State Diagram
+
+[source,text]
+----
+                                    +----------+
+                                    | Stopped  |
+                                    | (no VMI) |
+                                    +----+-----+
+                                         |
+                                    start VM
+                                         |
+                                         v
+                                   +-----------+
+                                   | Pending   |
+                                   +-----------+
+                                         |
+                                   scheduling
+                                         |
+                                         v
+                                   +-----------+
+                                   | Scheduling|
+                                   +-----------+
+                                         |
+                                    scheduled
+                                         |
+                                         v
++----------+   unpause    +---------+   boot complete   +-----------+
+|  Paused  | <----------> | Running | <---------------- | Starting  |
++----------+    pause     +---------+                   +-----------+
+                               |
+                          stop VM
+                               |
+                               v
+                         +-----------+
+                         | Stopping  |
+                         +-----------+
+                               |
+                          shutdown
+                               |
+                               v
+                         +-------------+
+                         | Terminating |
+                         +-------------+
+                               |
+                           cleanup
+                               |
+                               v
+                          +----------+
+                          | Stopped  |
+                          | (no VMI) |
+                          +----------+
+----
+
+=== State Descriptions
+
+[cols="1,3,2",options="header"]
+|===
+|State |Description |VMI Exists?
+
+|Stopped
+|VM is defined but not running. No compute resources consumed.
+|No
+
+|Pending
+|VMI created, waiting for prerequisites (storage, network).
+|Yes
+
+|Scheduling
+|Kubernetes scheduler is finding a suitable node.
+|Yes
+
+|Starting
+|VM is booting on the assigned node.
+|Yes
+
+|Running
+|VM is fully operational and accepting connections.
+|Yes
+
+|Paused
+|VM execution is frozen. State preserved in memory.
+|Yes
+
+|Stopping
+|Graceful shutdown in progress.
+|Yes
+
+|Terminating
+|Final cleanup of VMI resources.
+|Yes (briefly)
+|===
+
+== Managing VM Lifecycle
+
+=== Starting VMs
+
+To start a stopped VM:
+
+**Web Console:**
+
+. Navigate to **Virtualization** -> **VirtualMachines**
+. Find your VM in the list
+. Click the VM name to open details, then click **Actions** -> **Start**
+. Or click the kebab menu (three dots) and select **Start**
+
+**CLI:**
+
+[source,bash,role=execute]
+----
+virtctl start <vm-name> -n <namespace>
+----
+
+**Verify the VM started:**
+
+[source,bash,role=execute]
+----
+# Check VM status
+oc get vm <vm-name> -n <namespace>
+
+# Check VMI was created
+oc get vmi <vm-name> -n <namespace>
+----
+
+Expected output shows STATUS as `Running` and a VMI resource exists.
+
+=== Stopping VMs
+
+Stopping a VM performs a graceful shutdown and deletes the VMI.
+
+**Web Console:**
+
+. Navigate to your VM's details page
+. Click **Actions** -> **Stop**
+
+**CLI (graceful stop):**
+
+[source,bash,role=execute]
+----
+virtctl stop <vm-name> -n <namespace>
+----
+
+**CLI (force stop):**
+
+Use force stop when a VM is unresponsive:
+
+[source,bash,role=execute]
+----
+virtctl stop <vm-name> -n <namespace> --force
+----
+
+WARNING: Force stop is equivalent to pulling the power cord. Use only when graceful shutdown fails.
+
+**Verify the VM stopped:**
+
+[source,bash,role=execute]
+----
+# VM should show Stopped status
+oc get vm <vm-name> -n <namespace>
+
+# VMI should no longer exist
+oc get vmi <vm-name> -n <namespace>
+----
+
+=== Pausing and Resuming VMs
+
+Pausing freezes VM execution while keeping its state in memory. This is useful for:
+
+* Temporarily freeing CPU resources
+* Taking consistent snapshots
+* Debugging or inspection
+
+IMPORTANT: Paused VMs still consume memory on the node. Only CPU execution is suspended.
+
+**Web Console:**
+
+. Navigate to your VM's details page
+. Click **Actions** -> **Pause**
+. To resume: **Actions** -> **Unpause**
+
+**CLI:**
+
+[source,bash,role=execute]
+----
+# Pause a VM
+virtctl pause vm <vm-name> -n <namespace>
+
+# Unpause a VM
+virtctl unpause vm <vm-name> -n <namespace>
+----
+
+**Verify paused state:**
+
+[source,bash,role=execute]
+----
+oc get vm <vm-name> -n <namespace>
+----
+
+The STATUS column shows `Paused`.
+
+=== Restarting VMs
+
+Restart performs a stop followed by a start. Use this when:
+
+* Applying configuration changes that require a reboot
+* Recovering from guest OS issues
+* Refreshing VM state
+
+**Web Console:**
+
+. Navigate to your VM's details page
+. Click **Actions** -> **Restart**
+
+**CLI:**
+
+[source,bash,role=execute]
+----
+virtctl restart <vm-name> -n <namespace>
+----
+
+NOTE: Restart waits for graceful shutdown before starting. If the guest OS is unresponsive, the restart may take longer or require a force stop first.
+
+=== Deleting VMs
+
+When deleting a VM, you can choose whether to also delete associated storage (PVCs/DataVolumes).
+
+**Web Console:**
+
+. Navigate to your VM's details page
+. Click **Actions** -> **Delete**
+. In the confirmation dialog, choose whether to delete disks
+. Click **Delete**
+
+**CLI (delete VM, keep disks):**
+
+[source,bash,role=execute]
+----
+oc delete vm <vm-name> -n <namespace>
+----
+
+By default, DataVolumes owned by the VM are deleted. To preserve them, remove the owner reference first or use the web console option.
+
+**Verify deletion:**
+
+[source,bash,role=execute]
+----
+# VM should not exist
+oc get vm <vm-name> -n <namespace>
+
+# Check if PVCs were preserved (if desired)
+oc get pvc -n <namespace>
+----
+
+WARNING: VM deletion is permanent. Ensure you have backups of important data before deleting.
+
+== Monitoring VM Status
+
+=== Checking VM and VMI Status
+
+**Detailed VM information:**
+
+[source,bash,role=execute]
+----
+oc describe vm <vm-name> -n <namespace>
+----
+
+Key sections to review:
+
+* **Status.Conditions** - Shows current state and any issues
+* **Status.PrintableStatus** - Human-readable status
+* **Status.Ready** - Whether the VM is ready for use
+
+**Detailed VMI information:**
+
+[source,bash,role=execute]
+----
+oc describe vmi <vm-name> -n <namespace>
+----
+
+Key sections:
+
+* **Status.Phase** - Current lifecycle phase
+* **Status.Interfaces** - Network information including IP addresses
+* **Status.NodeName** - Which node the VM is running on
+* **Status.GuestOSInfo** - Guest OS details (requires guest agent)
+
+=== Understanding Conditions
+
+VMs report conditions that indicate their state. Check these with:
+
+[source,bash,role=execute]
+----
+oc get vm <vm-name> -n <namespace> -o jsonpath='{.status.conditions}' | jq
+----
+
+Common conditions:
+
+[cols="1,2",options="header"]
+|===
+|Condition |Meaning
+
+|Ready
+|VM is running and accessible
+
+|Paused
+|VM execution is paused
+
+|AgentConnected
+|QEMU guest agent is communicating
+
+|Synchronized
+|VM spec is synchronized with VMI
+|===
+
+=== VM Events
+
+Events provide detailed information about what is happening with your VM:
+
+[source,bash,role=execute]
+----
+# Get events for a specific VM
+oc get events -n <namespace> --field-selector involvedObject.name=<vm-name>
+----
+
+**Watch events in real-time:**
+
+[source,bash,role=execute]
+----
+oc get events -n <namespace> -w
+----
+
+**Common events and their meanings:**
+
+[cols="1,2",options="header"]
+|===
+|Event |Description
+
+|SuccessfulCreate
+|VMI was successfully created
+
+|Started
+|VM started successfully
+
+|Stopped
+|VM stopped (graceful shutdown)
+
+|Killing
+|Force stop initiated
+
+|FailedScheduling
+|Could not find suitable node
+
+|FailedCreate
+|VMI creation failed (check for details)
+|===
+
+== Run Strategies
+
+Run strategies define how a VM behaves automatically throughout its lifecycle. The strategy is set in the VM specification and determines whether the VM starts automatically, restarts after stopping, or stays stopped.
+
+=== Available Run Strategies
+
+[cols="1,2,2",options="header"]
+|===
+|Strategy |Behavior |Use Case
+
+|`Always`
+|VM starts automatically and restarts if it stops for any reason (including guest-initiated shutdown).
+|Production workloads that must always be running.
+
+|`RerunOnFailure`
+|VM starts automatically and restarts only on failure. Guest-initiated shutdown keeps VM stopped.
+|Services that should recover from crashes but respect intentional shutdowns.
+
+|`Manual`
+|VM only starts or stops when explicitly requested via `virtctl` or web console.
+|Development/test VMs or workloads with specific scheduling needs.
+
+|`Halted`
+|VM stays stopped. Start commands are ignored.
+|Temporarily decommissioned VMs or maintenance mode.
+|===
+
+=== Setting Run Strategy
+
+**In VM YAML:**
+
+[source,yaml]
+----
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: my-vm
+spec:
+  runStrategy: Always    # or RerunOnFailure, Manual, Halted
+  template:
+    # ... VM template spec
+----
+
+**Via Web Console:**
+
+. Navigate to your VM's details page
+. Click the **YAML** tab
+. Modify the `spec.runStrategy` field
+. Click **Save**
+
+NOTE: You cannot use both `runStrategy` and the deprecated `running` field simultaneously. Use `runStrategy` for new VMs.
+
+=== Run Strategy vs Manual Commands
+
+When using `Always` or `RerunOnFailure`, be aware that:
+
+* `virtctl stop` temporarily stops the VM, but it will restart automatically
+* To keep the VM stopped, change the run strategy to `Halted` or `Manual`
+* Guest-initiated shutdowns (e.g., `shutdown -h now` inside the VM) behave differently depending on the strategy
+
+== Summary
+
+You have learned:
+
+* The difference between VirtualMachine and VirtualMachineInstance resources
+* VM lifecycle states and transitions
+* How to start, stop, pause, resume, restart, and delete VMs
+* How to monitor VM status using conditions and events
+* How run strategies control automatic VM behavior
+
+== See Also
+
+* xref:create-vm-web-console.adoc[] - Creating VMs from the web console
+* xref:virtctl-basics.adoc[] - CLI commands for VM management
+* link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/virtualization/managing-vms[Managing Virtual Machines - Official Documentation,window=_blank]
