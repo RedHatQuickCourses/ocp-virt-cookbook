@@ -1,0 +1,412 @@
+= Creating and Managing VM Snapshots
+:navtitle: VM Snapshots
+
+== Overview
+
+VM snapshots capture the state of a virtual machine at a specific point in time, including its disks and optionally its memory state. Snapshots enable quick rollback after failed updates, safe testing of changes, and creation of restore points before maintenance operations.
+
+This tutorial covers creating, managing, and restoring VM snapshots in OpenShift Virtualization.
+
+Versions tested:
+----
+OpenShift 4.20
+----
+
+== Prerequisites
+
+* OpenShift 4.18+ with OpenShift Virtualization installed
+* A running or stopped VM to snapshot
+* Storage class that supports CSI snapshots
+* `oc` and `virtctl` CLI tools installed
+
+=== Verify Snapshot Support
+
+Before creating snapshots, verify your storage supports CSI snapshots:
+
+[source,bash,role=execute]
+----
+# Check for VolumeSnapshotClass resources
+oc get volumesnapshotclass
+----
+
+Example output:
+[source,text]
+----
+NAME                     DRIVER                       DELETIONPOLICY   AGE
+csi-hostpath-snapclass   hostpath.csi.k8s.io          Delete           30d
+ocs-storagecluster-rbdplugin-snapclass   openshift-storage.rbd.csi.ceph.com   Delete   30d
+----
+
+If no VolumeSnapshotClass exists, contact your cluster administrator to configure one for your storage provider.
+
+== Understanding VM Snapshots
+
+=== Snapshot Resources
+
+OpenShift Virtualization uses two primary resources for snapshots:
+
+**VirtualMachineSnapshot**::
+The request to create a snapshot of a VM. Contains references to the source VM and snapshot configuration.
+
+**VirtualMachineSnapshotContent**::
+The actual snapshot data, automatically created when a VirtualMachineSnapshot is processed. Contains references to the underlying VolumeSnapshots.
+
+=== Online vs Offline Snapshots
+
+[cols="1,2,2",options="header"]
+|===
+|Type |Description |Requirements
+
+|Offline Snapshot
+|Snapshot taken while VM is stopped. Guaranteed consistent state.
+|VM must be stopped.
+
+|Online Snapshot
+|Snapshot taken while VM is running. Requires filesystem quiescing for consistency.
+|QEMU guest agent installed and running in the VM.
+|===
+
+TIP: For critical workloads, prefer offline snapshots or ensure the QEMU guest agent is installed for online snapshots to guarantee filesystem consistency.
+
+== Creating Snapshots
+
+=== Creating a Snapshot via Web Console
+
+. Navigate to **Virtualization** -> **VirtualMachines**
+. Click on the VM you want to snapshot
+. Go to the **Snapshots** tab
++
+TODO: SCREENSHOT HERE - VM Snapshots tab showing list of snapshots
++
+. Click **Take snapshot**
++
+TODO: SCREENSHOT HERE - Take snapshot dialog with name and description fields
++
+. Enter a name and optional description for the snapshot
+. Click **Save**
+
+The snapshot creation progress is displayed in the Snapshots tab.
+
+TODO: SCREENSHOT HERE - Snapshot creation in progress
+
+=== Creating a Snapshot via CLI
+
+Create a VirtualMachineSnapshot resource:
+
+[source,yaml]
+----
+apiVersion: snapshot.kubevirt.io/v1beta1
+kind: VirtualMachineSnapshot
+metadata:
+  name: my-vm-snapshot-01
+  namespace: my-namespace
+spec:
+  source:
+    apiGroup: kubevirt.io
+    kind: VirtualMachine
+    name: my-vm
+----
+
+Apply the snapshot:
+
+[source,bash,role=execute]
+----
+oc apply -f vm-snapshot.yaml
+----
+
+=== Verify Snapshot Creation
+
+Check the snapshot status:
+
+[source,bash,role=execute]
+----
+oc get virtualmachinesnapshot -n my-namespace
+----
+
+Example output:
+[source,text]
+----
+NAME                 SOURCEKIND       SOURCENAME   PHASE       READYTOUSE   CREATIONTIME   ERROR
+my-vm-snapshot-01    VirtualMachine   my-vm        Succeeded   true         5m
+----
+
+For detailed status:
+
+[source,bash,role=execute]
+----
+oc describe virtualmachinesnapshot my-vm-snapshot-01 -n my-namespace
+----
+
+Key status fields:
+
+* **Phase**: `InProgress`, `Succeeded`, or `Failed`
+* **ReadyToUse**: `true` when snapshot can be used for restore
+* **Error**: Contains error message if snapshot failed
+
+== Managing Snapshots
+
+=== Listing Snapshots
+
+**List all snapshots for a namespace:**
+
+[source,bash,role=execute]
+----
+oc get virtualmachinesnapshot -n my-namespace
+----
+
+**List snapshots across all namespaces:**
+
+[source,bash,role=execute]
+----
+oc get virtualmachinesnapshot -A
+----
+
+**View snapshots in web console:**
+
+. Navigate to the VM's details page
+. Click the **Snapshots** tab
+. View all snapshots with their status and creation time
+
+TODO: SCREENSHOT HERE - Snapshots tab showing list with status and creation time
+
+=== Viewing Snapshot Details
+
+[source,bash,role=execute]
+----
+oc describe virtualmachinesnapshot my-vm-snapshot-01 -n my-namespace
+----
+
+To see the underlying VolumeSnapshots:
+
+[source,bash,role=execute]
+----
+# Get the snapshot content
+oc get virtualmachinesnapshotcontent -n my-namespace
+
+# List volume snapshots
+oc get volumesnapshot -n my-namespace
+----
+
+=== Deleting Snapshots
+
+**Web Console:**
+
+. Navigate to the VM's **Snapshots** tab
+. Click the kebab menu (three dots) next to the snapshot
+. Select **Delete VirtualMachineSnapshot**
++
+TODO: SCREENSHOT HERE - Kebab menu with Delete option
++
+. Confirm deletion
++
+TODO: SCREENSHOT HERE - Delete confirmation dialog
+
+**CLI:**
+
+[source,bash,role=execute]
+----
+oc delete virtualmachinesnapshot my-vm-snapshot-01 -n my-namespace
+----
+
+This also deletes the associated VirtualMachineSnapshotContent and underlying VolumeSnapshots, reclaiming storage space.
+
+== Restoring from Snapshots
+
+Restoring a VM from a snapshot reverts the VM's disks to the state captured in the snapshot.
+
+IMPORTANT: The VM must be stopped before restoring from a snapshot.
+
+=== Restore via Web Console
+
+. Navigate to the VM's details page
+. Ensure the VM is stopped (stop it if running)
+. Go to the **Snapshots** tab
+. Click the kebab menu next to the snapshot you want to restore
+. Select **Restore VirtualMachineSnapshot**
++
+TODO: SCREENSHOT HERE - Kebab menu with Restore option
++
+. Confirm the restore operation
++
+TODO: SCREENSHOT HERE - Restore confirmation dialog
+
+=== Restore via CLI
+
+Create a VirtualMachineRestore resource:
+
+[source,yaml]
+----
+apiVersion: snapshot.kubevirt.io/v1beta1
+kind: VirtualMachineRestore
+metadata:
+  name: my-vm-restore-01
+  namespace: my-namespace
+spec:
+  target:
+    apiGroup: kubevirt.io
+    kind: VirtualMachine
+    name: my-vm
+  virtualMachineSnapshotName: my-vm-snapshot-01
+----
+
+Apply the restore:
+
+[source,bash,role=execute]
+----
+oc apply -f vm-restore.yaml
+----
+
+=== Verify Restoration
+
+Check the restore status:
+
+[source,bash,role=execute]
+----
+oc get virtualmachinerestore -n my-namespace
+----
+
+Example output:
+[source,text]
+----
+NAME                TARGETKIND       TARGETNAME   COMPLETE   RESTORETIME   ERROR
+my-vm-restore-01    VirtualMachine   my-vm        true       2m
+----
+
+For detailed status:
+
+[source,bash,role=execute]
+----
+oc describe virtualmachinerestore my-vm-restore-01 -n my-namespace
+----
+
+After restoration completes, start the VM:
+
+[source,bash,role=execute]
+----
+virtctl start my-vm -n my-namespace
+----
+
+Verify the VM is running with the restored state:
+
+[source,bash,role=execute]
+----
+oc get vm my-vm -n my-namespace
+----
+
+== Storage Considerations
+
+=== CSI Driver Requirements
+
+VM snapshots require a CSI (Container Storage Interface) driver that supports the snapshot feature. Common supported storage solutions include:
+
+* Red Hat OpenShift Data Foundation (ODF)
+* VMware vSphere CSI
+* NetApp Trident
+* Pure Storage
+* Dell CSI drivers
+
+=== VolumeSnapshotClass Configuration
+
+The VolumeSnapshotClass determines how snapshots are created and managed. Verify your storage class has a corresponding snapshot class:
+
+[source,bash,role=execute]
+----
+# Check storage class
+oc get storageclass
+
+# Check corresponding snapshot class
+oc get volumesnapshotclass
+----
+
+If snapshots fail, verify the snapshot class matches your storage provisioner.
+
+=== Storage Space
+
+Snapshots consume storage space. Consider:
+
+* **Copy-on-write**: Most CSI drivers use copy-on-write, so initial snapshot size is small
+* **Growth over time**: As the VM's disks change, snapshot storage grows
+* **Multiple snapshots**: Each snapshot consumes additional space
+* **Cleanup policy**: Regularly delete old snapshots to reclaim space
+
+[source,bash,role=execute]
+----
+# Check snapshot storage usage
+oc get volumesnapshot -n my-namespace -o wide
+----
+
+== Snapshot Workflow Example
+
+Here is a complete workflow for using snapshots before a maintenance operation:
+
+[source,bash,role=execute]
+----
+# 1. Create a pre-maintenance snapshot
+cat <<EOF | oc apply -f -
+apiVersion: snapshot.kubevirt.io/v1beta1
+kind: VirtualMachineSnapshot
+metadata:
+  name: pre-maintenance-$(date +%Y%m%d)
+  namespace: my-namespace
+spec:
+  source:
+    apiGroup: kubevirt.io
+    kind: VirtualMachine
+    name: my-vm
+EOF
+
+# 2. Wait for snapshot to be ready
+oc wait virtualmachinesnapshot pre-maintenance-$(date +%Y%m%d) \
+  -n my-namespace \
+  --for=jsonpath='{.status.readyToUse}'=true \
+  --timeout=300s
+
+# 3. Perform maintenance operations on the VM
+# ... (your maintenance tasks)
+
+# 4. If maintenance fails, stop VM and restore
+virtctl stop my-vm -n my-namespace
+
+# Wait for VM to stop
+oc wait vm my-vm -n my-namespace --for=jsonpath='{.status.printableStatus}'=Stopped --timeout=120s
+
+# Create restore
+cat <<EOF | oc apply -f -
+apiVersion: snapshot.kubevirt.io/v1beta1
+kind: VirtualMachineRestore
+metadata:
+  name: restore-$(date +%Y%m%d)
+  namespace: my-namespace
+spec:
+  target:
+    apiGroup: kubevirt.io
+    kind: VirtualMachine
+    name: my-vm
+  virtualMachineSnapshotName: pre-maintenance-$(date +%Y%m%d)
+EOF
+
+# 5. Wait for restore to complete and start VM
+oc wait virtualmachinerestore restore-$(date +%Y%m%d) \
+  -n my-namespace \
+  --for=jsonpath='{.status.complete}'=true \
+  --timeout=300s
+
+virtctl start my-vm -n my-namespace
+----
+
+== Summary
+
+You have learned:
+
+* How VM snapshots work in OpenShift Virtualization
+* The difference between online and offline snapshots
+* How to create snapshots via web console and CLI
+* How to manage and delete snapshots
+* How to restore VMs from snapshots
+* Storage considerations for snapshots
+
+== See Also
+
+* xref:getting-started:virtctl-basics.adoc[] - CLI commands for VM management
+* xref:custom-golden-images.adoc[] - Creating reusable VM images
+* link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/virtualization/managing-vms#virt-about-vm-snapshots[VM Snapshots - Official Documentation,window=_blank]
