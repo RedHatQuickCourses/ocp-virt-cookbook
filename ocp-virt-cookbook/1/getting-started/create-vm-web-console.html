@@ -1,0 +1,976 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Creating VMs from Web Console Using Templates :: OpenShift Virtualization cookbook</title>
+    <link rel="prev" href="install-openshift-virtualization.html">
+    <link rel="next" href="virtctl-basics.html">
+    <meta name="generator" content="Antora 3.1.3">
+    <link rel="stylesheet" href="../../../_/css/site.css">
+    <script>var uiRootPath = '../../../_'</script>
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://www.redhat.com" target="_blank"><img src="../../../_/img/redhat-logo.png" height="40px" alt="Red Hat"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="../../..">OpenShift Virtualization cookbook</a>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues" target="_blank">Report Issues</a>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="ocp-virt-cookbook" data-version="1">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="../index.html">OpenShift Virtualization cookbook</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="index.html">Getting Started</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="prerequisites.html">Prerequisites</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="install-openshift-virtualization.html">Install OpenShift Virtualization</a>
+  </li>
+  <li class="nav-item is-current-page" data-depth="2">
+    <a class="nav-link" href="create-vm-web-console.html">Create VM from Web Console</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="virtctl-basics.html">Virtctl Basics</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="default-storage-class.html">Storage Setup</a>
+  </li>
+  <li class="nav-item is-current-page" data-depth="2">
+    <a class="nav-link" href="create-vm-web-console.html">Create VM from Web Console</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="virtctl-basics.html">Virtctl Basics</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../storage/index.html">Storage Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/lvm-operator.html">LVM Operator Installation</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/lvm-troubleshooting.html">LVM Troubleshooting</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../networking/index.html">Networking Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/udn-primary-networks.html">UDN Primary Networks</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/localnet-secondary.html">Localnet Secondary Networks with CUDN</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/localnet-vlan.html">Localnet Secondary Networks with VLAN using NAD</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/cudn-localnet-vlan.html">Localnet VLAN with CUDN</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/linux-bridges.html">Linux Bridges</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/ovs-bridge-troubleshooting.html">Troubleshooting Localnet Networks</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../vm-configuration/index.html">Virtual Machine Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/cloud-init-ip-configuration.html">Cloud-init IP Configuration</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/cloud-init-troubleshooting.html">Cloud-init Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/internal-dns-for-vms.html">Internal DNS for VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/remote-access-linux-vms.html">Remote Access to Linux VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/remote-access-linux-troubleshooting.html">Remote Access to Linux VMs Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/remote-access-windows-vms.html">Remote Access to Windows VMs via RDP</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/custom-golden-images.html">Custom Golden Images</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/golden-images-troubleshooting.html">Golden Images Troubleshooting</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../manifests/index.html">YAML Manifests Reference</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../manifests/operators.html">Operators</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../manifests/networking.html">Networking</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../manifests/storage.html">Storage</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../manifests/vms.html">Virtual Machines</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../manifests/security.html">Security</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../api/index.html">API Guide</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../api/api_component_overview.html">API Component Overview</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../lab-env/index.html">Lab Environment</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../appendix/glossary.html">Glossary</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">OpenShift Virtualization cookbook</span>
+    <span class="version">1</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <a class="title" href="../index.html">OpenShift Virtualization cookbook</a>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">1</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">OpenShift Virtualization cookbook</a></li>
+    <li><a href="index.html">Getting Started</a></li>
+    <li><a href="create-vm-web-console.html">Create VM from Web Console</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">Creating VMs from Web Console Using Templates</h1>
+<div class="sect1">
+<h2 id="_overview"><a class="anchor" href="#_overview"></a>Overview</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>This tutorial demonstrates how to create virtual machines using the OpenShift web console and pre-built templates. The web console provides an intuitive graphical interface for VM management, making it an ideal starting point for new users.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_prerequisites"><a class="anchor" href="#_prerequisites"></a>Prerequisites</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p>OpenShift 4.18+ with OpenShift Virtualization operator installed (see <a href="https://docs.redhat.com/en/documentation/openshift_container_platform/latest/html/virtualization/installing" target="_blank" rel="noopener">Installing OpenShift Virtualization</a>)</p>
+</li>
+<li>
+<p>Access to the OpenShift web console with permissions to create VMs</p>
+</li>
+<li>
+<p>A default StorageClass configured for VM disk provisioning</p>
+</li>
+<li>
+<p>Available boot source images (DataSources) in the cluster</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Verify boot sources are available:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get datasources -n openshift-virtualization-os-images</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_1_access_the_virtualization_section"><a class="anchor" href="#_step_1_access_the_virtualization_section"></a>Step 1: Access the Virtualization Section</h2>
+<div class="sectionbody">
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Log in to the OpenShift web console</p>
+</li>
+<li>
+<p>In the left navigation menu, click <strong>Virtualization</strong></p>
+</li>
+<li>
+<p>Click <strong>VirtualMachines</strong> to see the VM management interface</p>
+</li>
+</ol>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="_images/virtualization-menu.png" alt="Virtualization menu with VirtualMachines selected">
+</div>
+</div>
+<div class="paragraph">
+<p>The VirtualMachines page displays all VMs in the selected project, along with their status and basic information.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_2_browse_available_templates"><a class="anchor" href="#_step_2_browse_available_templates"></a>Step 2: Browse Available Templates</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>OpenShift Virtualization includes pre-configured templates for common operating systems.</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>From the VirtualMachines page, click <strong>Create</strong> &#8594; <strong>From template</strong></p>
+</li>
+<li>
+<p>Browse the available templates organized by operating system:</p>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Red Hat Enterprise Linux</strong> - Various RHEL versions</p>
+</li>
+<li>
+<p><strong>Fedora</strong> - Latest Fedora releases</p>
+</li>
+<li>
+<p><strong>CentOS Stream</strong> - CentOS Stream versions</p>
+</li>
+<li>
+<p><strong>Microsoft Windows</strong> - Windows Server and Desktop versions</p>
+</li>
+</ul>
+</div>
+</li>
+</ol>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="_images/vm-templates-catalog.png" alt="Template catalog with OS options">
+</div>
+</div>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+Templates showing <strong>Source available</strong> have pre-configured boot sources ready to use. This requires a <a href="default-storage-class.html" class="xref page">default StorageClass</a> to be configured in your cluster.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Each template includes:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Pre-configured CPU and memory settings</p>
+</li>
+<li>
+<p>Appropriate disk size for the OS</p>
+</li>
+<li>
+<p>Boot source reference (DataSource)</p>
+</li>
+<li>
+<p>Cloud-init or sysprep configuration (where applicable)</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_3_create_a_vm_from_a_template"><a class="anchor" href="#_step_3_create_a_vm_from_a_template"></a>Step 3: Create a VM from a Template</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>This example creates a Fedora VM. The process is similar for other operating systems.</p>
+</div>
+<div class="sect2">
+<h3 id="_select_the_template"><a class="anchor" href="#_select_the_template"></a>Select the Template</h3>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Click on the <strong>Fedora</strong> template tile</p>
+</li>
+<li>
+<p>Review the template details shown in the side panel</p>
+</li>
+<li>
+<p>Click <strong>Customize VirtualMachine</strong></p>
+</li>
+</ol>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="_images/fedora-template-details.png" alt="Fedora template details panel">
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_configure_vm_details"><a class="anchor" href="#_configure_vm_details"></a>Configure VM Details</h3>
+<div class="paragraph">
+<p>On the <strong>Customize VirtualMachine</strong> page, configure the VM settings in the <strong>Overview</strong> tab:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p><strong>Name</strong>: Enter a name for your VM (e.g., <code>fedora-test-vm</code>)</p>
+</li>
+<li>
+<p><strong>Project</strong>: Select the project (namespace) where the VM will be created</p>
+</li>
+<li>
+<p><strong>Boot source</strong>: Should show the Fedora DataSource by default</p>
+</li>
+<li>
+<p><strong>CPU</strong>: Adjust the number of CPU cores (default is typically 1)</p>
+</li>
+<li>
+<p><strong>Memory</strong>: Adjust RAM allocation (default varies by template)</p>
+</li>
+</ol>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="_images/vm-customize-overview.png" alt="VM customization Overview tab">
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_customize_storage_optional"><a class="anchor" href="#_customize_storage_optional"></a>Customize Storage (Optional)</h3>
+<div class="paragraph">
+<p>Click the <strong>Disks</strong> tab to modify storage:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Review the root disk configuration</p>
+</li>
+<li>
+<p>Optionally adjust disk size or add additional disks</p>
+</li>
+<li>
+<p>Verify the StorageClass is appropriate for your needs</p>
+</li>
+</ol>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="_images/vm-customize-disks.png" alt="VM customization Disks tab">
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_review_and_create"><a class="anchor" href="#_review_and_create"></a>Review and Create</h3>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Review all settings across the tabs</p>
+</li>
+<li>
+<p>Click <strong>Create VirtualMachine</strong></p>
+</li>
+<li>
+<p>Optionally check <strong>Start this VirtualMachine after creation</strong> to boot immediately</p>
+</li>
+</ol>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="_images/vm-create-button.png" alt="Create VirtualMachine button">
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_4_monitor_vm_creation"><a class="anchor" href="#_step_4_monitor_vm_creation"></a>Step 4: Monitor VM Creation</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>After clicking Create, you are redirected to the VM details page.</p>
+</div>
+<div class="sect2">
+<h3 id="_track_provisioning_progress"><a class="anchor" href="#_track_provisioning_progress"></a>Track Provisioning Progress</h3>
+<div class="paragraph">
+<p>The VM goes through several phases during creation:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p><strong>Provisioning</strong> - The disk is being cloned from the boot source</p>
+</li>
+<li>
+<p><strong>Starting</strong> - The VM is booting (if start was selected)</p>
+</li>
+<li>
+<p><strong>Running</strong> - The VM is fully operational</p>
+</li>
+</ol>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="_images/vm-provisioning-status.png" alt="VM provisioning status">
+</div>
+</div>
+<div class="paragraph">
+<p>Monitor the <strong>Events</strong> tab to see detailed provisioning steps:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Alternatively, watch events from CLI
+oc get events -n &lt;your-namespace&gt; --field-selector involvedObject.name=&lt;vm-name&gt; -w</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_verify_vm_is_running"><a class="anchor" href="#_verify_vm_is_running"></a>Verify VM is Running</h3>
+<div class="paragraph">
+<p>Once provisioning completes, the status changes to <strong>Running</strong>.</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="_images/vm-running-status.png" alt="VM running status">
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_5_access_the_vm_console"><a class="anchor" href="#_step_5_access_the_vm_console"></a>Step 5: Access the VM Console</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The web console provides direct access to the VM&#8217;s graphical console.</p>
+</div>
+<div class="sect2">
+<h3 id="_open_the_console"><a class="anchor" href="#_open_the_console"></a>Open the Console</h3>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>On the VM details page, click the <strong>Console</strong> tab</p>
+</li>
+<li>
+<p>The VNC console loads directly in the browser</p>
+</li>
+</ol>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="_images/vm-console-tab.png" alt="VM console with credentials at top">
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_console_options"><a class="anchor" href="#_console_options"></a>Console Options</h3>
+<div class="paragraph">
+<p>The console toolbar provides the following options:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Send key</strong> - Send special key combinations (Ctrl+Alt+Del, etc.)</p>
+</li>
+<li>
+<p><strong>Disconnect</strong> - Close the console connection</p>
+</li>
+<li>
+<p><strong>Guest credentials</strong> - Username and password when the template provides them</p>
+</li>
+</ul>
+</div>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+For better performance, consider using <a href="../vm-configuration/remote-access-linux-vms.html" class="xref page">SSH access for Linux VMs</a> or <a href="../vm-configuration/remote-access-windows-vms.html" class="xref page">RDP for Windows VMs</a> instead of the web console for regular work.
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_guest_login"><a class="anchor" href="#_guest_login"></a>Guest Login</h3>
+<div class="paragraph">
+<p>For Fedora and other cloud images, the default credentials depend on cloud-init configuration:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>If no cloud-init user data was provided, you may need to set up a user</p>
+</li>
+<li>
+<p>Check the template documentation for default credentials</p>
+</li>
+<li>
+<p>Consider customizing cloud-init in the template for automated user setup</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_6_basic_vm_operations"><a class="anchor" href="#_step_6_basic_vm_operations"></a>Step 6: Basic VM Operations</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The web console provides easy access to common VM operations.</p>
+</div>
+<div class="sect2">
+<h3 id="_vm_actions_menu"><a class="anchor" href="#_vm_actions_menu"></a>VM Actions Menu</h3>
+<div class="paragraph">
+<p>From the VM details page or the VirtualMachines list, access the actions menu:</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="_images/vm-actions-menu.png" alt="VM Actions dropdown menu">
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_stop_a_vm"><a class="anchor" href="#_stop_a_vm"></a>Stop a VM</h3>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Click <strong>Actions</strong> &#8594; <strong>Stop</strong></p>
+</li>
+<li>
+<p>Confirm the action if prompted</p>
+</li>
+<li>
+<p>The VM gracefully shuts down</p>
+</li>
+</ol>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># CLI equivalent
+virtctl stop &lt;vm-name&gt;</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_restart_a_vm"><a class="anchor" href="#_restart_a_vm"></a>Restart a VM</h3>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Click <strong>Actions</strong> &#8594; <strong>Restart</strong></p>
+</li>
+<li>
+<p>The VM performs a graceful restart</p>
+</li>
+</ol>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># CLI equivalent
+virtctl restart &lt;vm-name&gt;</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_pause_and_unpause"><a class="anchor" href="#_pause_and_unpause"></a>Pause and Unpause</h3>
+<div class="paragraph">
+<p>Pausing a VM freezes its state without shutting down:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Click <strong>Actions</strong> &#8594; <strong>Pause</strong></p>
+</li>
+<li>
+<p>The VM state is preserved in memory</p>
+</li>
+<li>
+<p>Click <strong>Actions</strong> &#8594; <strong>Unpause</strong> to resume</p>
+</li>
+</ol>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+Paused VMs still consume memory resources on the node.
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_delete_a_vm"><a class="anchor" href="#_delete_a_vm"></a>Delete a VM</h3>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Click <strong>Actions</strong> &#8594; <strong>Delete</strong></p>
+</li>
+<li>
+<p>Choose whether to delete associated disks (PVCs)</p>
+</li>
+<li>
+<p>Confirm the deletion</p>
+</li>
+</ol>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="_images/vm-delete-confirmation.png" alt="VM delete confirmation dialog">
+</div>
+</div>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+To preserve the VM disk (DataVolume) after deletion, uncheck the <strong>Delete disk</strong> option shown in the confirmation dialog. This allows you to reuse the disk with a new VM later.
+</td>
+</tr>
+</table>
+</div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+Deleting a VM with its disks is permanent. Ensure you have backups if needed.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_7_view_vm_details_and_metrics"><a class="anchor" href="#_step_7_view_vm_details_and_metrics"></a>Step 7: View VM Details and Metrics</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The VM details page provides monitoring and configuration information.</p>
+</div>
+<div class="sect2">
+<h3 id="_overview_tab"><a class="anchor" href="#_overview_tab"></a>Overview Tab</h3>
+<div class="paragraph">
+<p>Shows key information at a glance:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>VM status and conditions</p>
+</li>
+<li>
+<p>IP addresses (when guest agent is installed)</p>
+</li>
+<li>
+<p>CPU and memory utilization</p>
+</li>
+<li>
+<p>Boot order and devices</p>
+</li>
+</ul>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="_images/vm-overview-tab.png" alt="VM Overview tab with details">
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_metrics_tab"><a class="anchor" href="#_metrics_tab"></a>Metrics Tab</h3>
+<div class="paragraph">
+<p>Displays real-time performance metrics:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>CPU usage over time</p>
+</li>
+<li>
+<p>Memory utilization</p>
+</li>
+<li>
+<p>Network throughput</p>
+</li>
+<li>
+<p>Storage I/O</p>
+</li>
+</ul>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="_images/vm-metrics-tab.png" alt="VM Metrics tab with graphs">
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+Full metrics require the QEMU guest agent to be installed in the VM.
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_yaml_tab"><a class="anchor" href="#_yaml_tab"></a>YAML Tab</h3>
+<div class="paragraph">
+<p>View and edit the VM definition directly:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Click the <strong>YAML</strong> tab</p>
+</li>
+<li>
+<p>Review or modify the VirtualMachine manifest</p>
+</li>
+<li>
+<p>Click <strong>Save</strong> to apply changes</p>
+</li>
+</ol>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="_images/vm-yaml-tab.png" alt="VM YAML tab with manifest editor">
+</div>
+</div>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+You can also download the YAML file by clicking the <strong>Download</strong> button.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_creating_vms_with_quick_create"><a class="anchor" href="#_creating_vms_with_quick_create"></a>Creating VMs with Quick Create</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>For faster VM creation with defaults, use the quick create option.</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>From the VirtualMachines page, click <strong>Create</strong> &#8594; <strong>From template</strong></p>
+</li>
+<li>
+<p>Select a template</p>
+</li>
+<li>
+<p>Instead of <strong>Customize VirtualMachine</strong>, click <strong>Quick create VirtualMachine</strong></p>
+</li>
+<li>
+<p>The VM is created immediately with default settings</p>
+</li>
+</ol>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="_images/vm-quick-create.png" alt="Quick create VirtualMachine option">
+</div>
+</div>
+<div class="paragraph">
+<p>This is useful for:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Testing and development environments</p>
+</li>
+<li>
+<p>When default template settings are acceptable</p>
+</li>
+<li>
+<p>Rapid prototyping</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_summary"><a class="anchor" href="#_summary"></a>Summary</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>You have learned how to:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Navigate to the Virtualization section in the web console</p>
+</li>
+<li>
+<p>Browse and select VM templates</p>
+</li>
+<li>
+<p>Create a VM with customized settings</p>
+</li>
+<li>
+<p>Monitor VM provisioning progress</p>
+</li>
+<li>
+<p>Access the VM console through the web browser</p>
+</li>
+<li>
+<p>Perform basic VM operations (stop, start, restart, delete)</p>
+</li>
+<li>
+<p>View VM details and metrics</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_next_steps"><a class="anchor" href="#_next_steps"></a>Next Steps</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p><a href="virtctl-basics.html" class="xref page">Learn virtctl CLI</a> - Command-line VM management</p>
+</li>
+<li>
+<p><a href="../vm-configuration/cloud-init-ip-configuration.html" class="xref page">Configure cloud-init</a> - Automate VM configuration</p>
+</li>
+<li>
+<p><a href="../vm-configuration/remote-access-linux-vms.html" class="xref page">Set up SSH access</a> - Connect to Linux VMs via SSH</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_see_also"><a class="anchor" href="#_see_also"></a>See Also</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p><a href="https://docs.redhat.com/en/documentation/openshift_container_platform/latest/html/virtualization/creating-a-virtual-machine" target="_blank" rel="noopener">Creating a Virtual Machine - Official Documentation</a></p>
+</li>
+<li>
+<p><a href="https://docs.redhat.com/en/documentation/openshift_container_platform/latest/html/virtualization/managing-vms" target="_blank" rel="noopener">Managing Virtual Machines - Official Documentation</a></p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<nav class="pagination">
+  <span class="prev"><a href="install-openshift-virtualization.html">Install OpenShift Virtualization</a></span>
+  <span class="next"><a href="virtctl-basics.html">Virtctl Basics</a></span>
+</nav>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <img src="../../../_/img/rhl-logo-red.png" height="40px" alt="Red Hat"  href="https://redhat.com" >
+</footer><script id="site-script" src="../../../_/js/site.js" data-ui-root-path="../../../_"></script>
+<script async src="../../../_/js/vendor/highlight.js"></script>
+  </body>
+</html>
