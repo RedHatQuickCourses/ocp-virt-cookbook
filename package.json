@@ -6,8 +6,8 @@
     "watch": "^0.13.0"
   },
   "scripts": {
-    "build": "antora antora-playbook.yml",
-    "watch:adoc": "watch 'pnpm dlx antora antora-playbook.yml' ./modules",
+    "build": "antora --attribute build-date=\"$(date +'%Y-%m-%d %H:%M')\" antora-playbook.yml",
+    "watch:adoc": "watch 'pnpm run build' ./modules",
     "serve": "pnpm dlx http-server build/site -c-1"
   }
 }
