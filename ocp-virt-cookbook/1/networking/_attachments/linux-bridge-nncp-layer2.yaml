@@ -1,0 +1,17 @@
+apiVersion: nmstate.io/v1
+kind: NodeNetworkConfigurationPolicy
+metadata:
+  name: lnbr0-policy
+spec:
+  desiredState:
+    interfaces:
+    - name: lnbr0
+      description: layer2-only linux bridge with ens1 as a port
+      type: linux-bridge
+      state: up
+      bridge:
+        options:
+          stp:
+            enabled: false
+        port:
+        - name: ens1

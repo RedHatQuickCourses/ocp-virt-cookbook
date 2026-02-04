@@ -143,25 +143,7 @@
   <li class="nav-item" data-depth="0">
 <ul class="nav-list">
   <li class="nav-item" data-depth="1">
-    <button class="nav-item-toggle"></button>
-    <a class="nav-link" href="../manifests/index.html">YAML Manifests Reference</a>
-<ul class="nav-list">
-  <li class="nav-item" data-depth="2">
-    <a class="nav-link" href="../manifests/operators.html">Operators</a>
-  </li>
-  <li class="nav-item" data-depth="2">
-    <a class="nav-link" href="../manifests/networking.html">Networking</a>
-  </li>
-  <li class="nav-item" data-depth="2">
-    <a class="nav-link" href="../manifests/storage.html">Storage</a>
-  </li>
-  <li class="nav-item" data-depth="2">
-    <a class="nav-link" href="../manifests/vms.html">Virtual Machines</a>
-  </li>
-  <li class="nav-item" data-depth="2">
-    <a class="nav-link" href="../manifests/security.html">Security</a>
-  </li>
-</ul>
+    <a class="nav-link" href="../manifests/index.html">Manifests</a>
   </li>
 </ul>
   </li>
@@ -301,6 +283,9 @@
 <div class="paragraph">
 <p>Create a namespace for VMs that will use the localnet secondary network with VLAN configuration.</p>
 </div>
+<div class="paragraph">
+<p><a href="_attachments/localnet-vlan-namespace.yaml" class="xref attachment">Download localnet-vlan-namespace.yaml</a></p>
+</div>
 <div class="listingblock">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">oc apply -f - &lt;&lt;EOF
@@ -318,6 +303,9 @@ EOF</code></pre>
 <div class="sectionbody">
 <div class="paragraph">
 <p>Configure the bridge mapping that connects the logical network interface name <code>localnet-vlan</code> to the <code>br-ex</code> bridge interface on worker nodes. This mapping tells OVN-Kubernetes which physical bridge interface handles localnet traffic with VLAN support, enabling VM access to VLAN-tagged external networks through the underlying physical network infrastructure.</p>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/localnet-vlan-bridge-mapping-nncp.yaml" class="xref attachment">Download localnet-vlan-bridge-mapping-nncp.yaml</a></p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -345,6 +333,9 @@ EOF</code></pre>
 <div class="sectionbody">
 <div class="paragraph">
 <p>Create a NetworkAttachmentDefinition that configures localnet topology with VLAN tagging for secondary network connectivity.</p>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/localnet-vlan-100-nad.yaml" class="xref attachment">Download localnet-vlan-100-nad.yaml</a></p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -398,6 +389,9 @@ EOF</code></pre>
 <div class="sectionbody">
 <div class="paragraph">
 <p>Create a VM that connects to both the pod network and the VLAN-tagged localnet secondary network.</p>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/fedora-vlan-vm.yaml" class="xref attachment">Download fedora-vlan-vm.yaml</a></p>
 </div>
 <div class="listingblock">
 <div class="content">

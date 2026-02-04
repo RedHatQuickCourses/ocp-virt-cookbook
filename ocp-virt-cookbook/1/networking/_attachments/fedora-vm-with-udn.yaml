@@ -1,0 +1,71 @@
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: fedora-vm-with-udn
+  namespace: udn-primary-vm-guests
+  labels:
+    app: fedora-web-vm
+    network-type: udn-primary
+spec:
+  running: true
+  dataVolumeTemplates:
+  - metadata:
+      name: fedora-udn-volume
+    spec:
+      pvc:
+        accessModes:
+        - ReadWriteOnce
+        resources:
+          requests:
+            storage: 33Gi
+      sourceRef:
+        kind: DataSource
+        name: fedora
+        namespace: openshift-virtualization-os-images
+  template:
+    metadata:
+      labels:
+        app: fedora-web-vm
+    spec:
+      domain:
+        devices:
+          disks:
+          - name: datavolumedisk
+            disk:
+              bus: virtio
+          - name: cloudinitdisk
+            disk:
+              bus: virtio
+          interfaces:
+          - name: default
+            binding:
+              name: l2bridge
+        resources:
+          requests:
+            memory: 2Gi
+            cpu: 1
+      networks:
+      - name: default
+        pod: {}
+      volumes:
+      - name: datavolumedisk
+        dataVolume:
+          name: fedora-udn-volume
+      - name: cloudinitdisk
+        cloudInitNoCloud:          
+          userData: |
+            #cloud-config
+            write_files:
+            - path: /etc/resolv.conf
+              content: |
+                nameserver 172.30.0.10      # cluster DNS
+                search udn-primary-vm-guests.svc.cluster.local svc.cluster.local
+                options ndots:5            
+            user: fedora
+            password: fedora
+            chpasswd: { expire: False }
+            packages:
+            - python3
+            runcmd:
+            - echo "<h1>Welcome to OpenShift Virtualization !!!</h1>" > /root/index.html
+            - cd /root && nohup python3 -m http.server 80 > /dev/null 2>&1 &

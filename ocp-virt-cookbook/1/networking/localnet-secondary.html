@@ -143,25 +143,7 @@
   <li class="nav-item" data-depth="0">
 <ul class="nav-list">
   <li class="nav-item" data-depth="1">
-    <button class="nav-item-toggle"></button>
-    <a class="nav-link" href="../manifests/index.html">YAML Manifests Reference</a>
-<ul class="nav-list">
-  <li class="nav-item" data-depth="2">
-    <a class="nav-link" href="../manifests/operators.html">Operators</a>
-  </li>
-  <li class="nav-item" data-depth="2">
-    <a class="nav-link" href="../manifests/networking.html">Networking</a>
-  </li>
-  <li class="nav-item" data-depth="2">
-    <a class="nav-link" href="../manifests/storage.html">Storage</a>
-  </li>
-  <li class="nav-item" data-depth="2">
-    <a class="nav-link" href="../manifests/vms.html">Virtual Machines</a>
-  </li>
-  <li class="nav-item" data-depth="2">
-    <a class="nav-link" href="../manifests/security.html">Security</a>
-  </li>
-</ul>
+    <a class="nav-link" href="../manifests/index.html">Manifests</a>
   </li>
 </ul>
   </li>
@@ -279,6 +261,9 @@
 <div class="paragraph">
 <p>Create a namespace for VMs that will use the localnet secondary network.</p>
 </div>
+<div class="paragraph">
+<p><a href="_attachments/localnet-secondary-namespace.yaml" class="xref attachment">Download localnet-secondary-namespace.yaml</a></p>
+</div>
 <div class="listingblock">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">oc apply -f - &lt;&lt;EOF
@@ -296,6 +281,9 @@ EOF</code></pre>
 <div class="sectionbody">
 <div class="paragraph">
 <p>Configure the bridge mapping that connects the logical physnet name to the <code>br-ex</code> bridge interface. This tells OVN-Kubernetes which physical interface handles localnet traffic.</p>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/localnet-bridge-mapping-nncp.yaml" class="xref attachment">Download localnet-bridge-mapping-nncp.yaml</a></p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -327,6 +315,9 @@ EOF</code></pre>
 <div class="paragraph">
 <p>Create a ClusterUserDefinedNetwork with localnet topology for secondary network connectivity to external networks.</p>
 </div>
+<div class="paragraph">
+<p><a href="_attachments/cudn-localnet.yaml" class="xref attachment">Download cudn-localnet.yaml</a></p>
+</div>
 <div class="listingblock">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">oc apply -f - &lt;&lt;EOF
@@ -357,6 +348,9 @@ EOF</code></pre>
 <div class="sectionbody">
 <div class="paragraph">
 <p>Create a VM that connects to both the pod network and the localnet secondary network for dual connectivity.</p>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/fedora-localnet-vm.yaml" class="xref attachment">Download fedora-localnet-vm.yaml</a></p>
 </div>
 <div class="listingblock">
 <div class="content">

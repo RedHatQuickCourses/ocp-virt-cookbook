@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: fedora-ssh-nodeport
+  namespace: vm-access-demo
+spec:
+  type: NodePort
+  selector:
+    kubevirt.io/domain: fedora-access-vm
+  ports:
+    - protocol: TCP
+      port: 22
+      targetPort: 22
+      nodePort: 30022

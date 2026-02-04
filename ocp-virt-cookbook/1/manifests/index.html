@@ -3,9 +3,9 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>YAML Manifests Reference :: OpenShift Virtualization cookbook</title>
+    <title>YAML Manifests Library :: OpenShift Virtualization cookbook</title>
     <link rel="prev" href="../vm-configuration/golden-images-troubleshooting.html">
-    <link rel="next" href="operators.html">
+    <link rel="next" href="../api/index.html">
     <meta name="generator" content="Antora 3.1.3">
     <link rel="stylesheet" href="../../../_/css/site.css">
     <script>var uiRootPath = '../../../_'</script>
@@ -143,25 +143,7 @@
   <li class="nav-item" data-depth="0">
 <ul class="nav-list">
   <li class="nav-item is-current-page" data-depth="1">
-    <button class="nav-item-toggle"></button>
-    <a class="nav-link" href="index.html">YAML Manifests Reference</a>
-<ul class="nav-list">
-  <li class="nav-item" data-depth="2">
-    <a class="nav-link" href="operators.html">Operators</a>
-  </li>
-  <li class="nav-item" data-depth="2">
-    <a class="nav-link" href="networking.html">Networking</a>
-  </li>
-  <li class="nav-item" data-depth="2">
-    <a class="nav-link" href="storage.html">Storage</a>
-  </li>
-  <li class="nav-item" data-depth="2">
-    <a class="nav-link" href="vms.html">Virtual Machines</a>
-  </li>
-  <li class="nav-item" data-depth="2">
-    <a class="nav-link" href="security.html">Security</a>
-  </li>
-</ul>
+    <a class="nav-link" href="index.html">Manifests</a>
   </li>
 </ul>
   </li>
@@ -221,7 +203,7 @@
 <nav class="breadcrumbs" aria-label="breadcrumbs">
   <ul>
     <li><a href="../index.html">OpenShift Virtualization cookbook</a></li>
-    <li><a href="index.html">YAML Manifests Reference</a></li>
+    <li><a href="index.html">Manifests</a></li>
   </ul>
 </nav>
 </div>
@@ -230,408 +212,417 @@
   <div class="toc-menu"></div>
 </aside>
 <article class="doc">
-<h1 class="page">YAML Manifests Reference</h1>
-<div class="sect1">
-<h2 id="_overview"><a class="anchor" href="#_overview"></a>Overview</h2>
+<h1 class="page">YAML Manifests Library</h1>
+<div id="preamble">
 <div class="sectionbody">
 <div class="paragraph">
-<p>This section provides a library of ready-to-use YAML manifests for OpenShift Virtualization. These manifests cover operators, networking, storage, virtual machines, and security configurations.</p>
-</div>
-<div class="paragraph">
-<p>All manifests are organized by category and include descriptions, use cases, and prerequisites.</p>
+<p>A quick-reference library of YAML manifests used in the cookbook tutorials, organized by category.</p>
 </div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="_manifest_categories"><a class="anchor" href="#_manifest_categories"></a>Manifest Categories</h2>
+<h2 id="_quick_navigation"><a class="anchor" href="#_quick_navigation"></a>Quick Navigation</h2>
 <div class="sectionbody">
-<div class="dlist">
-<dl>
-<dt class="hdlist1"><a href="operators.html" class="xref page">Operator Manifests</a></dt>
-<dd>
-<p>YAML manifests for deploying and configuring essential operators including OpenShift Virtualization (CNV), LVM Storage Operator, and NMState Operator.</p>
-</dd>
-<dt class="hdlist1"><a href="networking.html" class="xref page">Networking Manifests</a></dt>
-<dd>
-<p>Network configuration manifests including NADs (Network Attachment Definitions), localnet networks, VLAN configurations, Linux bridges, UDNs (User Defined Networks), and bonding.</p>
-</dd>
-<dt class="hdlist1"><a href="storage.html" class="xref page">Storage Manifests</a></dt>
-<dd>
-<p>Storage-related manifests for LVM configurations, PVCs, data volumes, hostpath provisioner, iSCSI, and NFS storage.</p>
-</dd>
-<dt class="hdlist1"><a href="vms.html" class="xref page">Virtual Machine Manifests</a></dt>
-<dd>
-<p>Complete VM manifest examples organized by OS type (Fedora, RHEL, Windows) with various cloud-init configurations and use cases.</p>
-</dd>
-<dt class="hdlist1"><a href="security.html" class="xref page">Security Manifests</a></dt>
-<dd>
-<p>Security configurations including network policies, RBAC (Role-Based Access Control), and SCCs (Security Context Constraints).</p>
-</dd>
-</dl>
-</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 25%;">
+<col style="width: 25%;">
+<col style="width: 50%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Category</th>
+<th class="tableblock halign-left valign-top">Count</th>
+<th class="tableblock halign-left valign-top">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="#_storage">Storage</a></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">7</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">LVM operator installation and configuration</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="#_networking">Networking</a></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">8</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Localnet, UDN, bridge mapping configurations</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="#_virtual_machines">Virtual Machines</a></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">14</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">VM examples from various tutorials</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="#_services">Services</a></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">3</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Kubernetes services for VM access</p></td>
+</tr>
+</tbody>
+</table>
 </div>
 </div>
 <div class="sect1">
-<h2 id="_how_to_use_these_manifests"><a class="anchor" href="#_how_to_use_these_manifests"></a>How to Use These Manifests</h2>
+<h2 id="_storage"><a class="anchor" href="#_storage"></a>Storage</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Manifests for LVM Storage Operator installation and configuration.</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 22.2222%;">
+<col style="width: 11.1111%;">
+<col style="width: 33.3333%;">
+<col style="width: 22.2222%;">
+<col style="width: 11.1112%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Name</th>
+<th class="tableblock halign-left valign-top">Kind</th>
+<th class="tableblock halign-left valign-top">Purpose</th>
+<th class="tableblock halign-left valign-top">Tutorial</th>
+<th class="tableblock halign-left valign-top">Download</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">lvm-namespace</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Namespace</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Create openshift-lvm-storage namespace</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="../storage/lvm-operator.html" class="xref page">Installing LVM Storage Operator</a></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="../storage/_attachments/lvm-namespace.yaml" class="xref attachment">YAML</a></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">lvm-operatorgroup</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">OperatorGroup</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Define namespace scope for LVM operator</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="../storage/lvm-operator.html" class="xref page">Installing LVM Storage Operator</a></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="../storage/_attachments/lvm-operatorgroup.yaml" class="xref attachment">YAML</a></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">lvm-subscription</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Subscription</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Install LVM Storage Operator from OperatorHub</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="../storage/lvm-operator.html" class="xref page">Installing LVM Storage Operator</a></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="../storage/_attachments/lvm-subscription.yaml" class="xref attachment">YAML</a></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">lvmcluster-with-wipe</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">LVMCluster</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Configure LVM storage with forceWipe for disks with existing data</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="../storage/lvm-operator.html" class="xref page">Installing LVM Storage Operator</a></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="../storage/_attachments/lvmcluster-with-wipe.yaml" class="xref attachment">YAML</a></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">lvmcluster-clean-disk</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">LVMCluster</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Configure LVM storage for clean/new disks</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="../storage/lvm-operator.html" class="xref page">Installing LVM Storage Operator</a></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="../storage/_attachments/lvmcluster-clean-disk.yaml" class="xref attachment">YAML</a></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">test-pvc</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">PVC</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Test PVC to verify storage provisioning</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="../storage/lvm-operator.html" class="xref page">Installing LVM Storage Operator</a></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="../storage/_attachments/test-pvc.yaml" class="xref attachment">YAML</a></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">test-pod</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Pod</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Test pod to verify PVC mounting</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="../storage/lvm-operator.html" class="xref page">Installing LVM Storage Operator</a></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="../storage/_attachments/test-pod.yaml" class="xref attachment">YAML</a></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_networking"><a class="anchor" href="#_networking"></a>Networking</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Network configurations for localnet, UDN, and bridge mappings.</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 22.2222%;">
+<col style="width: 11.1111%;">
+<col style="width: 33.3333%;">
+<col style="width: 22.2222%;">
+<col style="width: 11.1112%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Name</th>
+<th class="tableblock halign-left valign-top">Kind</th>
+<th class="tableblock halign-left valign-top">Purpose</th>
+<th class="tableblock halign-left valign-top">Tutorial</th>
+<th class="tableblock halign-left valign-top">Download</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">localnet-secondary-namespace</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Namespace</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Namespace for localnet secondary network VMs</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="../networking/localnet-secondary.html" class="xref page">Configuring Localnet Secondary Networks with ClusterUserDefinedNetwork in OpenShift Virtualization</a></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="../networking/_attachments/localnet-secondary-namespace.yaml" class="xref attachment">YAML</a></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">localnet-bridge-mapping-nncp</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">NNCP</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Map localnet1 to br-ex bridge for localnet topology</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="../networking/localnet-secondary.html" class="xref page">Configuring Localnet Secondary Networks with ClusterUserDefinedNetwork in OpenShift Virtualization</a></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="../networking/_attachments/localnet-bridge-mapping-nncp.yaml" class="xref attachment">YAML</a></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">cudn-localnet</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">CUDN</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ClusterUserDefinedNetwork for localnet secondary network</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="../networking/localnet-secondary.html" class="xref page">Configuring Localnet Secondary Networks with ClusterUserDefinedNetwork in OpenShift Virtualization</a></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="../networking/_attachments/cudn-localnet.yaml" class="xref attachment">YAML</a></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">localnet-vlan-namespace</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Namespace</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Namespace for VLAN localnet VMs</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="../networking/localnet-vlan.html" class="xref page">Configuring Localnet Secondary Networks with VLAN using NetworkAttachmentDefinition in OpenShift Virtualization</a></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="../networking/_attachments/localnet-vlan-namespace.yaml" class="xref attachment">YAML</a></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">localnet-vlan-bridge-mapping-nncp</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">NNCP</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Map localnet-vlan to br-ex bridge for VLAN traffic</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="../networking/localnet-vlan.html" class="xref page">Configuring Localnet Secondary Networks with VLAN using NetworkAttachmentDefinition in OpenShift Virtualization</a></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="../networking/_attachments/localnet-vlan-bridge-mapping-nncp.yaml" class="xref attachment">YAML</a></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">localnet-vlan-100-nad</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">NAD</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">NetworkAttachmentDefinition for VLAN 100 localnet</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="../networking/localnet-vlan.html" class="xref page">Configuring Localnet Secondary Networks with VLAN using NetworkAttachmentDefinition in OpenShift Virtualization</a></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="../networking/_attachments/localnet-vlan-100-nad.yaml" class="xref attachment">YAML</a></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">udn-primary-namespace</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Namespace</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Namespace with UDN primary network label</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="../networking/udn-primary-networks.html" class="xref page">Configuring Layer 2 Primary Networks with UDNs</a></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="../networking/_attachments/udn-primary-namespace.yaml" class="xref attachment">YAML</a></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">udn-primary</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">UDN</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Layer 2 UserDefinedNetwork for VM primary network</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="../networking/udn-primary-networks.html" class="xref page">Configuring Layer 2 Primary Networks with UDNs</a></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="../networking/_attachments/udn-primary.yaml" class="xref attachment">YAML</a></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_virtual_machines"><a class="anchor" href="#_virtual_machines"></a>Virtual Machines</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>VM manifests from various tutorials demonstrating different configurations.</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 22.2222%;">
+<col style="width: 11.1111%;">
+<col style="width: 33.3333%;">
+<col style="width: 22.2222%;">
+<col style="width: 11.1112%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Name</th>
+<th class="tableblock halign-left valign-top">Kind</th>
+<th class="tableblock halign-left valign-top">Purpose</th>
+<th class="tableblock halign-left valign-top">Tutorial</th>
+<th class="tableblock halign-left valign-top">Download</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">fedora-localnet-vm</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">VirtualMachine</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Fedora VM with localnet secondary network</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="../networking/localnet-secondary.html" class="xref page">Configuring Localnet Secondary Networks with ClusterUserDefinedNetwork in OpenShift Virtualization</a></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="../networking/_attachments/fedora-localnet-vm.yaml" class="xref attachment">YAML</a></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">fedora-vlan-vm</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">VirtualMachine</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Fedora VM with VLAN 100 secondary network</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="../networking/localnet-vlan.html" class="xref page">Configuring Localnet Secondary Networks with VLAN using NetworkAttachmentDefinition in OpenShift Virtualization</a></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="../networking/_attachments/fedora-vlan-vm.yaml" class="xref attachment">YAML</a></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">fedora-vm-with-udn</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">VirtualMachine</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Fedora VM using UDN as primary network</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="../networking/udn-primary-networks.html" class="xref page">Configuring Layer 2 Primary Networks with UDNs</a></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="../networking/_attachments/fedora-vm-with-udn.yaml" class="xref attachment">YAML</a></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">fedora-dhcp-vm</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">VirtualMachine</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Basic Fedora VM with DHCP networking</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="../vm-configuration/cloud-init-ip-configuration.html" class="xref page">Configuring IP Addresses with Cloud-init</a></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="../vm-configuration/_attachments/fedora-dhcp-vm.yaml" class="xref attachment">YAML</a></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">fedora-static-ip-vm</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">VirtualMachine</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Fedora VM with static IP via cloud-init</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="../vm-configuration/cloud-init-ip-configuration.html" class="xref page">Configuring IP Addresses with Cloud-init</a></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="../vm-configuration/_attachments/fedora-static-ip-vm.yaml" class="xref attachment">YAML</a></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">fedora-multi-network-vm</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">VirtualMachine</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Fedora VM with primary DHCP + secondary static IP</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="../vm-configuration/cloud-init-ip-configuration.html" class="xref page">Configuring IP Addresses with Cloud-init</a></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="../vm-configuration/_attachments/fedora-multi-network-vm.yaml" class="xref attachment">YAML</a></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">fedora-vlan-static-ip-vm</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">VirtualMachine</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Fedora VM with VLAN interface and static IP</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="../vm-configuration/cloud-init-ip-configuration.html" class="xref page">Configuring IP Addresses with Cloud-init</a></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="../vm-configuration/_attachments/fedora-vlan-static-ip-vm.yaml" class="xref attachment">YAML</a></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">golden-image-base-vm</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">VirtualMachine</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Base VM for creating golden images</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="../vm-configuration/custom-golden-images.html" class="xref page">Creating Custom OS Images and Golden Images</a></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="../vm-configuration/_attachments/golden-image-base-vm.yaml" class="xref attachment">YAML</a></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">webserver-vm-from-golden</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">VirtualMachine</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">VM deployed from golden image</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="../vm-configuration/custom-golden-images.html" class="xref page">Creating Custom OS Images and Golden Images</a></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="../vm-configuration/_attachments/webserver-vm-from-golden.yaml" class="xref attachment">YAML</a></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">webserver-vm-2</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">VirtualMachine</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Second VM deployed from golden image</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="../vm-configuration/custom-golden-images.html" class="xref page">Creating Custom OS Images and Golden Images</a></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="../vm-configuration/_attachments/webserver-vm-2.yaml" class="xref attachment">YAML</a></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">fedora-access-vm</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">VirtualMachine</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Fedora VM configured for SSH access</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="../vm-configuration/remote-access-linux-vms.html" class="xref page">Remote Access to Linux VMs</a></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="../vm-configuration/_attachments/fedora-access-vm.yaml" class="xref attachment">YAML</a></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">fedora-vlan-access-vm</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">VirtualMachine</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Fedora VM with VLAN for direct SSH access</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="../vm-configuration/remote-access-linux-vms.html" class="xref page">Remote Access to Linux VMs</a></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="../vm-configuration/_attachments/fedora-vlan-access-vm.yaml" class="xref attachment">YAML</a></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">fedora-app-vm</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">VirtualMachine</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Fedora VM for internal DNS demonstration</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="../vm-configuration/internal-dns-for-vms.html" class="xref page">Internal DNS Resolution for Virtual Machines</a></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="../vm-configuration/_attachments/fedora-app-vm.yaml" class="xref attachment">YAML</a></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">golden-image-datasource</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">DataSource</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">DataSource pointing to golden image PVC</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="../vm-configuration/custom-golden-images.html" class="xref page">Creating Custom OS Images and Golden Images</a></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="../vm-configuration/_attachments/golden-image-datasource.yaml" class="xref attachment">YAML</a></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_services"><a class="anchor" href="#_services"></a>Services</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Kubernetes services for VM access.</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 22.2222%;">
+<col style="width: 11.1111%;">
+<col style="width: 33.3333%;">
+<col style="width: 22.2222%;">
+<col style="width: 11.1112%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Name</th>
+<th class="tableblock halign-left valign-top">Kind</th>
+<th class="tableblock halign-left valign-top">Purpose</th>
+<th class="tableblock halign-left valign-top">Tutorial</th>
+<th class="tableblock halign-left valign-top">Download</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">fedora-vm-web-service</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Service</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">LoadBalancer service exposing VM web server</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="../networking/udn-primary-networks.html" class="xref page">Configuring Layer 2 Primary Networks with UDNs</a></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="../networking/_attachments/fedora-vm-web-service.yaml" class="xref attachment">YAML</a></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ssh-nodeport-service</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Service</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">NodePort service for SSH access to VM</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="../vm-configuration/remote-access-linux-vms.html" class="xref page">Remote Access to Linux VMs</a></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="../vm-configuration/_attachments/ssh-nodeport-service.yaml" class="xref attachment">YAML</a></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">headless-service</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Service</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Headless service for internal DNS resolution</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="../vm-configuration/internal-dns-for-vms.html" class="xref page">Internal DNS Resolution for Virtual Machines</a></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="../vm-configuration/_attachments/headless-service.yaml" class="xref attachment">YAML</a></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_usage"><a class="anchor" href="#_usage"></a>Usage</h2>
 <div class="sectionbody">
 <div class="sect2">
-<h3 id="_basic_usage"><a class="anchor" href="#_basic_usage"></a>Basic Usage</h3>
+<h3 id="_download_and_apply"><a class="anchor" href="#_download_and_apply"></a>Download and Apply</h3>
 <div class="olist arabic">
 <ol class="arabic">
 <li>
-<p>Copy the manifest you need</p>
+<p>Click the YAML link to download the manifest</p>
 </li>
 <li>
-<p>Customize values (namespaces, names, IP addresses, etc.)</p>
+<p>Customize values for your environment</p>
 </li>
 <li>
-<p>Apply with <code>oc apply -f manifest.yaml</code></p>
-</li>
-<li>
-<p>Verify with appropriate <code>oc get</code> commands</p>
+<p>Apply with <code>oc apply -f &lt;filename&gt;.yaml</code></p>
 </li>
 </ol>
 </div>
 </div>
 <div class="sect2">
-<h3 id="_customization_tips"><a class="anchor" href="#_customization_tips"></a>Customization Tips</h3>
-<div class="paragraph">
-<p><strong>Namespaces:</strong></p>
-</div>
-<div class="paragraph">
-<p>Always verify and update namespace values to match your environment:</p>
-</div>
+<h3 id="_validate_before_applying"><a class="anchor" href="#_validate_before_applying"></a>Validate Before Applying</h3>
 <div class="listingblock execute">
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Create namespace if it doesn't exist
-oc create namespace my-namespace
-
-# Apply manifest to specific namespace
-oc apply -f manifest.yaml -n my-namespace</code></pre>
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply --dry-run=client -f &lt;filename&gt;.yaml</code></pre>
 </div>
 </div>
-<div class="paragraph">
-<p><strong>Names:</strong></p>
-</div>
-<div class="paragraph">
-<p>Update resource names to follow your naming conventions:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">metadata:
-  name: my-custom-name  # Update this
-  namespace: my-namespace  # Update this</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p><strong>Network Configurations:</strong></p>
-</div>
-<div class="paragraph">
-<p>Update IP addresses, VLAN IDs, and network names to match your infrastructure:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml"># Update VLAN ID
-vlanId: 100  # Change to your VLAN
-
-# Update IP ranges
-ipv4: 192.168.100.0/24  # Change to your subnet</code></pre>
-</div>
-</div>
-</div>
-<div class="sect2">
-<h3 id="_testing_manifests"><a class="anchor" href="#_testing_manifests"></a>Testing Manifests</h3>
-<div class="olist arabic">
-<ol class="arabic">
-<li>
-<p>Test in development environment first</p>
-</li>
-<li>
-<p>Start with minimal configurations</p>
-</li>
-<li>
-<p>Verify each component before proceeding</p>
-</li>
-<li>
-<p>Check logs if issues occur</p>
-</li>
-</ol>
-</div>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_manifest_organization"><a class="anchor" href="#_manifest_organization"></a>Manifest Organization</h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p>The manifests are organized to align with the tutorials in this cookbook:</p>
-</div>
-<div class="paragraph">
-<p><strong>Getting Started:</strong></p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p>Operator subscriptions</p>
-</li>
-<li>
-<p>Basic namespace creation</p>
-</li>
-<li>
-<p>Default storage class configuration</p>
-</li>
-</ul>
-</div>
-<div class="paragraph">
-<p><strong>Storage Configuration:</strong></p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p>LVM operator manifests</p>
-</li>
-<li>
-<p>Storage class definitions</p>
-</li>
-<li>
-<p>PVC and DataVolume templates</p>
-</li>
-</ul>
-</div>
-<div class="paragraph">
-<p><strong>Networking Configuration:</strong></p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p>NAD definitions for localnet, VLAN, bridges</p>
-</li>
-<li>
-<p>UDN configurations</p>
-</li>
-<li>
-<p>NMState node network configurations</p>
-</li>
-</ul>
-</div>
-<div class="paragraph">
-<p><strong>VM Configuration:</strong></p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p>VM templates with cloud-init</p>
-</li>
-<li>
-<p>DataVolume templates</p>
-</li>
-<li>
-<p>Various OS configurations (Fedora, RHEL, Windows)</p>
-</li>
-</ul>
-</div>
-<div class="paragraph">
-<p><strong>Security:</strong></p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p>Network policies for VM isolation</p>
-</li>
-<li>
-<p>RBAC for VM management</p>
-</li>
-<li>
-<p>SCC configurations</p>
-</li>
-</ul>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_prerequisites"><a class="anchor" href="#_prerequisites"></a>Prerequisites</h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p>Before using these manifests, ensure you have:</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p>OpenShift 4.18+ cluster access</p>
-</li>
-<li>
-<p>Appropriate permissions (cluster-admin for operators, namespace admin for resources)</p>
-</li>
-<li>
-<p>Required operators installed (CNV, LVM, NMState as needed)</p>
-</li>
-<li>
-<p>CLI tools: <code>oc</code>, <code>kubectl</code></p>
-</li>
-</ul>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_related_tutorials"><a class="anchor" href="#_related_tutorials"></a>Related Tutorials</h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p>Most manifests in this section are referenced by tutorials in other modules:</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p><a href="../getting-started/index.html" class="xref page">Getting Started</a> - Basic setup and prerequisites</p>
-</li>
-<li>
-<p><a href="../storage/index.html" class="xref page">Storage Configuration</a> - LVM and storage setup</p>
-</li>
-<li>
-<p><a href="../networking/index.html" class="xref page">Networking Configuration</a> - Network configuration tutorials</p>
-</li>
-<li>
-<p><a href="../vm-configuration/index.html" class="xref page">Virtual Machine Configuration</a> - Cloud-init and VM customization</p>
-</li>
-</ul>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_validation"><a class="anchor" href="#_validation"></a>Validation</h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p>After applying manifests, validate your configuration:</p>
-</div>
-<div class="listingblock execute">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Check operator status
-oc get csv -n openshift-cnv
-oc get csv -n openshift-storage
-
-# Check network attachments
-oc get network-attachment-definition -A
-
-# Check storage classes
-oc get storageclass
-
-# Check VMs
-oc get vm,vmi -A
-
-# Check nodes
-oc get nodes</code></pre>
-</div>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_common_patterns"><a class="anchor" href="#_common_patterns"></a>Common Patterns</h2>
-<div class="sectionbody">
-<div class="sect2">
-<h3 id="_creating_a_namespace"><a class="anchor" href="#_creating_a_namespace"></a>Creating a Namespace</h3>
-<div class="listingblock">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: v1
-kind: Namespace
-metadata:
-  name: vms-prod
-  labels:
-    environment: production</code></pre>
-</div>
-</div>
-</div>
-<div class="sect2">
-<h3 id="_creating_a_nad_network_attachment_definition"><a class="anchor" href="#_creating_a_nad_network_attachment_definition"></a>Creating a NAD (Network Attachment Definition)</h3>
-<div class="listingblock">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: k8s.cni.cncf.io/v1
-kind: NetworkAttachmentDefinition
-metadata:
-  name: localnet-vlan-100
-  namespace: default
-spec:
-  config: |
-    {
-      "cniVersion": "0.3.1",
-      "type": "ovn-k8s-cni-overlay",
-      "topology": "localnet",
-      "netAttachDefName": "default/localnet-vlan-100",
-      "vlanID": 100
-    }</code></pre>
-</div>
-</div>
-</div>
-<div class="sect2">
-<h3 id="_creating_a_pvc"><a class="anchor" href="#_creating_a_pvc"></a>Creating a PVC</h3>
-<div class="listingblock">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: vm-data-disk
-  namespace: vms-prod
-spec:
-  accessModes:
-    - ReadWriteOnce
-  resources:
-    requests:
-      storage: 50Gi
-  storageClassName: lvms-vg1</code></pre>
-</div>
-</div>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_best_practices"><a class="anchor" href="#_best_practices"></a>Best Practices</h2>
-<div class="sectionbody">
-<div class="olist arabic">
-<ol class="arabic">
-<li>
-<p><strong>Version Control</strong>: Keep your manifests in Git for tracking changes</p>
-</li>
-<li>
-<p><strong>Documentation</strong>: Comment your customizations in the YAML</p>
-</li>
-<li>
-<p><strong>Testing</strong>: Always test in a non-production environment first</p>
-</li>
-<li>
-<p><strong>Validation</strong>: Use <code>oc apply --dry-run=client</code> to validate syntax</p>
-</li>
-<li>
-<p><strong>Backups</strong>: Keep backups of working configurations</p>
-</li>
-<li>
-<p><strong>Secrets</strong>: Never commit sensitive data to version control</p>
-</li>
-</ol>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_troubleshooting"><a class="anchor" href="#_troubleshooting"></a>Troubleshooting</h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p>If a manifest fails to apply:</p>
-</div>
-<div class="olist arabic">
-<ol class="arabic">
-<li>
-<p>Check syntax: <code>oc apply --dry-run=client -f manifest.yaml</code></p>
-</li>
-<li>
-<p>Verify API version: <code>oc api-resources | grep &lt;kind&gt;</code></p>
-</li>
-<li>
-<p>Check permissions: <code>oc auth can-i create &lt;resource&gt;</code></p>
-</li>
-<li>
-<p>Review events: <code>oc get events -n &lt;namespace&gt; --sort-by='.lastTimestamp'</code></p>
-</li>
-<li>
-<p>Check logs: <code>oc logs &lt;pod-name&gt; -n &lt;namespace&gt;</code></p>
-</li>
-</ol>
 </div>
 </div>
 </div>
@@ -641,13 +632,16 @@ spec:
 <div class="ulist">
 <ul>
 <li>
-<p><a href="https://docs.openshift.com/container-platform/latest/cli_reference/openshift_cli/getting-started-cli.html" target="_blank" rel="noopener">OpenShift CLI Reference</a></p>
+<p><a href="../getting-started/index.html" class="xref page">Getting Started</a></p>
 </li>
 <li>
-<p><a href="https://kubernetes.io/docs/reference/kubectl/" target="_blank" rel="noopener">Kubectl Reference</a></p>
+<p><a href="../storage/index.html" class="xref page">Storage Configuration</a></p>
 </li>
 <li>
-<p><a href="https://docs.openshift.com/container-platform/latest/virt/about_virt/about-virt.html" target="_blank" rel="noopener">OpenShift Virtualization Documentation</a></p>
+<p><a href="../networking/index.html" class="xref page">Networking Configuration</a></p>
+</li>
+<li>
+<p><a href="../vm-configuration/index.html" class="xref page">Virtual Machine Configuration</a></p>
 </li>
 </ul>
 </div>
@@ -655,7 +649,7 @@ spec:
 </div>
 <nav class="pagination">
   <span class="prev"><a href="../vm-configuration/golden-images-troubleshooting.html">Golden Images Troubleshooting</a></span>
-  <span class="next"><a href="operators.html">Operators</a></span>
+  <span class="next"><a href="../api/index.html">API Guide</a></span>
 </nav>
 </article>
   </div>

@@ -143,25 +143,7 @@
   <li class="nav-item" data-depth="0">
 <ul class="nav-list">
   <li class="nav-item" data-depth="1">
-    <button class="nav-item-toggle"></button>
-    <a class="nav-link" href="../manifests/index.html">YAML Manifests Reference</a>
-<ul class="nav-list">
-  <li class="nav-item" data-depth="2">
-    <a class="nav-link" href="../manifests/operators.html">Operators</a>
-  </li>
-  <li class="nav-item" data-depth="2">
-    <a class="nav-link" href="../manifests/networking.html">Networking</a>
-  </li>
-  <li class="nav-item" data-depth="2">
-    <a class="nav-link" href="../manifests/storage.html">Storage</a>
-  </li>
-  <li class="nav-item" data-depth="2">
-    <a class="nav-link" href="../manifests/vms.html">Virtual Machines</a>
-  </li>
-  <li class="nav-item" data-depth="2">
-    <a class="nav-link" href="../manifests/security.html">Security</a>
-  </li>
-</ul>
+    <a class="nav-link" href="../manifests/index.html">Manifests</a>
   </li>
 </ul>
   </li>
@@ -266,6 +248,9 @@ The namespace must be created and labeled before any workload deployment happens
 </tr>
 </table>
 </div>
+<div class="paragraph">
+<p><a href="_attachments/udn-primary-namespace.yaml" class="xref attachment">Download udn-primary-namespace.yaml</a></p>
+</div>
 <div class="listingblock">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">oc apply -f - &lt;&lt;EOF
@@ -285,6 +270,9 @@ EOF</code></pre>
 <div class="sectionbody">
 <div class="paragraph">
 <p>Define the primary UDN with Layer2 topology and custom subnet configuration. This resource specifies the network characteristics including IP range, IPAM lifecycle, and primary role designation to override default cluster networking for pods in the namespace.</p>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/udn-primary.yaml" class="xref attachment">Download udn-primary.yaml</a></p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -312,6 +300,9 @@ EOF</code></pre>
 <div class="sectionbody">
 <div class="paragraph">
 <p>Create a virtual machine that utilizes the primary UDN configuration and runs a simple Python HTTP server for testing connectivity. The workload automatically receives an IP address from the 192.168.100.0/24 subnet via the UDN&#8217;s IPAM and uses the UDN as its primary network interface.</p>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/fedora-vm-with-udn.yaml" class="xref attachment">Download fedora-vm-with-udn.yaml</a></p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -409,6 +400,9 @@ Cloud services like AWS automatically deploy a load balancer for this configurat
 </td>
 </tr>
 </table>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/fedora-vm-web-service.yaml" class="xref attachment">Download fedora-vm-web-service.yaml</a></p>
 </div>
 <div class="listingblock">
 <div class="content">
