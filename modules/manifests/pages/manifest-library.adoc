@@ -14,11 +14,11 @@ A quick-reference library of YAML manifests used in the cookbook tutorials, orga
 |LVM operator installation and configuration
 
 |<<Networking>>
-|10
+|8
 |Localnet, UDN, bridge mapping configurations
 
 |<<Virtual Machines>>
-|11
+|14
 |VM examples from various tutorials
 
 |<<Services>>
@@ -85,6 +85,12 @@ Network configurations for localnet, UDN, and bridge mappings.
 |===
 |Name |Kind |Purpose |Tutorial |Download
 
+|localnet-secondary-namespace
+|Namespace
+|Namespace for localnet secondary network VMs
+|xref:networking:localnet-secondary.adoc[]
+|xref:networking:attachment$localnet-secondary-namespace.yaml[YAML]
+
 |localnet-bridge-mapping-nncp
 |NNCP
 |Map localnet1 to br-ex bridge for localnet topology
@@ -96,6 +102,12 @@ Network configurations for localnet, UDN, and bridge mappings.
 |ClusterUserDefinedNetwork for localnet secondary network
 |xref:networking:localnet-secondary.adoc[]
 |xref:networking:attachment$cudn-localnet.yaml[YAML]
+
+|localnet-vlan-namespace
+|Namespace
+|Namespace for VLAN localnet VMs
+|xref:networking:localnet-vlan.adoc[]
+|xref:networking:attachment$localnet-vlan-namespace.yaml[YAML]
 
 |localnet-vlan-bridge-mapping-nncp
 |NNCP
@@ -166,6 +178,12 @@ VM manifests from various tutorials demonstrating different configurations.
 |xref:vm-configuration:cloud-init-ip-configuration.adoc[]
 |xref:vm-configuration:attachment$fedora-multi-network-vm.yaml[YAML]
 
+|fedora-vlan-static-ip-vm
+|VirtualMachine
+|Fedora VM with VLAN interface and static IP
+|xref:vm-configuration:cloud-init-ip-configuration.adoc[]
+|xref:vm-configuration:attachment$fedora-vlan-static-ip-vm.yaml[YAML]
+
 |golden-image-base-vm
 |VirtualMachine
 |Base VM for creating golden images
@@ -178,11 +196,23 @@ VM manifests from various tutorials demonstrating different configurations.
 |xref:vm-configuration:custom-golden-images.adoc[]
 |xref:vm-configuration:attachment$webserver-vm-from-golden.yaml[YAML]
 
+|webserver-vm-2
+|VirtualMachine
+|Second VM deployed from golden image
+|xref:vm-configuration:custom-golden-images.adoc[]
+|xref:vm-configuration:attachment$webserver-vm-2.yaml[YAML]
+
 |fedora-access-vm
 |VirtualMachine
 |Fedora VM configured for SSH access
 |xref:vm-configuration:remote-access-linux-vms.adoc[]
 |xref:vm-configuration:attachment$fedora-access-vm.yaml[YAML]
+
+|fedora-vlan-access-vm
+|VirtualMachine
+|Fedora VM with VLAN for direct SSH access
+|xref:vm-configuration:remote-access-linux-vms.adoc[]
+|xref:vm-configuration:attachment$fedora-vlan-access-vm.yaml[YAML]
 
 |fedora-app-vm
 |VirtualMachine
@@ -231,17 +261,6 @@ Kubernetes services for VM access.
 . Click the YAML link to download the manifest
 . Customize values for your environment
 . Apply with `oc apply -f <filename>.yaml`
-
-=== Common Customizations
-
-Before applying manifests, update these fields:
-
-* `metadata.namespace` - Target namespace
-* `metadata.name` - Resource name
-* `spec.deviceSelector.paths` - Block devices (LVMCluster)
-* `vlanID` - VLAN tag (NADs)
-* `subnets` - IP ranges (NADs)
-* Interface names - Physical interfaces (NNCPs)
 
 === Validate Before Applying
 
