@@ -1,0 +1,258 @@
+= YAML Manifests Library
+:navtitle: Manifests Library
+
+A quick-reference library of YAML manifests used in the cookbook tutorials, organized by category.
+
+== Quick Navigation
+
+[cols="1,1,2"]
+|===
+|Category |Count |Description
+
+|<<Storage>>
+|7
+|LVM operator installation and configuration
+
+|<<Networking>>
+|10
+|Localnet, UDN, bridge mapping configurations
+
+|<<Virtual Machines>>
+|11
+|VM examples from various tutorials
+
+|<<Services>>
+|3
+|Kubernetes services for VM access
+|===
+
+== Storage
+
+Manifests for LVM Storage Operator installation and configuration.
+
+[cols="2,1,3,2,1"]
+|===
+|Name |Kind |Purpose |Tutorial |Download
+
+|lvm-namespace
+|Namespace
+|Create openshift-lvm-storage namespace
+|xref:storage:lvm-operator.adoc[]
+|xref:storage:attachment$lvm-namespace.yaml[YAML]
+
+|lvm-operatorgroup
+|OperatorGroup
+|Define namespace scope for LVM operator
+|xref:storage:lvm-operator.adoc[]
+|xref:storage:attachment$lvm-operatorgroup.yaml[YAML]
+
+|lvm-subscription
+|Subscription
+|Install LVM Storage Operator from OperatorHub
+|xref:storage:lvm-operator.adoc[]
+|xref:storage:attachment$lvm-subscription.yaml[YAML]
+
+|lvmcluster-with-wipe
+|LVMCluster
+|Configure LVM storage with forceWipe for disks with existing data
+|xref:storage:lvm-operator.adoc[]
+|xref:storage:attachment$lvmcluster-with-wipe.yaml[YAML]
+
+|lvmcluster-clean-disk
+|LVMCluster
+|Configure LVM storage for clean/new disks
+|xref:storage:lvm-operator.adoc[]
+|xref:storage:attachment$lvmcluster-clean-disk.yaml[YAML]
+
+|test-pvc
+|PVC
+|Test PVC to verify storage provisioning
+|xref:storage:lvm-operator.adoc[]
+|xref:storage:attachment$test-pvc.yaml[YAML]
+
+|test-pod
+|Pod
+|Test pod to verify PVC mounting
+|xref:storage:lvm-operator.adoc[]
+|xref:storage:attachment$test-pod.yaml[YAML]
+|===
+
+== Networking
+
+Network configurations for localnet, UDN, and bridge mappings.
+
+[cols="2,1,3,2,1"]
+|===
+|Name |Kind |Purpose |Tutorial |Download
+
+|localnet-bridge-mapping-nncp
+|NNCP
+|Map localnet1 to br-ex bridge for localnet topology
+|xref:networking:localnet-secondary.adoc[]
+|xref:networking:attachment$localnet-bridge-mapping-nncp.yaml[YAML]
+
+|cudn-localnet
+|CUDN
+|ClusterUserDefinedNetwork for localnet secondary network
+|xref:networking:localnet-secondary.adoc[]
+|xref:networking:attachment$cudn-localnet.yaml[YAML]
+
+|localnet-vlan-bridge-mapping-nncp
+|NNCP
+|Map localnet-vlan to br-ex bridge for VLAN traffic
+|xref:networking:localnet-vlan.adoc[]
+|xref:networking:attachment$localnet-vlan-bridge-mapping-nncp.yaml[YAML]
+
+|localnet-vlan-100-nad
+|NAD
+|NetworkAttachmentDefinition for VLAN 100 localnet
+|xref:networking:localnet-vlan.adoc[]
+|xref:networking:attachment$localnet-vlan-100-nad.yaml[YAML]
+
+|udn-primary-namespace
+|Namespace
+|Namespace with UDN primary network label
+|xref:networking:udn-primary-networks.adoc[]
+|xref:networking:attachment$udn-primary-namespace.yaml[YAML]
+
+|udn-primary
+|UDN
+|Layer 2 UserDefinedNetwork for VM primary network
+|xref:networking:udn-primary-networks.adoc[]
+|xref:networking:attachment$udn-primary.yaml[YAML]
+|===
+
+== Virtual Machines
+
+VM manifests from various tutorials demonstrating different configurations.
+
+[cols="2,1,3,2,1"]
+|===
+|Name |Kind |Purpose |Tutorial |Download
+
+|fedora-localnet-vm
+|VirtualMachine
+|Fedora VM with localnet secondary network
+|xref:networking:localnet-secondary.adoc[]
+|xref:networking:attachment$fedora-localnet-vm.yaml[YAML]
+
+|fedora-vlan-vm
+|VirtualMachine
+|Fedora VM with VLAN 100 secondary network
+|xref:networking:localnet-vlan.adoc[]
+|xref:networking:attachment$fedora-vlan-vm.yaml[YAML]
+
+|fedora-vm-with-udn
+|VirtualMachine
+|Fedora VM using UDN as primary network
+|xref:networking:udn-primary-networks.adoc[]
+|xref:networking:attachment$fedora-vm-with-udn.yaml[YAML]
+
+|fedora-dhcp-vm
+|VirtualMachine
+|Basic Fedora VM with DHCP networking
+|xref:vm-configuration:cloud-init-ip-configuration.adoc[]
+|xref:vm-configuration:attachment$fedora-dhcp-vm.yaml[YAML]
+
+|fedora-static-ip-vm
+|VirtualMachine
+|Fedora VM with static IP via cloud-init
+|xref:vm-configuration:cloud-init-ip-configuration.adoc[]
+|xref:vm-configuration:attachment$fedora-static-ip-vm.yaml[YAML]
+
+|fedora-multi-network-vm
+|VirtualMachine
+|Fedora VM with primary DHCP + secondary static IP
+|xref:vm-configuration:cloud-init-ip-configuration.adoc[]
+|xref:vm-configuration:attachment$fedora-multi-network-vm.yaml[YAML]
+
+|golden-image-base-vm
+|VirtualMachine
+|Base VM for creating golden images
+|xref:vm-configuration:custom-golden-images.adoc[]
+|xref:vm-configuration:attachment$golden-image-base-vm.yaml[YAML]
+
+|webserver-vm-from-golden
+|VirtualMachine
+|VM deployed from golden image
+|xref:vm-configuration:custom-golden-images.adoc[]
+|xref:vm-configuration:attachment$webserver-vm-from-golden.yaml[YAML]
+
+|fedora-access-vm
+|VirtualMachine
+|Fedora VM configured for SSH access
+|xref:vm-configuration:remote-access-linux-vms.adoc[]
+|xref:vm-configuration:attachment$fedora-access-vm.yaml[YAML]
+
+|fedora-app-vm
+|VirtualMachine
+|Fedora VM for internal DNS demonstration
+|xref:vm-configuration:internal-dns-for-vms.adoc[]
+|xref:vm-configuration:attachment$fedora-app-vm.yaml[YAML]
+
+|golden-image-datasource
+|DataSource
+|DataSource pointing to golden image PVC
+|xref:vm-configuration:custom-golden-images.adoc[]
+|xref:vm-configuration:attachment$golden-image-datasource.yaml[YAML]
+|===
+
+== Services
+
+Kubernetes services for VM access.
+
+[cols="2,1,3,2,1"]
+|===
+|Name |Kind |Purpose |Tutorial |Download
+
+|fedora-vm-web-service
+|Service
+|LoadBalancer service exposing VM web server
+|xref:networking:udn-primary-networks.adoc[]
+|xref:networking:attachment$fedora-vm-web-service.yaml[YAML]
+
+|ssh-nodeport-service
+|Service
+|NodePort service for SSH access to VM
+|xref:vm-configuration:remote-access-linux-vms.adoc[]
+|xref:vm-configuration:attachment$ssh-nodeport-service.yaml[YAML]
+
+|headless-service
+|Service
+|Headless service for internal DNS resolution
+|xref:vm-configuration:internal-dns-for-vms.adoc[]
+|xref:vm-configuration:attachment$headless-service.yaml[YAML]
+|===
+
+== Usage
+
+=== Download and Apply
+
+. Click the YAML link to download the manifest
+. Customize values for your environment
+. Apply with `oc apply -f <filename>.yaml`
+
+=== Common Customizations
+
+Before applying manifests, update these fields:
+
+* `metadata.namespace` - Target namespace
+* `metadata.name` - Resource name
+* `spec.deviceSelector.paths` - Block devices (LVMCluster)
+* `vlanID` - VLAN tag (NADs)
+* `subnets` - IP ranges (NADs)
+* Interface names - Physical interfaces (NNCPs)
+
+=== Validate Before Applying
+
+[source,bash,role=execute]
+----
+oc apply --dry-run=client -f <filename>.yaml
+----
+
+== See Also
+
+* xref:getting-started:index.adoc[]
+* xref:storage:index.adoc[]
+* xref:networking:index.adoc[]
+* xref:vm-configuration:index.adoc[]
