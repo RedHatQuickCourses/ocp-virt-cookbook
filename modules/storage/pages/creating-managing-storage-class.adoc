@@ -3,7 +3,7 @@
 
 == Overview
 
-This is a comprehensive tutorial on StorageClasses for OpenShift Container Platform (OCP). This guide focuses on OCP 4.x (often abbreviated as OCPv4), where the Container Storage Interface (CSI) is the standard for storage provisioning.These concepts also apply directly to OpenShift Virtualization (CNV), where storage classes determine how Virtual Machine disks are provisioned.
+This is a tutorial on StorageClasses for OpenShift Container Platform (OCP). This guide focuses on OCP 4.x (often abbreviated as OCPv4), where the Container Storage Interface (CSI) is the standard for storage provisioning. These concepts also apply directly to OpenShift Virtualization (CNV), where storage classes determine how Virtual Machine disks are provisioned. For more on storage classes, please check out the official OpenShift documentation for https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/storage_apis/storageclass-storage-k8s-io-v1[storage class api] and the https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/storage/using-container-storage-interface-csi[Container Storage Interface].
 
 == Storage Class Fundamentals
 In OpenShift, a StorageClass (SC) describes a "class" of storage available to the cluster. It allows administrators to define different tiers of storage (e.g., "fast-ssd", "cheap-hdd") without users needing to know the underlying infrastructure details.
@@ -56,6 +56,7 @@ To remove the default status:
 oc patch storageclass <old-default-name> -p '{"metadata": {"annotations": {"storageclass.kubernetes.io/is-default-class": "false"}}}'
 ----
 Tip: Ensure only one SC is marked as default to avoid confusion.
+For more details, see xref:../../getting-started/pages/default-storage-class.adoc[]
 
 == Storage Class Examples
 
@@ -79,6 +80,8 @@ parameters:
   encrypted: "true"
 
 ----  
+OpenShift Documentation: https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/storage/using-container-storage-interface-csi#persistent-storage-csi-ebs
+
 Scenario B: Local Storage / LVM (For Databases/Performance)
 Requires the Local Storage Operator or LVM Storage Operator installed.
 
@@ -95,6 +98,7 @@ parameters:
   "csi.storage.k8s.io/fstype": "xfs"
 
 ----
+NOTE: this is an example storage class for reference purposes, as LVMS operator will auto-generate one.
 
 Scenario C: NFS (Shared Storage / RWX)
 Requires the NFS CSI Driver operator or an external NFS provisioner.
@@ -115,7 +119,9 @@ mountOptions:
   - nfsvers=4.1
 ----
 
-== Verification and TroubleshootingVerification Commands
+OpenShift Documentation: https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/storage/persistent-storage-using-local-storage
+
+== Verification and Troubleshooting Verification Commands
 List Storage Classes:
 
 [source,bash,role=execute]
@@ -131,7 +137,7 @@ Describe a Class:
 oc describe sc <name>
 ----
 
-Test Provisioning:Create a test PVC:
+Test Provisioning: Create a test PVC:
 
 [source,yaml]
 ----
@@ -158,8 +164,11 @@ spec:
   ** Cause: You used volumeBindingMode: Immediate on a multi-zone cluster. The volume was created in Zone A, but the Pod was scheduled in Zone B.
   ** Fix: Delete the PVC and recreate it using a StorageClass with WaitForFirstConsumer.
 
-* **Issue 3:** "Provisioner not found"Cause: The CSI driver specified in provisioner: is not installed or crashing.
+* **Issue 3:** "Provisioner not found" 
+  **Cause: The CSI driver specified in provisioner: is not installed or crashing.
   ** Fix: Check the storage operator pods in the relevant namespace (e.g., openshift-cluster-csi-drivers).
 
-* **Issue 4:** Volume Resize FailsCause: allowVolumeExpansion is set to false in the StorageClass.
-  ** Fix: Edit the StorageClass to true (note: not all provisioners support online expansion).
+* **Issue 4:** Volume Resize Fails 
+  **Cause: allowVolumeExpansion is set to false in the StorageClass.
+  ** Fix: Edit the StorageClass to true 
+  (note: not all provisioners support online expansion).
