@@ -30,6 +30,8 @@ The physical switch ports connected to OpenShift worker nodes **must be configur
 
 Create a namespace for VMs that will use the localnet secondary network with VLAN configuration.
 
+xref:attachment$localnet-vlan-namespace.yaml[Download localnet-vlan-namespace.yaml]
+
 [source,yaml]
 ----
 oc apply -f - <<EOF
@@ -43,6 +45,8 @@ EOF
 == Step 2: Configure Bridge Mapping
 
 Configure the bridge mapping that connects the logical network interface name `localnet-vlan` to the `br-ex` bridge interface on worker nodes. This mapping tells OVN-Kubernetes which physical bridge interface handles localnet traffic with VLAN support, enabling VM access to VLAN-tagged external networks through the underlying physical network infrastructure.
+
+xref:attachment$localnet-vlan-bridge-mapping-nncp.yaml[Download localnet-vlan-bridge-mapping-nncp.yaml]
 
 [source,yaml]
 ----
@@ -66,6 +70,8 @@ EOF
 == Step 3: Create NetworkAttachmentDefinition with VLAN
 
 Create a NetworkAttachmentDefinition that configures localnet topology with VLAN tagging for secondary network connectivity.
+
+xref:attachment$localnet-vlan-100-nad.yaml[Download localnet-vlan-100-nad.yaml]
 
 [source,yaml]
 ----
@@ -101,6 +107,8 @@ EOF
 == Step 4: Deploy VM with VLAN Network Connectivity
 
 Create a VM that connects to both the pod network and the VLAN-tagged localnet secondary network.
+
+xref:attachment$fedora-vlan-vm.yaml[Download fedora-vlan-vm.yaml]
 
 [source,yaml]
 ----

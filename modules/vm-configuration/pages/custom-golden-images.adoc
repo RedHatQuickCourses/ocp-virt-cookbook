@@ -50,6 +50,8 @@ oc create namespace golden-images
 
 Create a base Fedora VM that we will customize:
 
+xref:attachment$golden-image-base-vm.yaml[Download golden-image-base-vm.yaml]
+
 [source,yaml]
 ----
 apiVersion: kubevirt.io/v1
@@ -254,6 +256,8 @@ Now we will create a DataSource that references the base VM's disk. This DataSou
 
 Create the DataSource:
 
+xref:attachment$golden-image-datasource.yaml[Download golden-image-datasource.yaml]
+
 [source,yaml]
 ----
 apiVersion: cdi.kubevirt.io/v1beta1
@@ -294,6 +298,8 @@ fedora-nginx-golden    5s
 Now we can deploy multiple VMs from this golden image. Each VM will be cloned from the golden image.
 
 Create the first VM:
+
+xref:attachment$webserver-vm-from-golden.yaml[Download webserver-vm-from-golden.yaml]
 
 [source,yaml]
 ----
@@ -358,6 +364,8 @@ spec:
 ----
 
 Create a second VM:
+
+xref:attachment$webserver-vm-2.yaml[Download webserver-vm-2.yaml]
 
 [source,yaml]
 ----

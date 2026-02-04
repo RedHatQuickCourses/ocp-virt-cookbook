@@ -23,6 +23,8 @@ OpenShift 4.19
 
 Create a namespace for VMs that will use the localnet secondary network.
 
+xref:attachment$localnet-secondary-namespace.yaml[Download localnet-secondary-namespace.yaml]
+
 [source,yaml]
 ----
 oc apply -f - <<EOF
@@ -36,6 +38,8 @@ EOF
 == Step 2: Configure Bridge Mapping
 
 Configure the bridge mapping that connects the logical physnet name to the `br-ex` bridge interface. This tells OVN-Kubernetes which physical interface handles localnet traffic.
+
+xref:attachment$localnet-bridge-mapping-nncp.yaml[Download localnet-bridge-mapping-nncp.yaml]
 
 [source,yaml]
 ----
@@ -61,6 +65,8 @@ EOF
 == Step 3: Create ClusterUserDefinedNetwork
 
 Create a ClusterUserDefinedNetwork with localnet topology for secondary network connectivity to external networks.
+
+xref:attachment$cudn-localnet.yaml[Download cudn-localnet.yaml]
 
 [source,yaml]
 ----
@@ -88,6 +94,8 @@ EOF
 == Step 4: Deploy VM with Dual Network Connectivity
 
 Create a VM that connects to both the pod network and the localnet secondary network for dual connectivity.
+
+xref:attachment$fedora-localnet-vm.yaml[Download fedora-localnet-vm.yaml]
 
 [source,yaml]
 ----

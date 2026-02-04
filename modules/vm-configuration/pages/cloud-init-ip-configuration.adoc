@@ -64,6 +64,8 @@ oc create namespace cloud-init-demo
 
 VM manifest without explicit network configuration:
 
+xref:attachment$fedora-dhcp-vm.yaml[Download fedora-dhcp-vm.yaml]
+
 [source,yaml]
 ----
 apiVersion: kubevirt.io/v1
@@ -158,6 +160,8 @@ When to use: Development environments, simple deployments, when DHCP is sufficie
 
 Configure a static IP on the primary interface. Note: This is not common for pod networks but useful for understanding the syntax.
 
+xref:attachment$fedora-static-ip-vm.yaml[Download fedora-static-ip-vm.yaml]
+
 [source,yaml]
 ----
 apiVersion: kubevirt.io/v1
@@ -249,6 +253,8 @@ Key points:
 This is the most common real-world scenario. Primary interface uses DHCP, secondary interface (on VLAN or bridge) uses static IP.
 
 Prerequisites: Ensure you have a secondary network configured (e.g., localnet VLAN 100).
+
+xref:attachment$fedora-multi-network-vm.yaml[Download fedora-multi-network-vm.yaml]
 
 [source,yaml]
 ----
@@ -363,6 +369,8 @@ ping 192.168.100.1
 == Scenario 4: VLAN Interface with Static IP
 
 Similar to Scenario 3 but specifically for VLAN networks.
+
+xref:attachment$fedora-vlan-static-ip-vm.yaml[Download fedora-vlan-static-ip-vm.yaml]
 
 [source,yaml]
 ----

@@ -85,6 +85,8 @@ Create the namespace and install the LVM Storage operator.
 
 Create namespace for LVM operator:
 
+xref:attachment$lvm-namespace.yaml[Download lvm-namespace.yaml]
+
 [source,yaml]
 ----
 oc apply -f - <<EOF
@@ -96,6 +98,8 @@ EOF
 ----
 
 Create OperatorGroup:
+
+xref:attachment$lvm-operatorgroup.yaml[Download lvm-operatorgroup.yaml]
 
 [source,yaml]
 ----
@@ -112,6 +116,8 @@ EOF
 ----
 
 Create Subscription to install the operator:
+
+xref:attachment$lvm-subscription.yaml[Download lvm-subscription.yaml]
 
 [source,yaml]
 ----
@@ -166,6 +172,8 @@ If your disk has existing data or partitions (like our `sda` example), use `forc
 
 NOTE: Using `forceWipeDevicesAndDestroyAllData: true` will permanently destroy all data on the specified disk. Ensure you have backups and are using the correct disk device path before proceeding.
 
+xref:attachment$lvmcluster-with-wipe.yaml[Download lvmcluster-with-wipe.yaml]
+
 [source,yaml]
 ----
 oc apply -f - <<EOF
@@ -200,6 +208,8 @@ EOF
 === Configuration for Clean/New Disk
 
 If your disk is clean with no existing data or partitions:
+
+xref:attachment$lvmcluster-clean-disk.yaml[Download lvmcluster-clean-disk.yaml]
 
 [source,yaml]
 ----
@@ -406,6 +416,8 @@ NOTE: Always set a default StorageClass for OpenShift Virtualization clusters to
 
 Create a test PVC to verify storage provisioning works:
 
+xref:attachment$test-pvc.yaml[Download test-pvc.yaml]
+
 [source,yaml]
 ----
 oc apply -f - <<EOF
@@ -425,6 +437,8 @@ EOF
 ----
 
 Create a test pod to use the PVC:
+
+xref:attachment$test-pod.yaml[Download test-pod.yaml]
 
 [source,yaml]
 ----
