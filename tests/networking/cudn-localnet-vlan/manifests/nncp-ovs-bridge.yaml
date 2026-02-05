@@ -1,0 +1,25 @@
+---
+apiVersion: nmstate.io/v1
+kind: NodeNetworkConfigurationPolicy
+metadata:
+  name: br-vlan-creation
+spec:
+  nodeSelector:
+    node-role.kubernetes.io/worker: ''
+  desiredState:
+    interfaces:
+    - name: "{{ physical_interface }}"
+      type: ethernet
+      state: up
+      ipv4:
+        enabled: false
+      ipv6:
+        enabled: false
+      description: "Physical interface for VLAN localnet"
+    - name: br-vlan
+      type: ovs-bridge
+      state: up
+      bridge:
+        port:
+        - name: "{{ physical_interface }}"
+      description: "OVS bridge for VLAN traffic"

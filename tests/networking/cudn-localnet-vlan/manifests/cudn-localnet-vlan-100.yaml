@@ -1,0 +1,19 @@
+---
+apiVersion: k8s.ovn.org/v1
+kind: ClusterUserDefinedNetwork
+metadata:
+  name: cudn-localnet-vlan-100
+spec:
+  namespaceSelector:
+    matchExpressions:
+    - key: kubernetes.io/metadata.name
+      operator: In
+      values: ["vm-guests-vlan-prod", "vm-guests-vlan-dev"]
+  network:
+    topology: Localnet
+    localnet:
+      role: Secondary
+      physicalNetworkName: localnet-vlan
+      vlanID: 100
+      ipam:
+        mode: Disabled
