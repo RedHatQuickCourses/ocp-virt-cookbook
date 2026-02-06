@@ -215,88 +215,13 @@
 <h2 id="_introduction"><a class="anchor" href="#_introduction"></a>Introduction</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>A bite-size approach reference for deploying virtualization workloads for those who are just starting with OpenShift. This is a collection of notes, example manifests and guides we&#8217;ve built working with OpenShift Virtualization partners and customers presented in a tutorial format.</p>
-</div>
-<div class="admonitionblock note">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-note" title="Note"></i>
-</td>
-<td class="content">
-This cookbook DOES NOT replace the official <a href="https://www.redhat.com/en/services/training/do316-managing-virtual-machines-red-hat-openshift-virtualization" target="_blank" rel="noopener">OpenShift Virtualization training course</a>, which is highly recommended, nor the <a href="https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html-single/virtualization/index" target="_blank" rel="noopener">official documentation</a>. Instead, it is supposed to serve as a complement and a facilitator to partner and customer engineers just getting started.
-</td>
-</tr>
-</table>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_contributors"><a class="anchor" href="#_contributors"></a>Contributors</h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p>This cookbook builds upon the excellent work from the original <a href="https://github.com/acmenezes/ocp-virt-onboarding-kit" target="_blank" rel="noopener">OpenShift Virtualization Onboarding Kit</a>. We gratefully acknowledge the contributions of:</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p>Alexandre Menezes</p>
-</li>
-<li>
-<p>Andrea Perotti</p>
-</li>
-<li>
-<p>Daphne Hoover</p>
-</li>
-<li>
-<p>Josh Manning</p>
-</li>
-<li>
-<p>Melvin Hillsman</p>
-</li>
-<li>
-<p>Roshan Warrier</p>
-</li>
-<li>
-<p>Yash Devan Oza</p>
-</li>
-</ul>
+<p>A practical field guide for starting and deploying workloads on OpenShift Virtualization.</p>
 </div>
 <div class="paragraph">
-<p>Special thanks to all contributors who have helped shape this resource through content creation, testing, and feedback.</p>
+<p>This cookbook provides bite-sized recipes, example manifests, and troubleshooting notes for those who are just starting with OpenShift. It is designed as a hands-on <em>complement</em> to the <a href="https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html-single/virtualization/index" target="_blank" rel="noopener">official documentation</a> and <a href="https://www.redhat.com/en/services/training/do316-managing-virtual-machines-red-hat-openshift-virtualization" target="_blank" rel="noopener">training course</a> - facilitating real-world implementation rather than replacing theoretical learning.</p>
 </div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_what_youll_learn"><a class="anchor" href="#_what_youll_learn"></a>What You&#8217;ll Learn</h2>
-<div class="sectionbody">
 <div class="paragraph">
-<p>This cookbook provides practical guidance on:</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p>Setting up and managing virtual machines on OpenShift</p>
-</li>
-<li>
-<p>Configuring networking for various topologies and use cases</p>
-</li>
-<li>
-<p>Managing storage for virtualization workloads</p>
-</li>
-<li>
-<p>Using cloud-init for VM configuration and automation</p>
-</li>
-<li>
-<p>Working with OpenShift Virtualization CLI tools</p>
-</li>
-<li>
-<p>Leveraging the OpenShift Virtualization API for product integration</p>
-</li>
-<li>
-<p>Performing advanced functions such as snapshot, cloning and export</p>
-</li>
-</ul>
+<p>(<em>last update: 2026-02-06 16:17</em>)</p>
 </div>
 </div>
 </div>
@@ -304,76 +229,53 @@ This cookbook DOES NOT replace the official <a href="https://www.redhat.com/en/s
 <h2 id="_prerequisites"><a class="anchor" href="#_prerequisites"></a>Prerequisites</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>To use this cookbook effectively, you should have:</p>
+<p>To use this cookbook effectively, you need:</p>
 </div>
 <div class="ulist">
 <ul>
 <li>
-<p>OpenShift 4.18+ cluster with OpenShift Virtualization operator installed</p>
+<p><strong>Cluster</strong>: OpenShift 4.18+ with the OpenShift Virtualization operator installed.</p>
 </li>
 <li>
-<p>CLI tools: <code>oc</code>, <code>kubectl</code>, <code>virtctl</code></p>
+<p><strong>Tools</strong>: <code>oc</code>, <code>kubectl</code>, and <code>virtctl</code>. (Optional: <code>kustomize</code>, <code>helm</code>, <code>ansible</code>).</p>
 </li>
 <li>
-<p>Basic understanding of Kubernetes/OpenShift concepts</p>
-</li>
-<li>
-<p>Familiarity with YAML and command-line tools</p>
+<p><strong>Knowledge</strong>: Proficiency with YAML, and CLI workflows (not mandatory but strongly suggested). Basic understanding of Kubernetes/OpenShift concepts.</p>
 </li>
 </ul>
 </div>
 <div class="paragraph">
-<p>Optional tools depending on your approach:</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p><code>kustomize</code></p>
-</li>
-<li>
-<p><code>helm</code></p>
-</li>
-<li>
-<p><code>ansible</code></p>
-</li>
-</ul>
+<p>Go through all the <strong><a href="getting-started/index.html" class="xref page">Getting Started</a></strong> modules, especially if you are new to the technology, to prepare or verify your environment.</p>
 </div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="_how_to_use_this_cookbook"><a class="anchor" href="#_how_to_use_this_cookbook"></a>How to Use This Cookbook</h2>
+<h2 id="_cookbook_modules"><a class="anchor" href="#_cookbook_modules"></a>Cookbook Modules</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>This cookbook is organized into focused modules:</p>
+<p>Select one of the module from the left menu to begin:</p>
 </div>
 <div class="ulist">
 <ul>
 <li>
-<p><strong><a href="getting-started/index.html" class="xref page">Getting Started</a></strong> - Essential tools and basic configuration</p>
+<p><strong><a href="getting-started/index.html" class="xref page">Getting Started</a></strong> - Essential tools setup and environment verification.</p>
 </li>
 <li>
-<p><strong><a href="storage/index.html" class="xref page">Storage Configuration</a></strong> - Setting up storage for virtual machines</p>
+<p><strong><a href="storage/index.html" class="xref page">Storage Configuration</a></strong> - Storage setup for virtual machines.</p>
 </li>
 <li>
-<p><strong><a href="networking/index.html" class="xref page">Networking Configuration</a></strong> - Networking guides</p>
+<p><strong><a href="networking/index.html" class="xref page">Networking Configuration</a></strong> - Networking guides.</p>
 </li>
 <li>
-<p><strong><a href="vm-configuration/index.html" class="xref page">Virtual Machine Configuration</a></strong> - Cloud-init and VM customization</p>
+<p><strong><a href="vm-configuration/index.html" class="xref page">Virtual Machine Configuration</a></strong> - Cloud-init and VM customization.</p>
 </li>
 <li>
-<p><strong><a href="manifests/index.html" class="xref page">YAML Manifests Library</a></strong> - Ready-to-use YAML examples</p>
+<p><strong><a href="manifests/index.html" class="xref page">YAML Manifests Library</a></strong> - A library of ready-to-deploy manifest examples.</p>
 </li>
 <li>
-<p><strong><a href="api/index.html" class="xref page">API Integration</a></strong> - API component architecture and functions such as cloning, export and machine topology</p>
+<p><strong><a href="api/index.html" class="xref page">API Integration</a></strong> - API components architecture and functions such as cloning, export and machine topology.</p>
 </li>
 </ul>
-</div>
-<div class="paragraph">
-<p>Each module contains step-by-step tutorials, practical examples, and troubleshooting guidance.</p>
-</div>
-<div class="paragraph">
-<p>To start, select the specific module of your interest from the menu tree on the left.
-If unsure, <a href="getting-started/index.html" class="xref page">start from here</a>.</p>
 </div>
 </div>
 </div>
@@ -383,16 +285,16 @@ If unsure, <a href="getting-started/index.html" class="xref page">start from her
 <div class="ulist">
 <ul>
 <li>
-<p><a href="appendix/glossary.html" class="xref page">Glossary</a> - Key terms and definitions</p>
-</li>
-<li>
-<p><a href="https://docs.openshift.com/container-platform/latest/virt/about_virt/about-virt.html" target="_blank" rel="noopener">OpenShift Virtualization Documentation</a></p>
+<p><a href="https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/virtualization/about" target="_blank" rel="noopener">OpenShift Virtualization Documentation</a></p>
 </li>
 <li>
 <p><a href="https://kubevirt.io/" target="_blank" rel="noopener">KubeVirt Project</a></p>
 </li>
 <li>
 <p><a href="https://cloudinit.readthedocs.io/" target="_blank" rel="noopener">Cloud-init Documentation</a></p>
+</li>
+<li>
+<p><a href="appendix/glossary.html" class="xref page">Glossary</a> - Key terms and definitions</p>
 </li>
 </ul>
 </div>
@@ -402,7 +304,18 @@ If unsure, <a href="getting-started/index.html" class="xref page">start from her
 <h2 id="_contributing"><a class="anchor" href="#_contributing"></a>Contributing</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>This cookbook is actively maintained. For questions, issues, or contributions, please refer to the <a href="https://github.com/RedHatQuickCourses/ocp-virt-cookbook" target="_blank" rel="noopener">project repository</a>.</p>
+<p>For questions, issues, or contributions, please open an issue to the <a href="https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues/new/choose" target="_blank" rel="noopener">project repository</a> or get in touch with the team at <a href="mailto:ocp-virt-cookbook@redhat.com">ocp-virt-cookbook@redhat.com</a>.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_credits"><a class="anchor" href="#_credits"></a>Credits</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>This cookbook builds upon the excellent work from the original <a href="https://github.com/acmenezes/ocp-virt-onboarding-kit" target="_blank" rel="noopener">OpenShift Virtualization Onboarding Kit</a>. We gratefully acknowledge the contributions of Alexandre Menezes, Andrea Perotti, Daphne Hoover, Josh Manning, Melvin Hillsman, Roshan Warrier, Yash Devan Oza and the community.</p>
+</div>
+<div class="paragraph">
+<p>Special thanks to all contributors who have helped shape this resource through content creation, testing, and feedback.</p>
 </div>
 </div>
 </div>
