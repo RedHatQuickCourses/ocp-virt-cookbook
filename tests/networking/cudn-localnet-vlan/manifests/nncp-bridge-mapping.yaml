@@ -1,0 +1,14 @@
+---
+apiVersion: nmstate.io/v1
+kind: NodeNetworkConfigurationPolicy
+metadata:
+  name: cudn-localnet-vlan-bridge-mapping
+spec:
+  nodeSelector:
+    node-role.kubernetes.io/worker: ''
+  desiredState:
+    ovn:
+      bridge-mappings:
+      - localnet: localnet-vlan
+        bridge: br-vlan
+        state: present

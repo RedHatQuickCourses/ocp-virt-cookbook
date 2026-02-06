@@ -1,0 +1,211 @@
+---
+- name: Test CUDN Localnet VLAN Tutorial
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars_files:
+    - vars.yaml
+
+  vars:
+    manifest_dir: "{{ playbook_dir }}/manifests"
+
+  tasks:
+    # Step 1: Create namespaces
+    - name: Create VM namespaces
+      kubernetes.core.k8s:
+        state: present
+        src: "{{ manifest_dir }}/namespaces.yaml"
+
+    - name: Verify namespaces created
+      kubernetes.core.k8s_info:
+        api_version: v1
+        kind: Namespace
+        name: "{{ item }}"
+      register: ns_result
+      failed_when: ns_result.resources | length == 0
+      loop:
+        - vm-guests-vlan-prod
+        - vm-guests-vlan-dev
+
+    # Step 2: Create OVS bridge
+    - name: Create OVS bridge NNCP
+      kubernetes.core.k8s:
+        state: present
+        template: "{{ manifest_dir }}/nncp-ovs-bridge.yaml"
+
+    - name: Wait for OVS bridge NNCP to be available
+      kubernetes.core.k8s_info:
+        api_version: nmstate.io/v1
+        kind: NodeNetworkConfigurationPolicy
+        name: br-vlan-creation
+      register: nncp_bridge
+      until: >
+        nncp_bridge.resources | length > 0 and
+        nncp_bridge.resources[0].status.conditions | default([]) |
+        selectattr('type', 'equalto', 'Available') |
+        selectattr('status', 'equalto', 'True') | list | length > 0
+      retries: "{{ (nncp_timeout / 10) | int }}"
+      delay: 10
+
+    # Step 3: Create bridge mapping
+    - name: Create bridge mapping NNCP
+      kubernetes.core.k8s:
+        state: present
+        src: "{{ manifest_dir }}/nncp-bridge-mapping.yaml"
+
+    - name: Wait for bridge mapping NNCP to be available
+      kubernetes.core.k8s_info:
+        api_version: nmstate.io/v1
+        kind: NodeNetworkConfigurationPolicy
+        name: cudn-localnet-vlan-bridge-mapping
+      register: nncp_mapping
+      until: >
+        nncp_mapping.resources | length > 0 and
+        nncp_mapping.resources[0].status.conditions | default([]) |
+        selectattr('type', 'equalto', 'Available') |
+        selectattr('status', 'equalto', 'True') | list | length > 0
+      retries: "{{ (nncp_timeout / 10) | int }}"
+      delay: 10
+
+    # Step 4: Create ClusterUserDefinedNetwork
+    - name: Create ClusterUserDefinedNetwork
+      kubernetes.core.k8s:
+        state: present
+        src: "{{ manifest_dir }}/cudn-localnet-vlan-100.yaml"
+
+    - name: Verify CUDN created
+      kubernetes.core.k8s_info:
+        api_version: k8s.ovn.org/v1
+        kind: ClusterUserDefinedNetwork
+        name: cudn-localnet-vlan-100
+      register: cudn_result
+      failed_when: cudn_result.resources | length == 0
+
+    - name: Verify NADs created in namespaces
+      kubernetes.core.k8s_info:
+        api_version: k8s.cni.cncf.io/v1
+        kind: NetworkAttachmentDefinition
+        namespace: "{{ item }}"
+        name: cudn-localnet-vlan-100
+      register: nad_result
+      failed_when: nad_result.resources | length == 0
+      loop:
+        - vm-guests-vlan-prod
+        - vm-guests-vlan-dev
+
+    # Step 5: Deploy VMs
+    - name: Deploy production VM
+      kubernetes.core.k8s:
+        state: present
+        src: "{{ manifest_dir }}/vm-prod.yaml"
+
+    - name: Deploy development VM
+      kubernetes.core.k8s:
+        state: present
+        src: "{{ manifest_dir }}/vm-dev.yaml"
+
+    # Step 6: Wait for VMs to be ready
+    - name: Wait for production VM to be ready
+      kubernetes.core.k8s_info:
+        api_version: kubevirt.io/v1
+        kind: VirtualMachine
+        namespace: vm-guests-vlan-prod
+        name: fedora-cudn-vlan-vm
+      register: vm_prod
+      until: >
+        vm_prod.resources | length > 0 and
+        vm_prod.resources[0].status.ready | default(false)
+      retries: "{{ (vm_timeout / 10) | int }}"
+      delay: 10
+
+    - name: Wait for development VM to be ready
+      kubernetes.core.k8s_info:
+        api_version: kubevirt.io/v1
+        kind: VirtualMachine
+        namespace: vm-guests-vlan-dev
+        name: fedora-cudn-vlan-vm-dev
+      register: vm_dev
+      until: >
+        vm_dev.resources | length > 0 and
+        vm_dev.resources[0].status.ready | default(false)
+      retries: "{{ (vm_timeout / 10) | int }}"
+      delay: 10
+
+    # Step 7: Verify VMIs have correct network configuration
+    - name: Verify production VMI has secondary network
+      kubernetes.core.k8s_info:
+        api_version: kubevirt.io/v1
+        kind: VirtualMachineInstance
+        namespace: vm-guests-vlan-prod
+        name: fedora-cudn-vlan-vm
+      register: vmi_prod
+      failed_when: >
+        vmi_prod.resources | length == 0 or
+        vmi_prod.resources[0].spec.networks | length < 2
+
+    - name: Verify development VMI has secondary network
+      kubernetes.core.k8s_info:
+        api_version: kubevirt.io/v1
+        kind: VirtualMachineInstance
+        namespace: vm-guests-vlan-dev
+        name: fedora-cudn-vlan-vm-dev
+      register: vmi_dev
+      failed_when: >
+        vmi_dev.resources | length == 0 or
+        vmi_dev.resources[0].spec.networks | length < 2
+
+    - name: Test completed successfully
+      ansible.builtin.debug:
+        msg: "CUDN Localnet VLAN tutorial test passed - all resources created and verified"
+
+  always:
+    - name: Cleanup resources
+      when: cleanup | default(true)
+      block:
+        - name: Delete VMs
+          kubernetes.core.k8s:
+            state: absent
+            api_version: kubevirt.io/v1
+            kind: VirtualMachine
+            namespace: "{{ item.namespace }}"
+            name: "{{ item.name }}"
+          loop:
+            - { namespace: vm-guests-vlan-prod, name: fedora-cudn-vlan-vm }
+            - { namespace: vm-guests-vlan-dev, name: fedora-cudn-vlan-vm-dev }
+          ignore_errors: true
+
+        - name: Delete CUDN
+          kubernetes.core.k8s:
+            state: absent
+            api_version: k8s.ovn.org/v1
+            kind: ClusterUserDefinedNetwork
+            name: cudn-localnet-vlan-100
+          ignore_errors: true
+
+        - name: Delete bridge mapping NNCP
+          kubernetes.core.k8s:
+            state: absent
+            api_version: nmstate.io/v1
+            kind: NodeNetworkConfigurationPolicy
+            name: cudn-localnet-vlan-bridge-mapping
+          ignore_errors: true
+
+        - name: Delete OVS bridge NNCP
+          kubernetes.core.k8s:
+            state: absent
+            api_version: nmstate.io/v1
+            kind: NodeNetworkConfigurationPolicy
+            name: br-vlan-creation
+          ignore_errors: true
+
+        - name: Delete namespaces
+          kubernetes.core.k8s:
+            state: absent
+            api_version: v1
+            kind: Namespace
+            name: "{{ item }}"
+          loop:
+            - vm-guests-vlan-prod
+            - vm-guests-vlan-dev
+          ignore_errors: true
