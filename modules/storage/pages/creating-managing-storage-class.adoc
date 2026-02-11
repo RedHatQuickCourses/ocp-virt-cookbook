@@ -151,6 +151,8 @@ spec:
   storageClassName: gp3-fast
 ----
 
+Openshift documentation: https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/storage/configuring-persistent-storage
+
 == Common Troubleshooting Scenarios
 
 * **Issue 1:** PVC remains in Pending state.
@@ -165,10 +167,10 @@ spec:
   ** Fix: Delete the PVC and recreate it using a StorageClass with WaitForFirstConsumer.
 
 * **Issue 3:** "Provisioner not found" 
-  **Cause: The CSI driver specified in provisioner: is not installed or crashing.
+  ** Cause: The CSI driver specified in provisioner: is not installed or crashing.
   ** Fix: Check the storage operator pods in the relevant namespace (e.g., openshift-cluster-csi-drivers).
 
 * **Issue 4:** Volume Resize Fails 
-  **Cause: allowVolumeExpansion is set to false in the StorageClass.
+  ** Cause: allowVolumeExpansion is set to false in the StorageClass.
   ** Fix: Edit the StorageClass to true 
   (note: not all provisioners support online expansion).
