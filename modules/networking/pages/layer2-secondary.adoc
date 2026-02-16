@@ -3,14 +3,14 @@
 
 == Overview
 
-This guide shows how to configure a layer2 secondary network to connect VirtualMachines via a cluster-wide logical switch.
+This guide shows how to configure a `layer2` secondary network to connect `VirtualMachines` via a cluster-wide logical switch.
 
-Doing this allows VirtualMachines to continue using the default Pod network as the primary network, which is useful when the following conditions apply:
+Doing this allows `VirtualMachines` to continue using the default Pod network as the primary network, which is useful when the following conditions apply:
 
-* You only need simple connectivity between VMs (even on different nodes) within the same namespace
-* You don't need network isolation between VMs within the namespace
-* You don't need network connectivity between VMs to span across multiple namespaces
-* You don't require access to the physical network interfaces of the nodes in the cluster
+* You only need simple connectivity between VMs (even on different nodes) within the same namespace.
+* You don't need network isolation between VMs within the namespace.
+* You don't need network connectivity between VMs to span across multiple namespaces.
+* You don't require access to the physical network interfaces of the nodes in the cluster.
 * You don't need to route ingress connectivity to the secondary network from the internet.
 * Lastly, you don't require access to external networks from the secondary network.
 
@@ -23,7 +23,7 @@ OpenShift 4.20,4.21
 The process is outlined in three steps:
 
 * <<creating_a_namespace,Creating a Namespace>>
-* <<creating_a_nad,Creating a Network Attachment Definition>>
+* <<creating_a_nad,Creating a NetworkAttachmentDefinition>>
 * <<attaching_vms,Attaching VirtualMachines>> to the Network
 ** <<creating_first_vm,Creating the First VirtualMachine>>
 ** <<creating_second_vm,Creating a Second VirtualMachine>>
@@ -32,8 +32,8 @@ The process is outlined in three steps:
 
 == Creating a Namespace [[creating_a_namespace]]
 
-The first step, if you have not already done so, is to create a namespace to house the NetworkAttachmentDefinition defining the network,
-as well as the VirtualMachines you wish to attach to the network. It does not require any specific labels in this case.
+The first step, if you have not already done so, is to create a namespace to house the `NetworkAttachmentDefinition` defining the network,
+as well as the `VirtualMachines` you wish to attach to the network. It does not require any specific labels in this case.
 
 You can easily create a new namespace using the `oc` binary, without the need to define any yaml:
 
@@ -49,17 +49,16 @@ Now that the new namespace is created, it's best to switch your current kube con
 oc project example-l2-secondary
 ----
 
-With the namespace created, and your current context set, proceed with <<creating_a_nad,Creating a Network Attachment Definition>>.
+With the namespace created, and your current context set, proceed with <<creating_a_nad,Creating a NetworkAttachmentDefinition>>.
 
 == Creating a Network Attachment Definition [[creating_a_nad]]
 
-The second step is to create the NetworkAttachmentDefinition which will define the layer2 network within the namespace.
+The second step is to create the `NetworkAttachmentDefinition` which will define the `layer2` network within the namespace.
 
-Use the `oc` tool with the following here document to create a layer2 NetworkAttachmentDefninition:
+Create a new file named `l2-network.nad.yaml` and copy/paste the following yaml definition as the file contents, then save and close the editor:
 
 [source,yaml]
 ----
-oc apply -f - <<EOF
 apiVersion: k8s.cni.cncf.io/v1
 kind: NetworkAttachmentDefinition
 metadata:
@@ -75,14 +74,20 @@ spec:
             "mtu": 1400,
             "netAttachDefName": "example-l2-secondary/l2-network"
     }
-EOF
 ----
 
-Check to make sure that the NetworkAttachmentDefinition creation was successful. The `l2-network` must exist in the `example-l2-secondary` namespace before proceeding:
+Apply the `NetworkAttachmentDefinition` into the pre-defined namespace `example-l2-network` on the OpenShift cluster using `oc apply`:
 
 [source,bash]
 ----
-oc get net-attach-def l2-network
+oc apply -f l2-network.nad.yaml
+----
+
+Check to make sure that the `NetworkAttachmentDefinition` creation was successful. The `l2-network` must exist in the `example-l2-secondary` namespace before proceeding:
+
+[source,bash]
+----
+oc get net-attach-def l2-network -n example-l2-secondary
 ----
 
 With the `l2-network` created, proceed with <<attaching_vms,Attaching VirtualMachines>> to the network.
@@ -90,27 +95,27 @@ With the `l2-network` created, proceed with <<attaching_vms,Attaching VirtualMac
 
 == Attaching VirtualMachines [[attaching_vms]]
 
-The next step is to create your VirtualMachines and attach them to the layer2 network that was just created.
-This is done in typical OpenShift (Kubernetes) fashion by creating a VirtualMachine API object and applying it to the cluster.
+The next step is to create your `VirtualMachines` and attach them to the `layer2` network that was just created.
+This is done in typical OpenShift (Kubernetes) fashion by creating a `VirtualMachine` API object and applying it to the cluster.
 
 In this section, we'll create two new VMs which will both be attached to the secondary `l2-network`.
 
 === Creating the First VirtualMachine [[creating_first_vm]]
 
-You can do this all at once using `oc` in conjunction with a yaml here document:
+Below is the yaml definition for the first VirtualMachine (the key fields are explained further below).
+Copy and paste content into a new file named `fedora-l2-secondary.vm.yaml`:
 
 [source,yaml]
 ----
-oc apply -f - <<EOF
 apiVersion: kubevirt.io/v1
 kind: VirtualMachine
 metadata:
-  creationTimestamp: null
   name: fedora-l2-secondary
+  labels:
+    app: fedora-l2-secondary
 spec:
   dataVolumeTemplates:
   - metadata:
-      creationTimestamp: null
       name: fedora-l2-secondary-root
     spec:
       sourceRef:
@@ -128,7 +133,8 @@ spec:
   runStrategy: Always
   template:
     metadata:
-      creationTimestamp: null
+      labels:
+        app: fedora-l2-secondary
     spec:
       domain:
         devices:
@@ -157,14 +163,12 @@ spec:
             password: fedora
             chpasswd:
               expire: False
-            runcmd: []
           networkData: |
             version: 2
             ethernets:
               enp2s0:
                 addresses:
                 - 192.168.20.10/24
-EOF
 ----
 
 [NOTE]
@@ -181,38 +185,57 @@ Regarding the fields in the above example (relative to `spec.template.spec`):
 
 * **name** - we aptly chose `secondary` as the network name to differentiate it from the `default` network.
 * **pod** or **multus** - to select a non-default network, choose `multus` as the field name. The default `pod` network accepts an empty object, but `multus` requires a `networkName` subfield.
-** **networkName** (required for `multus`) - the name of the network defined in the NetworkAttachmentDefinition created previously, named `l2-network`.
+** **networkName** (required for `multus`) - the name of the network defined in the `NetworkAttachmentDefinition` created previously, named `l2-network`.
 
 **volumes** - there are two volumes defined, the `fedora-l2-secondary-root` disk and the `cloudinitdisk` used to pass VM configuration data such as user credentials and network addresses.
 ====
 
-Optionally, you can check that the `fedora-l2-secondary` VM is up and running in the `example-l2-secondary` namespace before proceeding.
-If you prefer to expedite things, move on to <<creating_second_vm,Creating a Second VirtualMachine>> while the first machine is provisioning.
+You can create a new VirtualMachine on the OpenShift cluster (in the current namespace, `example-l2-secondary`) using `oc create`:
 
 [source,bash]
 ----
-# Check that the VM is created and/or running
-oc get vm fedora-l2-secondary
+oc create -f fedora-l2-secondary.vm.yaml
 ----
+
+Check that the `fedora-l2-secondary` VM is up and running in the `example-l2-secondary` namespace before proceeding. You may have to run the command a few times while in the `Provisioning` state:
+
+[source,bash]
+----
+oc get vm fedora-l2-secondary -n example-l2-secondary
+----
+
+[IMPORTANT]
+====
+.Troubleshooting
+If the `VirtualMachine` seems stuck in the `Pending` state, something is preventing the VM from scheduling. That could be any of these things:
+
+* There is an issue provisioning the underlying `DataVolume` on the cluster (such as a lack of disk space).
+* The `l2-network` `NetworkAttachmentDefinition` does not exist.
+* There is a resource limitation in the OpenShift cluster. This could be a lack of memory or vCPUs preventing the VM from being scheduled.
+
+To try and find the source of the issue, use `oc describe` or `oc get -o yaml` on one of the lower level resources (such as the `vmi`, `datavolume` or `pvc`).
+The error message should be found in the Events (oc describe) or Status (oc get -o yaml) of the culprit resource.
+====
 
 === Creating a Second VirtualMachine [[creating_second_vm]]
 
 Before we're able to test, a second VM is required to establish connectivity across the secondary network.
 
-Once the VM has been created, you can edit the object on-cluster using the `oc edit` command, adding the noted fields below:
+Below is the yaml source definition for the second `VirtualMachine`.
+Save the provided content into a file named `fedora-l2-secondary2.vm.yaml`.
+Note that the only changes from the firt VM are the name, IP address and root volume name.
 
 [source,yaml]
 ----
-oc apply -f - <<EOF
 apiVersion: kubevirt.io/v1
 kind: VirtualMachine
 metadata:
-  creationTimestamp: null
   name: fedora-l2-secondary2
+  labels:
+    app: fedroa-l2-secondary2
 spec:
   dataVolumeTemplates:
   - metadata:
-      creationTimestamp: null
       name: fedora-l2-secondary2-root
     spec:
       sourceRef:
@@ -230,7 +253,8 @@ spec:
   runStrategy: Always
   template:
     metadata:
-      creationTimestamp: null
+      labels:
+        app: fedora-l2-secondary2
     spec:
       domain:
         devices:
@@ -259,46 +283,49 @@ spec:
             password: fedora
             chpasswd:
               expire: False
-            runcmd: []
           networkData: |
             version: 2
             ethernets:
               enp2s0:
                 addresses:
                 - 192.168.20.20/24
-EOF
 ----
 
-The only things that have changed with the second VM versus the first one are the name, IP address and root volume name. The rest is identical.
-
-Check that the second VM named `fedora-l2-secondary2` is up and running in the `example-l2-secondary` namespace. Both VirtualMachines should be running prior to <<testing_secondary_network,testing>>:
+Apply the `VirtualMachine` to the current namespace on the OpenShift cluster:
 
 [source,bash]
 ----
-oc get vm fedora-l2-secondary2
+oc apply -f fedora-l2-secondary2.vm.yaml
+----
+
+Check that the second VM named `fedora-l2-secondary2` is up and running in the `example-l2-secondary` namespace. Both `VirtualMachines` should be running prior to <<testing_secondary_network,testing>>:
+
+[source,bash]
+----
+oc get vm fedora-l2-secondary2 -n example-l2-secondary
 ----
 
 
 == Testing the Secondary Network [[testing_secondary_network]]
 
-Since the secondary network is layer2 only, and exists purely as a virtual network within the cluster and namespace, we must test connectivity from one VM to another.
+Since the secondary network is `layer2` only, and exists purely as a virtual network within the cluster and namespace, we must test connectivity from one VM to another.
 
 The following resources must exist in the `example-l2-secondary` namespace before you can proceed with testing:
 
-* `l2-network` NetworkAttachmentDefinition
-* `fedora-l2-secondary` VirtualMachine (Secondary NIC IP address: 192.168.20.10)
-* `fedora-l2-secondary2` Virtualmachine (Secondary NIC IP address: 192.168.20.20)
+* `NetworkAttachmentDefinition`: `l2-network`
+* `VirtualMachine`: `fedora-l2-secondary` (secondary NIC IP address: 192.168.20.10)
+* `VirtualMachine`: `fedora-l2-secondary2` (secondary NIC IP address: 192.168.20.20)
 
 The simplest way to test is by connecting to the console on one VM (or optionally, both VMs) and pinging the other.
 
-Access the console of the first VirtualMachine using the `virtctl` command and login as **user**:`fedora` with **password**:`fedora` (hit `ENTER` if no login prompt appears):
+Access the console of the first `VirtualMachine` using the `virtctl` command and login as **user**:`fedora` with **password**:`fedora` (hit `ENTER` if no login prompt appears):
 
 [source,bash]
 ----
 virtctl console fedora-l2-secondary
 ----
 
-Check the IP address of the VirtualMachine. The following command should return a static address of `192.168.20.10` for the `enp2s0` interface:
+Check the IP address of the `VirtualMachine`. The following command should return a static address of `192.168.20.10` for the `enp2s0` interface:
 
 [source,bash]
 ----
