@@ -1,0 +1,1093 @@
+= Cloning Virtual Machines for Rapid Deployment
+:navtitle: Cloning VMs
+
+== Overview
+
+This tutorial demonstrates how to clone existing virtual machines in OpenShift Virtualization to rapidly deploy identical or customized VM instances. VM cloning creates copies of existing VMs with their entire disk contents, configurations, and installed software, enabling fast environment provisioning.
+
+== What is VM Cloning?
+
+VM cloning creates a new virtual machine by duplicating an existing VM. OpenShift Virtualization provides two main methods for cloning:
+
+* **Web console cloning**: Simple point-and-click interface for cloning VMs
+* **CLI-based cloning**: Manual process of cloning PVCs and creating new VMs
+
+Key benefits of VM cloning:
+
+* Rapid deployment of pre-configured environments
+* Consistent software and configuration across instances
+* Accelerated development and testing workflows
+* Quick scale-out for identical workloads
+* Reduced time from deployment to production-ready state
+
+== Cloning vs Golden Images
+
+While both approaches enable rapid VM deployment, they serve different purposes:
+
+[cols="2,3,3"]
+|===
+|Aspect |VM Cloning |Golden Images
+
+|Use Case
+|Duplicate specific VM with all its data and state
+|Template for many VMs with standardized configuration
+
+|Customization
+|Clones retain source VM data, can customize with cloud-init
+|Each VM starts fresh from template
+
+|Data Preservation
+|Preserves all data from source VM
+|Only contains base configuration
+
+|Source State
+|Can clone from running or stopped VM
+|Source is a prepared, generalized image
+
+|Typical Scenario
+|Clone a configured dev environment for testing
+|Deploy multiple web servers with same base setup
+|===
+
+== Prerequisites
+
+* OpenShift 4.18+ with OpenShift Virtualization operator installed
+* Access to OpenShift web console or CLI tools: `oc`, `virtctl`
+* Storage class that supports volume cloning
+* At least one VM to clone from (or we'll create one)
+* Basic understanding of PersistentVolumeClaims (PVCs)
+
+== Understanding Cloning Methods
+
+OpenShift Virtualization provides two approaches for cloning VMs:
+
+=== Web Console Cloning (Recommended)
+
+The web console provides a streamlined cloning experience:
+
+* Automatically handles PVC cloning
+* Creates new VM with cloned disk
+* Supports cloning from running or stopped VMs
+* Preserves VM configuration (CPU, memory, network)
+
+=== Manual CLI Cloning
+
+For automation or customization:
+
+* Clone the source VM's PVC
+* Create a new VM that references the cloned PVC
+* Allows customization during clone process
+* Useful for cross-namespace cloning
+
+=== Storage Cloning Behavior
+
+The underlying storage system determines clone performance:
+
+* **Smart cloning**: Uses storage snapshots (fast, CSI-enabled storage classes)
+* **Host-assisted cloning**: Copies data through pods (slower, any storage class)
+
+== Cloning VMs Using the Web Console
+
+The web console is the simplest method for cloning VMs.
+
+=== Setup: Create Source VM
+
+First, create a namespace and source VM:
+
+[source,bash,role=execute]
+----
+oc create namespace vm-cloning-demo
+----
+
+Deploy a source VM with nginx pre-installed:
+
+xref:attachment$source-webserver-vm.yaml[Download source-webserver-vm.yaml]
+
+[source,yaml]
+----
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: source-webserver
+  namespace: vm-cloning-demo
+spec:
+  dataVolumeTemplates:
+    - apiVersion: cdi.kubevirt.io/v1beta1
+      kind: DataVolume
+      metadata:
+        name: source-webserver-disk
+      spec:
+        sourceRef:
+          kind: DataSource
+          name: fedora
+          namespace: openshift-virtualization-os-images
+        storage:
+          resources:
+            requests:
+              storage: 30Gi
+  runStrategy: RerunOnFailure
+  template:
+    metadata:
+      labels:
+        kubevirt.io/domain: source-webserver
+    spec:
+      domain:
+        cpu:
+          cores: 2
+        devices:
+          disks:
+            - disk:
+                bus: virtio
+              name: rootdisk
+            - disk:
+                bus: virtio
+              name: cloudinitdisk
+          interfaces:
+            - masquerade: {}
+              name: default
+          rng: {}
+        machine:
+          type: pc-q35-rhel9.4.0
+        memory:
+          guest: 4Gi
+      networks:
+        - name: default
+          pod: {}
+      volumes:
+        - dataVolume:
+            name: source-webserver-disk
+          name: rootdisk
+        - cloudInitNoCloud:
+            userData: |-
+              #cloud-config
+              user: fedora
+              password: fedora123
+              chpasswd: { expire: false }
+              ssh_pwauth: true
+              runcmd:
+                - dnf install -y nginx
+                - systemctl enable --now nginx
+                - echo "<h1>Source Webserver VM</h1><p>Hostname: $(hostname)</p>" > /usr/share/nginx/html/index.html
+                - firewall-cmd --permanent --add-service=http
+                - firewall-cmd --reload
+          name: cloudinitdisk
+----
+
+Deploy the source VM:
+
+[source,bash,role=execute]
+----
+oc apply -f source-webserver-vm.yaml
+----
+
+Wait for the VM to be running:
+
+[source,bash,role=execute]
+----
+oc get vmi -n vm-cloning-demo
+----
+
+=== Clone Using Web Console
+
+To clone a VM using the OpenShift web console:
+
+. Navigate to *Virtualization* → *VirtualMachines*
++
+image::clone-vm-list.png[VirtualMachines list showing source-webserver VM]
+
+. Locate the VM you want to clone (`source-webserver`)
+. Click the *⋮* (Actions menu) next to the VM
+. Select *Clone*
++
+image::clone-vm-actions-menu.png[Actions menu with Clone option highlighted]
+
+. In the Clone VirtualMachine dialog:
+  * Enter a name for the new VM (e.g., `webserver-clone-1`)
+  * Optionally check *Start VirtualMachine once created* to start it immediately
+  * Review the configuration details (Operating system, CPU, Memory, NICs, Disks)
+. Click *Clone*
++
+image::clone-vm-dialog.png[Clone VirtualMachine dialog with name and configuration]
+
+The web console will:
+
+* Clone the source VM's PVC
+* Create a new VM with the cloned disk
+* Preserve the VM's configuration (CPU, memory, networks)
+* Start the VM if you selected that option
+
+Monitor the clone progress in the VirtualMachines list. The clone will show "Provisioning" until the PVC clone completes.
+
+image::clone-vm-dialog-full.png[Clone VirtualMachine dialog showing request progress]
+
+=== Verify Web Console Clone
+
+Check the cloned VM status:
+
+[source,bash,role=execute]
+----
+oc get vm -n vm-cloning-demo
+oc get vmi -n vm-cloning-demo
+----
+
+Access the cloned VM:
+
+[source,bash,role=execute]
+----
+virtctl console webserver-clone-1 -n vm-cloning-demo
+----
+
+The cloned VM will have nginx pre-installed (from the source) and the same hostname initially.
+
+== Cloning VMs Using the CLI
+
+For automation, customization, or cross-namespace cloning, use the CLI method.
+
+=== Method 1: Clone PVC, Then Create VM (Recommended)
+
+This is the recommended CLI approach. First, identify the source VM's PVC:
+
+[source,bash,role=execute]
+----
+oc get pvc -n vm-cloning-demo
+----
+
+Output shows:
+[source,text]
+----
+NAME                    STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   AGE
+source-webserver-disk   Bound    pvc-1234abcd-5678-efgh-9012-ijklmnop3456   30Gi       RWO            lvms-vg1       10m
+----
+
+Create a standalone DataVolume that clones the source PVC:
+
+xref:attachment$clone-datavolume.yaml[Download clone-datavolume.yaml]
+
+[source,yaml]
+----
+apiVersion: cdi.kubevirt.io/v1beta1
+kind: DataVolume
+metadata:
+  name: webserver-clone-2-disk
+  namespace: vm-cloning-demo
+  annotations:
+    cdi.kubevirt.io/storage.bind.immediate.requested: "true"  # <1>
+spec:
+  source:
+    pvc:
+      name: source-webserver-disk
+      namespace: vm-cloning-demo
+  storage:
+    accessModes:
+      - ReadWriteOnce
+    resources:
+      requests:
+        storage: 30Gi
+    storageClassName: gp3-csi  # <2>
+----
+<1> Required for storage classes with `WaitForFirstConsumer` binding mode
+<2> Specify the storage class (optional, will inherit from source PVC if omitted)
+
+IMPORTANT: The `cdi.kubevirt.io/storage.bind.immediate.requested: "true"` annotation is critical for storage classes that use `WaitForFirstConsumer` binding mode (like AWS EBS gp3-csi, Azure Disk, etc.). Without this annotation, the DataVolume will remain in `PendingPopulation` state until a VM tries to consume it.
+
+Apply the DataVolume:
+
+[source,bash,role=execute]
+----
+oc apply -f clone-datavolume.yaml
+----
+
+Monitor the clone progress:
+
+[source,bash,role=execute]
+----
+oc get dv webserver-clone-2-disk -n vm-cloning-demo -w
+----
+
+You'll see phases like:
+
+[source,text]
+----
+NAME                     PHASE                               PROGRESS   RESTARTS   AGE
+webserver-clone-2-disk   CloneFromSnapshotSourceInProgress   N/A                   4s
+webserver-clone-2-disk   PrepClaimInProgress                 N/A                   68s
+webserver-clone-2-disk   RebindInProgress                    N/A                   78s
+webserver-clone-2-disk   Succeeded                           100.0%                79s
+----
+
+Once the DataVolume shows `Succeeded`, create a VM that uses the cloned disk:
+
+xref:attachment$vm-from-cloned-pvc.yaml[Download vm-from-cloned-pvc.yaml]
+
+[source,yaml]
+----
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: webserver-clone-2
+  namespace: vm-cloning-demo
+spec:
+  runStrategy: Manual
+  template:
+    metadata:
+      labels:
+        kubevirt.io/domain: webserver-clone-2
+    spec:
+      domain:
+        cpu:
+          cores: 2
+        devices:
+          disks:
+            - disk:
+                bus: virtio
+              name: rootdisk
+          interfaces:
+            - masquerade: {}
+              name: default
+          rng: {}
+        machine:
+          type: pc-q35-rhel9.4.0
+        memory:
+          guest: 4Gi
+      networks:
+        - name: default
+          pod: {}
+      volumes:
+        - name: rootdisk
+          persistentVolumeClaim:
+            claimName: webserver-clone-2-disk
+----
+
+Apply the VM:
+
+[source,bash,role=execute]
+----
+oc apply -f vm-from-cloned-pvc.yaml
+----
+
+Start the VM:
+
+[source,bash,role=execute]
+----
+virtctl start webserver-clone-2 -n vm-cloning-demo
+----
+
+=== Method 2: Clone Entire VM (Alternative Approach)
+
+NOTE: This approach requires manual editing and is not the recommended method. Use Method 1 above for a more reliable and easier-to-troubleshoot workflow.
+
+Stop the source VM for a clean clone:
+
+[source,bash,role=execute]
+----
+virtctl stop source-webserver -n vm-cloning-demo
+----
+
+Wait for the VM to stop:
+
+[source,bash,role=execute]
+----
+oc get vm source-webserver -n vm-cloning-demo
+----
+
+Export the source VM configuration:
+
+[source,bash,role=execute]
+----
+oc get vm source-webserver -n vm-cloning-demo -o yaml > clone-base.yaml
+----
+
+Edit `clone-base.yaml` to create a clone. You need to make the following changes:
+
+*1. Change the VM name:*
+
+[source,yaml]
+----
+metadata:
+  name: source-webserver  # Change to: webserver-manual-clone
+  namespace: vm-cloning-demo
+----
+
+*2. Update DataVolume name and add PVC source:*
+
+[source,yaml]
+----
+spec:
+  dataVolumeTemplates:
+    - apiVersion: cdi.kubevirt.io/v1beta1
+      kind: DataVolume
+      metadata:
+        name: source-webserver-disk  # Change to: webserver-manual-clone-disk
+      spec:
+        # Remove the original sourceRef section
+        # Add this instead:
+        source:
+          pvc:
+            name: source-webserver-disk
+            namespace: vm-cloning-demo
+        storage:
+          resources:
+            requests:
+              storage: 30Gi
+----
+
+*3. Update labels and domain name:*
+
+[source,yaml]
+----
+spec:
+  template:
+    metadata:
+      labels:
+        kubevirt.io/domain: source-webserver  # Change to: webserver-manual-clone
+    spec:
+      domain:
+        # ... rest of config
+      volumes:
+        - dataVolume:
+            name: source-webserver-disk  # Change to: webserver-manual-clone-disk
+          name: rootdisk
+----
+
+*4. Remove unnecessary fields:*
+
+Remove these metadata fields that are auto-generated:
+* `metadata.uid`
+* `metadata.resourceVersion`
+* `metadata.creationTimestamp`
+* `metadata.generation`
+* `status` section (entire section)
+
+*5. Remove MAC addresses (IMPORTANT):*
+
+Remove the `macAddress` field from network interfaces to allow automatic allocation:
+
+[source,yaml]
+----
+spec:
+  template:
+    spec:
+      domain:
+        devices:
+          interfaces:
+            - masquerade: {}
+              name: default
+              macAddress: "52:54:00:xx:xx:xx"  # REMOVE THIS LINE
+----
+
+If you don't remove the MAC address, you'll get an error:
+`Failed to allocate mac to the vm object: failed to allocate requested mac address`
+
+After making these edits, apply the modified YAML:
+
+[source,bash,role=execute]
+----
+oc apply -f clone-base.yaml
+----
+
+== Customizing Cloned VMs with Cloud-init
+
+Cloned VMs inherit all data from the source, including hostname and credentials. Use cloud-init to customize clones.
+
+=== Clone with New Hostname and Password
+
+Create a DataVolume clone (as in Method 2):
+
+[source,bash,role=execute]
+----
+cat <<EOF | oc apply -f -
+apiVersion: cdi.kubevirt.io/v1beta1
+kind: DataVolume
+metadata:
+  name: webserver-custom-disk
+  namespace: vm-cloning-demo
+  annotations:
+    cdi.kubevirt.io/storage.bind.immediate.requested: "true"
+spec:
+  source:
+    pvc:
+      name: source-webserver-disk
+      namespace: vm-cloning-demo
+  storage:
+    accessModes:
+      - ReadWriteOnce
+    resources:
+      requests:
+        storage: 30Gi
+EOF
+----
+
+Wait for clone to complete:
+
+[source,bash,role=execute]
+----
+oc get dv webserver-custom-disk -n vm-cloning-demo -w
+----
+
+Create a VM with cloud-init customization:
+
+xref:attachment$cloned-vm-with-cloudinit.yaml[Download cloned-vm-with-cloudinit.yaml]
+
+[source,yaml]
+----
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: webserver-custom
+  namespace: vm-cloning-demo
+spec:
+  runStrategy: Manual
+  template:
+    metadata:
+      labels:
+        kubevirt.io/domain: webserver-custom
+    spec:
+      domain:
+        cpu:
+          cores: 2
+        devices:
+          disks:
+            - disk:
+                bus: virtio
+              name: rootdisk
+            - disk:
+                bus: virtio
+              name: cloudinitdisk
+          interfaces:
+            - masquerade: {}
+              name: default
+          rng: {}
+        machine:
+          type: pc-q35-rhel9.4.0
+        memory:
+          guest: 4Gi
+      networks:
+        - name: default
+          pod: {}
+      volumes:
+        - name: rootdisk
+          persistentVolumeClaim:
+            claimName: webserver-custom-disk
+        - cloudInitNoCloud:
+            userData: |-
+              #cloud-config
+              hostname: webserver-custom
+              fqdn: webserver-custom.local
+              manage_etc_hosts: true
+              password: fedora123
+              chpasswd: { expire: false }
+              ssh_pwauth: true
+              runcmd:
+                - hostnamectl set-hostname webserver-custom
+                - echo "<h1>Customized Clone</h1><p>Hostname: $(hostname)</p>" > /usr/share/nginx/html/index.html
+                - systemctl restart nginx
+          name: cloudinitdisk
+----
+
+This cloud-init configuration:
+
+* Sets a new hostname (`webserver-custom`)
+* Sets password for the fedora user
+* Updates the nginx welcome page
+* Preserves nginx installation from the source VM
+
+Apply and start:
+
+[source,bash,role=execute]
+----
+oc apply -f cloned-vm-with-cloudinit.yaml
+virtctl start webserver-custom -n vm-cloning-demo
+----
+
+Verify customization:
+
+[source,bash,role=execute]
+----
+virtctl console webserver-custom -n vm-cloning-demo
+----
+
+Inside the VM:
+
+[source,bash]
+----
+hostname
+# Output: webserver-custom
+
+systemctl status nginx
+# Shows nginx is running (preserved from source)
+
+curl localhost
+# Shows custom HTML
+----
+
+== Cloning Across Namespaces
+
+Clone VMs to different namespaces for environment separation (dev, test, prod).
+
+=== Create Target Namespace
+
+[source,bash,role=execute]
+----
+oc create namespace vm-cloning-production
+----
+
+=== Configure RBAC for Cross-Namespace Cloning
+
+The service account in the target namespace needs permission to access PVCs in the source namespace:
+
+xref:attachment$cross-namespace-clone-rbac.yaml[Download cross-namespace-clone-rbac.yaml]
+
+[source,yaml]
+----
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: datavolume-cloner
+  namespace: vm-cloning-demo
+rules:
+  - apiGroups: [""]
+    resources: ["persistentvolumeclaims"]
+    verbs: ["get", "list"]
+  - apiGroups: ["cdi.kubevirt.io"]
+    resources: ["datavolumes"]
+    verbs: ["get", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: allow-clone-from-demo
+  namespace: vm-cloning-demo
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: datavolume-cloner
+subjects:
+  - kind: ServiceAccount
+    name: default
+    namespace: vm-cloning-production
+----
+
+Apply RBAC:
+
+[source,bash,role=execute]
+----
+oc apply -f cross-namespace-clone-rbac.yaml
+----
+
+=== Create Cross-Namespace Clone
+
+Create a DataVolume in the production namespace that clones from the demo namespace:
+
+xref:attachment$cross-namespace-clone-datavolume.yaml[Download cross-namespace-clone-datavolume.yaml]
+
+[source,yaml]
+----
+apiVersion: cdi.kubevirt.io/v1beta1
+kind: DataVolume
+metadata:
+  name: webserver-production-disk
+  namespace: vm-cloning-production
+  annotations:
+    cdi.kubevirt.io/storage.bind.immediate.requested: "true"
+spec:
+  source:
+    pvc:
+      name: source-webserver-disk
+      namespace: vm-cloning-demo
+  storage:
+    accessModes:
+      - ReadWriteOnce
+    resources:
+      requests:
+        storage: 30Gi
+----
+
+Apply the DataVolume:
+
+[source,bash,role=execute]
+----
+oc apply -f cross-namespace-clone-datavolume.yaml
+----
+
+Monitor clone:
+
+[source,bash,role=execute]
+----
+oc get dv -n vm-cloning-production -w
+----
+
+Create production VM:
+
+xref:attachment$cloned-webserver-production.yaml[Download cloned-webserver-production.yaml]
+
+[source,yaml]
+----
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: webserver-production
+  namespace: vm-cloning-production
+  labels:
+    environment: production
+spec:
+  runStrategy: Manual
+  template:
+    metadata:
+      labels:
+        kubevirt.io/domain: webserver-production
+    spec:
+      domain:
+        cpu:
+          cores: 4
+        devices:
+          disks:
+            - disk:
+                bus: virtio
+              name: rootdisk
+            - disk:
+                bus: virtio
+              name: cloudinitdisk
+          interfaces:
+            - masquerade: {}
+              name: default
+          rng: {}
+        machine:
+          type: pc-q35-rhel9.4.0
+        memory:
+          guest: 8Gi
+      networks:
+        - name: default
+          pod: {}
+      volumes:
+        - name: rootdisk
+          persistentVolumeClaim:
+            claimName: webserver-production-disk
+        - cloudInitNoCloud:
+            userData: |-
+              #cloud-config
+              hostname: webserver-prod
+              fqdn: webserver-prod.production.local
+              manage_etc_hosts: true
+              password: fedora123
+              chpasswd: { expire: false }
+              ssh_pwauth: true
+              runcmd:
+                - hostnamectl set-hostname webserver-prod
+                - echo "<h1>Production Webserver</h1><p>Environment: Production</p>" > /usr/share/nginx/html/index.html
+                - systemctl restart nginx
+          name: cloudinitdisk
+----
+
+Key differences for production:
+
+* Different namespace
+* More resources (4 cores, 8Gi RAM)
+* Production-specific labels
+* Sets password for access
+* Production-specific customizations
+
+Apply and start:
+
+[source,bash,role=execute]
+----
+oc apply -f cloned-webserver-production.yaml
+virtctl start webserver-production -n vm-cloning-production
+----
+
+== Storage Considerations
+
+=== Clone Performance
+
+Clone speed depends on your storage:
+
+* **Smart cloning** (CSI snapshots): Very fast, uses storage snapshots
+  - Ceph RBD, AWS EBS, Azure Disk, GCP PD
+  - Phase: `SnapshotForSmartCloneInProgress` → `SmartClonePVCInProgress`
+
+* **Host-assisted cloning**: Slower, copies data through pods
+  - Any storage class without snapshot support
+  - Phase: `CloneInProgress` with progress percentage
+
+Check which method is being used:
+
+[source,bash,role=execute]
+----
+oc get dv <datavolume-name> -n <namespace> -o yaml | grep cloneType
+----
+
+Output:
+[source,yaml]
+----
+cdi.kubevirt.io/cloneType: snapshot  # Smart cloning
+# or
+cdi.kubevirt.io/cloneType: copy      # Host-assisted cloning
+----
+
+=== Storage Space Requirements
+
+Each clone requires full storage allocation:
+
+* Clones are independent copies, not snapshots
+* Each clone needs storage equal to source volume size
+* Plan capacity: (number of clones × source volume size)
+* Check namespace quotas and storage class capacity
+
+Verify available storage:
+
+[source,bash,role=execute]
+----
+oc get sc
+oc describe sc <storage-class-name>
+----
+
+=== Best Practices for Storage
+
+* Use storage classes with snapshot support for faster cloning
+* Ensure sufficient storage capacity before creating clones
+* Monitor storage usage in namespaces
+* Clean up unused clones regularly
+* Consider storage quotas for namespaces
+
+== Verification and Troubleshooting
+
+=== Verify Clone Completion
+
+Check DataVolume status:
+
+[source,bash,role=execute]
+----
+oc get dv -n vm-cloning-demo
+----
+
+Successful clone shows `Succeeded`:
+
+[source,text]
+----
+NAME                          PHASE       PROGRESS   AGE
+webserver-custom-disk         Succeeded   N/A        5m
+----
+
+=== Check Clone Events
+
+View clone events:
+
+[source,bash,role=execute]
+----
+oc describe dv <datavolume-name> -n <namespace>
+----
+
+Look for events showing clone progress:
+
+[source,text]
+----
+Events:
+  Type    Reason             Age   From                   Message
+  ----    ------             ----  ----                   -------
+  Normal  CloneInProgress    5m    datavolume-controller  Cloning from vm-cloning-demo/source-webserver-disk in progress
+  Normal  CloneSucceeded     2m    datavolume-controller  Successfully cloned from vm-cloning-demo/source-webserver-disk
+----
+
+=== Verify VM is Running
+
+[source,bash,role=execute]
+----
+oc get vmi -n vm-cloning-demo
+----
+
+=== Verify Customizations
+
+Access VM console:
+
+[source,bash,role=execute]
+----
+virtctl console <vm-name> -n <namespace>
+----
+
+Inside the VM:
+
+[source,bash]
+----
+# Check hostname
+hostname
+
+# Verify software from source VM
+systemctl status nginx
+
+# Check cloud-init status
+cloud-init status
+
+# View cloud-init logs
+sudo cat /var/log/cloud-init-output.log
+
+# Check machine ID (if customized)
+cat /etc/machine-id
+----
+
+== Common Issues and Solutions
+
+=== Issue: Clone stuck in "Provisioning" or "CloneInProgress"
+
+**Problem**: DataVolume shows `CloneInProgress` for extended time.
+
+**Possible causes**:
+* Large source volume
+* Slow storage or network
+* Host-assisted cloning on large volumes
+
+**Solutions**:
+
+[source,bash,role=execute]
+----
+# Check clone events
+oc describe dv <datavolume-name> -n <namespace>
+
+# Check CDI pods
+oc get pods -n <namespace> | grep cdi
+
+# View CDI logs
+oc logs <cdi-pod> -n <namespace>
+----
+
+For large volumes, host-assisted cloning can take considerable time. This is expected.
+
+=== Issue: Clone fails with "permission denied"
+
+**Problem**: Cross-namespace clone fails with RBAC errors.
+
+**Solution**: Verify RBAC permissions:
+
+[source,bash,role=execute]
+----
+# Check role exists
+oc get role datavolume-cloner -n <source-namespace>
+
+# Check role binding
+oc get rolebinding -n <source-namespace>
+
+# Test permissions
+oc auth can-i get pvc --as=system:serviceaccount:<target-namespace>:default -n <source-namespace>
+----
+
+Output should be `yes`.
+
+=== Issue: Cloned VM has same hostname as source
+
+**Problem**: Clone boots with original hostname.
+
+**Solution**: Add cloud-init configuration to the VM:
+
+* Ensure `cloudinitdisk` volume is defined
+* Set `hostname` field in cloud-init userData
+* Use `runcmd` to set hostname: `hostnamectl set-hostname <new-name>`
+* Check cloud-init logs: `sudo cat /var/log/cloud-init.log`
+
+=== Issue: Storage quota exceeded
+
+**Problem**: Clone fails due to insufficient storage quota.
+
+**Solution**:
+
+[source,bash,role=execute]
+----
+# Check quotas
+oc get resourcequota -n <namespace>
+oc describe resourcequota -n <namespace>
+
+# Increase quota if needed
+oc edit resourcequota <quota-name> -n <namespace>
+----
+
+=== Issue: Source PVC not found
+
+**Problem**: DataVolume cannot find source PVC.
+
+**Solution**:
+
+[source,bash,role=execute]
+----
+# Verify source PVC exists
+oc get pvc -n <source-namespace>
+
+# Check DataVolume source reference
+oc get dv <datavolume-name> -n <namespace> -o yaml
+----
+
+Ensure `spec.source.pvc.name` and `spec.source.pvc.namespace` are correct.
+
+=== Issue: Clone works but VM won't start
+
+**Problem**: DataVolume succeeded but VM stuck in "Scheduling" or "Starting".
+
+**Possible causes**:
+* PVC not bound
+* Insufficient resources
+* Node scheduling issues
+
+**Solutions**:
+
+[source,bash,role=execute]
+----
+# Check PVC status
+oc get pvc -n <namespace>
+
+# Check VM events
+oc describe vm <vm-name> -n <namespace>
+
+# Check VMI (if it exists)
+oc describe vmi <vm-name> -n <namespace>
+----
+
+== Cleanup
+
+Remove all resources created in this tutorial:
+
+[source,bash,role=execute]
+----
+# Delete all VMs in demo namespace
+oc delete vm --all -n vm-cloning-demo
+
+# Delete all DataVolumes in demo namespace
+oc delete dv --all -n vm-cloning-demo
+
+# Delete production VM
+oc delete vm webserver-production -n vm-cloning-production
+oc delete dv --all -n vm-cloning-production
+
+# Delete RBAC resources
+oc delete role datavolume-cloner -n vm-cloning-demo
+oc delete rolebinding allow-clone-from-demo -n vm-cloning-demo
+
+# Delete namespaces
+oc delete namespace vm-cloning-demo
+oc delete namespace vm-cloning-production
+----
+
+Verify cleanup:
+
+[source,bash,role=execute]
+----
+oc get namespace | grep vm-cloning
+----
+
+== Summary
+
+In this tutorial, you learned:
+
+* How VM cloning works in OpenShift Virtualization
+* The difference between web console and CLI cloning methods
+* How to clone VMs using the OpenShift web console
+* How to clone VMs using CLI with standalone DataVolumes
+* How to customize clones with cloud-init
+* How to clone VMs across namespaces with RBAC
+* How to create multiple clones for scale-out scenarios
+* Storage considerations: smart cloning vs host-assisted cloning
+* Best practices for post-clone customization
+* Security practices for credentials and system identity
+* Common issues and troubleshooting techniques
+* Production use cases for VM cloning
+
+VM cloning accelerates development, testing, and deployment workflows by enabling rapid creation of pre-configured environments in OpenShift Virtualization.
+
+== References
+
+* link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/virtualization/advanced-vm-creation#virt-creating-vms-by-cloning-pvcs[Creating VMs by cloning PVCs,window=_blank]
