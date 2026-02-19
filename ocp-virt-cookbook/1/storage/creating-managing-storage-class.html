@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Creating and Managing Storage Classes :: OpenShift Virtualization cookbook</title>
+    <link rel="prev" href="lvm-troubleshooting.html">
+    <link rel="next" href="../networking/index.html">
+    <meta name="generator" content="Antora 3.1.3">
+    <link rel="stylesheet" href="../../../_/css/site.css">
+    <script>var uiRootPath = '../../../_'</script>
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://www.redhat.com" target="_blank"><img src="../../../_/img/redhat-logo.png" height="40px" alt="Red Hat"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="../../..">OpenShift Virtualization cookbook</a>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues" target="_blank">Report Issues</a>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="ocp-virt-cookbook" data-version="1">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="../index.html">OpenShift Virtualization cookbook</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../getting-started/index.html">Getting Started</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/prerequisites.html">Prerequisites</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/install-openshift-virtualization.html">Install OpenShift Virtualization</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/default-storage-class.html">Storage Setup</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/create-vm-web-console.html">Create VM from Web Console</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/virtctl-basics.html">Virtctl Basics</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="index.html">Storage Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="lvm-operator.html">LVM Operator Installation</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="lvm-troubleshooting.html">LVM Troubleshooting</a>
+  </li>
+  <li class="nav-item is-current-page" data-depth="2">
+    <a class="nav-link" href="creating-managing-storage-class.html">Creating and Managing Storage Classes</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../networking/index.html">Networking Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/udn-primary-networks.html">UDN Primary Networks</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/localnet-secondary.html">Localnet Secondary Networks with CUDN</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/localnet-vlan.html">Localnet Secondary Networks with VLAN using NAD</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/cudn-localnet-vlan.html">Localnet VLAN with CUDN</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/linux-bridges.html">Linux Bridges</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/ovs-bridge-troubleshooting.html">Troubleshooting Localnet Networks</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../vm-configuration/index.html">Virtual Machine Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/cloud-init-ip-configuration.html">Cloud-init IP Configuration</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/cloud-init-troubleshooting.html">Cloud-init Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/internal-dns-for-vms.html">Internal DNS for VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/remote-access-linux-vms.html">Remote Access to Linux VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/remote-access-linux-troubleshooting.html">Remote Access to Linux VMs Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/remote-access-windows-vms.html">Remote Access to Windows VMs via RDP</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/custom-golden-images.html">Custom Golden Images</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/golden-images-troubleshooting.html">Golden Images Troubleshooting</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../manifests/index.html">Manifests</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../api/index.html">API Guide</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../api/api_component_overview.html">API Component Overview</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../lab-env/index.html">Lab Environment</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../appendix/glossary.html">Glossary</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">OpenShift Virtualization cookbook</span>
+    <span class="version">1</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <a class="title" href="../index.html">OpenShift Virtualization cookbook</a>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">1</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">OpenShift Virtualization cookbook</a></li>
+    <li><a href="index.html">Storage Configuration</a></li>
+    <li><a href="creating-managing-storage-class.html">Creating and Managing Storage Classes</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">Creating and Managing Storage Classes</h1>
+<div class="sect1">
+<h2 id="_overview"><a class="anchor" href="#_overview"></a>Overview</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>This is a tutorial on StorageClasses for OpenShift Container Platform (OCP). This guide focuses on OCP 4.x (often abbreviated as OCPv4), where the Container Storage Interface (CSI) is the standard for storage provisioning. These concepts also apply directly to OpenShift Virtualization (CNV), where storage classes determine how Virtual Machine disks are provisioned. For more on storage classes, please check out the official OpenShift documentation for <a href="https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/storage_apis/storageclass-storage-k8s-io-v1">storage class api</a> and the <a href="https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/storage/using-container-storage-interface-csi">Container Storage Interface</a>.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_storage_class_fundamentals"><a class="anchor" href="#_storage_class_fundamentals"></a>Storage Class Fundamentals</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>In OpenShift, a StorageClass (SC) describes a "class" of storage available to the cluster. It allows administrators to define different tiers of storage (e.g., "fast-ssd", "cheap-hdd") without users needing to know the underlying infrastructure details.</p>
+</div>
+<div class="paragraph">
+<p>When a user creates a PersistentVolumeClaim (PVC), they specify a StorageClass. A dynamic provisioner then automatically creates the backing PersistentVolume (PV).</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_key_parameters_in_a_storageclass_object"><a class="anchor" href="#_key_parameters_in_a_storageclass_object"></a>Key Parameters in a StorageClass Object</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Provisioner:</strong> The plugin that creates the volume (e.g., <code>ebs.csi.aws.com</code> for AWS, <code>nfs.csi.k8s.io</code> for NFS).</p>
+</li>
+<li>
+<p><strong>Parameters:</strong> Key-value pairs passed to the specific provisioner (e.g., <code>type: gp3, encrypted: "true"</code>).</p>
+</li>
+<li>
+<p><strong>ReclaimPolicy:</strong> What happens to the underlying storage when the PVC is deleted.</p>
+</li>
+<li>
+<p><strong>VolumeBindingMode:</strong> Controls when the volume is actually provisioned.</p>
+</li>
+<li>
+<p><strong>AllowVolumeExpansion:</strong> If true, users can resize PVCs by editing the object.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_volume_binding_modes"><a class="anchor" href="#_volume_binding_modes"></a>Volume Binding Modes</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>This setting is critical for performance and scheduling, especially in multi-zone clusters or when using Local Storage (LVM/HostPath).</p>
+</div>
+<div class="olist upperalpha">
+<ol class="upperalpha" type="A">
+<li>
+<p>Immediate</p>
+<div class="ulist">
+<ul>
+<li>
+<p>Behavior: The volume is created as soon as the PVC is created, regardless of whether a Pod is using it.</p>
+</li>
+<li>
+<p>Risk: In a multi-zone cluster (e.g., <code>AWS us-east-1a, 1b, 1c</code>), the volume might be created in Zone A. If your Pod is later scheduled to a node in Zone B, it cannot attach to the volume.</p>
+</li>
+<li>
+<p>Best For: Standard cloud storage in single-zone clusters; scenarios where topology doesn&#8217;t matter.</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>WaitForFirstConsumer (Recommended)</p>
+<div class="ulist">
+<ul>
+<li>
+<p>Behavior: The volume creation is delayed until a Pod utilizing that PVC is scheduled.</p>
+</li>
+<li>
+<p>Advantage: The scheduler sees the Pod needs the PVC. It picks a node for the Pod first (e.g., in Zone B). Then, it triggers the storage provisioner to create the volume in Zone B specifically.</p>
+</li>
+<li>
+<p>Required For: Local Storage (LVM), HostPath, and Multi-AZ cloud environments.</p>
+</li>
+</ul>
+</div>
+</li>
+</ol>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_reclaim_policies"><a class="anchor" href="#_reclaim_policies"></a>Reclaim Policies</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>This determines the fate of the data when a user deletes their PersistentVolumeClaim (PVC).</p>
+</div>
+<div class="olist upperalpha">
+<ol class="upperalpha" type="A">
+<li>
+<p>Delete (Default)</p>
+<div class="ulist">
+<ul>
+<li>
+<p>Behavior: When the PVC is deleted, the PV object and the actual storage infrastructure (e.g., the AWS EBS volume) are deleted.</p>
+</li>
+<li>
+<p>Use Case: Ephemeral data, CI/CD workspaces, testing.</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>Retain</p>
+<div class="ulist">
+<ul>
+<li>
+<p>Behavior: When the PVC is deleted, the PV object remains in Released state. The physical data on the storage array remains intact.</p>
+</li>
+<li>
+<p>Recovery: An administrator must manually clean up the data or delete the PV to reclaim space.</p>
+</li>
+<li>
+<p>Use Case: Databases, critical production data where accidental deletion must be prevented.</p>
+</li>
+</ul>
+</div>
+</li>
+</ol>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_setting_a_default_storage_class"><a class="anchor" href="#_setting_a_default_storage_class"></a>Setting a Default Storage Class</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>You can mark a specific StorageClass as the default. If a user creates a PVC without specifying a storageClassName, this class is used.
+Command:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc patch storageclass &lt;your-class-name&gt; -p '{"metadata": {"annotations": {"storageclass.kubernetes.io/is-default-class": "true"}}}'</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>To remove the default status:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc patch storageclass &lt;old-default-name&gt; -p '{"metadata": {"annotations": {"storageclass.kubernetes.io/is-default-class": "false"}}}'</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Tip: Ensure only one SC is marked as default to avoid confusion.
+For more details, see <a href="../getting-started/default-storage-class.html">Default Storage Class</a></p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_storage_class_examples"><a class="anchor" href="#_storage_class_examples"></a>Storage Class Examples</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Scenario A: AWS EBS (High Performance)
+This uses the CSI driver to provision a gp3 volume.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: gp3-fast
+provisioner: ebs.csi.aws.com
+volumeBindingMode: WaitForFirstConsumer
+allowVolumeExpansion: true
+reclaimPolicy: Delete
+parameters:
+  type: gp3
+  iops: "3000"
+  throughput: "125"
+  encrypted: "true"</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>OpenShift Documentation: <a href="https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/storage/using-container-storage-interface-csi#persistent-storage-csi-ebs" class="bare">https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/storage/using-container-storage-interface-csi#persistent-storage-csi-ebs</a></p>
+</div>
+<div class="paragraph">
+<p>Scenario B: Local Storage / LVM (For Databases/Performance)
+Requires the Local Storage Operator or LVM Storage Operator installed.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: local-lvm-storage
+provisioner: topolvm.io  # Depends on the specific operator used
+volumeBindingMode: WaitForFirstConsumer # Critical for local storage!
+reclaimPolicy: Retain
+parameters:
+  "csi.storage.k8s.io/fstype": "xfs"</code></pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+this is an example storage class for reference purposes, as LVMS operator will auto-generate one.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Scenario C: NFS (Shared Storage / RWX)
+Requires the NFS CSI Driver operator or an external NFS provisioner.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: nfs-shared
+provisioner: nfs.csi.k8s.io
+parameters:
+  server: nfs-server.example.com
+  share: /exports/data
+reclaimPolicy: Delete
+volumeBindingMode: Immediate
+mountOptions:
+  - nfsvers=4.1</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>OpenShift Documentation: <a href="https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/storage/persistent-storage-using-local-storage" class="bare">https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/storage/persistent-storage-using-local-storage</a></p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_verification_and_troubleshooting_verification_commands"><a class="anchor" href="#_verification_and_troubleshooting_verification_commands"></a>Verification and Troubleshooting Verification Commands</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>List Storage Classes:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get sc
+# Look for the (default) marker next to the name</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Describe a Class:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc describe sc &lt;name&gt;</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Test Provisioning: Create a test PVC:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: test-pvc
+spec:
+  accessModes: [ "ReadWriteOnce" ]
+  resources: { requests: { storage: 1Gi } }
+  storageClassName: gp3-fast</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Openshift documentation: <a href="https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/storage/configuring-persistent-storage" class="bare">https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/storage/configuring-persistent-storage</a></p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_common_troubleshooting_scenarios"><a class="anchor" href="#_common_troubleshooting_scenarios"></a>Common Troubleshooting Scenarios</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Issue 1:</strong> PVC remains in Pending state.</p>
+<div class="ulist">
+<ul>
+<li>
+<p>Cause A: volumeBindingMode is WaitForFirstConsumer, but no Pod is using the PVC yet.</p>
+<div class="ulist">
+<ul>
+<li>
+<p>Fix: Create a Pod that mounts this PVC.</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>Cause B: No nodes have enough resources to schedule the Pod, so the storage waits.</p>
+<div class="ulist">
+<ul>
+<li>
+<p>Fix: Check oc get pods to see if the pod is Pending.</p>
+</li>
+</ul>
+</div>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p><strong>Issue 2:</strong> Pod cannot attach volume (Topology Mismatch)</p>
+<div class="ulist">
+<ul>
+<li>
+<p>Error: Volume node affinity conflict</p>
+</li>
+<li>
+<p>Cause: You used volumeBindingMode: Immediate on a multi-zone cluster. The volume was created in Zone A, but the Pod was scheduled in Zone B.</p>
+</li>
+<li>
+<p>Fix: Delete the PVC and recreate it using a StorageClass with WaitForFirstConsumer.</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p><strong>Issue 3:</strong> "Provisioner not found"</p>
+<div class="ulist">
+<ul>
+<li>
+<p>Cause: The CSI driver specified in provisioner: is not installed or crashing.</p>
+</li>
+<li>
+<p>Fix: Check the storage operator pods in the relevant namespace (e.g., openshift-cluster-csi-drivers).</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p><strong>Issue 4:</strong> Volume Resize Fails</p>
+<div class="ulist">
+<ul>
+<li>
+<p>Cause: allowVolumeExpansion is set to false in the StorageClass.</p>
+</li>
+<li>
+<p>Fix: Edit the StorageClass to true
+NOTE: not all provisioners support online expansion.</p>
+</li>
+</ul>
+</div>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<nav class="pagination">
+  <span class="prev"><a href="lvm-troubleshooting.html">LVM Troubleshooting</a></span>
+  <span class="next"><a href="../networking/index.html">Networking Configuration</a></span>
+</nav>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <img src="../../../_/img/rhl-logo-red.png" height="40px" alt="Red Hat"  href="https://redhat.com" >
+</footer><script id="site-script" src="../../../_/js/site.js" data-ui-root-path="../../../_"></script>
+<script async src="../../../_/js/vendor/highlight.js"></script>
+  </body>
+</html>
