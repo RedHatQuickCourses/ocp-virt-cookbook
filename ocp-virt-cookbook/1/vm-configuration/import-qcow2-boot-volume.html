@@ -1,0 +1,1205 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Creating a Boot Volume from a Local qcow2 Image :: OpenShift Virtualization cookbook</title>
+    <link rel="prev" href="remote-access-windows-vms.html">
+    <link rel="next" href="custom-golden-images.html">
+    <meta name="generator" content="Antora 3.1.3">
+    <link rel="stylesheet" href="../../../_/css/site.css">
+    <script>var uiRootPath = '../../../_'</script>
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://www.redhat.com" target="_blank"><img src="../../../_/img/redhat-logo.png" height="40px" alt="Red Hat"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="../../..">OpenShift Virtualization cookbook</a>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues" target="_blank">Report Issues</a>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="ocp-virt-cookbook" data-version="1">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="../index.html">OpenShift Virtualization cookbook</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../getting-started/index.html">Getting Started</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/prerequisites.html">Prerequisites</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/install-openshift-virtualization.html">Install OpenShift Virtualization</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/default-storage-class.html">Storage Setup</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/create-vm-web-console.html">Create VM from Web Console</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/virtctl-basics.html">Virtctl Basics</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../storage/index.html">Storage Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/lvm-operator.html">LVM Operator Installation</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/lvm-troubleshooting.html">LVM Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/creating-managing-storage-class.html">Creating and Managing Storage Classes</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../networking/index.html">Networking Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/udn-primary-networks.html">UDN Primary Networks</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/localnet-secondary.html">Localnet Secondary Networks with CUDN</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/localnet-vlan.html">Localnet Secondary Networks with VLAN using NAD</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/cudn-localnet-vlan.html">Localnet VLAN with CUDN</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/layer2-secondary.html">Layer 2 Secondary Networks</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/linux-bridges.html">Linux Bridges</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/ovs-bridge-troubleshooting.html">Troubleshooting Localnet Networks</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="index.html">Virtual Machine Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="cloud-init-ip-configuration.html">Cloud-init IP Configuration</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="cloud-init-troubleshooting.html">Cloud-init Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="internal-dns-for-vms.html">Internal DNS for VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="remote-access-linux-vms.html">Remote Access to Linux VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="remote-access-linux-troubleshooting.html">Remote Access to Linux VMs Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="remote-access-windows-vms.html">Remote Access to Windows VMs via RDP</a>
+  </li>
+  <li class="nav-item is-current-page" data-depth="2">
+    <a class="nav-link" href="import-qcow2-boot-volume.html">Import qcow2 Boot Volume</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="custom-golden-images.html">Custom Golden Images</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="golden-images-troubleshooting.html">Golden Images Troubleshooting</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../manifests/index.html">Manifests</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../api/index.html">API Guide</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../api/api_component_overview.html">API Component Overview</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../lab-env/index.html">Lab Environment</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../appendix/glossary.html">Glossary</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">OpenShift Virtualization cookbook</span>
+    <span class="version">1</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <a class="title" href="../index.html">OpenShift Virtualization cookbook</a>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">1</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">OpenShift Virtualization cookbook</a></li>
+    <li><a href="index.html">Virtual Machine Configuration</a></li>
+    <li><a href="import-qcow2-boot-volume.html">Import qcow2 Boot Volume</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">Creating a Boot Volume from a Local qcow2 Image</h1>
+<div class="sect1">
+<h2 id="_overview"><a class="anchor" href="#_overview"></a>Overview</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>This tutorial demonstrates how to import existing qcow2 disk images from local KVM platforms into OpenShift Virtualization to create boot volumes. This is particularly useful when migrating VMs from other virtualization platforms or deploying custom OS templates that aren&#8217;t available in OVA format.</p>
+</div>
+<div class="paragraph">
+<p>qcow2 (QEMU Copy-On-Write version 2) is a disk image format commonly used by KVM and other QEMU-based virtualization platforms. By importing these images, you can quickly migrate existing workloads to OpenShift Virtualization.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+This tutorial has been tested on OpenShift 4.18.33 with OpenShift Virtualization, using AWS EBS gp3-csi storage class.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_prerequisites"><a class="anchor" href="#_prerequisites"></a>Prerequisites</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p>OpenShift 4.18+ with <a href="../getting-started/install-openshift-virtualization.html" class="xref page">OpenShift Virtualization operator installed</a></p>
+</li>
+<li>
+<p>CLI tools: <code>oc</code>, <a href="../getting-started/virtctl-basics.html" class="xref page"><code>virtctl</code></a></p>
+</li>
+<li>
+<p><code>qemu-img</code> (optional) - For inspecting qcow2 image details locally</p>
+</li>
+<li>
+<p>A qcow2 image file available locally (or accessible via HTTP/S3)</p>
+</li>
+<li>
+<p><a href="../getting-started/default-storage-class.html" class="xref page">Storage class configured</a> for dynamic volume provisioning</p>
+</li>
+<li>
+<p>Sufficient storage quota in your namespace</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_import_methods_overview"><a class="anchor" href="#_import_methods_overview"></a>Import Methods Overview</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>There are four primary methods to import qcow2 images into OpenShift Virtualization:</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 20%;">
+<col style="width: 40%;">
+<col style="width: 40%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Method</th>
+<th class="tableblock halign-left valign-top">Best For</th>
+<th class="tableblock halign-left valign-top">Key Characteristics</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>virtctl image-upload</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">One-off imports from workstation</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Simplest approach, uploads directly to DataVolume/PVC</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>DataVolume with HTTP/S3</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Shared images or automation</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Host image on web server, DataVolume pulls automatically</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>ContainerDisk</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Immutable, versioned images</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Package qcow2 in container image, push to registry</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>VM with DataVolumeTemplate</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">VM creation with upload</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">VM spec includes DataVolumeTemplate with upload source</p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>This tutorial focuses on the <strong>virtctl image-upload</strong> method as it&#8217;s the most straightforward for getting started. Alternative methods are covered in later sections.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_1_prepare_the_qcow2_image"><a class="anchor" href="#_step_1_prepare_the_qcow2_image"></a>Step 1: Prepare the qcow2 Image</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Before importing, verify your qcow2 image is ready for OpenShift Virtualization.</p>
+</div>
+<div class="sect2">
+<h3 id="_download_or_locate_image"><a class="anchor" href="#_download_or_locate_image"></a>Download or Locate Image</h3>
+<div class="paragraph">
+<p>For this tutorial, we&#8217;ll use a Fedora cloud image as an example. You can substitute with your own qcow2 image.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Download Fedora Cloud image (example)
+curl -LO https://download.fedoraproject.org/pub/fedora/linux/releases/43/Cloud/x86_64/images/Fedora-Cloud-Base-Generic-43-1.6.x86_64.qcow2
+
+# Verify the image
+ls -lh Fedora-Cloud-Base-Generic-43-1.6.x86_64.qcow2</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_inspect_image_details_optional"><a class="anchor" href="#_inspect_image_details_optional"></a>Inspect Image Details (Optional)</h3>
+<div class="paragraph">
+<p>If you have <code>qemu-img</code> installed locally, you can inspect the image:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">qemu-img info Fedora-Cloud-Base-Generic-43-1.6.x86_64.qcow2</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Output example:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">image: Fedora-Cloud-Base-Generic-43-1.6.x86_64.qcow2
+file format: qcow2
+virtual size: 5 GiB (5368709120 bytes)
+disk size: 420 MiB</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Note the virtual size - you&#8217;ll need to specify at least this much storage when creating the DataVolume.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_2_create_namespace"><a class="anchor" href="#_step_2_create_namespace"></a>Step 2: Create Namespace</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Create a namespace for your imported VM:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc create namespace imported-vms</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_3_upload_qcow2_image_using_virtctl"><a class="anchor" href="#_step_3_upload_qcow2_image_using_virtctl"></a>Step 3: Upload qcow2 Image Using virtctl</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Upload your qcow2 image directly using virtctl. The PVC will be created automatically:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">virtctl image-upload pvc fedora-imported-disk \
+  --image-path=./Fedora-Cloud-Base-Generic-43-1.6.x86_64.qcow2 \
+  --size=10Gi \
+  --namespace=imported-vms \
+  --insecure \
+  --force-bind</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Command parameters explained:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>pvc fedora-imported-disk</code> - Name for the PVC that will be created</p>
+</li>
+<li>
+<p><code>--image-path</code> - Local path to your qcow2 file</p>
+</li>
+<li>
+<p><code>--size</code> - Size of the PVC to create (must be at least the virtual size of your qcow2 image)</p>
+</li>
+<li>
+<p><code>--namespace</code> - Target namespace</p>
+</li>
+<li>
+<p><code>--insecure</code> - Skip TLS verification (use for self-signed certs)</p>
+</li>
+<li>
+<p><code>--force-bind</code> - Force immediate PVC binding (required for StorageClasses with WaitForFirstConsumer mode)</p>
+</li>
+</ul>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-important" title="Important"></i>
+</td>
+<td class="content">
+The <code>--force-bind</code> flag is required when using StorageClasses with <code>volumeBindingMode: WaitForFirstConsumer</code> (common in AWS EBS, Azure Disk, and other cloud providers). Without this flag, the PVC will remain pending and the upload won&#8217;t start.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Upload progress output:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">PVC imported-vms/fedora-imported-disk created
+Uploading data to https://cdi-uploadproxy-openshift-cnv.apps...
+
+ 420.00 MiB / 420.00 MiB [=================================] 100.00% 1m30s
+
+Uploading data completed successfully, waiting for processing to complete
+Processing completed successfully</code></pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+Upload time depends on your image size and network speed. A 1GB image typically takes 1-3 minutes.
+</td>
+</tr>
+</table>
+</div>
+<div class="sect2">
+<h3 id="_monitor_upload_progress"><a class="anchor" href="#_monitor_upload_progress"></a>Monitor Upload Progress</h3>
+<div class="paragraph">
+<p>In another terminal, you can monitor the upload process by checking the PVC status:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get pvc fedora-imported-disk -n imported-vms --watch</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>During upload, you&#8217;ll see the PVC transition from Pending to Bound:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">NAME                   STATUS    VOLUME                                     CAPACITY   ACCESS MODES
+fedora-imported-disk   Pending
+fedora-imported-disk   Bound     pvc-xxxxx                                  10Gi       RWO</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Check the cdi-upload pod logs if needed:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get pods -n imported-vms
+oc logs -n imported-vms cdi-upload-fedora-imported-disk -f</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_4_create_a_vm_using_the_imported_boot_volume"><a class="anchor" href="#_step_4_create_a_vm_using_the_imported_boot_volume"></a>Step 4: Create a VM Using the Imported Boot Volume</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Now that the image is uploaded, create a VM that uses the PVC as its boot disk.</p>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/vm-from-imported-qcow2.yaml" class="xref attachment">Download vm-from-imported-qcow2.yaml</a></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: fedora-imported-vm
+  namespace: imported-vms
+  labels:
+    app: fedora-imported
+spec:
+  runStrategy: RerunOnFailure
+  template:
+    metadata:
+      labels:
+        kubevirt.io/domain: fedora-imported-vm
+    spec:
+      domain:
+        cpu:
+          cores: 2
+        devices:
+          disks:
+            - disk:
+                bus: virtio
+              name: rootdisk
+            - disk:
+                bus: virtio
+              name: cloudinitdisk
+          interfaces:
+            - masquerade: {}
+              name: default
+          rng: {}
+        machine:
+          type: pc-q35-rhel9.4.0
+        memory:
+          guest: 4Gi
+      networks:
+        - name: default
+          pod: {}
+      volumes:
+        - name: rootdisk
+          persistentVolumeClaim:
+            claimName: fedora-imported-disk
+        - name: cloudinitdisk
+          cloudInitNoCloud:
+            userData: |-
+              #cloud-config
+              user: fedora
+              password: fedora123
+              chpasswd: { expire: false }
+              ssh_pwauth: true</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Apply the VM manifest:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f vm-from-imported-qcow2.yaml</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Start the VM:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">virtctl start fedora-imported-vm -n imported-vms</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_5_verify_vm_is_running"><a class="anchor" href="#_step_5_verify_vm_is_running"></a>Step 5: Verify VM is Running</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Monitor the VM startup:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vmi -n imported-vms --watch</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Output showing VM starting and running:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">NAME                 AGE   PHASE       IP             NODENAME    READY
+fedora-imported-vm   15s   Scheduling                             False
+fedora-imported-vm   30s   Scheduled                  worker-01   False
+fedora-imported-vm   45s   Running     10.128.2.54    worker-01   True</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Access the VM console:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">virtctl console fedora-imported-vm -n imported-vms</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Login with the credentials configured in cloud-init (user: <code>fedora</code>, password: <code>fedora123</code>).</p>
+</div>
+<div class="paragraph">
+<p>Verify the system booted from your imported image:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Check OS version
+cat /etc/os-release
+
+# Check disk configuration
+lsblk</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Exit the console with <code>Ctrl+]</code>.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_alternative_import_methods"><a class="anchor" href="#_alternative_import_methods"></a>Alternative Import Methods</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>While virtctl image-upload is the simplest method, here are alternative approaches for different use cases.</p>
+</div>
+<div class="sect2">
+<h3 id="_method_2_datavolume_with_http_source"><a class="anchor" href="#_method_2_datavolume_with_http_source"></a>Method 2: DataVolume with HTTP Source</h3>
+<div class="paragraph">
+<p>If your qcow2 image is accessible via HTTP/HTTPS, you can use a DataVolume to have CDI automatically download and import it. This method works great with public cloud images or images hosted on internal web servers.</p>
+</div>
+<div class="paragraph">
+<p>Example using the official Fedora Cloud image:</p>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/datavolume-http-import.yaml" class="xref attachment">Download datavolume-http-import.yaml</a></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: cdi.kubevirt.io/v1beta1
+kind: DataVolume
+metadata:
+  name: fedora-http-imported
+  namespace: imported-vms
+  annotations:
+    cdi.kubevirt.io/storage.bind.immediate.requested: "true"
+spec:
+  source:
+    http:
+      url: "https://download.fedoraproject.org/pub/fedora/linux/releases/43/Cloud/x86_64/images/Fedora-Cloud-Base-Generic-43-1.6.x86_64.qcow2"
+  storage:
+    resources:
+      requests:
+        storage: 10Gi</code></pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+The annotation <code>cdi.kubevirt.io/storage.bind.immediate.requested: "true"</code> forces immediate PVC binding, which is required for StorageClasses with <code>WaitForFirstConsumer</code> mode.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Apply the DataVolume and CDI will automatically download and import the image:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f datavolume-http-import.yaml
+oc get dv -n imported-vms --watch</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Monitor the download progress:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">NAME                   PHASE              PROGRESS   RESTARTS   AGE
+fedora-http-imported   ImportScheduled    N/A                   5s
+fedora-http-imported   ImportInProgress   12.5%                 15s
+fedora-http-imported   ImportInProgress   67.3%                 45s
+fedora-http-imported   Succeeded          100.0%                1m30s</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Once the DataVolume shows <code>Succeeded</code>, you can create a VM that references it:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">volumes:
+  - name: rootdisk
+    dataVolume:
+      name: fedora-http-imported</code></pre>
+</div>
+</div>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+This method is ideal for automation and CI/CD pipelines since it doesn&#8217;t require manual upload. You can also use S3 URLs with appropriate credentials configured.
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_method_3_containerdisk"><a class="anchor" href="#_method_3_containerdisk"></a>Method 3: ContainerDisk</h3>
+<div class="paragraph">
+<p>For versioned, immutable images, package your qcow2 into a container image:</p>
+</div>
+<div class="paragraph">
+<p>Create a Containerfile:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-docker hljs" data-lang="docker">FROM scratch
+ADD Fedora-Cloud-Base-Generic-43-1.6.x86_64.qcow2 /disk/</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Build and push:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">podman build -t quay.io/youruser/fedora-disk:v1 .
+podman push quay.io/youruser/fedora-disk:v1</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Use in VM spec:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">volumes:
+  - name: rootdisk
+    containerDisk:
+      image: quay.io/youruser/fedora-disk:v1</code></pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+ContainerDisks are ephemeral - changes are lost when the VM stops unless you attach a separate persistent volume.
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_method_4_vm_with_datavolumetemplate_and_upload_source"><a class="anchor" href="#_method_4_vm_with_datavolumetemplate_and_upload_source"></a>Method 4: VM with DataVolumeTemplate and Upload Source</h3>
+<div class="paragraph">
+<p>This method combines VM creation with upload capability using DataVolumeTemplates. The DataVolume is defined inline within the VM spec and is created automatically when you create the VM.</p>
+</div>
+<div class="paragraph">
+<p><strong>When to use this method:</strong>
+- You want to define the VM and its storage in a single manifest
+- You&#8217;re using GitOps or declarative workflows
+- You want the DataVolume lifecycle tied to the VM</p>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/vm-with-upload-datavolume.yaml" class="xref attachment">Download vm-with-upload-datavolume.yaml</a></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: vm-with-upload
+  namespace: imported-vms
+spec:
+  dataVolumeTemplates:
+    - apiVersion: cdi.kubevirt.io/v1beta1
+      kind: DataVolume
+      metadata:
+        name: vm-with-upload-disk
+      spec:
+        source:
+          upload: {}
+        storage:
+          resources:
+            requests:
+              storage: 10Gi
+  runStrategy: RerunOnFailure
+  template:
+    metadata:
+      labels:
+        kubevirt.io/domain: vm-with-upload
+    spec:
+      domain:
+        cpu:
+          cores: 2
+        devices:
+          disks:
+            - disk:
+                bus: virtio
+              name: rootdisk
+          interfaces:
+            - masquerade: {}
+              name: default
+          rng: {}
+        machine:
+          type: pc-q35-rhel9.4.0
+        memory:
+          guest: 4Gi
+      networks:
+        - name: default
+          pod: {}
+      volumes:
+        - dataVolume:
+            name: vm-with-upload-disk
+          name: rootdisk</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Create the VM (this creates both the VM and DataVolume):</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f vm-with-upload-datavolume.yaml</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The DataVolume is created but the VM won&#8217;t start yet because the disk has no data. Now upload your image:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">virtctl image-upload dv vm-with-upload-disk \
+  --image-path=./Fedora-Cloud-Base-Generic-43-1.6.x86_64.qcow2 \
+  --size=10Gi \
+  --namespace=imported-vms \
+  --insecure \
+  --force-bind</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Once the upload completes, start the VM:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">virtctl start vm-with-upload -n imported-vms</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Advantages of this method:</strong>
+- Single manifest defines both VM and storage
+- DataVolume lifecycle is managed with the VM
+- Good for Infrastructure-as-Code workflows</p>
+</div>
+<div class="paragraph">
+<p><strong>Disadvantages:</strong>
+- More complex than separate PVC creation
+- Upload must happen after VM creation
+- Subject to DataVolume/virtctl compatibility issues</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_best_practices"><a class="anchor" href="#_best_practices"></a>Best Practices</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_image_preparation"><a class="anchor" href="#_image_preparation"></a>Image Preparation</h3>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Verify image integrity</strong> - Check checksums before uploading</p>
+</li>
+<li>
+<p><strong>Optimize image size</strong> - Use <code>virt-sparsify</code> to reduce qcow2 file size</p>
+</li>
+<li>
+<p><strong>Remove sensitive data</strong> - Clean any credentials or machine-specific configs</p>
+</li>
+<li>
+<p><strong>Install cloud-init</strong> - Ensure cloud-init is installed for proper initialization</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_storage_sizing"><a class="anchor" href="#_storage_sizing"></a>Storage Sizing</h3>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Plan for growth</strong> - Allocate more storage than the virtual size for VM operations</p>
+</li>
+<li>
+<p><strong>Thin provisioning</strong> - Use storage classes that support thin provisioning when available</p>
+</li>
+<li>
+<p><strong>Monitor usage</strong> - Track PVC usage over time</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_security"><a class="anchor" href="#_security"></a>Security</h3>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Scan images</strong> - Scan qcow2 images for vulnerabilities before import</p>
+</li>
+<li>
+<p><strong>Use TLS</strong> - Remove <code>--insecure</code> flag when possible, configure proper certificates</p>
+</li>
+<li>
+<p><strong>Access control</strong> - Use RBAC to control who can upload images</p>
+</li>
+<li>
+<p><strong>Encrypted storage</strong> - Consider storage classes with encryption at rest</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_performance"><a class="anchor" href="#_performance"></a>Performance</h3>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Local upload</strong> - Upload from within the cluster network for better speed</p>
+</li>
+<li>
+<p><strong>Parallel imports</strong> - Import multiple images simultaneously if bandwidth allows</p>
+</li>
+<li>
+<p><strong>Network placement</strong> - Co-locate upload source and cluster for optimal transfer speeds</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_troubleshooting"><a class="anchor" href="#_troubleshooting"></a>Troubleshooting</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_upload_hangs_at_waiting_for_pvc_upload_pod_to_be_ready"><a class="anchor" href="#_upload_hangs_at_waiting_for_pvc_upload_pod_to_be_ready"></a>Upload Hangs at "Waiting for PVC upload pod to be ready"</h3>
+<div class="paragraph">
+<p>If the upload hangs waiting for the pod and the PVC shows "WaitForFirstConsumer" status, this is a StorageClass binding mode issue.</p>
+</div>
+<div class="paragraph">
+<p>Check the PVC status:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get pvc -n imported-vms
+oc describe pvc fedora-imported-disk -n imported-vms</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If you see "waiting for first consumer to be created before binding" in the events, your StorageClass has <code>volumeBindingMode: WaitForFirstConsumer</code>.</p>
+</div>
+<div class="paragraph">
+<p><strong>Solution</strong>: Add the <code>--force-bind</code> flag to your virtctl command:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">virtctl image-upload pvc fedora-imported-disk \
+  --image-path=./image.qcow2 \
+  --size=10Gi \
+  --namespace=imported-vms \
+  --insecure \
+  --force-bind</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Delete the stuck PVC first:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc delete pvc fedora-imported-disk -n imported-vms</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Then retry with <code>--force-bind</code>.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_upload_fails_with_unable_to_get_pvc_prime_name_from_pvc"><a class="anchor" href="#_upload_fails_with_unable_to_get_pvc_prime_name_from_pvc"></a>Upload Fails with "Unable to get PVC Prime name from PVC"</h3>
+<div class="paragraph">
+<p>This error can occur with certain CDI versions when using DataVolume-based uploads. The solution is to use the PVC method instead (which this tutorial now uses):</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Use PVC upload (not DataVolume)
+virtctl image-upload pvc &lt;pvc-name&gt; \
+  --image-path=./image.qcow2 \
+  --size=10Gi \
+  --namespace=imported-vms \
+  --insecure</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Common causes:
+* <strong>CDI operator issues</strong>: Check that <code>cdi-deployment</code> and <code>cdi-operator</code> pods are running
+* <strong>Storage class issues</strong>: Verify your StorageClass can provision volumes</p>
+</div>
+<div class="paragraph">
+<p>Check CDI pod status:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get pods -n openshift-cnv | grep cdi</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_upload_stuck_or_very_slow"><a class="anchor" href="#_upload_stuck_or_very_slow"></a>Upload Stuck or Very Slow</h3>
+<div class="paragraph">
+<p>Check CDI upload proxy pod status:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get pods -n openshift-cnv | grep cdi-uploadproxy
+oc logs -n openshift-cnv &lt;cdi-uploadproxy-pod&gt;</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Verify network connectivity from your workstation to the cluster.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_pvc_size_too_small_error"><a class="anchor" href="#_pvc_size_too_small_error"></a>PVC Size Too Small Error</h3>
+<div class="paragraph">
+<p>The <code>--size</code> parameter must be at least as large as the virtual size of your qcow2 image:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">qemu-img info image.qcow2 | grep "virtual size"</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If the upload fails due to insufficient size, delete the PVC and retry with a larger size:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc delete pvc fedora-imported-disk -n imported-vms
+
+# Retry upload with larger --size parameter
+virtctl image-upload pvc fedora-imported-disk \
+  --image-path=./image.qcow2 \
+  --size=20Gi \
+  --namespace=imported-vms \
+  --insecure</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_vm_fails_to_boot_from_imported_image"><a class="anchor" href="#_vm_fails_to_boot_from_imported_image"></a>VM Fails to Boot from Imported Image</h3>
+<div class="paragraph">
+<p>Check VM events and logs:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc describe vm fedora-imported-vm -n imported-vms
+oc get events -n imported-vms --field-selector involvedObject.name=fedora-imported-vm</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Access the console to see boot messages:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">virtctl console fedora-imported-vm -n imported-vms</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Common issues:
+* Image is corrupted - verify checksum
+* Wrong machine type - adjust machine.type in VM spec
+* Missing bootloader - ensure image has proper boot configuration</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_cleanup"><a class="anchor" href="#_cleanup"></a>Cleanup</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>To remove the resources created in this tutorial:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Delete the VM
+oc delete vm fedora-imported-vm -n imported-vms
+
+# Delete the PVC
+oc delete pvc fedora-imported-disk -n imported-vms
+
+# Delete the namespace
+oc delete namespace imported-vms</code></pre>
+</div>
+</div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+Deleting the PVC will permanently delete the imported image data. Ensure you have backups if needed.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_summary"><a class="anchor" href="#_summary"></a>Summary</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>In this tutorial, you learned how to:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Prepare qcow2 images for import into OpenShift Virtualization</p>
+</li>
+<li>
+<p>Upload qcow2 images directly using <code>virtctl image-upload pvc</code></p>
+</li>
+<li>
+<p>Create VMs using imported boot volumes</p>
+</li>
+<li>
+<p>Monitor the upload process</p>
+</li>
+<li>
+<p>Use alternative import methods (HTTP, ContainerDisk, DataVolumeTemplate)</p>
+</li>
+<li>
+<p>Apply best practices for image import and storage management</p>
+</li>
+<li>
+<p>Troubleshoot common import issues</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Importing existing qcow2 images enables easy migration of workloads from other KVM-based platforms to OpenShift Virtualization.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_next_steps"><a class="anchor" href="#_next_steps"></a>Next Steps</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p><a href="custom-golden-images.html" class="xref page">Create custom golden images</a> - Build reusable VM templates</p>
+</li>
+<li>
+<p><a href="cloud-init-ip-configuration.html" class="xref page">Configure cloud-init</a> - Automate VM initialization</p>
+</li>
+<li>
+<p><a href="remote-access-linux-vms.html" class="xref page">Set up SSH access</a> - Connect to VMs remotely</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_see_also"><a class="anchor" href="#_see_also"></a>See Also</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p><a href="https://github.com/kubevirt/containerized-data-importer" target="_blank" rel="noopener">Containerized Data Importer (CDI)</a></p>
+</li>
+<li>
+<p><a href="https://kubevirt.io/user-guide/operations/virtctl_client_tool/" target="_blank" rel="noopener">virtctl Documentation</a></p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<nav class="pagination">
+  <span class="prev"><a href="remote-access-windows-vms.html">Remote Access to Windows VMs via RDP</a></span>
+  <span class="next"><a href="custom-golden-images.html">Custom Golden Images</a></span>
+</nav>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <img src="../../../_/img/rhl-logo-red.png" height="40px" alt="Red Hat"  href="https://redhat.com" >
+</footer><script id="site-script" src="../../../_/js/site.js" data-ui-root-path="../../../_"></script>
+<script async src="../../../_/js/vendor/highlight.js"></script>
+  </body>
+</html>
