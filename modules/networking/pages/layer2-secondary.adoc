@@ -76,7 +76,7 @@ spec:
     }
 ----
 
-Apply the `NetworkAttachmentDefinition` into the pre-defined namespace `example-l2-network` on the OpenShift cluster using `oc apply`:
+Apply the `NetworkAttachmentDefinition` into the pre-defined namespace `example-l2-secondary` on the OpenShift cluster using `oc apply`:
 
 [source,bash]
 ----
@@ -223,7 +223,7 @@ Before we're able to test, a second VM is required to establish connectivity acr
 
 Below is the yaml source definition for the second `VirtualMachine`.
 Save the provided content into a file named `fedora-l2-secondary2.vm.yaml`.
-Note that the only changes from the firt VM are the name, IP address and root volume name.
+Note that the only changes from the first VM are the name, IP address and root volume name.
 
 [source,yaml]
 ----
@@ -232,7 +232,7 @@ kind: VirtualMachine
 metadata:
   name: fedora-l2-secondary2
   labels:
-    app: fedroa-l2-secondary2
+    app: fedora-l2-secondary2
 spec:
   dataVolumeTemplates:
   - metadata:
