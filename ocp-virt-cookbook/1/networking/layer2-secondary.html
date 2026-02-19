@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Configure Layer 2 Secondary Networks :: OpenShift Virtualization cookbook</title>
+    <link rel="prev" href="cudn-localnet-vlan.html">
+    <link rel="next" href="linux-bridges.html">
+    <meta name="generator" content="Antora 3.1.3">
+    <link rel="stylesheet" href="../../../_/css/site.css">
+    <script>var uiRootPath = '../../../_'</script>
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://www.redhat.com" target="_blank"><img src="../../../_/img/redhat-logo.png" height="40px" alt="Red Hat"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="../../..">OpenShift Virtualization cookbook</a>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues" target="_blank">Report Issues</a>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="ocp-virt-cookbook" data-version="1">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="../index.html">OpenShift Virtualization cookbook</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../getting-started/index.html">Getting Started</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/prerequisites.html">Prerequisites</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/install-openshift-virtualization.html">Install OpenShift Virtualization</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/default-storage-class.html">Storage Setup</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/create-vm-web-console.html">Create VM from Web Console</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/virtctl-basics.html">Virtctl Basics</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../storage/index.html">Storage Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/lvm-operator.html">LVM Operator Installation</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/lvm-troubleshooting.html">LVM Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/creating-managing-storage-class.html">Creating and Managing Storage Classes</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="index.html">Networking Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="udn-primary-networks.html">UDN Primary Networks</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="localnet-secondary.html">Localnet Secondary Networks with CUDN</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="localnet-vlan.html">Localnet Secondary Networks with VLAN using NAD</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="cudn-localnet-vlan.html">Localnet VLAN with CUDN</a>
+  </li>
+  <li class="nav-item is-current-page" data-depth="2">
+    <a class="nav-link" href="layer2-secondary.html">Layer 2 Secondary Networks</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="linux-bridges.html">Linux Bridges</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="ovs-bridge-troubleshooting.html">Troubleshooting Localnet Networks</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../vm-configuration/index.html">Virtual Machine Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/cloud-init-ip-configuration.html">Cloud-init IP Configuration</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/cloud-init-troubleshooting.html">Cloud-init Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/internal-dns-for-vms.html">Internal DNS for VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/remote-access-linux-vms.html">Remote Access to Linux VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/remote-access-linux-troubleshooting.html">Remote Access to Linux VMs Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/remote-access-windows-vms.html">Remote Access to Windows VMs via RDP</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/custom-golden-images.html">Custom Golden Images</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/golden-images-troubleshooting.html">Golden Images Troubleshooting</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../manifests/index.html">Manifests</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../api/index.html">API Guide</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../api/api_component_overview.html">API Component Overview</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../lab-env/index.html">Lab Environment</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../appendix/glossary.html">Glossary</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">OpenShift Virtualization cookbook</span>
+    <span class="version">1</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <a class="title" href="../index.html">OpenShift Virtualization cookbook</a>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">1</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">OpenShift Virtualization cookbook</a></li>
+    <li><a href="index.html">Networking Configuration</a></li>
+    <li><a href="layer2-secondary.html">Layer 2 Secondary Networks</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">Configure Layer 2 Secondary Networks</h1>
+<div class="sect1">
+<h2 id="_overview"><a class="anchor" href="#_overview"></a>Overview</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>This guide shows how to configure a <code>layer2</code> secondary network to connect <code>VirtualMachines</code> via a cluster-wide logical switch.</p>
+</div>
+<div class="paragraph">
+<p>Doing this allows <code>VirtualMachines</code> to continue using the default Pod network as the primary network, which is useful when the following conditions apply:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>You only need simple connectivity between VMs (even on different nodes) within the same namespace.</p>
+</li>
+<li>
+<p>You don&#8217;t need network isolation between VMs within the namespace.</p>
+</li>
+<li>
+<p>You don&#8217;t need network connectivity between VMs to span across multiple namespaces.</p>
+</li>
+<li>
+<p>You don&#8217;t require access to the physical network interfaces of the nodes in the cluster.</p>
+</li>
+<li>
+<p>You don&#8217;t need to route ingress connectivity to the secondary network from the internet.</p>
+</li>
+<li>
+<p>Lastly, you don&#8217;t require access to external networks from the secondary network.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Versions tested:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>OpenShift 4.20,4.21</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The process is outlined in three steps:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><a href="#creating_a_namespace">Creating a Namespace</a></p>
+</li>
+<li>
+<p><a href="#creating_a_nad">Creating a NetworkAttachmentDefinition</a></p>
+</li>
+<li>
+<p><a href="#attaching_vms">Attaching VirtualMachines</a> to the Network</p>
+<div class="ulist">
+<ul>
+<li>
+<p><a href="#creating_first_vm">Creating the First VirtualMachine</a></p>
+</li>
+<li>
+<p><a href="#creating_second_vm">Creating a Second VirtualMachine</a></p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p><a href="#testing_secondary_network">Testing the Secondary Network</a></p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="creating_a_namespace"><a class="anchor" href="#creating_a_namespace"></a>Creating a Namespace</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The first step, if you have not already done so, is to create a namespace to house the <code>NetworkAttachmentDefinition</code> defining the network,
+as well as the <code>VirtualMachines</code> you wish to attach to the network. It does not require any specific labels in this case.</p>
+</div>
+<div class="paragraph">
+<p>You can easily create a new namespace using the <code>oc</code> binary, without the need to define any yaml:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc create namespace example-l2-secondary</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Now that the new namespace is created, it&#8217;s best to switch your current kube context (cluster and namespace that you&#8217;re currently working in) to the new namespace or project (in OpenShift terms).</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc project example-l2-secondary</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>With the namespace created, and your current context set, proceed with <a href="#creating_a_nad">Creating a NetworkAttachmentDefinition</a>.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="creating_a_nad"><a class="anchor" href="#creating_a_nad"></a>Creating a Network Attachment Definition</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The second step is to create the <code>NetworkAttachmentDefinition</code> which will define the <code>layer2</code> network within the namespace.</p>
+</div>
+<div class="paragraph">
+<p>Create a new file named <code>l2-network.nad.yaml</code> and copy/paste the following yaml definition as the file contents, then save and close the editor:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: k8s.cni.cncf.io/v1
+kind: NetworkAttachmentDefinition
+metadata:
+  name: l2-network
+  namespace: example-l2-secondary
+spec:
+  config: |-
+    {
+            "cniVersion": "0.3.1",
+            "name": "l2-network",
+            "type": "ovn-k8s-cni-overlay",
+            "topology":"layer2",
+            "mtu": 1400,
+            "netAttachDefName": "example-l2-secondary/l2-network"
+    }</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Apply the <code>NetworkAttachmentDefinition</code> into the pre-defined namespace <code>example-l2-secondary</code> on the OpenShift cluster using <code>oc apply</code>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f l2-network.nad.yaml</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Check to make sure that the <code>NetworkAttachmentDefinition</code> creation was successful. The <code>l2-network</code> must exist in the <code>example-l2-secondary</code> namespace before proceeding:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get net-attach-def l2-network -n example-l2-secondary</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>With the <code>l2-network</code> created, proceed with <a href="#attaching_vms">Attaching VirtualMachines</a> to the network.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="attaching_vms"><a class="anchor" href="#attaching_vms"></a>Attaching VirtualMachines</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The next step is to create your <code>VirtualMachines</code> and attach them to the <code>layer2</code> network that was just created.
+This is done in typical OpenShift (Kubernetes) fashion by creating a <code>VirtualMachine</code> API object and applying it to the cluster.</p>
+</div>
+<div class="paragraph">
+<p>In this section, we&#8217;ll create two new VMs which will both be attached to the secondary <code>l2-network</code>.</p>
+</div>
+<div class="sect2">
+<h3 id="creating_first_vm"><a class="anchor" href="#creating_first_vm"></a>Creating the First VirtualMachine</h3>
+<div class="paragraph">
+<p>Below is the yaml definition for the first VirtualMachine (the key fields are explained further below).
+Copy and paste content into a new file named <code>fedora-l2-secondary.vm.yaml</code>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: fedora-l2-secondary
+  labels:
+    app: fedora-l2-secondary
+spec:
+  dataVolumeTemplates:
+  - metadata:
+      name: fedora-l2-secondary-root
+    spec:
+      sourceRef:
+        kind: DataSource
+        name: fedora
+        namespace: openshift-virtualization-os-images
+      storage:
+        resources:
+          requests:
+            storage: 30Gi
+  instancetype:
+    name: u1.large
+  preference:
+    name: fedora
+  runStrategy: Always
+  template:
+    metadata:
+      labels:
+        app: fedora-l2-secondary
+    spec:
+      domain:
+        devices:
+          interfaces:
+          - name: default
+            masquerade: {}
+          - name: secondary
+            bridge: {}
+        resources: {}
+      terminationGracePeriodSeconds: 180
+      networks:
+      - name: default
+        pod: {}
+      - name: secondary
+        multus:
+          networkName: l2-network
+      volumes:
+      - name: fedora-l2-secondary-root
+        dataVolume:
+          name: fedora-l2-secondary-root
+      - name: cloudinitdisk
+        cloudInitNoCloud:
+          userData: |
+            #cloud-config
+            user: fedora
+            password: fedora
+            chpasswd:
+              expire: False
+          networkData: |
+            version: 2
+            ethernets:
+              enp2s0:
+                addresses:
+                - 192.168.20.10/24</code></pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="title">From the above VM example</div>
+<div class="paragraph">
+<p>Regarding the fields in the above example (relative to <code>spec.template.spec</code>):</p>
+</div>
+<div class="paragraph">
+<p><strong>domain.devices.interfaces</strong> - accepts a list of interface definitions, each with two fields defined:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>name</strong> - contains the name for the interface. Here we named it <code>secondary</code> since that&#8217;s the name of the associated network under <code>networks</code>.</p>
+</li>
+<li>
+<p><strong>bridge</strong> or <strong>masquerade</strong> -  the secondary interface connects to the hypervisor pod&#8217;s interface using a <code>bridge</code>. Either field accepts an empty object (<code>{}</code>).</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p><strong>networks</strong> -  this is where to list networks used to connect interfaces, as with <code>interfaces</code> there are two fields for each network:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>name</strong> - we aptly chose <code>secondary</code> as the network name to differentiate it from the <code>default</code> network.</p>
+</li>
+<li>
+<p><strong>pod</strong> or <strong>multus</strong> - to select a non-default network, choose <code>multus</code> as the field name. The default <code>pod</code> network accepts an empty object, but <code>multus</code> requires a <code>networkName</code> subfield.</p>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>networkName</strong> (required for <code>multus</code>) - the name of the network defined in the <code>NetworkAttachmentDefinition</code> created previously, named <code>l2-network</code>.</p>
+</li>
+</ul>
+</div>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p><strong>volumes</strong> - there are two volumes defined, the <code>fedora-l2-secondary-root</code> disk and the <code>cloudinitdisk</code> used to pass VM configuration data such as user credentials and network addresses.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>You can create a new VirtualMachine on the OpenShift cluster (in the current namespace, <code>example-l2-secondary</code>) using <code>oc create</code>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc create -f fedora-l2-secondary.vm.yaml</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Check that the <code>fedora-l2-secondary</code> VM is up and running in the <code>example-l2-secondary</code> namespace before proceeding. You may have to run the command a few times while in the <code>Provisioning</code> state:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vm fedora-l2-secondary -n example-l2-secondary</code></pre>
+</div>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-important" title="Important"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<div class="title">Troubleshooting</div>
+<p>If the <code>VirtualMachine</code> seems stuck in the <code>Pending</code> state, something is preventing the VM from scheduling. That could be any of these things:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>There is an issue provisioning the underlying <code>DataVolume</code> on the cluster (such as a lack of disk space).</p>
+</li>
+<li>
+<p>The <code>l2-network</code> <code>NetworkAttachmentDefinition</code> does not exist.</p>
+</li>
+<li>
+<p>There is a resource limitation in the OpenShift cluster. This could be a lack of memory or vCPUs preventing the VM from being scheduled.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>To try and find the source of the issue, use <code>oc describe</code> or <code>oc get -o yaml</code> on one of the lower level resources (such as the <code>vmi</code>, <code>datavolume</code> or <code>pvc</code>).
+The error message should be found in the Events (oc describe) or Status (oc get -o yaml) of the culprit resource.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="creating_second_vm"><a class="anchor" href="#creating_second_vm"></a>Creating a Second VirtualMachine</h3>
+<div class="paragraph">
+<p>Before we&#8217;re able to test, a second VM is required to establish connectivity across the secondary network.</p>
+</div>
+<div class="paragraph">
+<p>Below is the yaml source definition for the second <code>VirtualMachine</code>.
+Save the provided content into a file named <code>fedora-l2-secondary2.vm.yaml</code>.
+Note that the only changes from the first VM are the name, IP address and root volume name.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: fedora-l2-secondary2
+  labels:
+    app: fedora-l2-secondary2
+spec:
+  dataVolumeTemplates:
+  - metadata:
+      name: fedora-l2-secondary2-root
+    spec:
+      sourceRef:
+        kind: DataSource
+        name: fedora
+        namespace: openshift-virtualization-os-images
+      storage:
+        resources:
+          requests:
+            storage: 30Gi
+  instancetype:
+    name: u1.large
+  preference:
+    name: fedora
+  runStrategy: Always
+  template:
+    metadata:
+      labels:
+        app: fedora-l2-secondary2
+    spec:
+      domain:
+        devices:
+          interfaces:
+          - name: default
+            masquerade: {}
+          - name: secondary
+            bridge: {}
+        resources: {}
+      terminationGracePeriodSeconds: 180
+      networks:
+      - name: default
+        pod: {}
+      - name: secondary
+        multus:
+          networkName: l2-network
+      volumes:
+      - name: fedora-l2-secondary2-root
+        dataVolume:
+          name: fedora-l2-secondary2-root
+      - name: cloudinitdisk
+        cloudInitNoCloud:
+          userData: |
+            #cloud-config
+            user: fedora
+            password: fedora
+            chpasswd:
+              expire: False
+          networkData: |
+            version: 2
+            ethernets:
+              enp2s0:
+                addresses:
+                - 192.168.20.20/24</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Apply the <code>VirtualMachine</code> to the current namespace on the OpenShift cluster:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f fedora-l2-secondary2.vm.yaml</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Check that the second VM named <code>fedora-l2-secondary2</code> is up and running in the <code>example-l2-secondary</code> namespace. Both <code>VirtualMachines</code> should be running prior to <a href="#testing_secondary_network">testing</a>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vm fedora-l2-secondary2 -n example-l2-secondary</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="testing_secondary_network"><a class="anchor" href="#testing_secondary_network"></a>Testing the Secondary Network</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Since the secondary network is <code>layer2</code> only, and exists purely as a virtual network within the cluster and namespace, we must test connectivity from one VM to another.</p>
+</div>
+<div class="paragraph">
+<p>The following resources must exist in the <code>example-l2-secondary</code> namespace before you can proceed with testing:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>NetworkAttachmentDefinition</code>: <code>l2-network</code></p>
+</li>
+<li>
+<p><code>VirtualMachine</code>: <code>fedora-l2-secondary</code> (secondary NIC IP address: 192.168.20.10)</p>
+</li>
+<li>
+<p><code>VirtualMachine</code>: <code>fedora-l2-secondary2</code> (secondary NIC IP address: 192.168.20.20)</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>The simplest way to test is by connecting to the console on one VM (or optionally, both VMs) and pinging the other.</p>
+</div>
+<div class="paragraph">
+<p>Access the console of the first <code>VirtualMachine</code> using the <code>virtctl</code> command and login as <strong>user</strong>:`fedora` with <strong>password</strong>:`fedora` (hit <code>ENTER</code> if no login prompt appears):</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">virtctl console fedora-l2-secondary</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Check the IP address of the <code>VirtualMachine</code>. The following command should return a static address of <code>192.168.20.10</code> for the <code>enp2s0</code> interface:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">ip addr show</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Ping the <code>fedora-l2-secondary2</code> (IP address: <code>192.168.20.20</code>) VM from the console of the first VM. If you see replies, then the secondary network is operational (hit <code>CTRL+C</code> to cancel the ping):</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">ping 192.168.20.20</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>To exit the VM console, hit <code>CTRL+]</code>.</p>
+</div>
+<div class="paragraph">
+<p>To cleanup all of the resources from this exercise, simply switch to a different namespace and delete the <code>example-l2-secondary</code> namespace:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc project default
+oc delete namespace example-l2-secondary</code></pre>
+</div>
+</div>
+</div>
+</div>
+<nav class="pagination">
+  <span class="prev"><a href="cudn-localnet-vlan.html">Localnet VLAN with CUDN</a></span>
+  <span class="next"><a href="linux-bridges.html">Linux Bridges</a></span>
+</nav>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <img src="../../../_/img/rhl-logo-red.png" height="40px" alt="Red Hat"  href="https://redhat.com" >
+</footer><script id="site-script" src="../../../_/js/site.js" data-ui-root-path="../../../_"></script>
+<script async src="../../../_/js/vendor/highlight.js"></script>
+  </body>
+</html>
