@@ -11,117 +11,159 @@
     attachment_dir: "{{ playbook_dir }}/../../../modules/vm-configuration/attachments/internal-dns-for-vms"
 
   tasks:
-    # Step 1: Create a Namespace
-    - name: "Apply Namespace myapp"
-      kubernetes.core.k8s:
-        state: present
-        src: "{{ attachment_dir }}/namespace-myapp.yaml"
-
-    - name: "Verify Namespace myapp"
-      kubernetes.core.k8s_info:
-        api_version: v1
-        kind: Namespace
-        name: myapp
-      register: namespace_myapp
-      failed_when: namespace_myapp.resources | length == 0
-
-    # Step 2: Deploy a Fedora VM
-    - name: "Apply VirtualMachine fedora-app-vm"
-      kubernetes.core.k8s:
-        state: present
-        src: "{{ attachment_dir }}/fedora-app-vm.yaml"
-
-    - name: "Verify VirtualMachine fedora-app-vm"
-      kubernetes.core.k8s_info:
-        api_version: kubevirt.io/v1
-        kind: VirtualMachine
-        namespace: myapp
-        name: fedora-app-vm
-      register: virtualmachine_fedora_app_vm
-      failed_when: virtualmachine_fedora_app_vm.resources | length == 0
-
-    - name: "Wait for VirtualMachine fedora-app-vm to be ready"
-      kubernetes.core.k8s_info:
-        api_version: kubevirt.io/v1
-        kind: VirtualMachine
-        namespace: myapp
-        name: fedora-app-vm
-      register: vm_ready_virtualmachine_fedora_app_vm
-      until: >
-        vm_ready_virtualmachine_fedora_app_vm.resources | length > 0 and
-        vm_ready_virtualmachine_fedora_app_vm.resources[0].status.ready | default(false)
-      retries: "{{ (vm_timeout / 10) | int }}"
-      delay: 10
-
-    # Step 3: Create a Service for the VM
-    - name: "Apply Service myapp-service"
-      kubernetes.core.k8s:
-        state: present
-        src: "{{ attachment_dir }}/headless-service.yaml"
-
-    - name: "Verify Service myapp-service"
-      kubernetes.core.k8s_info:
-        api_version: v1
-        kind: Service
-        namespace: myapp
-        name: myapp-service
-      register: service_myapp_service
-      failed_when: service_myapp_service.resources | length == 0
-
-    # Step 4: Test DNS Resolution and Connectivity
-    - name: "Apply Pod debug-dns"
-      kubernetes.core.k8s:
-        state: present
-        src: "{{ attachment_dir }}/pod-debug-dns.yaml"
-
-    - name: "Verify Pod debug-dns"
-      kubernetes.core.k8s_info:
-        api_version: v1
-        kind: Pod
-        namespace: myapp
-        name: debug-dns
-      register: pod_debug_dns
-      failed_when: pod_debug_dns.resources | length == 0
-
-    - name: Test completed successfully
-      ansible.builtin.debug:
-        msg: "internal-dns-for-vms tutorial test passed - all resources created and verified"
-
-  always:
-    - name: Cleanup resources
-      when: cleanup | default(true)
+    - name: Run tutorial test
       block:
-        - name: "Delete Pod debug-dns"
+        - name: "Apply Namespace myapp"
           kubernetes.core.k8s:
-            state: absent
-            api_version: v1
-            kind: Pod
-            namespace: myapp
-            name: debug-dns
-          ignore_errors: true
+            state: present
+            src: "{{ attachment_dir }}/namespace-myapp.yaml"
 
-        - name: "Delete Service myapp-service"
-          kubernetes.core.k8s:
-            state: absent
+        - name: "Verify Namespace myapp"
+          kubernetes.core.k8s_info:
             api_version: v1
-            kind: Service
-            namespace: myapp
-            name: myapp-service
-          ignore_errors: true
+            kind: Namespace
+            name: myapp
+          register: namespace_myapp
+          failed_when: namespace_myapp.resources | length == 0
 
-        - name: "Delete VirtualMachine fedora-app-vm"
+        - name: "Apply VirtualMachine fedora-app-vm"
           kubernetes.core.k8s:
-            state: absent
+            state: present
+            src: "{{ attachment_dir }}/fedora-app-vm.yaml"
+
+        - name: "Verify VirtualMachine fedora-app-vm"
+          kubernetes.core.k8s_info:
             api_version: kubevirt.io/v1
             kind: VirtualMachine
             namespace: myapp
             name: fedora-app-vm
-          ignore_errors: true
+          register: virtualmachine_fedora_app_vm
+          failed_when: virtualmachine_fedora_app_vm.resources | length == 0
 
-        - name: "Delete Namespace myapp"
+        - name: "Wait for VirtualMachine fedora-app-vm to be ready"
+          kubernetes.core.k8s_info:
+            api_version: kubevirt.io/v1
+            kind: VirtualMachine
+            namespace: myapp
+            name: fedora-app-vm
+          register: vm_ready_virtualmachine_fedora_app_vm
+          until: >
+            vm_ready_virtualmachine_fedora_app_vm.resources | length > 0 and
+            vm_ready_virtualmachine_fedora_app_vm.resources[0].status.ready | default(false)
+          retries: "{{ (vm_timeout / 10) | int }}"
+          delay: 10
+
+        - name: "Apply Service myapp-service"
           kubernetes.core.k8s:
-            state: absent
+            state: present
+            src: "{{ attachment_dir }}/headless-service.yaml"
+
+        - name: "Verify Service myapp-service"
+          kubernetes.core.k8s_info:
+            api_version: v1
+            kind: Service
+            namespace: myapp
+            name: myapp-service
+          register: service_myapp_service
+          failed_when: service_myapp_service.resources | length == 0
+
+        - name: "Apply Pod debug-dns"
+          kubernetes.core.k8s:
+            state: present
+            src: "{{ attachment_dir }}/pod-debug-dns.yaml"
+
+        - name: "Verify Pod debug-dns"
+          kubernetes.core.k8s_info:
+            api_version: v1
+            kind: Pod
+            namespace: myapp
+            name: debug-dns
+          register: pod_debug_dns
+          failed_when: pod_debug_dns.resources | length == 0
+
+        - name: "Apply Namespace test-namespace"
+          kubernetes.core.k8s:
+            state: present
+            src: "{{ attachment_dir }}/namespace-test-namespace.yaml"
+
+        - name: "Verify Namespace test-namespace"
+          kubernetes.core.k8s_info:
             api_version: v1
             kind: Namespace
-            name: myapp
-          ignore_errors: true
+            name: test-namespace
+          register: namespace_test_namespace
+          failed_when: namespace_test_namespace.resources | length == 0
+
+        - name: "Apply Pod debug-cross-ns"
+          kubernetes.core.k8s:
+            state: present
+            src: "{{ attachment_dir }}/pod-debug-cross-ns.yaml"
+
+        - name: "Verify Pod debug-cross-ns"
+          kubernetes.core.k8s_info:
+            api_version: v1
+            kind: Pod
+            namespace: test-namespace
+            name: debug-cross-ns
+          register: pod_debug_cross_ns
+          failed_when: pod_debug_cross_ns.resources | length == 0
+
+        - name: Test completed successfully
+          ansible.builtin.debug:
+            msg: "internal-dns-for-vms tutorial test passed - all resources created and verified"
+
+      always:
+        - name: Cleanup resources
+          when: cleanup | default(true)
+          block:
+            - name: "Delete Pod debug-cross-ns"
+              kubernetes.core.k8s:
+                state: absent
+                api_version: v1
+                kind: Pod
+                namespace: test-namespace
+                name: debug-cross-ns
+              ignore_errors: true
+
+            - name: "Delete Namespace test-namespace"
+              kubernetes.core.k8s:
+                state: absent
+                api_version: v1
+                kind: Namespace
+                name: test-namespace
+              ignore_errors: true
+
+            - name: "Delete Pod debug-dns"
+              kubernetes.core.k8s:
+                state: absent
+                api_version: v1
+                kind: Pod
+                namespace: myapp
+                name: debug-dns
+              ignore_errors: true
+
+            - name: "Delete Service myapp-service"
+              kubernetes.core.k8s:
+                state: absent
+                api_version: v1
+                kind: Service
+                namespace: myapp
+                name: myapp-service
+              ignore_errors: true
+
+            - name: "Delete VirtualMachine fedora-app-vm"
+              kubernetes.core.k8s:
+                state: absent
+                api_version: kubevirt.io/v1
+                kind: VirtualMachine
+                namespace: myapp
+                name: fedora-app-vm
+              ignore_errors: true
+
+            - name: "Delete Namespace myapp"
+              kubernetes.core.k8s:
+                state: absent
+                api_version: v1
+                kind: Namespace
+                name: myapp
+              ignore_errors: true

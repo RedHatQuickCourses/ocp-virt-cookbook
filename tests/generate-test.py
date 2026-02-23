@@ -138,19 +138,18 @@ def parse_tutorial(adoc_path: str) -> Tuple[str, List[Resource]]:
         block = "\n".join(lines[i + 1 : block_end])
         xref = _xref_above(lines, fence_open)
 
-        # Rule 1: oc apply/create heredoc
-        yamls = _heredoc_yamls(block)
+        # Rule 1: namespace commands (always check — may coexist with heredocs)
+        yamls = _namespace_yamls(block)
 
-        # Rule 2: bare YAML with apiVersion + kind and a download xref
+        # Rule 2: oc apply/create heredoc
+        yamls += _heredoc_yamls(block)
+
+        # Rule 3: bare YAML with apiVersion + kind and a download xref
         if not yamls and xref:
             if re.search(r"^apiVersion:", block, re.MULTILINE) and re.search(
                 r"^kind:", block, re.MULTILINE
             ):
                 yamls = [block.strip() + "\n"]
-
-        # Rule 3: namespace commands
-        if not yamls:
-            yamls = _namespace_yamls(block)
 
         for y in yamls:
             f = _k8s_fields(y)
@@ -229,70 +228,72 @@ def generate_playbook(
         f'    attachment_dir: "{{{{ playbook_dir }}}}/../../../modules/{module}/attachments/{tutorial}"',
         "",
         "  tasks:",
+        "    - name: Run tutorial test",
+        "      block:",
     ]
 
     for r in resources:
         v = _var(r.kind, r.name)
-        ns = [f"        namespace: {r.namespace}"] if r.namespace else []
+        ns = [f"            namespace: {r.namespace}"] if r.namespace else []
 
         L += [
-            f'    - name: "Apply {r.kind} {r.name}"',
-            "      kubernetes.core.k8s:",
-            "        state: present",
-            f'        src: "{{{{ attachment_dir }}}}/{r.filename}"',
+            f'        - name: "Apply {r.kind} {r.name}"',
+            "          kubernetes.core.k8s:",
+            "            state: present",
+            f'            src: "{{{{ attachment_dir }}}}/{r.filename}"',
             "",
-            f'    - name: "Verify {r.kind} {r.name}"',
-            "      kubernetes.core.k8s_info:",
-            f"        api_version: {r.api_version}",
-            f"        kind: {r.kind}",
+            f'        - name: "Verify {r.kind} {r.name}"',
+            "          kubernetes.core.k8s_info:",
+            f"            api_version: {r.api_version}",
+            f"            kind: {r.kind}",
             *ns,
-            f"        name: {r.name}",
-            f"      register: {v}",
-            f"      failed_when: {v}.resources | length == 0",
+            f"            name: {r.name}",
+            f"          register: {v}",
+            f"          failed_when: {v}.resources | length == 0",
             "",
         ]
 
         if r.kind == "VirtualMachine":
             wv = f"vm_ready_{v}"
             L += [
-                f'    - name: "Wait for VirtualMachine {r.name} to be ready"',
-                "      kubernetes.core.k8s_info:",
-                f"        api_version: {r.api_version}",
-                "        kind: VirtualMachine",
+                f'        - name: "Wait for VirtualMachine {r.name} to be ready"',
+                "          kubernetes.core.k8s_info:",
+                f"            api_version: {r.api_version}",
+                "            kind: VirtualMachine",
                 *ns,
-                f"        name: {r.name}",
-                f"      register: {wv}",
-                "      until: >",
-                f"        {wv}.resources | length > 0 and",
-                f"        {wv}.resources[0].status.ready | default(false)",
-                '      retries: "{{ (vm_timeout / 10) | int }}"',
-                "      delay: 10",
+                f"            name: {r.name}",
+                f"          register: {wv}",
+                "          until: >",
+                f"            {wv}.resources | length > 0 and",
+                f"            {wv}.resources[0].status.ready | default(false)",
+                '          retries: "{{ (vm_timeout / 10) | int }}"',
+                "          delay: 10",
                 "",
             ]
 
     L += [
-        "    - name: Test completed successfully",
-        "      ansible.builtin.debug:",
-        f'        msg: "{tutorial} tutorial test passed'
+        "        - name: Test completed successfully",
+        "          ansible.builtin.debug:",
+        f'            msg: "{tutorial} tutorial test passed'
         f' - all resources created and verified"',
         "",
-        "  always:",
-        "    - name: Cleanup resources",
-        "      when: cleanup | default(true)",
-        "      block:",
+        "      always:",
+        "        - name: Cleanup resources",
+        "          when: cleanup | default(true)",
+        "          block:",
     ]
 
     for r in reversed(resources):
-        ns = [f"            namespace: {r.namespace}"] if r.namespace else []
+        ns = [f"                namespace: {r.namespace}"] if r.namespace else []
         L += [
-            f'        - name: "Delete {r.kind} {r.name}"',
-            "          kubernetes.core.k8s:",
-            "            state: absent",
-            f"            api_version: {r.api_version}",
-            f"            kind: {r.kind}",
+            f'            - name: "Delete {r.kind} {r.name}"',
+            "              kubernetes.core.k8s:",
+            "                state: absent",
+            f"                api_version: {r.api_version}",
+            f"                kind: {r.kind}",
             *ns,
-            f"            name: {r.name}",
-            "          ignore_errors: true",
+            f"                name: {r.name}",
+            "              ignore_errors: true",
             "",
         ]
 
