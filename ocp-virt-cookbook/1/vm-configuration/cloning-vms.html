@@ -1,0 +1,1770 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Cloning Virtual Machines for Rapid Deployment :: OpenShift Virtualization cookbook</title>
+    <link rel="prev" href="golden-images-troubleshooting.html">
+    <link rel="next" href="../manifests/index.html">
+    <meta name="generator" content="Antora 3.1.3">
+    <link rel="stylesheet" href="../../../_/css/site.css">
+    <script>var uiRootPath = '../../../_'</script>
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://www.redhat.com" target="_blank"><img src="../../../_/img/redhat-logo.png" height="40px" alt="Red Hat"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="../../..">OpenShift Virtualization cookbook</a>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues" target="_blank">Report Issues</a>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="ocp-virt-cookbook" data-version="1">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="../index.html">OpenShift Virtualization cookbook</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../getting-started/index.html">Getting Started</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/prerequisites.html">Prerequisites</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/install-openshift-virtualization.html">Install OpenShift Virtualization</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/default-storage-class.html">Storage Setup</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/create-vm-web-console.html">Create VM from Web Console</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/virtctl-basics.html">Virtctl Basics</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../storage/index.html">Storage Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/lvm-operator.html">LVM Operator Installation</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/lvm-troubleshooting.html">LVM Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/creating-managing-storage-class.html">Creating and Managing Storage Classes</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../networking/index.html">Networking Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/udn-primary-networks.html">UDN Primary Networks</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/localnet-secondary.html">Localnet Secondary Networks with CUDN</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/localnet-vlan.html">Localnet Secondary Networks with VLAN using NAD</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/cudn-localnet-vlan.html">Localnet VLAN with CUDN</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/layer2-secondary.html">Layer 2 Secondary Networks</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/linux-bridges.html">Linux Bridges</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/ovs-bridge-troubleshooting.html">Troubleshooting Localnet Networks</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="index.html">Virtual Machine Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="cloud-init-ip-configuration.html">Cloud-init IP Configuration</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="cloud-init-troubleshooting.html">Cloud-init Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="internal-dns-for-vms.html">Internal DNS for VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="remote-access-linux-vms.html">Remote Access to Linux VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="remote-access-linux-troubleshooting.html">Remote Access to Linux VMs Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="remote-access-windows-vms.html">Remote Access to Windows VMs via RDP</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="import-qcow2-boot-volume.html">Import qcow2 Boot Volume</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="custom-golden-images.html">Custom Golden Images</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="golden-images-troubleshooting.html">Golden Images Troubleshooting</a>
+  </li>
+  <li class="nav-item is-current-page" data-depth="2">
+    <a class="nav-link" href="cloning-vms.html">Cloning VMs</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../manifests/index.html">Manifests</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../api/index.html">API Guide</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../api/api_component_overview.html">API Component Overview</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../lab-env/index.html">Lab Environment</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../appendix/glossary.html">Glossary</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">OpenShift Virtualization cookbook</span>
+    <span class="version">1</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <a class="title" href="../index.html">OpenShift Virtualization cookbook</a>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">1</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">OpenShift Virtualization cookbook</a></li>
+    <li><a href="index.html">Virtual Machine Configuration</a></li>
+    <li><a href="cloning-vms.html">Cloning VMs</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">Cloning Virtual Machines for Rapid Deployment</h1>
+<div class="sect1">
+<h2 id="_overview"><a class="anchor" href="#_overview"></a>Overview</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>This tutorial demonstrates how to clone existing virtual machines in OpenShift Virtualization to rapidly deploy identical or customized VM instances. VM cloning creates copies of existing VMs with their entire disk contents, configurations, and installed software, enabling fast environment provisioning.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_what_is_vm_cloning"><a class="anchor" href="#_what_is_vm_cloning"></a>What is VM Cloning?</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>VM cloning creates a new virtual machine by duplicating an existing VM. OpenShift Virtualization provides two main methods for cloning:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Web console cloning</strong>: Simple point-and-click interface for cloning VMs</p>
+</li>
+<li>
+<p><strong>CLI-based cloning</strong>: Manual process of cloning PVCs and creating new VMs</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Key benefits of VM cloning:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Rapid deployment of pre-configured environments</p>
+</li>
+<li>
+<p>Consistent software and configuration across instances</p>
+</li>
+<li>
+<p>Accelerated development and testing workflows</p>
+</li>
+<li>
+<p>Quick scale-out for identical workloads</p>
+</li>
+<li>
+<p>Reduced time from deployment to production-ready state</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_cloning_vs_golden_images"><a class="anchor" href="#_cloning_vs_golden_images"></a>Cloning vs Golden Images</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>While both approaches enable rapid VM deployment, they serve different purposes:</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 25%;">
+<col style="width: 37.5%;">
+<col style="width: 37.5%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Aspect</th>
+<th class="tableblock halign-left valign-top">VM Cloning</th>
+<th class="tableblock halign-left valign-top">Golden Images</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Use Case</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Duplicate specific VM with all its data and state</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Template for many VMs with standardized configuration</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Customization</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Clones retain source VM data, can customize with cloud-init</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Each VM starts fresh from template</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Data Preservation</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Preserves all data from source VM</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Only contains base configuration</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Source State</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Can clone from running or stopped VM</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Source is a prepared, generalized image</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Typical Scenario</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Clone a configured dev environment for testing</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Deploy multiple web servers with same base setup</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_prerequisites"><a class="anchor" href="#_prerequisites"></a>Prerequisites</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p>OpenShift 4.18+ with OpenShift Virtualization operator installed</p>
+</li>
+<li>
+<p>Access to OpenShift web console or CLI tools: <code>oc</code>, <code>virtctl</code></p>
+</li>
+<li>
+<p>Storage class that supports volume cloning</p>
+</li>
+<li>
+<p>At least one VM to clone from (or we&#8217;ll create one)</p>
+</li>
+<li>
+<p>Basic understanding of PersistentVolumeClaims (PVCs)</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_understanding_cloning_methods"><a class="anchor" href="#_understanding_cloning_methods"></a>Understanding Cloning Methods</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>OpenShift Virtualization provides two approaches for cloning VMs:</p>
+</div>
+<div class="sect2">
+<h3 id="_web_console_cloning_recommended"><a class="anchor" href="#_web_console_cloning_recommended"></a>Web Console Cloning (Recommended)</h3>
+<div class="paragraph">
+<p>The web console provides a streamlined cloning experience:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Automatically handles PVC cloning</p>
+</li>
+<li>
+<p>Creates new VM with cloned disk</p>
+</li>
+<li>
+<p>Supports cloning from running or stopped VMs</p>
+</li>
+<li>
+<p>Preserves VM configuration (CPU, memory, network)</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_manual_cli_cloning"><a class="anchor" href="#_manual_cli_cloning"></a>Manual CLI Cloning</h3>
+<div class="paragraph">
+<p>For automation or customization:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Clone the source VM&#8217;s PVC</p>
+</li>
+<li>
+<p>Create a new VM that references the cloned PVC</p>
+</li>
+<li>
+<p>Allows customization during clone process</p>
+</li>
+<li>
+<p>Useful for cross-namespace cloning</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_storage_cloning_behavior"><a class="anchor" href="#_storage_cloning_behavior"></a>Storage Cloning Behavior</h3>
+<div class="paragraph">
+<p>The underlying storage system determines clone performance:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Smart cloning</strong>: Uses storage snapshots (fast, CSI-enabled storage classes)</p>
+</li>
+<li>
+<p><strong>Host-assisted cloning</strong>: Copies data through pods (slower, any storage class)</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_cloning_vms_using_the_web_console"><a class="anchor" href="#_cloning_vms_using_the_web_console"></a>Cloning VMs Using the Web Console</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The web console is the simplest method for cloning VMs.</p>
+</div>
+<div class="sect2">
+<h3 id="_setup_create_source_vm"><a class="anchor" href="#_setup_create_source_vm"></a>Setup: Create Source VM</h3>
+<div class="paragraph">
+<p>First, create a namespace and source VM:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc create namespace vm-cloning-demo</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Deploy a source VM with nginx pre-installed:</p>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/source-webserver-vm.yaml" class="xref attachment">Download source-webserver-vm.yaml</a></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: source-webserver
+  namespace: vm-cloning-demo
+spec:
+  dataVolumeTemplates:
+    - apiVersion: cdi.kubevirt.io/v1beta1
+      kind: DataVolume
+      metadata:
+        name: source-webserver-disk
+      spec:
+        sourceRef:
+          kind: DataSource
+          name: fedora
+          namespace: openshift-virtualization-os-images
+        storage:
+          resources:
+            requests:
+              storage: 30Gi
+  runStrategy: RerunOnFailure
+  template:
+    metadata:
+      labels:
+        kubevirt.io/domain: source-webserver
+    spec:
+      domain:
+        cpu:
+          cores: 2
+        devices:
+          disks:
+            - disk:
+                bus: virtio
+              name: rootdisk
+            - disk:
+                bus: virtio
+              name: cloudinitdisk
+          interfaces:
+            - masquerade: {}
+              name: default
+          rng: {}
+        machine:
+          type: pc-q35-rhel9.4.0
+        memory:
+          guest: 4Gi
+      networks:
+        - name: default
+          pod: {}
+      volumes:
+        - dataVolume:
+            name: source-webserver-disk
+          name: rootdisk
+        - cloudInitNoCloud:
+            userData: |-
+              #cloud-config
+              user: fedora
+              password: fedora123
+              chpasswd: { expire: false }
+              ssh_pwauth: true
+              runcmd:
+                - dnf install -y nginx
+                - systemctl enable --now nginx
+                - echo "&lt;h1&gt;Source Webserver VM&lt;/h1&gt;&lt;p&gt;Hostname: $(hostname)&lt;/p&gt;" &gt; /usr/share/nginx/html/index.html
+                - firewall-cmd --permanent --add-service=http
+                - firewall-cmd --reload
+          name: cloudinitdisk</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Deploy the source VM:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f source-webserver-vm.yaml</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Wait for the VM to be running:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vmi -n vm-cloning-demo</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_clone_using_web_console"><a class="anchor" href="#_clone_using_web_console"></a>Clone Using Web Console</h3>
+<div class="paragraph">
+<p>To clone a VM using the OpenShift web console:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Navigate to <strong>Virtualization</strong> → <strong>VirtualMachines</strong></p>
+<div class="imageblock">
+<div class="content">
+<img src="_images/clone-vm-list.png" alt="VirtualMachines list showing source-webserver VM">
+</div>
+</div>
+</li>
+<li>
+<p>Locate the VM you want to clone (<code>source-webserver</code>)</p>
+</li>
+<li>
+<p>Click the <strong>⋮</strong> (Actions menu) next to the VM</p>
+</li>
+<li>
+<p>Select <strong>Clone</strong></p>
+<div class="imageblock">
+<div class="content">
+<img src="_images/clone-vm-actions-menu.png" alt="Actions menu with Clone option highlighted">
+</div>
+</div>
+</li>
+<li>
+<p>In the Clone VirtualMachine dialog:</p>
+<div class="ulist">
+<ul>
+<li>
+<p>Enter a name for the new VM (e.g., <code>webserver-clone-1</code>)</p>
+</li>
+<li>
+<p>Optionally check <strong>Start VirtualMachine once created</strong> to start it immediately</p>
+</li>
+<li>
+<p>Review the configuration details (Operating system, CPU, Memory, NICs, Disks)</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>Click <strong>Clone</strong></p>
+<div class="imageblock">
+<div class="content">
+<img src="_images/clone-vm-dialog.png" alt="Clone VirtualMachine dialog with name and configuration">
+</div>
+</div>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>The web console will:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Clone the source VM&#8217;s PVC</p>
+</li>
+<li>
+<p>Create a new VM with the cloned disk</p>
+</li>
+<li>
+<p>Preserve the VM&#8217;s configuration (CPU, memory, networks)</p>
+</li>
+<li>
+<p>Start the VM if you selected that option</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Monitor the clone progress in the VirtualMachines list. The clone will show "Provisioning" until the PVC clone completes.</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="_images/clone-vm-dialog-full.png" alt="Clone VirtualMachine dialog showing request progress">
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_verify_web_console_clone"><a class="anchor" href="#_verify_web_console_clone"></a>Verify Web Console Clone</h3>
+<div class="paragraph">
+<p>Check the cloned VM status:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vm -n vm-cloning-demo
+oc get vmi -n vm-cloning-demo</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Access the cloned VM:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">virtctl console webserver-clone-1 -n vm-cloning-demo</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The cloned VM will have nginx pre-installed (from the source) and the same hostname initially.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_cloning_vms_using_the_cli"><a class="anchor" href="#_cloning_vms_using_the_cli"></a>Cloning VMs Using the CLI</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>For automation, customization, or cross-namespace cloning, use the CLI method.</p>
+</div>
+<div class="sect2">
+<h3 id="_method_1_clone_pvc_then_create_vm_recommended"><a class="anchor" href="#_method_1_clone_pvc_then_create_vm_recommended"></a>Method 1: Clone PVC, Then Create VM (Recommended)</h3>
+<div class="paragraph">
+<p>This is the recommended CLI approach. First, identify the source VM&#8217;s PVC:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get pvc -n vm-cloning-demo</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Output shows:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">NAME                    STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   AGE
+source-webserver-disk   Bound    pvc-1234abcd-5678-efgh-9012-ijklmnop3456   30Gi       RWO            lvms-vg1       10m</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Create a standalone DataVolume that clones the source PVC:</p>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/clone-datavolume.yaml" class="xref attachment">Download clone-datavolume.yaml</a></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: cdi.kubevirt.io/v1beta1
+kind: DataVolume
+metadata:
+  name: webserver-clone-2-disk
+  namespace: vm-cloning-demo
+  annotations:
+    cdi.kubevirt.io/storage.bind.immediate.requested: "true"  <i class="conum" data-value="1"></i><b>(1)</b>
+spec:
+  source:
+    pvc:
+      name: source-webserver-disk
+      namespace: vm-cloning-demo
+  storage:
+    accessModes:
+      - ReadWriteOnce
+    resources:
+      requests:
+        storage: 30Gi
+    storageClassName: gp3-csi  <i class="conum" data-value="2"></i><b>(2)</b></code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>Required for storage classes with <code>WaitForFirstConsumer</code> binding mode</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>Specify the storage class (optional, will inherit from source PVC if omitted)</td>
+</tr>
+</table>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-important" title="Important"></i>
+</td>
+<td class="content">
+The <code>cdi.kubevirt.io/storage.bind.immediate.requested: "true"</code> annotation is critical for storage classes that use <code>WaitForFirstConsumer</code> binding mode (like AWS EBS gp3-csi, Azure Disk, etc.). Without this annotation, the DataVolume will remain in <code>PendingPopulation</code> state until a VM tries to consume it.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Apply the DataVolume:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f clone-datavolume.yaml</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Monitor the clone progress:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get dv webserver-clone-2-disk -n vm-cloning-demo -w</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>You&#8217;ll see phases like:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">NAME                     PHASE                               PROGRESS   RESTARTS   AGE
+webserver-clone-2-disk   CloneFromSnapshotSourceInProgress   N/A                   4s
+webserver-clone-2-disk   PrepClaimInProgress                 N/A                   68s
+webserver-clone-2-disk   RebindInProgress                    N/A                   78s
+webserver-clone-2-disk   Succeeded                           100.0%                79s</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Once the DataVolume shows <code>Succeeded</code>, create a VM that uses the cloned disk:</p>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/vm-from-cloned-pvc.yaml" class="xref attachment">Download vm-from-cloned-pvc.yaml</a></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: webserver-clone-2
+  namespace: vm-cloning-demo
+spec:
+  runStrategy: Manual
+  template:
+    metadata:
+      labels:
+        kubevirt.io/domain: webserver-clone-2
+    spec:
+      domain:
+        cpu:
+          cores: 2
+        devices:
+          disks:
+            - disk:
+                bus: virtio
+              name: rootdisk
+          interfaces:
+            - masquerade: {}
+              name: default
+          rng: {}
+        machine:
+          type: pc-q35-rhel9.4.0
+        memory:
+          guest: 4Gi
+      networks:
+        - name: default
+          pod: {}
+      volumes:
+        - name: rootdisk
+          persistentVolumeClaim:
+            claimName: webserver-clone-2-disk</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Apply the VM:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f vm-from-cloned-pvc.yaml</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Start the VM:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">virtctl start webserver-clone-2 -n vm-cloning-demo</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_method_2_clone_entire_vm_alternative_approach"><a class="anchor" href="#_method_2_clone_entire_vm_alternative_approach"></a>Method 2: Clone Entire VM (Alternative Approach)</h3>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+This approach requires manual editing and is not the recommended method. Use Method 1 above for a more reliable and easier-to-troubleshoot workflow.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Stop the source VM for a clean clone:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">virtctl stop source-webserver -n vm-cloning-demo</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Wait for the VM to stop:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vm source-webserver -n vm-cloning-demo</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Export the source VM configuration:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vm source-webserver -n vm-cloning-demo -o yaml &gt; clone-base.yaml</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Edit <code>clone-base.yaml</code> to create a clone. You need to make the following changes:</p>
+</div>
+<div class="paragraph">
+<p><strong>1. Change the VM name:</strong></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">metadata:
+  name: source-webserver  # Change to: webserver-manual-clone
+  namespace: vm-cloning-demo</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>2. Update DataVolume name and add PVC source:</strong></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">spec:
+  dataVolumeTemplates:
+    - apiVersion: cdi.kubevirt.io/v1beta1
+      kind: DataVolume
+      metadata:
+        name: source-webserver-disk  # Change to: webserver-manual-clone-disk
+      spec:
+        # Remove the original sourceRef section
+        # Add this instead:
+        source:
+          pvc:
+            name: source-webserver-disk
+            namespace: vm-cloning-demo
+        storage:
+          resources:
+            requests:
+              storage: 30Gi</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>3. Update labels and domain name:</strong></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">spec:
+  template:
+    metadata:
+      labels:
+        kubevirt.io/domain: source-webserver  # Change to: webserver-manual-clone
+    spec:
+      domain:
+        # ... rest of config
+      volumes:
+        - dataVolume:
+            name: source-webserver-disk  # Change to: webserver-manual-clone-disk
+          name: rootdisk</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>4. Remove unnecessary fields:</strong></p>
+</div>
+<div class="paragraph">
+<p>Remove these metadata fields that are auto-generated:
+* <code>metadata.uid</code>
+* <code>metadata.resourceVersion</code>
+* <code>metadata.creationTimestamp</code>
+* <code>metadata.generation</code>
+* <code>status</code> section (entire section)</p>
+</div>
+<div class="paragraph">
+<p><strong>5. Remove MAC addresses (IMPORTANT):</strong></p>
+</div>
+<div class="paragraph">
+<p>Remove the <code>macAddress</code> field from network interfaces to allow automatic allocation:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">spec:
+  template:
+    spec:
+      domain:
+        devices:
+          interfaces:
+            - masquerade: {}
+              name: default
+              macAddress: "52:54:00:xx:xx:xx"  # REMOVE THIS LINE</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If you don&#8217;t remove the MAC address, you&#8217;ll get an error:
+<code>Failed to allocate mac to the vm object: failed to allocate requested mac address</code></p>
+</div>
+<div class="paragraph">
+<p>After making these edits, apply the modified YAML:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f clone-base.yaml</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_customizing_cloned_vms_with_cloud_init"><a class="anchor" href="#_customizing_cloned_vms_with_cloud_init"></a>Customizing Cloned VMs with Cloud-init</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Cloned VMs inherit all data from the source, including hostname and credentials. Use cloud-init to customize clones.</p>
+</div>
+<div class="sect2">
+<h3 id="_clone_with_new_hostname_and_password"><a class="anchor" href="#_clone_with_new_hostname_and_password"></a>Clone with New Hostname and Password</h3>
+<div class="paragraph">
+<p>Create a DataVolume clone (as in Method 2):</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">cat &lt;&lt;EOF | oc apply -f -
+apiVersion: cdi.kubevirt.io/v1beta1
+kind: DataVolume
+metadata:
+  name: webserver-custom-disk
+  namespace: vm-cloning-demo
+  annotations:
+    cdi.kubevirt.io/storage.bind.immediate.requested: "true"
+spec:
+  source:
+    pvc:
+      name: source-webserver-disk
+      namespace: vm-cloning-demo
+  storage:
+    accessModes:
+      - ReadWriteOnce
+    resources:
+      requests:
+        storage: 30Gi
+EOF</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Wait for clone to complete:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get dv webserver-custom-disk -n vm-cloning-demo -w</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Create a VM with cloud-init customization:</p>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/cloned-vm-with-cloudinit.yaml" class="xref attachment">Download cloned-vm-with-cloudinit.yaml</a></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: webserver-custom
+  namespace: vm-cloning-demo
+spec:
+  runStrategy: Manual
+  template:
+    metadata:
+      labels:
+        kubevirt.io/domain: webserver-custom
+    spec:
+      domain:
+        cpu:
+          cores: 2
+        devices:
+          disks:
+            - disk:
+                bus: virtio
+              name: rootdisk
+            - disk:
+                bus: virtio
+              name: cloudinitdisk
+          interfaces:
+            - masquerade: {}
+              name: default
+          rng: {}
+        machine:
+          type: pc-q35-rhel9.4.0
+        memory:
+          guest: 4Gi
+      networks:
+        - name: default
+          pod: {}
+      volumes:
+        - name: rootdisk
+          persistentVolumeClaim:
+            claimName: webserver-custom-disk
+        - cloudInitNoCloud:
+            userData: |-
+              #cloud-config
+              hostname: webserver-custom
+              fqdn: webserver-custom.local
+              manage_etc_hosts: true
+              password: fedora123
+              chpasswd: { expire: false }
+              ssh_pwauth: true
+              runcmd:
+                - hostnamectl set-hostname webserver-custom
+                - echo "&lt;h1&gt;Customized Clone&lt;/h1&gt;&lt;p&gt;Hostname: $(hostname)&lt;/p&gt;" &gt; /usr/share/nginx/html/index.html
+                - systemctl restart nginx
+          name: cloudinitdisk</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This cloud-init configuration:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Sets a new hostname (<code>webserver-custom</code>)</p>
+</li>
+<li>
+<p>Sets password for the fedora user</p>
+</li>
+<li>
+<p>Updates the nginx welcome page</p>
+</li>
+<li>
+<p>Preserves nginx installation from the source VM</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Apply and start:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f cloned-vm-with-cloudinit.yaml
+virtctl start webserver-custom -n vm-cloning-demo</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Verify customization:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">virtctl console webserver-custom -n vm-cloning-demo</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Inside the VM:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">hostname
+# Output: webserver-custom
+
+systemctl status nginx
+# Shows nginx is running (preserved from source)
+
+curl localhost
+# Shows custom HTML</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_cloning_across_namespaces"><a class="anchor" href="#_cloning_across_namespaces"></a>Cloning Across Namespaces</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Clone VMs to different namespaces for environment separation (dev, test, prod).</p>
+</div>
+<div class="sect2">
+<h3 id="_create_target_namespace"><a class="anchor" href="#_create_target_namespace"></a>Create Target Namespace</h3>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc create namespace vm-cloning-production</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_configure_rbac_for_cross_namespace_cloning"><a class="anchor" href="#_configure_rbac_for_cross_namespace_cloning"></a>Configure RBAC for Cross-Namespace Cloning</h3>
+<div class="paragraph">
+<p>The service account in the target namespace needs permission to access PVCs in the source namespace:</p>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/cross-namespace-clone-rbac.yaml" class="xref attachment">Download cross-namespace-clone-rbac.yaml</a></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: datavolume-cloner
+  namespace: vm-cloning-demo
+rules:
+  - apiGroups: [""]
+    resources: ["persistentvolumeclaims"]
+    verbs: ["get", "list"]
+  - apiGroups: ["cdi.kubevirt.io"]
+    resources: ["datavolumes"]
+    verbs: ["get", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: allow-clone-from-demo
+  namespace: vm-cloning-demo
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: datavolume-cloner
+subjects:
+  - kind: ServiceAccount
+    name: default
+    namespace: vm-cloning-production</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Apply RBAC:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f cross-namespace-clone-rbac.yaml</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_create_cross_namespace_clone"><a class="anchor" href="#_create_cross_namespace_clone"></a>Create Cross-Namespace Clone</h3>
+<div class="paragraph">
+<p>Create a DataVolume in the production namespace that clones from the demo namespace:</p>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/cross-namespace-clone-datavolume.yaml" class="xref attachment">Download cross-namespace-clone-datavolume.yaml</a></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: cdi.kubevirt.io/v1beta1
+kind: DataVolume
+metadata:
+  name: webserver-production-disk
+  namespace: vm-cloning-production
+  annotations:
+    cdi.kubevirt.io/storage.bind.immediate.requested: "true"
+spec:
+  source:
+    pvc:
+      name: source-webserver-disk
+      namespace: vm-cloning-demo
+  storage:
+    accessModes:
+      - ReadWriteOnce
+    resources:
+      requests:
+        storage: 30Gi</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Apply the DataVolume:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f cross-namespace-clone-datavolume.yaml</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Monitor clone:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get dv -n vm-cloning-production -w</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Create production VM:</p>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/cloned-webserver-production.yaml" class="xref attachment">Download cloned-webserver-production.yaml</a></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: webserver-production
+  namespace: vm-cloning-production
+  labels:
+    environment: production
+spec:
+  runStrategy: Manual
+  template:
+    metadata:
+      labels:
+        kubevirt.io/domain: webserver-production
+    spec:
+      domain:
+        cpu:
+          cores: 4
+        devices:
+          disks:
+            - disk:
+                bus: virtio
+              name: rootdisk
+            - disk:
+                bus: virtio
+              name: cloudinitdisk
+          interfaces:
+            - masquerade: {}
+              name: default
+          rng: {}
+        machine:
+          type: pc-q35-rhel9.4.0
+        memory:
+          guest: 8Gi
+      networks:
+        - name: default
+          pod: {}
+      volumes:
+        - name: rootdisk
+          persistentVolumeClaim:
+            claimName: webserver-production-disk
+        - cloudInitNoCloud:
+            userData: |-
+              #cloud-config
+              hostname: webserver-prod
+              fqdn: webserver-prod.production.local
+              manage_etc_hosts: true
+              password: fedora123
+              chpasswd: { expire: false }
+              ssh_pwauth: true
+              runcmd:
+                - hostnamectl set-hostname webserver-prod
+                - echo "&lt;h1&gt;Production Webserver&lt;/h1&gt;&lt;p&gt;Environment: Production&lt;/p&gt;" &gt; /usr/share/nginx/html/index.html
+                - systemctl restart nginx
+          name: cloudinitdisk</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Key differences for production:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Different namespace</p>
+</li>
+<li>
+<p>More resources (4 cores, 8Gi RAM)</p>
+</li>
+<li>
+<p>Production-specific labels</p>
+</li>
+<li>
+<p>Sets password for access</p>
+</li>
+<li>
+<p>Production-specific customizations</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Apply and start:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f cloned-webserver-production.yaml
+virtctl start webserver-production -n vm-cloning-production</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_storage_considerations"><a class="anchor" href="#_storage_considerations"></a>Storage Considerations</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_clone_performance"><a class="anchor" href="#_clone_performance"></a>Clone Performance</h3>
+<div class="paragraph">
+<p>Clone speed depends on your storage:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Smart cloning</strong> (CSI snapshots): Very fast, uses storage snapshots</p>
+<div class="ulist">
+<ul>
+<li>
+<p>Ceph RBD, AWS EBS, Azure Disk, GCP PD</p>
+</li>
+<li>
+<p>Phase: <code>SnapshotForSmartCloneInProgress</code> → <code>SmartClonePVCInProgress</code></p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p><strong>Host-assisted cloning</strong>: Slower, copies data through pods</p>
+<div class="ulist">
+<ul>
+<li>
+<p>Any storage class without snapshot support</p>
+</li>
+<li>
+<p>Phase: <code>CloneInProgress</code> with progress percentage</p>
+</li>
+</ul>
+</div>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Check which method is being used:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get dv &lt;datavolume-name&gt; -n &lt;namespace&gt; -o yaml | grep cloneType</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Output:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">cdi.kubevirt.io/cloneType: snapshot  # Smart cloning
+# or
+cdi.kubevirt.io/cloneType: copy      # Host-assisted cloning</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_storage_space_requirements"><a class="anchor" href="#_storage_space_requirements"></a>Storage Space Requirements</h3>
+<div class="paragraph">
+<p>Each clone requires full storage allocation:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Clones are independent copies, not snapshots</p>
+</li>
+<li>
+<p>Each clone needs storage equal to source volume size</p>
+</li>
+<li>
+<p>Plan capacity: (number of clones × source volume size)</p>
+</li>
+<li>
+<p>Check namespace quotas and storage class capacity</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Verify available storage:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get sc
+oc describe sc &lt;storage-class-name&gt;</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_best_practices_for_storage"><a class="anchor" href="#_best_practices_for_storage"></a>Best Practices for Storage</h3>
+<div class="ulist">
+<ul>
+<li>
+<p>Use storage classes with snapshot support for faster cloning</p>
+</li>
+<li>
+<p>Ensure sufficient storage capacity before creating clones</p>
+</li>
+<li>
+<p>Monitor storage usage in namespaces</p>
+</li>
+<li>
+<p>Clean up unused clones regularly</p>
+</li>
+<li>
+<p>Consider storage quotas for namespaces</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_verification_and_troubleshooting"><a class="anchor" href="#_verification_and_troubleshooting"></a>Verification and Troubleshooting</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_verify_clone_completion"><a class="anchor" href="#_verify_clone_completion"></a>Verify Clone Completion</h3>
+<div class="paragraph">
+<p>Check DataVolume status:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get dv -n vm-cloning-demo</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Successful clone shows <code>Succeeded</code>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">NAME                          PHASE       PROGRESS   AGE
+webserver-custom-disk         Succeeded   N/A        5m</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_check_clone_events"><a class="anchor" href="#_check_clone_events"></a>Check Clone Events</h3>
+<div class="paragraph">
+<p>View clone events:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc describe dv &lt;datavolume-name&gt; -n &lt;namespace&gt;</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Look for events showing clone progress:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">Events:
+  Type    Reason             Age   From                   Message
+  ----    ------             ----  ----                   -------
+  Normal  CloneInProgress    5m    datavolume-controller  Cloning from vm-cloning-demo/source-webserver-disk in progress
+  Normal  CloneSucceeded     2m    datavolume-controller  Successfully cloned from vm-cloning-demo/source-webserver-disk</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_verify_vm_is_running"><a class="anchor" href="#_verify_vm_is_running"></a>Verify VM is Running</h3>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vmi -n vm-cloning-demo</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_verify_customizations"><a class="anchor" href="#_verify_customizations"></a>Verify Customizations</h3>
+<div class="paragraph">
+<p>Access VM console:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">virtctl console &lt;vm-name&gt; -n &lt;namespace&gt;</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Inside the VM:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Check hostname
+hostname
+
+# Verify software from source VM
+systemctl status nginx
+
+# Check cloud-init status
+cloud-init status
+
+# View cloud-init logs
+sudo cat /var/log/cloud-init-output.log
+
+# Check machine ID (if customized)
+cat /etc/machine-id</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_common_issues_and_solutions"><a class="anchor" href="#_common_issues_and_solutions"></a>Common Issues and Solutions</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_issue_clone_stuck_in_provisioning_or_cloneinprogress"><a class="anchor" href="#_issue_clone_stuck_in_provisioning_or_cloneinprogress"></a>Issue: Clone stuck in "Provisioning" or "CloneInProgress"</h3>
+<div class="paragraph">
+<p><strong>Problem</strong>: DataVolume shows <code>CloneInProgress</code> for extended time.</p>
+</div>
+<div class="paragraph">
+<p><strong>Possible causes</strong>:
+* Large source volume
+* Slow storage or network
+* Host-assisted cloning on large volumes</p>
+</div>
+<div class="paragraph">
+<p><strong>Solutions</strong>:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Check clone events
+oc describe dv &lt;datavolume-name&gt; -n &lt;namespace&gt;
+
+# Check CDI pods
+oc get pods -n &lt;namespace&gt; | grep cdi
+
+# View CDI logs
+oc logs &lt;cdi-pod&gt; -n &lt;namespace&gt;</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>For large volumes, host-assisted cloning can take considerable time. This is expected.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_issue_clone_fails_with_permission_denied"><a class="anchor" href="#_issue_clone_fails_with_permission_denied"></a>Issue: Clone fails with "permission denied"</h3>
+<div class="paragraph">
+<p><strong>Problem</strong>: Cross-namespace clone fails with RBAC errors.</p>
+</div>
+<div class="paragraph">
+<p><strong>Solution</strong>: Verify RBAC permissions:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Check role exists
+oc get role datavolume-cloner -n &lt;source-namespace&gt;
+
+# Check role binding
+oc get rolebinding -n &lt;source-namespace&gt;
+
+# Test permissions
+oc auth can-i get pvc --as=system:serviceaccount:&lt;target-namespace&gt;:default -n &lt;source-namespace&gt;</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Output should be <code>yes</code>.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_issue_cloned_vm_has_same_hostname_as_source"><a class="anchor" href="#_issue_cloned_vm_has_same_hostname_as_source"></a>Issue: Cloned VM has same hostname as source</h3>
+<div class="paragraph">
+<p><strong>Problem</strong>: Clone boots with original hostname.</p>
+</div>
+<div class="paragraph">
+<p><strong>Solution</strong>: Add cloud-init configuration to the VM:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Ensure <code>cloudinitdisk</code> volume is defined</p>
+</li>
+<li>
+<p>Set <code>hostname</code> field in cloud-init userData</p>
+</li>
+<li>
+<p>Use <code>runcmd</code> to set hostname: <code>hostnamectl set-hostname &lt;new-name&gt;</code></p>
+</li>
+<li>
+<p>Check cloud-init logs: <code>sudo cat /var/log/cloud-init.log</code></p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_issue_storage_quota_exceeded"><a class="anchor" href="#_issue_storage_quota_exceeded"></a>Issue: Storage quota exceeded</h3>
+<div class="paragraph">
+<p><strong>Problem</strong>: Clone fails due to insufficient storage quota.</p>
+</div>
+<div class="paragraph">
+<p><strong>Solution</strong>:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Check quotas
+oc get resourcequota -n &lt;namespace&gt;
+oc describe resourcequota -n &lt;namespace&gt;
+
+# Increase quota if needed
+oc edit resourcequota &lt;quota-name&gt; -n &lt;namespace&gt;</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_issue_source_pvc_not_found"><a class="anchor" href="#_issue_source_pvc_not_found"></a>Issue: Source PVC not found</h3>
+<div class="paragraph">
+<p><strong>Problem</strong>: DataVolume cannot find source PVC.</p>
+</div>
+<div class="paragraph">
+<p><strong>Solution</strong>:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Verify source PVC exists
+oc get pvc -n &lt;source-namespace&gt;
+
+# Check DataVolume source reference
+oc get dv &lt;datavolume-name&gt; -n &lt;namespace&gt; -o yaml</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Ensure <code>spec.source.pvc.name</code> and <code>spec.source.pvc.namespace</code> are correct.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_issue_clone_works_but_vm_wont_start"><a class="anchor" href="#_issue_clone_works_but_vm_wont_start"></a>Issue: Clone works but VM won&#8217;t start</h3>
+<div class="paragraph">
+<p><strong>Problem</strong>: DataVolume succeeded but VM stuck in "Scheduling" or "Starting".</p>
+</div>
+<div class="paragraph">
+<p><strong>Possible causes</strong>:
+* PVC not bound
+* Insufficient resources
+* Node scheduling issues</p>
+</div>
+<div class="paragraph">
+<p><strong>Solutions</strong>:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Check PVC status
+oc get pvc -n &lt;namespace&gt;
+
+# Check VM events
+oc describe vm &lt;vm-name&gt; -n &lt;namespace&gt;
+
+# Check VMI (if it exists)
+oc describe vmi &lt;vm-name&gt; -n &lt;namespace&gt;</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_cleanup"><a class="anchor" href="#_cleanup"></a>Cleanup</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Remove all resources created in this tutorial:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Delete all VMs in demo namespace
+oc delete vm --all -n vm-cloning-demo
+
+# Delete all DataVolumes in demo namespace
+oc delete dv --all -n vm-cloning-demo
+
+# Delete production VM
+oc delete vm webserver-production -n vm-cloning-production
+oc delete dv --all -n vm-cloning-production
+
+# Delete RBAC resources
+oc delete role datavolume-cloner -n vm-cloning-demo
+oc delete rolebinding allow-clone-from-demo -n vm-cloning-demo
+
+# Delete namespaces
+oc delete namespace vm-cloning-demo
+oc delete namespace vm-cloning-production</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Verify cleanup:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get namespace | grep vm-cloning</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_summary"><a class="anchor" href="#_summary"></a>Summary</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>In this tutorial, you learned:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>How VM cloning works in OpenShift Virtualization</p>
+</li>
+<li>
+<p>The difference between web console and CLI cloning methods</p>
+</li>
+<li>
+<p>How to clone VMs using the OpenShift web console</p>
+</li>
+<li>
+<p>How to clone VMs using CLI with standalone DataVolumes</p>
+</li>
+<li>
+<p>How to customize clones with cloud-init</p>
+</li>
+<li>
+<p>How to clone VMs across namespaces with RBAC</p>
+</li>
+<li>
+<p>How to create multiple clones for scale-out scenarios</p>
+</li>
+<li>
+<p>Storage considerations: smart cloning vs host-assisted cloning</p>
+</li>
+<li>
+<p>Best practices for post-clone customization</p>
+</li>
+<li>
+<p>Security practices for credentials and system identity</p>
+</li>
+<li>
+<p>Common issues and troubleshooting techniques</p>
+</li>
+<li>
+<p>Production use cases for VM cloning</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>VM cloning accelerates development, testing, and deployment workflows by enabling rapid creation of pre-configured environments in OpenShift Virtualization.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_references"><a class="anchor" href="#_references"></a>References</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p><a href="https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/virtualization/advanced-vm-creation#virt-creating-vms-by-cloning-pvcs" target="_blank" rel="noopener">Creating VMs by cloning PVCs</a></p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<nav class="pagination">
+  <span class="prev"><a href="golden-images-troubleshooting.html">Golden Images Troubleshooting</a></span>
+  <span class="next"><a href="../manifests/index.html">Manifests</a></span>
+</nav>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <img src="../../../_/img/rhl-logo-red.png" height="40px" alt="Red Hat"  href="https://redhat.com" >
+</footer><script id="site-script" src="../../../_/js/site.js" data-ui-root-path="../../../_"></script>
+<script async src="../../../_/js/vendor/highlight.js"></script>
+  </body>
+</html>
