@@ -73,25 +73,7 @@ NOTE: A stopped VM has a VirtualMachine resource but no VirtualMachineInstance. 
 
 The following diagram shows the relationship between VM and VMI resources:
 
-[source,text]
-----
-+------------------+                      +------------------------+
-|  VirtualMachine  |                      | VirtualMachineInstance |
-|  (VM)            |                      | (VMI)                  |
-+------------------+                      +------------------------+
-|                  |                      |                        |
-| - Persistent     |   start VM           | - Exists only when     |
-| - Definition     | ------------------>  |   VM is running        |
-| - Always exists  |                      | - Runtime info         |
-|                  |   stop VM            | - Deleted on stop      |
-|                  | <------------------  |                        |
-+------------------+                      +------------------------+
-
-Example:
-  VM: fedora-app-vm (always exists)
-       |
-       +-- VMI: fedora-app-vm (created on start, deleted on stop)
-----
+image::vm-vmi-relationship.png[Relationship between VirtualMachine and VirtualMachineInstance]
 
 == VM Lifecycle States
 
@@ -99,56 +81,7 @@ A VM transitions through several states during its lifecycle. Understanding thes
 
 === State Diagram
 
-[source,text]
-----
-                                    +----------+
-                                    | Stopped  |
-                                    | (no VMI) |
-                                    +----+-----+
-                                         |
-                                    start VM
-                                         |
-                                         v
-                                   +-----------+
-                                   | Pending   |
-                                   +-----------+
-                                         |
-                                   scheduling
-                                         |
-                                         v
-                                   +-----------+
-                                   | Scheduling|
-                                   +-----------+
-                                         |
-                                    scheduled
-                                         |
-                                         v
-+----------+   unpause    +---------+   boot complete   +-----------+
-|  Paused  | <----------> | Running | <---------------- | Starting  |
-+----------+    pause     +---------+                   +-----------+
-                               |
-                          stop VM
-                               |
-                               v
-                         +-----------+
-                         | Stopping  |
-                         +-----------+
-                               |
-                          shutdown
-                               |
-                               v
-                         +-------------+
-                         | Terminating |
-                         +-------------+
-                               |
-                           cleanup
-                               |
-                               v
-                          +----------+
-                          | Stopped  |
-                          | (no VMI) |
-                          +----------+
-----
+image::vm-lifecycle-states.png[VM lifecycle state transitions]
 
 === State Descriptions
 
@@ -201,6 +134,8 @@ To start a stopped VM:
 . Find your VM in the list
 . Click the VM name to open details, then click **Actions** -> **Start**
 . Or click the kebab menu (three dots) and select **Start**
++
+NOTE: TODO: Add screenshot for this section - VirtualMachines list and Start action in web console.
 
 **CLI:**
 
@@ -230,6 +165,8 @@ Stopping a VM performs a graceful shutdown and deletes the VMI.
 
 . Navigate to your VM's details page
 . Click **Actions** -> **Stop**
++
+NOTE: TODO: Add screenshot for this section - VM details page with Stop action in web console.
 
 **CLI (graceful stop):**
 
@@ -275,6 +212,8 @@ IMPORTANT: Paused VMs still consume memory on the node. Only CPU execution is su
 . Navigate to your VM's details page
 . Click **Actions** -> **Pause**
 . To resume: **Actions** -> **Unpause**
++
+NOTE: TODO: Add screenshot for this section - VM details page with Pause/Unpause actions in web console.
 
 **CLI:**
 
@@ -308,6 +247,8 @@ Restart performs a stop followed by a start. Use this when:
 
 . Navigate to your VM's details page
 . Click **Actions** -> **Restart**
++
+NOTE: TODO: Add screenshot for this section - VM details page with Restart action in web console.
 
 **CLI:**
 
@@ -328,6 +269,8 @@ When deleting a VM, you can choose whether to also delete associated storage (PV
 . Click **Actions** -> **Delete**
 . In the confirmation dialog, choose whether to delete disks
 . Click **Delete**
++
+NOTE: TODO: Add screenshot for this section - VM Delete action and confirmation dialog in web console.
 
 **CLI (delete VM, keep disks):**
 
@@ -501,6 +444,8 @@ spec:
 . Click the **YAML** tab
 . Modify the `spec.runStrategy` field
 . Click **Save**
++
+NOTE: TODO: Add screenshot for this section - VM YAML tab with runStrategy in web console.
 
 NOTE: You cannot use both `runStrategy` and the deprecated `running` field simultaneously. Use `runStrategy` for new VMs.
 
