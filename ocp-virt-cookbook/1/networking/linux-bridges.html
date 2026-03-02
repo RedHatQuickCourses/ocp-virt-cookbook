@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>Adding a Bridge as a Secondary Network Adapter :: OpenShift Virtualization cookbook</title>
+    <title>Creating a Linux Bridge Secondary Network for Virtual Machines :: OpenShift Virtualization cookbook</title>
     <link rel="prev" href="layer2-secondary.html">
     <link rel="next" href="ovs-bridge-troubleshooting.html">
     <meta name="generator" content="Antora 3.1.3">
@@ -225,7 +225,7 @@
   <div class="toc-menu"></div>
 </aside>
 <article class="doc">
-<h1 class="page">Adding a Bridge as a Secondary Network Adapter</h1>
+<h1 class="page">Creating a Linux Bridge Secondary Network for Virtual Machines</h1>
 <div id="preamble">
 <div class="sectionbody">
 <div class="paragraph">
@@ -233,14 +233,33 @@
 </div>
 <div class="listingblock">
 <div class="content">
-<pre>OpenShift 4.20</pre>
+<pre>OpenShift 4.20,4.21</pre>
 </div>
 </div>
 <div class="paragraph">
-<p>This quick-guide describes how to add a secondary Linux bridge adapter to a VM.
-A Linux bridge acts as a network switch between pods running on the same node/host machine.
-Optionally, a bridge interface can be linked to a physical host interface.
-Doing this enables connections to external networks, which includes other pods/VMs running on other nodes/hosts.</p>
+<p>A Linux bridge secondary network uses the <a href="https://nmstate.io/kubernetes-nmstate/">Kubernetes NMState Operator</a> to create a new Linux bridge device on the cluster nodes,
+and the <a href="https://github.com/k8snetworkplumbingwg/multus-cni" target="_blank" rel="noopener">Multus CNI</a> in conjunction with the <a href="https://www.cni.dev/plugins/current/main/bridge/">bridge CNI plugin</a>
+to connect pods and <code>VirtualMachines</code> (VMs) to the bridge.</p>
+</div>
+<div class="paragraph">
+<p>This Linux bridge runs in the nodes' network namespace, and acts as a Layer 2 network switch between pods or VMs running on the same node.
+Linux bridges can also be linked to a physical host interface to allow connections to external networks, including connections to VMs or pods running on other nodes in the cluster.</p>
+</div>
+<div class="paragraph">
+<p>In short, you can use a Linux bridge secondary network if the following conditions apply:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>You do not intend to use it as a primary network (not currently possible using the bridge CNI plugin with OpenShift).</p>
+</li>
+<li>
+<p>You need to connect VMs to cluster-external networks (or the local/physical network without traversing through a NAT gateway).</p>
+</li>
+<li>
+<p>You need to connect <code>VirtualMachines</code> to a VLAN.</p>
+</li>
+</ul>
 </div>
 <div class="admonitionblock note">
 <table>
@@ -249,19 +268,7 @@ Doing this enables connections to external networks, which includes other pods/V
 <i class="fa icon-note" title="Note"></i>
 </td>
 <td class="content">
-A Linux bridge network attachment definition (NAD) is the simplest way to connect VM(s) to a VLAN.
-</td>
-</tr>
-</table>
-</div>
-<div class="admonitionblock note">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-note" title="Note"></i>
-</td>
-<td class="content">
-This guide assumes that VMs have already been created in OpenShift Virtualization prior to being modified. Parts of this guide will require a namespace to be setup for the VMs which are being attached to a Linux bridge network.
+A Linux bridge <code>NetworkAttachmentDefinition</code> is the simplest way to connect <code>VirtualMachines</code> to a VLAN.
 </td>
 </tr>
 </table>
@@ -272,569 +279,38 @@ This guide assumes that VMs have already been created in OpenShift Virtualizatio
 <div class="ulist">
 <ul>
 <li>
-<p><a href="#install_nmstate_operator">Install NMState Operator</a> onto the cluster.</p>
+<p><a href="#create_linux_bridge_nncp">Create a Linux Bridge Node Network Configuration Policy</a></p>
+</li>
+<li>
+<p><a href="#create_net_attach_def">Create a Network Attachment Definition</a> to expose the bridge network to pods and VMs</p>
+</li>
+<li>
+<p><a href="#attach_virtual_machines">Attach VirtualMachines</a> to the Linux bridge secondary network</p>
 <div class="ulist">
 <ul>
 <li>
-<p><a href="#nmstate_operator_gui_procedure">OpenShift console procedure for NMState Operator</a></p>
+<p><a href="#create_first_vm">Create the First VirtualMachine</a></p>
+</li>
+<li>
+<p><a href="#create_second_vm">Create a Second VirtualMachine</a></p>
 </li>
 </ul>
 </div>
 </li>
 <li>
-<p><a href="#create_linux_bridge_nncp">Create a Node Network Configuration Policy (NNCP) object</a> to define the Linux bridge.</p>
-<div class="ulist">
-<ul>
-<li>
-<p><a href="#create_nncp_prereqs">Prerequisites for creating a NNCP object</a></p>
-</li>
-<li>
-<p><a href="#create_nncp_cli_procedure">CLI procedure to create a NNCP object</a></p>
-</li>
-<li>
-<p><a href="#create_nncp_gui_procedure">OpenShift console procedure to create a NNCP object</a></p>
-</li>
-</ul>
-</div>
-</li>
-<li>
-<p><a href="#create_net_attach_def">Create a Network Attachment Definition (NAD)</a> to provide Layer 2 networking to pods/VMs.</p>
-<div class="ulist">
-<ul>
-<li>
-<p><a href="#create_nad_prereqs">Prerequisites for creating a NAD</a></p>
-</li>
-<li>
-<p><a href="#create_nad_cli_procedure">CLI procedure to create a NAD object</a></p>
-</li>
-<li>
-<p><a href="#create_nad_gui_procedure">OpenShift console procedure to create a NAD object</a></p>
-</li>
-</ul>
-</div>
-</li>
-<li>
-<p><a href="#configure_vm_nic">Configure the VM network interface connection (NIC)</a> to connect the VM to the Linux bridge network.</p>
-<div class="ulist">
-<ul>
-<li>
-<p><a href="#vm_nic_prereqs">Prerequisites for configuring the VM NIC</a></p>
-</li>
-<li>
-<p><a href="#vm_nic_gui_prcoedure">OpenShift console procedure to configure the VM NIC</a></p>
-</li>
-<li>
-<p><a href="#vm_nic_cli_procedure">CLI procedure to configure the VM NIC</a></p>
-</li>
-</ul>
-</div>
+<p><a href="#test_secondary_network">Test the Linux Bridge Secondary Network</a></p>
 </li>
 </ul>
 </div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="install_nmstate_operator"><a class="anchor" href="#install_nmstate_operator"></a>Install the Kubernetes NMState Operator</h2>
+<h2 id="create_linux_bridge_nncp"><a class="anchor" href="#create_linux_bridge_nncp"></a>Create a Linux Bridge Node Network Configuration Policy</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>This operator is required to configure the Node Network Configuration Policy (NNCP) objects used to create new bridge network adapters on each node.
-The NNCP actually creates the bridge interface on all (or specific) nodes/hosts in the cluster, which of course can be filtered using labels.
-The bridge interface must exist on the nodes/hosts that the VMs are running on, before you can attach a secondary NIC to a pod/VM.</p>
-</div>
-<div class="sect2">
-<h3 id="nmstate_operator_gui_procedure"><a class="anchor" href="#nmstate_operator_gui_procedure"></a>Procedure using the OpenShift console:</h3>
-<div class="paragraph">
-<p>Login to the OpenShift admin console as any user with cluster-admin privileges (such as the default <code>kubeadmin</code> account).</p>
-</div>
-<div class="paragraph">
-<p>On the navigation menu (left side), expand <strong>Operators</strong> then select <strong>OperatorHub</strong>.</p>
-</div>
-<div class="paragraph">
-<p>Locate and select the <strong>Kubernetes NMState Operator</strong> from the grid. Use the search box to filter the operator listings by name.</p>
-</div>
-<div class="paragraph">
-<p>Click <strong>Install</strong> to view the installation page, then click <strong>Install</strong> (accepting the defaults).</p>
-</div>
-<div class="paragraph">
-<p>When the operator installation completes, select <strong>View Operator</strong>.</p>
-</div>
-<div class="paragraph">
-<p>Under the Provided APIs list, click to <strong>Create instance</strong> of an NMState custom resource (CR).</p>
-</div>
-<div class="paragraph">
-<p>Ensure the CR is named <code>nmstate</code> and click <strong>Create</strong>.</p>
-</div>
-<div class="paragraph">
-<p>Wait until the web console displays the <code>Web console update is available</code> pop up message, and click <strong>Refresh web console</strong> on the bottom of the pop up (or wait a few moments and refresh).</p>
-</div>
-<div class="admonitionblock note">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-note" title="Note"></i>
-</td>
-<td class="content">
-On later versions of OpenShift, you may instead be logged out of the OpenShift console automatically, and you must then re-authenticate.
-</td>
-</tr>
-</table>
-</div>
-<div class="paragraph">
-<p>From the navigation menu, expand <strong>Networking</strong> and check for the <strong>NodeNetworkConfigurationPolicy</strong> and <strong>NodeNetworkState</strong> items.
-These should both exist before proceeding with <a href="#create_linux_bridge_nncp">creating  NodeNetworkConfigurationPolicy (NNCP)</a>.</p>
-</div>
-</div>
-<div class="sect2">
-<h3 id="nmstate_operator_cli_procedure"><a class="anchor" href="#nmstate_operator_cli_procedure"></a>Procedure using the CLI:</h3>
-<div class="paragraph">
-<p>Before proceeding, authenticate to your OpenShift cluster&#8217;s API as a cluster-admin.</p>
-</div>
-<div class="paragraph">
-<p>Create the <code>openshift-nmstate</code> namespace:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre>oc create namespace openshift-nmstate</pre>
-</div>
-</div>
-<div class="paragraph">
-<p>Using your favorite text editor, create the following Subscription object by copy/pasting the following yaml into a new buffer:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre>apiVersion: operators.coreos.com/v1alpha1
-kind: Subscription
-metadata:
-  name: nmstate-operator
-  namespace: openshift-nmstate
-spec:
-  channel: stable
-  installPlanApproval: Automatic
-  name: kubernetes-nmstate-operator
-  source: redhat-operators
-  sourceNamespace: openshift-marketplace</pre>
-</div>
-</div>
-<div class="paragraph">
-<p>Save the file as <code>k8s-nmstate-operator.subscription.yaml</code>, then create the subscription on the cluster:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre>oc create -f k8s-nmstate-operator.subscription.yaml -n openshift-nmstate</pre>
-</div>
-</div>
-<div class="paragraph">
-<p>Wait until the operator has finished deploying. To check the current installation state, fetch the ClusterServiceVersion (<code>csv</code>) and check the install phase (last column):</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre>oc get csv -n openshift-nmstate
-NAME                                              DISPLAY                       VERSION               REPLACES                                          PHASE
-kubernetes-nmstate-operator.4.18.0-202509101149   Kubernetes NMState Operator   4.18.0-202509101149   kubernetes-nmstate-operator.4.18.0-202508271223   Succeeded</pre>
-</div>
-</div>
-<div class="paragraph">
-<p>Once the operator has finished installing, create the <code>nmstate</code> object. Once again, in your favorite text editor, paste the following yaml:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre>apiVersion: nmstate.io/v1
-kind: NMState
-metadata:
-  name: nmstate
-spec: {}</pre>
-</div>
-</div>
-<div class="admonitionblock note">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-note" title="Note"></i>
-</td>
-<td class="content">
-<code>nmstate</code> objects are cluster scoped, so a namespace is not required. Only one <code>nmstate</code> (also named <code>nmstate</code>) should exist on the cluster.
-</td>
-</tr>
-</table>
-</div>
-<div class="paragraph">
-<p>The <code>nmstate</code> object will trigger the NMState operator to install the <code>NodeNetworkConfigurationPolicy</code> and <code>NodeNetworkState</code> APIs (CRDs).
-Once these APIs are available, proceed with <a href="#create_linux_bridge_nncp">creating a linux bridge network device</a>.</p>
-</div>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="create_linux_bridge_nncp"><a class="anchor" href="#create_linux_bridge_nncp"></a>Create a Linux Bridge NodeNetworkConfigurationPolicy (NNCP)</h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p>The first step is to define the Linux bridge on the cluster nodes using a NodeNetworkConfigurationPolicy (NNCP).
-NNCP objects are cluster-scoped, so they do not exist in a namespace.
-You can, however control which node(s)/host(s) to which the NNCP applies using key/value labels.</p>
-</div>
-<div class="admonitionblock note">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-note" title="Note"></i>
-</td>
-<td class="content">
-If you skip the NNCP step and try to boot a VM with a secondary bridge adapter, it will fail to start.
-</td>
-</tr>
-</table>
-</div>
-<div class="sect2">
-<h3 id="create_nncp_prereqs"><a class="anchor" href="#create_nncp_prereqs"></a>Prerequisites:</h3>
-<div class="paragraph">
-<p>You must have first installed the Kubernetes NMState Operator and created a <code>nmstate</code> CR after installation.</p>
-</div>
-</div>
-<div class="sect2">
-<h3 id="create_nncp_gui_procedure"><a class="anchor" href="#create_nncp_gui_procedure"></a>Procedure using the OpenShift console</h3>
-<div class="paragraph">
-<p>To create a NodeNetworkConfigurationPolicy, make sure you&#8217;re still logged into the OpenShift admin console as a cluster admin before continuing on.</p>
-</div>
-<div class="paragraph">
-<p>From the console navigation menu (left pane), click <strong>Networking</strong> &gt; <strong>NodeNetworkConfigurationPolicy</strong>.</p>
-</div>
-<div class="paragraph">
-<p>In the web frame, you&#8217;ll see a button to <strong>Create NodeNetworkConfigurationPolicy</strong> if no NNCP currently exists. Otherwise, click <strong>Create</strong> &gt; <strong>From Form</strong>.</p>
-</div>
-<div class="paragraph">
-<p>Complete the web form items as desired:</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p><strong>Policy Name</strong>: Set this to <code>lnbr0-policy</code> for the sake of this example</p>
-</li>
-<li>
-<p><strong>Description</strong> (optional): Add an optional description, for example <code>linux bridge lnbr0 with node port ens1</code></p>
-</li>
-<li>
-<p><strong>Interface Name</strong>: Set this to <code>lnbr0</code> for this example</p>
-</li>
-<li>
-<p><strong>Network state</strong>: Leave <strong>Up</strong> selected</p>
-</li>
-<li>
-<p><strong>Type</strong>: Linux bridge</p>
-</li>
-<li>
-<p><strong>IP configuration</strong> (optional): Check <strong>IPv4</strong> <em>only</em> if you wish to set a static or DHCP address. Otherwise, leave this option unchecked (layer2-only).</p>
-</li>
-<li>
-<p><strong>Port</strong> (optional): Enter the name of a hardware interface on the node, which will be used to connect the bridge network externally (including to pods/VMs on other nodes/hosts).</p>
-</li>
-<li>
-<p><strong>Enable STP</strong> (optional): Check this if you want to enable spanning tree protocol for the bridge network.</p>
-</li>
-</ul>
-</div>
-<div class="paragraph">
-<p>Once the form is complete, click <strong>Create</strong>.</p>
-</div>
-<div class="admonitionblock note">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-note" title="Note"></i>
-</td>
-<td class="content">
-As with <code>nmstate</code> objects, <code>nncp</code> objects are cluster-scoped, so the namespace is not required, although multiple <code>nncp</code> objects defining different networks can coexist on the cluster.
-</td>
-</tr>
-</table>
-</div>
-<div class="paragraph">
-<p>Once the NNCP is created, proceed with <a href="#create_net_attach_def">creating a network attachment definition</a>.</p>
-</div>
-</div>
-<div class="sect2">
-<h3 id="create_nncp_cli_procedure"><a class="anchor" href="#create_nncp_cli_procedure"></a>Procedure using the CLI:</h3>
-<div class="paragraph">
-<p>Create a NodeNetworkConfigurationPolicy manifest, choosing from either a static, dhcp, or layer2-only (link-level) configuration for the bridge interface.</p>
-</div>
-<div class="paragraph">
-<p>Launch a new/empty buffer in your favorite text editor, and name the file <code>lnbr0-policy.nncp.yaml</code>.</p>
-</div>
-<div class="paragraph">
-<p>Use one of the example yaml templates that aligns with your use-case below, paste it into the editor and modify it as desired.</p>
-</div>
-<div class="admonitionblock note">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-note" title="Note"></i>
-</td>
-<td class="content">
-<div class="ulist">
-<div class="title">In each example:</div>
-<ul>
-<li>
-<p><code>lnbr0</code> (shorthand for <code>linux bridge 0</code>) is used as the interface name of the Linux bridge.</p>
-</li>
-<li>
-<p><code>ens1</code> is the optional <code>port</code> adapter used to connect the bridge to the external network (including other nodes).</p>
-</li>
-<li>
-<p><code>stp</code> (spanning tree protocol) is disabled in these examples.</p>
-</li>
-<li>
-<p>Whether configured as layer2, dhcp, or static, this affects the bridge interface addressing only, and does not affect pods/VMs.</p>
-</li>
-</ul>
-</div>
-</td>
-</tr>
-</table>
-</div>
-<div class="listingblock">
-<div class="title">Static Configuration Example</div>
-<div class="content">
-<pre>apiVersion: nmstate.io/v1
-kind: NodeNetworkConfigurationPolicy
-metadata:
-  name: lnbr0-policy
-spec:
-  desiredState:
-    interfaces:
-    - name: lnbr0
-      description: static linux bridge with ens1 as a port
-      type: linux-bridge
-      state: up
-      ipv4:
-        address:
-        - ip: 192.168.1.89
-          prefix-length: 24
-        dhcp: false
-        enabled: true
-      bridge:
-        options:
-          stp:
-            enabled: false
-        port:
-        - name: ens1</pre>
-</div>
-</div>
-<div class="listingblock">
-<div class="title">DHCP Configuration Example</div>
-<div class="content">
-<pre>apiVersion: nmstate.io/v1
-kind: NodeNetworkConfigurationPolicy
-metadata:
-  name: lnbr0-policy
-spec:
-  desiredState:
-    interfaces:
-    - name: lnbr0
-      description: dhcp linux bridge with ens1 as a port
-      type: linux-bridge
-      state: up
-      ipv4:
-        dhcp: true
-        enabled: true
-      bridge:
-        options:
-          stp:
-            enabled: false
-        port:
-        - name: ens1</pre>
-</div>
-</div>
-<div class="listingblock">
-<div class="title">Layer2-only Configuration Example</div>
-<div class="content">
-<pre>apiVersion: nmstate.io/v1
-kind: NodeNetworkConfigurationPolicy
-metadata:
-  name: lnbr0-policy
-spec:
-  desiredState:
-    interfaces:
-    - name: lnbr0
-      description: layer2-only linux bridge with ens1 as a port
-      type: linux-bridge
-      state: up
-      bridge:
-        options:
-          stp:
-            enabled: false
-        port:
-        - name: ens1</pre>
-</div>
-</div>
-<div class="paragraph">
-<p>Apply the NNCP yaml file that was just created to the cluster:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre>oc create -f lnbr0-policy.nncp.yaml</pre>
-</div>
-</div>
-<div class="paragraph">
-<p>After a few moments, each applicable node in the cluster will have a new bridge interface named <code>lnbr0</code> with the configured connection state.</p>
-</div>
-<div class="paragraph">
-<p>To confirm that the <code>lnbr0</code> interface exists on the node(s), you can either view the <code>NodeNetworkState</code> of the cluster, or start a debug session on a node.</p>
-</div>
-<div class="paragraph">
-<p>To view the <code>NodeNetworkState</code> for all nodes in the cluster, fetch the <code>nns</code> resource, and optionally <code>grep</code> for the bridge interface:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre>oc describe nns | grep lnbr0</pre>
-</div>
-</div>
-<div class="paragraph">
-<p>If you prefer, open a debug session on a node to see things yourself:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre>oc debug node/worker0.example.com</pre>
-</div>
-</div>
-<div class="paragraph">
-<p>Once you have a shell prompt on the node, use the <code>ip</code> tool to fetch the status of the bridge interface:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre>ip link show lnbr0</pre>
-</div>
-</div>
-<div class="admonitionblock note">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-note" title="Note"></i>
-</td>
-<td class="content">
-As with <code>nmstate</code> objects, <code>nncp</code> objects are cluster-scoped, so the namespace is not required, although multiple <code>nncp</code> objects can coexist on the cluster.
-</td>
-</tr>
-</table>
-</div>
-<div class="paragraph">
-<p>Once the existence of the Linux bridge interface is confirmed on the node(s), proceed with <a href="#create_net_attach_def">creating a network attachment definition</a>.</p>
-</div>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="create_net_attach_def"><a class="anchor" href="#create_net_attach_def"></a>Creating a Linux Bridge Network Attachment Definition (NAD)</h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p>The next step is to create a Network Attachment Definition to provides Layer 2 networking to your pods/VMs.
-The NAD is what allows pods/VMs within a specific project/namespace to connect to a secondary network.</p>
-</div>
-<div class="sect2">
-<h3 id="create_nad_prereqs"><a class="anchor" href="#create_nad_prereqs"></a>Prerequisites</h3>
-<div class="paragraph">
-<p>While not strictly required to create a network attachment definition, a NNCP defining the bridge interface must exist on the cluster before you attach a pod/VM to a bridge network.
-Neglecting to do so will prevent any VM with a bridge-based NIC from booting.</p>
-</div>
-<div class="admonitionblock note">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-note" title="Note"></i>
-</td>
-<td class="content">
-A namespace containing VMs must either exist or be created before proceeding.
-</td>
-</tr>
-</table>
-</div>
-</div>
-<div class="sect2">
-<h3 id="create_nad_cli_procedure"><a class="anchor" href="#create_nad_cli_procedure"></a>Procedure using the CLI:</h3>
-<div class="paragraph">
-<p>First, create the namespace for your VMs if it doesn&#8217;t already exist:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre>oc create namespace bridge-demo</pre>
-</div>
-</div>
-<div class="paragraph">
-<p>Then switch to that namespace:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre>oc project bridge-demo</pre>
-</div>
-</div>
-<div class="paragraph">
-<p>Launch an empty file/buffer in your favorite text editor and paste in the following yaml code, changing as needed:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre>apiVersion: k8s.cni.cncf.io/v1
-kind: NetworkAttachmentDefinition
-metadata:
-  name: lnbr0-nad
-  namespace: bridge-demo
-spec:
-  config: '{
-    "name": "lnbr0-nad",
-    "cniVersion": "0.3.1",
-    "type": "bridge",
-    "bridge": "lnbr0",
-    "ipam": {},
-    "vlan": 1,
-    "macspoofchk": false,
-    "disableContainerInterface": false,
-    "portIsolation": false
-  }'</pre>
-</div>
-</div>
-<div class="paragraph">
-<p>Each field from the above example is explained below (optional fields are shown with their respective default values):</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p><strong>metadata.name</strong>: The K8s name of the NAD</p>
-</li>
-<li>
-<p><strong>metadata.namespace</strong>: This should match the namespace that the pods/VMs are running in (<code>bridge-demo</code> in this example).</p>
-</li>
-<li>
-<p><strong>spec.config</strong>: This field accepts a json string value with the following sub-fields:</p>
-<div class="ulist">
-<ul>
-<li>
-<p><strong>"name"</strong>: The name of the configuration, which should ideally match <code>metadata.name</code></p>
-</li>
-<li>
-<p><strong>"cniVersion"</strong>: CNI Version must currently be <code>"0.3.1"</code>.</p>
-</li>
-<li>
-<p><strong>"type"</strong> (required): Type must be set to <code>"bridge"</code> to use a Linux bridge interface.</p>
-</li>
-<li>
-<p><strong>"bridge"</strong> (required): The name of the bridge interface defined on nodes/hosts via the NNCP definition.</p>
-</li>
-<li>
-<p><strong>"ipam"</strong> (unsupported): This feature is not supported for virtualization, so it must be empty (layer2 only).</p>
-</li>
-<li>
-<p><strong>"vlan"</strong> (optional): The desired VLAN ID of the interface (defaults to <code>1</code>).</p>
-</li>
-<li>
-<p><strong>"macspoofchk"</strong> (optional): Enables mac spoof check, limiting traffic originating from the container to the mac address of the interface (defaults to <code>false</code>).</p>
-</li>
-<li>
-<p><strong>"disableContainerInterface"</strong> (optional): Disables the interface (veth peer) within the container, which disables IPAM. This does not affect IPAM usage within OpenShift Virtualization since it&#8217;s not supported (defaults to <code>false</code>).</p>
-</li>
-<li>
-<p><strong>"portIsolation"</strong> (optional): Set isolation on the host interface. This prevents containers from communicating with each other, enforcing communication only with the host or through the gateway. (defaults to <code>false</code>)</p>
-</li>
-</ul>
-</div>
-</li>
-</ul>
+<p>The first step is to define the Linux bridge on the cluster nodes using a <code>NodeNetworkConfigurationPolicy</code> (<code>nncp</code>).
+All <code>nncp</code> objects are cluster-scoped, so they do not exist in a namespace.
+You can, however control which nodes that the <code>nncp</code> applies to using key-value labels.</p>
 </div>
 <div class="admonitionblock important">
 <table>
@@ -844,31 +320,277 @@ spec:
 </td>
 <td class="content">
 <div class="ulist">
+<div class="title">Required Steps:</div>
 <ul>
 <li>
-<p>Configuring IP address management (IPAM) in a network attachment definition for VMs is not supported, so the <code>"ipam": {}</code> definition must be empty.</p>
+<p>You must have installed the Kubernetes NMState Operator in order to create a <code>NodeNetworkConfigurationPolicy</code>.</p>
+</li>
+<li>
+<p>If you skip the <code>nncp</code> creation and try to boot a VM with a secondary bridge adapter, it will fail to start.</p>
+</li>
+</ul>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Copy and paste the following <code>NodeNetworkConfigurationPolicy</code> into a new file named <code>lnbr0-bridge.net-attach-def.yaml</code>.
+To connect to external networks, you&#8217;ll need to uncomment the last two lines, changing the device name to match the secondary or tertiary (if primary &amp; secondary are bonded) device name on the node(s):</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: nmstate.io/v1
+kind: NodeNetworkConfigurationPolicy
+metadata:
+  name: lnbr0-bridge
+spec:
+  desiredState:
+    interfaces:
+    - name: lnbr0
+      description: layer2-only linux bridge with an optional port
+      type: linux-bridge
+      state: up
+      ipv4:
+        enabled: false
+      bridge:
+        options:
+          stp:
+            enabled: false
+        # Uncomment below and change the interface name
+        # to match the desired physical host port
+        #port:
+        #- name: ens1</code></pre>
+</div>
+</div>
+<div class="ulist">
+<div class="title">From the above example:</div>
+<ul>
+<li>
+<p><strong><code>lnbr0</code></strong> (shorthand for <code>linux bridge 0</code>): the interface name of the Linux bridge in this example. The name is otherwise arbitrary.</p>
+</li>
+<li>
+<p><strong><code>ipv4</code></strong>: addressing is disabled, as the bridge does not need its own IP address unless acting as a gateway.</p>
+</li>
+<li>
+<p><strong><code>options.stp.enabled</code></strong>: a boolean value enabling or disabling spanning tree protocol (disabled in this example).</p>
+</li>
+<li>
+<p><strong><code>port</code></strong> (commented) a list of network adapters (typically only one) to bind the bridge interface to.</p>
+<div class="ulist">
+<ul>
+<li>
+<p><strong><code>name</code></strong>: (commented) the name of the physical host device that you&#8217;re binding the bridge to. We used <code>ens1</code> in our commented example, but yours may vary.</p>
+</li>
+</ul>
+</div>
+</li>
+</ul>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+See the <a href="https://nmstate.io/devel/yaml_api.html" target="_blank" rel="noopener">NMState API Guide</a> for a full schema with field descriptions and examples.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Once you&#8217;ve saved the file as <code>lnbr0-bridge.nncp.yaml</code>, go ahead and apply the <code>nncp</code> manifest to the OpenShift cluster:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc create -f lnbr0-bridge.nncp.yaml</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>After a few moments, each applicable node in the cluster will have a new bridge interface named <code>lnbr0</code> with the configured connection state.</p>
+</div>
+<div class="paragraph">
+<p>To view this progress in action, you can view the <code>NodeNetworkConfigurationEnactment</code> (<code>nnce</code>) object which executes actions pertaining to the <code>NodeNetworkConfigurationPolicy</code>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get nnce</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>When running the above command, you will see a status of <code>Progressing</code> for each node in the cluster until the enaction is complete, and the status for each node changes to <code>Available</code>.</p>
+</div>
+<div class="paragraph">
+<p>To confirm that the <code>lnbr0</code> interface exists on the node(s), you can either view the <code>NodeNetworkState</code> of the cluster (which is akin to running <code>ip addr show</code> on each node), or start a debug session on a node.</p>
+</div>
+<div class="paragraph">
+<p>To view the <code>NodeNetworkState</code> for all nodes in the cluster, fetch the <code>nns</code> resource, and optionally <code>grep</code> for the bridge interface:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc describe nns | grep lnbr0</code></pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+As with <code>nmstate</code> objects (which trigger the NMState Operator), <code>nncp</code> objects are cluster-scoped, so the namespace is not required, although multiple <code>nncp</code> objects can coexist on the cluster.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Once the existence of the Linux bridge interface is confirmed on the node(s), proceed with <a href="#create_net_attach_def">creating a NetworkAttachmentDefinition</a>.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="create_net_attach_def"><a class="anchor" href="#create_net_attach_def"></a>Creating a Linux Bridge Network Attachment Definition</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The next step is to create a <code>NetworkAttachmentDefinition</code> to provides Layer 2 networking to your pods/VMs.
+The <code>NetworkAttachmentDefinition</code> is what allows pods/VMs within a specific project/namespace to connect to a secondary network.</p>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-important" title="Important"></i>
+</td>
+<td class="content">
+While not strictly required to create a <code>NetworkAttachmentDefinition</code>, an <code>nncp</code> object defining the bridge interface must exist on the cluster before you attach a <code>VirtualMachine</code> to a bridge network.
+Neglecting to do so will prevent any VM with a bridge-based NIC from booting.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>First, create the namespace for your VMs if it doesn&#8217;t already exist:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc create namespace bridge-demo</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Then switch to that namespace:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc project bridge-demo</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Next, copy and paste the following <code>NetworkAttachmentDefinition</code> into a new file named <code>lnbr0-bridge.net-attach-def.yaml</code>.
+Change the <code>vlan</code> ID as required if you chose to bind a physical port in the <code>nncp</code>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: k8s.cni.cncf.io/v1
+kind: NetworkAttachmentDefinition
+metadata:
+  name: lnbr0-bridge
+  namespace: bridge-demo
+spec:
+  config: '{
+    "name": "lnbr0-bridge",
+    "cniVersion": "0.3.1",
+    "type": "bridge",
+    "bridge": "lnbr0",
+    "ipam": {},
+    "vlan": 1,
+    "macspoofchk": false,
+    "disableContainerInterface": false,
+    "portIsolation": false
+  }'</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Each field from the above example is explained below (optional fields are shown with their respective default values):</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong><code>metadata.name</code></strong>: k8s name of the <code>NetworkAttachmentDefinition</code>.</p>
+</li>
+<li>
+<p><strong><code>metadata.namespace</code></strong>: should match the namespace that the pods/VMs are running in (<code>bridge-demo</code> in this example), but could exist in another namespace.</p>
+</li>
+<li>
+<p><strong><code>spec.config</code></strong>: accepts a json string value with the following sub-fields:</p>
+<div class="ulist">
+<ul>
+<li>
+<p><strong><code>"name"</code></strong>: name of the configuration, which should ideally match <code>metadata.name</code>.</p>
+</li>
+<li>
+<p><strong><code>"cniVersion"</code></strong>: currently, the only supported CNI version is <code>"0.3.1"</code>.</p>
+</li>
+<li>
+<p><strong><code>"type"</code></strong> (required): must be set to <code>"bridge"</code> to use a Linux bridge interface.</p>
+</li>
+<li>
+<p><strong><code>"bridge"</code></strong> (required): name of the bridge interface defined on nodes/hosts via the NNCP definition.</p>
+</li>
+<li>
+<p><strong><code>"ipam"</code></strong> (unsupported): OpenShift Virtualization does not support IP address management using the bridge CNI plugin, so this field should be empty (<code>layer2</code> only).</p>
+</li>
+<li>
+<p><strong><code>"vlan"</code></strong> (optional): desired VLAN ID of the interface (defaults to <code>1</code>).</p>
+</li>
+<li>
+<p><strong><code>"macspoofchk"</code></strong> (optional): whether to enable mac spoof check, limiting traffic originating from the container to the mac address of the interface (defaults to <code>false</code>).</p>
+</li>
+<li>
+<p><strong><code>"disableContainerInterface"</code></strong> (optional): sets the container network interface (veth peer) state down (defaults to <code>false</code>).</p>
+</li>
+<li>
+<p><strong><code>"portIsolation"</code></strong> (optional): whether to set isolation on the host interface. This prevents containers from communicating with each other, enforcing communication only with the host or through the gateway (defaults to <code>false</code>).</p>
+</li>
+</ul>
+</div>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>More example configurations of the Linux bridge CNI plugin (including several examples which are unsupported in OpenShift Virtualization) are available in the <a href="https://www.cni.dev/plugins/current/main/bridge/" target="_blank" rel="noopener">bridge CNI plugin documentation</a> as well as the official <a href="https://docs.redhat.com/en/documentation/openshift_container_platform/latest/html/virtualization/networking#virt-creating-linux-bridge-nad-cli_virt-connecting-vm-to-linux-bridge" target="_blank" rel="noopener">OpenShift Documentation</a>.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="ulist">
+<div class="title">IP addressing and interface bonding:</div>
+<ul>
+<li>
+<p>As noted previously, using IP address management (IPAM) in a <code>NetworkAttachmentDefinition</code> for <code>VirtualMachines</code> is not supported in OpenShift Virtualization, so the <code>"ipam": {}</code> definition should be left empty.</p>
 </li>
 <li>
 <p>To assign IP addresses to VM interfaces on a Linux bridge network, use one of the following methods:</p>
 <div class="ulist">
 <ul>
 <li>
-<p><strong>cloud-init networkData</strong>: Configure static IP addresses in the VM&#8217;s cloud-init configuration (recommended for predictable addressing)</p>
+<p><strong>cloud-init networkData</strong>: configure static IP addresses in the VM&#8217;s cloud-init configuration (recommended for predictable addressing)</p>
 </li>
 <li>
-<p><strong>External DHCP server</strong>: If a DHCP server exists on the bridge network, VMs will obtain IP addresses automatically</p>
+<p><strong>External DHCP server</strong>: if a DHCP server exists on the bridge network, VMs will obtain IP addresses automatically</p>
 </li>
 <li>
-<p><strong>Manual configuration</strong>: Configure IP addresses manually inside the VM using <code>nmcli</code> or network settings after boot</p>
+<p><strong>Manual configuration</strong>: configure IP addresses manually inside the VM using <code>nmcli</code> or network settings after boot</p>
 </li>
 </ul>
 </div>
 </li>
 <li>
-<p>The NAD must exist in the same namespace as the pods/VMs.</p>
-</li>
-<li>
-<p>OpenShift Virtualization does not support <a href="https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/10/html/configuring_and_managing_networking/configuring-a-network-bond#upstream-switch-configuration-depending-on-the-bonding-modes">Linux bridge bonding modes</a> 0, 5, and 6.</p>
+<p>OpenShift Virtualization does not support <a href="https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/10/html/configuring_and_managing_networking/configuring-a-network-bond#upstream-switch-configuration-depending-on-the-bonding-modes" target="_blank" rel="noopener">Linux bridge bonding modes</a> 0, 5, and 6.</p>
 </li>
 </ul>
 </div>
@@ -877,309 +599,101 @@ spec:
 </table>
 </div>
 <div class="paragraph">
-<p>Create the network attachment definition on OpenShift using the yaml file:</p>
+<p>Once the file is saved as <code>lnbr0-bridge.net-attach-def.yaml</code> (where <code>net-attach-def</code> is the valid k8s short-name), go ahead and apply the <code>network-attachment-definition</code> to the OpenShift cluster:</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre>oc create -f network-attachment-definition.yaml</pre>
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc create -f lnbr0-bridge.net-attach-def.yaml</code></pre>
 </div>
 </div>
 <div class="paragraph">
-<p>Verify that the NAD was successfully created:</p>
+<p>Verify that the <code>network-attachment-definition</code> was successfully created:</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre>oc get network-attachment-definition lnbr0-nad</pre>
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get net-attach-def lnbr0-bridge</code></pre>
 </div>
 </div>
 <div class="paragraph">
-<p>With two of the three components in place, the last step is to <a href="#configure_vm_nic">add a new virtual network adapter to the VM(s)</a>.</p>
-</div>
-</div>
-<div class="sect2">
-<h3 id="create_nad_console_procedure"><a class="anchor" href="#create_nad_console_procedure"></a>Procedure using the OpenShift console:</h3>
-<div class="paragraph">
-<p>From the web console, select <strong>Networking</strong> &gt; <strong>NetworkAttachmentDefinitions</strong>.</p>
-</div>
-<div class="paragraph">
-<p>In the main web frame, use the pull down menu to select the <strong>Project</strong> that the VMs reside in.</p>
-</div>
-<div class="paragraph">
-<p>Click <strong>Create Network Attachment Definition</strong>.</p>
-</div>
-<div class="paragraph">
-<p>Type <code>lnbr0-nad</code> as the Policy name, and optionally provide a description.</p>
-</div>
-<div class="paragraph">
-<p>Scroll down to Policy Interface(s) and complete the form as follows:</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p><strong>Interface Name</strong>: <code>lnbr0</code></p>
-</li>
-<li>
-<p><strong>Type</strong>: <code>Linux Bridge</code></p>
-</li>
-<li>
-<p><strong>IP configuration</strong> (unsupported): check <strong>IPv4</strong> and optionally provide an IP address (such as 192.168.1.100) and desired prefix length, or select <strong>DHCP</strong></p>
-</li>
-<li>
-<p><strong>Port</strong> (optional): enter a network interface name which exists on the node(s) (such as <code>ens1</code>) to use as the physical bridge adapter.</p>
-</li>
-<li>
-<p><strong>VLAN tag number</strong> (optional): if VLAN use is desired, enter the ID number in the VLAN Tag Number field.</p>
-</li>
-<li>
-<p><strong>MAC spoof check</strong> (optional): enables MAC spoof filtering, which provides security by allowing only a single MAC address to exit the pod.</p>
-</li>
-</ul>
-</div>
-<div class="paragraph">
-<p>Click <strong>Create</strong>.</p>
-</div>
-<div class="admonitionblock note">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-note" title="Note"></i>
-</td>
-<td class="content">
-<div class="ulist">
-<ul>
-<li>
-<p>Only a subset of the supported configuration options for network attachment definitions are available when using the OpenShift Console.</p>
-</li>
-<li>
-<p>For more advanced options &amp; customization from the OpenShift console, you can use the YAML editor tab when creating or modifying a network attachment definition.</p>
-</li>
-<li>
-<p>The node must support nftables and the nft binary must be deployed to enable MAC spoof check.</p>
-</li>
-</ul>
-</div>
-</td>
-</tr>
-</table>
-</div>
-<div class="paragraph">
-<p>You should see the network attachment definition show up in the list once it&#8217;s created.</p>
-</div>
+<p>With two of the three components in place, the last component is to <a href="#attach_virtual_machines">Attach VirtualMachines</a> to the bridge network.</p>
 </div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="configure_vm_nic"><a class="anchor" href="#configure_vm_nic"></a>Configuring the VM Network Interface</h2>
+<h2 id="attach_virtual_machines"><a class="anchor" href="#attach_virtual_machines"></a>Attach VirtualMachines to the Secondary Network</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>Finally, you configure the virtual machine to use the newly created Linux bridge network attachment definition.</p>
+<p>In this step, you will create two new VirtualMachines which will be attached to the bridge as a secondary network.</p>
+</div>
+<div class="paragraph">
+<p>To recap what&#8217;s been done so far, we have:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>installed the <code>kubernetes-nmstate-operator</code> and triggered deployment by creating an <code>nmstate</code> object (prior to this guide).</p>
+</li>
+<li>
+<p>applied a <code>NodeNetworkConfigurationPolicy</code> to create a Linux bridge device on the OpenShift cluster node(s).</p>
+</li>
+<li>
+<p>monitored the bridge deployment by viewing the <code>NodeNetworkConfigurationEnactment</code> while in progress.</p>
+</li>
+<li>
+<p>verified that the bridge exists on the nodes by viewing the <code>NodeNetworkState</code> object.</p>
+</li>
+<li>
+<p>created a (Multus) <code>NetworkAttachmentDefinition</code> which will allow <code>VirtualMachines</code> to connect to the Linux bridge to use either as a virtual switch, or as a literal bridge to the host network (if bound to a physical device).</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>With the above points covered, proceed to <a href="#create_first_vm">Create the First VirtualMachine</a>.</p>
 </div>
 <div class="sect2">
-<h3 id="vm_nic_prereqs"><a class="anchor" href="#vm_nic_prereqs"></a>Prerequisites</h3>
+<h3 id="create_first_vm"><a class="anchor" href="#create_first_vm"></a>Create the First VirtualMachine</h3>
 <div class="paragraph">
-<p>The NMState operator, along with the <code>nmstate</code>, <code>nncp</code> and <code>network-attachment-definition</code> resources, should all exist in the cluster (the latter in the respective namespace of the VMs) before proceeding.</p>
-</div>
-<div class="paragraph">
-<p>The VMs must also already exist in OpenShift Virtualzation before proceeding. The VMs do not have to be running, but changes to running VMs will require restarting (or live migrating) before taking effect.</p>
-</div>
-</div>
-<div class="sect2">
-<h3 id="vm_nic_console_procedure"><a class="anchor" href="#vm_nic_console_procedure"></a>Procedure using the OpenShift Console:</h3>
-<div class="paragraph">
-<p>Navigate to <strong>Virtualization</strong> &gt; <strong>VirtualMachines</strong>.</p>
+<p>As previously, in this section we will create a manifest of an object (of <code>kind</code>: <code>VirtualMachine</code>) using provided yaml data, and then apply it to the cluster using <code>oc apply</code>.</p>
 </div>
 <div class="paragraph">
-<p>Click on a VM to view its VirtualMachine details page.</p>
-</div>
-<div class="paragraph">
-<p>On the <strong>Configuration</strong> tab, then click the <strong>Network</strong> tab.</p>
-</div>
-<div class="paragraph">
-<p>Click <strong>Add network interface</strong>.</p>
-</div>
-<div class="paragraph">
-<p>Enter the interface Name and select the network attachment definition (<code>lnbr0-nad</code> in this example) from the Network list.</p>
-</div>
-<div class="paragraph">
-<p>Click <strong>Save</strong>.</p>
-</div>
-<div class="paragraph">
-<p>Restart or live migrate the VM to apply the changes.</p>
-</div>
-<div class="ulist">
-<div class="title">Networking fields for VM interface configuration:</div>
-<ul>
-<li>
-<p><strong>Name</strong>: Name for the network interface controller.</p>
-</li>
-<li>
-<p><strong>Model</strong>: Model of the network interface controller (supported values are e1000e and virtio).</p>
-</li>
-<li>
-<p><strong>Network</strong>: List of available network attachment definitions.</p>
-</li>
-<li>
-<p><strong>Type</strong>: Binding method (select bridge for a Linux bridge network).</p>
-</li>
-<li>
-<p><strong>MAC Address</strong>: MAC address for the network interface controller. If not specified, one is assigned automatically.</p>
-</li>
-</ul>
-</div>
-</div>
-<div class="sect2">
-<h3 id="vm_nic_cli_procedure"><a class="anchor" href="#vm_nic_cli_procedure"></a>Procedure using the CLI:</h3>
-<div class="paragraph">
-<p>Start by fetching the existing VM configuration in yaml format. In the following example, we use a VM named <code>bridge-example-0</code> in the namespace <code>bridge-example</code>, and an output file named <code>bridge-example.vm.yaml</code>:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre>oc get vm bridge-example-0 -n bridge-example -o yaml &gt; bridge-example.vm.yaml</pre>
-</div>
-</div>
-<div class="paragraph">
-<p>Edit the file you&#8217;ve just created. Add the VM bridge interface and the NAD binding to the VM yaml configuration via the <code>spec.template.spec.domain.devices.interfaces</code> and <code>spec.template.spec.networks</code> sections.</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre>apiVersion: kubevirt.io/v1
-kind: VirtualMachine
-metadata:
-  name: bridge-example-0
-  namespace: bridge-example
-spec:
-  ...
-  template:
-    ...
-    spec:
-      ...
-      domain:
-        ...
-        devices:
-          ...
-          interfaces:
-          - macAddress: 'ff:00:ba:ff:00:ba'
-            masquerade: {}
-            name: default
-          - bridge: {}
-            macAddress: 'ba:00:ff:ba:00:ff'
-            model: virtio
-            name: nic-linux-bridge-0
-      ...
-      networks:
-      - name: default
-        pod: {}
-      - multus:
-          networkName: lnbr0-nad
-        name: nic-linux-bridge-0
-  ...</pre>
-</div>
-</div>
-<div class="paragraph">
-<p>Reviewing the two primary fields in the above example:</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p><strong>spec.template.spec.domain.devices.interfaces</strong>:</p>
-<div class="ulist">
-<ul>
-<li>
-<p><strong><code>bridge</code></strong>: an empty definition <code>{}</code> here is sufficient.</p>
-</li>
-<li>
-<p><strong><code>macAddress</code></strong>: You specify a mac address or leave this field empty and it will auto-generate.</p>
-</li>
-<li>
-<p><strong><code>model</code></strong>: <code>virtio</code> (virtualized hardware) is chosen over <code>e1000</code> (emulated adapter) for performance gains in Linux.</p>
-</li>
-<li>
-<p><strong><code>name</code></strong>: An arbitrary identifier which gets referred to later in the <code>network</code> section.</p>
-</li>
-</ul>
-</div>
-</li>
-<li>
-<p><strong>spec.template.spec.networks</strong>:</p>
-<div class="ulist">
-<ul>
-<li>
-<p><strong><code>name</code></strong>: This is the name of the bridge interface as defined in the <code>interfaces</code> field.</p>
-</li>
-<li>
-<p><strong><code>multus.networkName</code></strong>: The name of the NAD providing pods/VMs access to the bridge network.</p>
-</li>
-</ul>
-</div>
-</li>
-</ul>
-</div>
-<div class="paragraph">
-<p>Once you&#8217;ve edited and saved the yaml file, apply the VM configuration to the cluster:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre>oc apply -f bridge-example.vm.yaml</pre>
-</div>
-</div>
-<div class="admonitionblock note">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-note" title="Note"></i>
-</td>
-<td class="content">
-If you edited a running virtual machine, you must restart or live migrate it for the changes to take effect.
-</td>
-</tr>
-</table>
-</div>
-<div class="paragraph">
-<p>The Linux bridge should now be visible from the VM (after a restart, as mentioned). You can use the <code>nmcli</code> tool or Windows Settings/Control Panel inside the container to configure the IP address of the bridge interface.</p>
-</div>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_complete_vm_example_with_static_ip_configuration"><a class="anchor" href="#_complete_vm_example_with_static_ip_configuration"></a>Complete VM Example with Static IP Configuration</h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p>The following is a complete VM example that creates a new VM with a Linux bridge secondary interface and uses cloud-init to configure a static IP address:</p>
+<p>Using the VirtualMachine manifest below, copy and paste the yaml contents into a new file named <code>fedora-bridge-demo.vm.yaml</code>:</p>
 </div>
 <div class="listingblock">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: kubevirt.io/v1
 kind: VirtualMachine
 metadata:
-  name: bridge-demo-vm
+  name: fedora-bridge-demo
   namespace: bridge-demo
   labels:
-    app: bridge-demo-vm
+    app: fedora-bridge-demo
 spec:
   runStrategy: Always
   dataVolumeTemplates:
   - metadata:
-      name: bridge-demo-volume
+      name: fedora-bridge-demo-root
     spec:
-      pvc:
-        accessModes:
-        - ReadWriteOnce
-        resources:
-          requests:
-            storage: 33Gi
       sourceRef:
         kind: DataSource
         name: fedora
         namespace: openshift-virtualization-os-images
+      storage:
+        resources:
+          requests:
+            storage: 30Gi
+  instancetype:
+    name: u1.large
+  preference:
+    name: fedora
   template:
     metadata:
       labels:
-        app: bridge-demo-vm
+        app: fedora-bridge-demo
     spec:
       domain:
         devices:
           disks:
-          - name: datavolumedisk
+          - name: fedora-bridge-demo-root
             disk:
               bus: virtio
           - name: cloudinitdisk
@@ -1189,22 +703,17 @@ spec:
           - masquerade: {}
             name: default
           - bridge: {}
-            model: virtio
             name: nic-linux-bridge
-        resources:
-          requests:
-            memory: 2Gi
-            cpu: 1
       networks:
       - name: default
         pod: {}
       - multus:
-          networkName: lnbr0-nad
+          networkName: lnbr0-bridge
         name: nic-linux-bridge
       volumes:
-      - name: datavolumedisk
+      - name: fedora-bridge-demo-root
         dataVolume:
-          name: bridge-demo-volume
+          name: fedora-bridge-demo-root
       - name: cloudinitdisk
         cloudInitNoCloud:
           networkData: |
@@ -1221,36 +730,258 @@ spec:
 </div>
 </div>
 <div class="paragraph">
-<p>Key points in this example:</p>
+<p>Reviewing specific fields from the above example (all field paths are relative to <code>spec.template.spec</code>):</p>
 </div>
 <div class="ulist">
 <ul>
 <li>
-<p>The <code>networkData</code> section configures a static IP (<code>192.168.50.10/24</code>) on the secondary interface (<code>enp2s0</code>)</p>
+<p><strong><code>domain.devices.interfaces</code></strong>: lists two interfaces, the primary <code>default</code> and the secondary <code>nic-linux-bridge</code></p>
+<div class="ulist">
+<ul>
+<li>
+<p><strong><code>bridge</code></strong>: one of two ways to connect a VM nic to the host container (the other is IP <code>masquerade</code>).
+This uses a vm-to-container bridge, whereas the <code>lnbr0</code> bridge connects container-to-node (completing the connection).</p>
 </li>
 <li>
-<p>The primary interface (<code>enp1s0</code>) uses masquerade and gets its IP from the pod network</p>
+<p><strong><code>name</code></strong>: an arbitrary identifier which gets referred to later in the <code>network</code> section.</p>
+</li>
+</ul>
+</div>
 </li>
 <li>
-<p>The secondary interface name <code>enp2s0</code> follows KubeVirt&#8217;s predictable naming convention for the second network interface</p>
+<p><strong><code>networks</code></strong>: list of networks to which the <code>interfaces</code> are attached.</p>
+<div class="ulist">
+<ul>
+<li>
+<p><strong><code>name</code></strong>: the name of the bridge interface as defined in the <code>interfaces</code> field.</p>
+</li>
+<li>
+<p><strong><code>multus.networkName</code></strong>: the name of the NAD providing pods/VMs access to the bridge network.</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p><strong><code>volumes</code></strong>: there are two named volumes: one is the root <code>datavolumedisk</code>, and the other is the <code>cloudinitdisk</code></p>
+<div class="ulist">
+<ul>
+<li>
+<p><strong><code>CloudInitNoCloud</code></strong>: informs kubevirt that this is a cloud-init disk and to use the <a href="https://cloudinit.readthedocs.io/en/latest/reference/datasources/nocloud.html" target="_blank" rel="noopener">NoCloud</a> data source</p>
+<div class="ulist">
+<ul>
+<li>
+<p><strong><code>networkData</code></strong>: this configures a static IP (<code>192.168.50.10/24</code>) on the secondary interface (<code>enp2s0</code>)</p>
+<div class="ulist">
+<ul>
+<li>
+<p><strong><code>ethernets</code></strong>: The secondary interface name <code>enp2s0</code> follows KubeVirt&#8217;s predictable naming convention for the second network interface</p>
+</li>
+</ul>
+</div>
+</li>
+</ul>
+</div>
+</li>
+</ul>
+</div>
+</li>
+</ul>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+The primary interface (<code>enp1s0</code>) uses masquerade and gets its IP from the pod network
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>With the <code>VirtualMachine</code> manifest saved as a file named <code>fedora-bridge-demo.vm.yaml</code>, go ahead and apply it to the OpenShift cluster:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f fedora-bridge-demo.vm.yaml</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Check the state of the <code>VirtualMachine</code>. It will take some time to clone the underlying <code>DataVolume</code> before the VM can be launched.
+You can proceed with creating the second VM rather than wait until the VM reaches the <code>Running</code> state.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vm fedora-bridge-demo</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="create_second_vm"><a class="anchor" href="#create_second_vm"></a>Create a Second VirtualMachine</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The following <code>VirtualMachine</code> manifest changes the name (including labels and volume names) and IP address from the first <code>vm</code>, but it otherwise identical.
+Copy and paste the provided yaml into a new file named <code>fedora-bridge-demo2.vm.yaml</code></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: fedora-bridge-demo2
+  namespace: bridge-demo
+  labels:
+    app: fedora-bridge-demo2
+spec:
+  runStrategy: Always
+  dataVolumeTemplates:
+  - metadata:
+      name: fedora-bridge-demo2-root
+    spec:
+      sourceRef:
+        kind: DataSource
+        name: fedora
+        namespace: openshift-virtualization-os-images
+      storage:
+        resources:
+          requests:
+            storage: 30Gi
+  instancetype:
+    name: u1.large
+  preference:
+    name: fedora
+  template:
+    metadata:
+      labels:
+        app: fedora-bridge-demo2
+    spec:
+      domain:
+        devices:
+          disks:
+          - name: fedora-bridge-demo2-root
+            disk:
+              bus: virtio
+          - name: cloudinitdisk
+            disk:
+              bus: virtio
+          interfaces:
+          - masquerade: {}
+            name: default
+          - bridge: {}
+            name: nic-linux-bridge
+      networks:
+      - name: default
+        pod: {}
+      - multus:
+          networkName: lnbr0-bridge
+        name: nic-linux-bridge
+      volumes:
+      - name: fedora-bridge-demo2-root
+        dataVolume:
+          name: fedora-bridge-demo2-root
+      - name: cloudinitdisk
+        cloudInitNoCloud:
+          networkData: |
+            version: 2
+            ethernets:
+              enp2s0:
+                addresses:
+                - 192.168.50.20/24
+          userData: |
+            #cloud-config
+            user: fedora
+            password: fedora
+            chpasswd: { expire: False }</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>With the file saved as <code>fedora-bridge-demo2.vm.yaml</code>, apply this second <code>VirtualMachine</code> to the OpenShift cluster:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc create -f fedora-bridge-demo2.vm.yaml</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Verify that both VMs are running, and check the <code>status</code> of the network <code>interfaces</code> by inspecting each <code>VirtualMachineInstance</code> (<code>vmi</code>) directly:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vm -n bridge-demo
+oc get vmi fedora-bridge-demo -n bridge-demo -o jsonpath='{.status.interfaces}' | jq .
+oc get vmi fedora-bridge-demo2 -n bridge-demo -o jsonpath='{.status.interfaces}' | jq .</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>With the second VM running and active, proceed with <a href="#test_secondary_network">Testing</a>.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="test_secondary_network"><a class="anchor" href="#test_secondary_network"></a>Test the Linux Bridge Secondary Network</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>In our unmodified examples, the Linux bridge secondary network acts as a simple virtual switch, which (when not bridged to a physical node interface) spans across pods, VMs and namespaces within the same node.</p>
+</div>
+<div class="paragraph">
+<p>The simplest way of testing connectivity across the Linux bridge is to test basic connectivity from one <code>VirtualMachine</code> to the other.</p>
+</div>
+<div class="paragraph">
+<p>The following resources must exist in the <code>bridge-demo</code> namespace before you can proceed with testing:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>NetworkAttachmentDefinition</code>: <code>lnbr0-bridge</code></p>
+</li>
+<li>
+<p><code>VirtualMachine</code>: <code>fedora-bridge-demo</code> (secondary NIC IP address: 192.168.50.10)</p>
+</li>
+<li>
+<p><code>VirtualMachine</code>: <code>fedora-bridge-demo2</code> (secondary NIC IP address: 192.168.50.20)</p>
 </li>
 </ul>
 </div>
 <div class="paragraph">
-<p>Apply this VM to the cluster:</p>
+<p>The simplest way to test is by connecting to the console on one VM (or optionally, both VMs) and pinging the other.</p>
+</div>
+<div class="paragraph">
+<p>Access the console of the first VirtualMachine using the <code>virtctl</code> command and login as <strong>user</strong>:`fedora` with <strong>password</strong>:`fedora` (hit <code>ENTER</code> if no login prompt appears):</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre>oc apply -f bridge-demo-vm.yaml -n bridge-demo</pre>
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">virtctl console fedora-bridge-demo</code></pre>
 </div>
 </div>
 <div class="paragraph">
-<p>Verify the VM is running and check its network interfaces:</p>
+<p>Check the IP address of the VirtualMachine. The following command should return a static address of <code>192.168.50.10</code> for the <code>enp2s0</code> interface:</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre>oc get vmi -n bridge-demo
-oc get vmi bridge-demo-vm -n bridge-demo -o jsonpath='{.status.interfaces}' | jq .</pre>
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">ip addr show</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Ping the <code>fedora-bridge-demo2</code> (IP address: <code>192.168.50.20</code>) <code>VirtualMachine</code> from the console of the first VM. If you see replies, then the secondary network is operational (hit <code>CTRL+C</code> to cancel the ping):</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">ping 192.168.50.20</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>To exit the VM console, hit <code>CTRL+]</code>.</p>
+</div>
+<div class="paragraph">
+<p>To cleanup all of the resources from this exercise, simply switch to a different namespace and delete the <code>bridge-demo</code> namespace:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc project default
+oc delete namespace bridge-demo</code></pre>
 </div>
 </div>
 </div>
