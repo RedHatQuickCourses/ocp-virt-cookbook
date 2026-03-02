@@ -13,7 +13,7 @@ to connect pods and `VirtualMachines` (VMs) to the bridge.
 This Linux bridge runs in the nodes' network namespace, and acts as a Layer 2 network switch between pods or VMs running on the same node.
 Linux bridges can also be linked to a physical host interface to allow connections to external networks, including connections to VMs or pods running on other nodes in the cluster.
 
-In short, you can a Linux bridge secondary network if the following conditions apply:
+In short, you can use a Linux bridge secondary network if the following conditions apply:
 
 * You do not intend to use it as a primary network (not currently possible using the bridge CNI plugin with OpenShift).
 * You need to connect VMs to cluster-external networks (or the local/physical network without traversing through a NAT gateway).
@@ -75,10 +75,9 @@ spec:
 .From the above example:
 * *`lnbr0`* (shorthand for `linux bridge 0`): the interface name of the Linux bridge in this example. The name is otherwise arbitrary.
 * *`ipv4`*: addressing is disabled, as the bridge does not need its own IP address unless acting as a gateway.
-* *`stp`*: used to optionally enable spanning tree protocol.
-** *`enabled`*: takes a boolean value. We've disabled spanning tree protocol in this example.
-* *`port`* (commented) is a list of network adapters (typically only one) to bind the bridge interface to.
-** *`name`*: (commented) is the name of the physical host device that you're binding the bridge to. We used `ens1` in our commented example, but yours may vary.
+* *`options.stp.enabled`*: a boolean value enabling or disabling spanning tree protocol (disabled in this example).
+* *`port`* (commented) a list of network adapters (typically only one) to bind the bridge interface to.
+** *`name`*: (commented) the name of the physical host device that you're binding the bridge to. We used `ens1` in our commented example, but yours may vary.
 
 NOTE: See the https://nmstate.io/devel/yaml_api.html[NMState API Guide,window=_blank] for a full schema with field descriptions and examples.
 
@@ -161,27 +160,29 @@ spec:
 
 Each field from the above example is explained below (optional fields are shown with their respective default values):
 
-* *`metadata.name`*: The K8s name of the `NetworkAttachmentDefinition`.
-* *`metadata.namespace`*: This should match the namespace that the pods/VMs are running in (`bridge-demo` in this example).
-* *`spec.config`*: This field accepts a json string value with the following sub-fields:
-** *`"name"`*: The name of the configuration, which should ideally match `metadata.name`
-** *`"cniVersion"`*: CNI Version must currently be `"0.3.1"`.
-** *`"type"`* (required): Type must be set to `"bridge"` to use a Linux bridge interface.
-** *`"bridge"`* (required): The name of the bridge interface defined on nodes/hosts via the NNCP definition.
-** *`"ipam"`* (unsupported): This feature is not supported for virtualization, so it should be empty (meaning layer2-only).
-** *`"vlan"`* (optional): The desired VLAN ID of the interface (defaults to `1`).
-** *`"macspoofchk"`* (optional): Enables mac spoof check, limiting traffic originating from the container to the mac address of the interface (defaults to `false`).
-** *`"disableContainerInterface"`* (optional): Disables the interface (veth peer) within the container, which disables IPAM. This does not affect IPAM usage within OpenShift Virtualization since it's not supported (defaults to `false`).
-** *`"portIsolation"`* (optional): Set isolation on the host interface. This prevents containers from communicating with each other, enforcing communication only with the host or through the gateway (defaults to `false`).
+* *`metadata.name`*: k8s name of the `NetworkAttachmentDefinition`.
+* *`metadata.namespace`*: should match the namespace that the pods/VMs are running in (`bridge-demo` in this example), but could exist in another namespace.
+* *`spec.config`*: accepts a json string value with the following sub-fields:
+** *`"name"`*: name of the configuration, which should ideally match `metadata.name`.
+** *`"cniVersion"`*: currently, the only supported CNI version is `"0.3.1"`.
+** *`"type"`* (required): must be set to `"bridge"` to use a Linux bridge interface.
+** *`"bridge"`* (required): name of the bridge interface defined on nodes/hosts via the NNCP definition.
+** *`"ipam"`* (unsupported): OpenShift Virtualization does not support IP address management using the bridge CNI plugin, so this field should be empty (`layer2` only).
+** *`"vlan"`* (optional): desired VLAN ID of the interface (defaults to `1`).
+** *`"macspoofchk"`* (optional): whether to enable mac spoof check, limiting traffic originating from the container to the mac address of the interface (defaults to `false`).
+** *`"disableContainerInterface"`* (optional): sets the container network interface (veth peer) state down (defaults to `false`).
+** *`"portIsolation"`* (optional): whether to set isolation on the host interface. This prevents containers from communicating with each other, enforcing communication only with the host or through the gateway (defaults to `false`).
+
+More example configurations of the Linux bridge CNI plugin (including several examples which are unsupported in OpenShift Virtualization) are available in the https://www.cni.dev/plugins/current/main/bridge/[bridge CNI plugin documentation,window=_blank] as well as the official https://docs.redhat.com/en/documentation/openshift_container_platform/latest/html/virtualization/networking#virt-creating-linux-bridge-nad-cli_virt-connecting-vm-to-linux-bridge[OpenShift Documentation,window=_blank].
 
 [NOTE]
 ====
-* Configuring IP address management (IPAM) in a `NetworkAttachmentDefinition` for `VirtualMachines` is not supported in OpenShift Virtualization, so the `"ipam": {}` definition should be left empty.
+.IP addressing and interface bonding:
+* As noted previously, using IP address management (IPAM) in a `NetworkAttachmentDefinition` for `VirtualMachines` is not supported in OpenShift Virtualization, so the `"ipam": {}` definition should be left empty.
 * To assign IP addresses to VM interfaces on a Linux bridge network, use one of the following methods:
-** *cloud-init networkData*: Configure static IP addresses in the VM's cloud-init configuration (recommended for predictable addressing)
-** *External DHCP server*: If a DHCP server exists on the bridge network, VMs will obtain IP addresses automatically
-** *Manual configuration*: Configure IP addresses manually inside the VM using `nmcli` or network settings after boot
-* The `NetworkAttachmentDefinition` must exist in the same namespace as the pods/VMs.
+** *cloud-init networkData*: configure static IP addresses in the VM's cloud-init configuration (recommended for predictable addressing)
+** *External DHCP server*: if a DHCP server exists on the bridge network, VMs will obtain IP addresses automatically
+** *Manual configuration*: configure IP addresses manually inside the VM using `nmcli` or network settings after boot
 * OpenShift Virtualization does not support https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/10/html/configuring_and_managing_networking/configuring-a-network-bond#upstream-switch-configuration-depending-on-the-bonding-modes[Linux bridge bonding modes,window=_blank] 0, 5, and 6.
 ====
 
@@ -297,10 +298,10 @@ Reviewing specific fields from the above example (all field paths are relative t
 * *`domain.devices.interfaces`*: lists two interfaces, the primary `default` and the secondary `nic-linux-bridge`
 ** *`bridge`*: one of two ways to connect a VM nic to the host container (the other is IP `masquerade`).
 This uses a vm-to-container bridge, whereas the `lnbr0` bridge connects container-to-node (completing the connection).
-** *`name`*: is an arbitrary identifier which gets referred to later in the `network` section.
-* *`networks`*: lists the netwoks to which the `interfaces` are attached.
+** *`name`*: an arbitrary identifier which gets referred to later in the `network` section.
+* *`networks`*: list of networks to which the `interfaces` are attached.
 ** *`name`*: the name of the bridge interface as defined in the `interfaces` field.
-** *`multus.networkName`*: The name of the NAD providing pods/VMs access to the bridge network.
+** *`multus.networkName`*: the name of the NAD providing pods/VMs access to the bridge network.
 * *`volumes`*: there are two named volumes: one is the root `datavolumedisk`, and the other is the `cloudinitdisk`
 ** *`CloudInitNoCloud`*: informs kubevirt that this is a cloud-init disk and to use the https://cloudinit.readthedocs.io/en/latest/reference/datasources/nocloud.html[NoCloud,window=_blank] data source
 *** *`networkData`*: this configures a static IP (`192.168.50.10/24`) on the secondary interface (`enp2s0`)
