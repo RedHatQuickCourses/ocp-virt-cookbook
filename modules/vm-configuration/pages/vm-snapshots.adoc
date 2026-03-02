@@ -187,29 +187,6 @@ oc get virtualmachinesnapshotcontent -n my-namespace
 oc get volumesnapshot -n my-namespace
 ----
 
-=== Deleting Snapshots
-
-**Web Console:**
-
-. Navigate to the VM's **Snapshots** tab
-. Click the kebab menu (three dots) next to the snapshot
-. Select **Delete VirtualMachineSnapshot**
-+
-TODO: SCREENSHOT HERE - Kebab menu with Delete option
-+
-. Confirm deletion
-+
-TODO: SCREENSHOT HERE - Delete confirmation dialog
-
-**CLI:**
-
-[source,bash,role=execute]
-----
-oc delete virtualmachinesnapshot my-vm-snapshot-01 -n my-namespace
-----
-
-This also deletes the associated VirtualMachineSnapshotContent and underlying VolumeSnapshots, reclaiming storage space.
-
 == Restoring from Snapshots
 
 Restoring a VM from a snapshot reverts the VM's disks to the state captured in the snapshot.
@@ -293,6 +270,29 @@ Verify the VM is running with the restored state:
 oc get vm my-vm -n my-namespace
 ----
 
+== Deleting Snapshots
+
+**Web Console:**
+
+. Navigate to the VM's **Snapshots** tab
+. Click the kebab menu (three dots) next to the snapshot
+. Select **Delete VirtualMachineSnapshot**
++
+TODO: SCREENSHOT HERE - Kebab menu with Delete option
++
+. Confirm deletion
++
+TODO: SCREENSHOT HERE - Delete confirmation dialog
+
+**CLI:**
+
+[source,bash,role=execute]
+----
+oc delete virtualmachinesnapshot my-vm-snapshot-01 -n my-namespace
+----
+
+This also deletes the associated VirtualMachineSnapshotContent and underlying VolumeSnapshots, reclaiming storage space.
+
 == Storage Considerations
 
 === CSI Driver Requirements
@@ -300,6 +300,10 @@ oc get vm my-vm -n my-namespace
 VM snapshots require a CSI (Container Storage Interface) driver that supports the snapshot feature. Common supported storage solutions include:
 
 * Red Hat OpenShift Data Foundation (ODF)
+* AWS EBS CSI
+* Microsoft Azure Disk CSI
+* Google Cloud Persistent Disk CSI
+* LVM Storage (LVMS), when using a thin-pool device class
 * VMware vSphere CSI
 * NetApp Trident
 * Pure Storage
