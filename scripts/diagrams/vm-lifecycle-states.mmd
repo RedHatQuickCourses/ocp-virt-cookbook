@@ -1,0 +1,11 @@
+stateDiagram-v2
+  [*] --> Stopped: (no VMI)
+  Stopped --> Pending: start VM
+  Pending --> Scheduling: scheduling
+  Scheduling --> Starting: scheduled
+  Starting --> Running: boot complete
+  Running --> Paused: pause
+  Paused --> Running: unpause
+  Running --> Stopping: stop VM
+  Stopping --> Terminating: shutdown
+  Terminating --> Stopped: cleanup

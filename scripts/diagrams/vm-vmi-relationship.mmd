@@ -1,0 +1,15 @@
+flowchart LR
+  subgraph VM["VirtualMachine (VM)"]
+    A[Persistent]
+    B[Definition]
+    C[Always exists]
+  end
+
+  subgraph VMI["VirtualMachineInstance (VMI)"]
+    D[Exists only when VM is running]
+    E[Runtime info]
+    F[Deleted on stop]
+  end
+
+  VM -->|start VM| VMI
+  VMI -->|stop VM| VM

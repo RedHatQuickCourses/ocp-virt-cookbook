@@ -1,0 +1,38 @@
+# Screenshot capture definitions.
+# Each entry maps a screenshot name to a console path and optional actions.
+#
+# Fields:
+#   path       - URL path appended to the console base URL
+#   output_dir - module images directory (relative to repo root)
+#   filename   - output PNG filename
+#   wait_for   - (optional) CSS selector to wait for before capturing
+#   highlight  - (optional) CSS selector to highlight before capturing
+#   clip       - (optional) element CSS selector to capture only that element
+
+screenshots:
+
+  # -- VM Lifecycle States (getting-started module) --
+
+  - name: vm-list-start-action
+    path: /k8s/ns/ghes/kubevirt.io~v1~VirtualMachine
+    output_dir: modules/getting-started/images
+    filename: vm-list-start-action.png
+    highlight: "button.pf-v6-c-tree-view__node-text:has-text('github-enterprise')"
+
+  - name: vm-details-stop
+    path: /k8s/ns/ghes/kubevirt.io~v1~VirtualMachine/github-enterprise
+    output_dir: modules/getting-started/images
+    filename: vm-details-stop.png
+
+  - name: vm-details-actions-menu
+    path: /k8s/ns/ghes/kubevirt.io~v1~VirtualMachine/github-enterprise
+    output_dir: modules/getting-started/images
+    filename: vm-details-actions-menu.png
+    highlight: "[data-test-id='actions-menu-button']"
+
+  # -- VM Snapshots (vm-configuration module) --
+
+  - name: vm-snapshots-tab
+    path: /k8s/ns/ghes/kubevirt.io~v1~VirtualMachine/github-enterprise/snapshots
+    output_dir: modules/vm-configuration/images
+    filename: vm-snapshots-tab.png
