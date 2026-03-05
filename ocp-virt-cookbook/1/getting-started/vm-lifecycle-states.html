@@ -1,0 +1,1250 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Understanding VM Lifecycle States and Basic Operations :: OpenShift Virtualization cookbook</title>
+    <link rel="prev" href="create-vm-web-console.html">
+    <link rel="next" href="virtctl-basics.html">
+    <meta name="generator" content="Antora 3.1.3">
+    <link rel="stylesheet" href="../../../_/css/site.css">
+    <script>var uiRootPath = '../../../_'</script>
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://www.redhat.com" target="_blank"><img src="../../../_/img/redhat-logo.png" height="40px" alt="Red Hat"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="../../..">OpenShift Virtualization cookbook</a>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues" target="_blank">Report Issues</a>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="ocp-virt-cookbook" data-version="1">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="../index.html">OpenShift Virtualization cookbook</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="index.html">Getting Started</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="prerequisites.html">Prerequisites</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="install-openshift-virtualization.html">Install OpenShift Virtualization</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="default-storage-class.html">Storage Setup</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="create-vm-web-console.html">Create VM from Web Console</a>
+  </li>
+  <li class="nav-item is-current-page" data-depth="2">
+    <a class="nav-link" href="vm-lifecycle-states.html">VM Lifecycle States</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="virtctl-basics.html">Virtctl Basics</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../storage/index.html">Storage Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/lvm-operator.html">LVM Operator Installation</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/lvm-troubleshooting.html">LVM Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/creating-managing-storage-class.html">Creating and Managing Storage Classes</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../networking/index.html">Networking Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/udn-primary-networks.html">UDN Primary Networks</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/localnet-secondary.html">Localnet Secondary Networks with CUDN</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/localnet-vlan.html">Localnet Secondary Networks with VLAN using NAD</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/cudn-localnet-vlan.html">Localnet VLAN with CUDN</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/layer2-secondary.html">Layer 2 Secondary Networks</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/linux-bridges.html">Linux Bridges</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/ovs-bridge-troubleshooting.html">Troubleshooting Localnet Networks</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../vm-configuration/index.html">Virtual Machine Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/cloud-init-ip-configuration.html">Cloud-init IP Configuration</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/cloud-init-troubleshooting.html">Cloud-init Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/internal-dns-for-vms.html">Internal DNS for VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/remote-access-linux-vms.html">Remote Access to Linux VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/remote-access-linux-troubleshooting.html">Remote Access to Linux VMs Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/remote-access-windows-vms.html">Remote Access to Windows VMs via RDP</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/import-qcow2-boot-volume.html">Import qcow2 Boot Volume</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/custom-golden-images.html">Custom Golden Images</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/golden-images-troubleshooting.html">Golden Images Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/cloning-vms.html">Cloning VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/vm-snapshots.html">VM Snapshots</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../manifests/index.html">Manifests</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../api/index.html">API Guide</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../api/api_component_overview.html">API Component Overview</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../lab-env/index.html">Lab Environment</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../appendix/glossary.html">Glossary</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">OpenShift Virtualization cookbook</span>
+    <span class="version">1</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <a class="title" href="../index.html">OpenShift Virtualization cookbook</a>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">1</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">OpenShift Virtualization cookbook</a></li>
+    <li><a href="index.html">Getting Started</a></li>
+    <li><a href="vm-lifecycle-states.html">VM Lifecycle States</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">Understanding VM Lifecycle States and Basic Operations</h1>
+<div class="sect1">
+<h2 id="_overview"><a class="anchor" href="#_overview"></a>Overview</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Understanding the lifecycle of virtual machines in OpenShift Virtualization is essential for effective VM management, troubleshooting, and automation. This guide explains the relationship between VirtualMachine and VirtualMachineInstance resources, the various states a VM can be in, and how to manage VMs throughout their lifecycle.</p>
+</div>
+<div class="paragraph">
+<p>Versions tested:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>OpenShift 4.20</pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_prerequisites"><a class="anchor" href="#_prerequisites"></a>Prerequisites</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p>OpenShift 4.18+ with OpenShift Virtualization installed</p>
+</li>
+<li>
+<p>Access to the OpenShift web console or CLI tools (<code>oc</code>, <code>virtctl</code>)</p>
+</li>
+<li>
+<p>At least one VM created in your cluster (see <a href="create-vm-web-console.html" class="xref page">Creating VMs from Web Console Using Templates</a>)</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_virtualmachine_vs_virtualmachineinstance"><a class="anchor" href="#_virtualmachine_vs_virtualmachineinstance"></a>VirtualMachine vs VirtualMachineInstance</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>OpenShift Virtualization uses two primary resources to manage virtual machines:</p>
+</div>
+<div class="sect2">
+<h3 id="_virtualmachine_vm"><a class="anchor" href="#_virtualmachine_vm"></a>VirtualMachine (VM)</h3>
+<div class="paragraph">
+<p>The <code>VirtualMachine</code> resource is the persistent definition of your VM. Think of it as a template or specification that defines:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>VM name and namespace</p>
+</li>
+<li>
+<p>CPU and memory configuration</p>
+</li>
+<li>
+<p>Disk and network attachments</p>
+</li>
+<li>
+<p>Boot order and firmware settings</p>
+</li>
+<li>
+<p>Run strategy (how the VM should behave)</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>The VirtualMachine resource exists whether the VM is running or not.</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># List VirtualMachine resources
+oc get vm -n my-vms</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Example output:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">NAME            AGE   STATUS    READY
+fedora-app-vm   14m   Running   True</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_virtualmachineinstance_vmi"><a class="anchor" href="#_virtualmachineinstance_vmi"></a>VirtualMachineInstance (VMI)</h3>
+<div class="paragraph">
+<p>The <code>VirtualMachineInstance</code> resource represents an actual running instance of a VM. It is created when a VM starts and deleted when the VM stops. The VMI contains:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Runtime information (IP address, node placement)</p>
+</li>
+<li>
+<p>Current phase/state</p>
+</li>
+<li>
+<p>Guest agent information (when installed)</p>
+</li>
+</ul>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># List VirtualMachineInstance resources
+oc get vmi -n my-vms</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Example output:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">NAME            AGE   PHASE     IP             NODENAME   READY
+fedora-app-vm   78s   Running   10.128.0.184   ocplab01   True</code></pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+A stopped VM has a VirtualMachine resource but no VirtualMachineInstance. When you start the VM, a VMI is created. When you stop it, the VMI is deleted but the VM resource remains.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_vm_lifecycle_states"><a class="anchor" href="#_vm_lifecycle_states"></a>VM Lifecycle States</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>A VM transitions through several states during its lifecycle. Understanding these states helps with monitoring and troubleshooting.</p>
+</div>
+<div class="sect2">
+<h3 id="_state_descriptions"><a class="anchor" href="#_state_descriptions"></a>State Descriptions</h3>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 14.2857%;">
+<col style="width: 14.2857%;">
+<col style="width: 42.8571%;">
+<col style="width: 28.5715%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Order</th>
+<th class="tableblock halign-left valign-top">State</th>
+<th class="tableblock halign-left valign-top">Description</th>
+<th class="tableblock halign-left valign-top">VMI Exists?</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Stopped</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">VM is defined but not running. No compute resources consumed.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">No</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">2</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Pending</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">VMI created, waiting for prerequisites (storage, network).</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Yes</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">3</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Scheduling</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Kubernetes scheduler is finding a suitable node.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Yes</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">4</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Starting</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">VM is booting on the assigned node.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Yes</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">5</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Running</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">VM is fully operational and accepting connections.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Yes</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">6</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Paused</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">VM execution is frozen. State preserved in memory.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Yes</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">7</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Stopping</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Graceful shutdown in progress.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Yes</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">8</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Terminating</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Final cleanup of VMI resources.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Yes (briefly)</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_managing_vm_lifecycle"><a class="anchor" href="#_managing_vm_lifecycle"></a>Managing VM Lifecycle</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_starting_vms"><a class="anchor" href="#_starting_vms"></a>Starting VMs</h3>
+<div class="paragraph">
+<p>To start a stopped VM:</p>
+</div>
+<div class="paragraph">
+<p><strong>Web Console:</strong></p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Navigate to <strong>Virtualization</strong> &#8594; <strong>VirtualMachines</strong></p>
+</li>
+<li>
+<p>Find your VM in the list</p>
+</li>
+<li>
+<p>Click the VM name to open details, then click <strong>Actions</strong> &#8594; <strong>Start</strong></p>
+</li>
+<li>
+<p>Or click the kebab menu (three dots) and select <strong>Start</strong></p>
+<div class="imageblock">
+<div class="content">
+<img src="_images/vm-lifecycle-states/vm-stopped-start-action.png" alt="VM details page showing the Actions menu with Start option">
+</div>
+</div>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong></p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">virtctl start fedora-app-vm -n my-vms</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Verify the VM started:</strong></p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Check VM status
+oc get vm fedora-app-vm -n my-vms
+
+# Check VMI was created
+oc get vmi fedora-app-vm -n my-vms</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Example output:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">NAME            AGE   STATUS    READY
+fedora-app-vm   14m   Running   True
+
+NAME            AGE   PHASE     IP             NODENAME   READY
+fedora-app-vm   78s   Running   10.128.0.184   ocplab01   True</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_stopping_vms"><a class="anchor" href="#_stopping_vms"></a>Stopping VMs</h3>
+<div class="paragraph">
+<p>Stopping a VM performs a graceful shutdown and deletes the VMI.</p>
+</div>
+<div class="paragraph">
+<p><strong>Web Console:</strong></p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Navigate to your VM&#8217;s details page</p>
+</li>
+<li>
+<p>Click <strong>Actions</strong> &#8594; <strong>Stop</strong></p>
+<div class="imageblock">
+<div class="content">
+<img src="_images/vm-lifecycle-states/vm-running-stop-action.png" alt="VM details page showing the Actions menu with Stop option">
+</div>
+</div>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p><strong>CLI (graceful stop):</strong></p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">virtctl stop fedora-app-vm -n my-vms</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>CLI (force stop):</strong></p>
+</div>
+<div class="paragraph">
+<p>Use force stop when a VM is unresponsive:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">virtctl stop fedora-app-vm -n my-vms --force</code></pre>
+</div>
+</div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+Force stop is equivalent to pulling the power cord. Use only when graceful shutdown fails.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p><strong>Verify the VM stopped:</strong></p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># VM should show Stopped status
+oc get vm fedora-app-vm -n my-vms
+
+# VMI should no longer exist
+oc get vmi fedora-app-vm -n my-vms</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Example output:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">NAME            AGE   STATUS    READY
+fedora-app-vm   14m   Stopped   False
+
+Error from server (NotFound): virtualmachineinstances.kubevirt.io "fedora-app-vm" not found</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_pausing_and_resuming_vms"><a class="anchor" href="#_pausing_and_resuming_vms"></a>Pausing and Resuming VMs</h3>
+<div class="paragraph">
+<p>Pausing freezes VM execution while keeping its state in memory. This is useful for:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Temporarily freeing CPU resources</p>
+</li>
+<li>
+<p>Taking consistent snapshots</p>
+</li>
+<li>
+<p>Debugging or inspection</p>
+</li>
+</ul>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-important" title="Important"></i>
+</td>
+<td class="content">
+Paused VMs still consume memory on the node. Only CPU execution is suspended.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p><strong>Web Console:</strong></p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Navigate to your VM&#8217;s details page</p>
+</li>
+<li>
+<p>Click <strong>Actions</strong> &#8594; <strong>Pause</strong></p>
+</li>
+<li>
+<p>To resume: <strong>Actions</strong> &#8594; <strong>Unpause</strong></p>
+<div class="imageblock">
+<div class="content">
+<img src="_images/vm-lifecycle-states/vm-running-pause-action.png" alt="VM details page showing the Actions menu with Pause option">
+</div>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="_images/vm-lifecycle-states/vm-paused-unpause-action.png" alt="VM details page showing the Actions menu with Unpause option">
+</div>
+</div>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong></p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Pause a VM
+virtctl pause vm fedora-app-vm -n my-vms
+
+# Unpause a VM
+virtctl unpause vm fedora-app-vm -n my-vms</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Verify paused state:</strong></p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vm fedora-app-vm -n my-vms</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Example output:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">NAME            AGE   STATUS   READY
+fedora-app-vm   14m   Paused   False</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_restarting_vms"><a class="anchor" href="#_restarting_vms"></a>Restarting VMs</h3>
+<div class="paragraph">
+<p>Restart performs a stop followed by a start. Use this when:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Applying configuration changes that require a reboot</p>
+</li>
+<li>
+<p>Recovering from guest OS issues</p>
+</li>
+<li>
+<p>Refreshing VM state</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p><strong>Web Console:</strong></p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Navigate to your VM&#8217;s details page</p>
+</li>
+<li>
+<p>Click <strong>Actions</strong> &#8594; <strong>Restart</strong></p>
+<div class="imageblock">
+<div class="content">
+<img src="_images/vm-lifecycle-states/vm-running-restart-action.png" alt="VM details page showing the Actions menu with Restart option">
+</div>
+</div>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p><strong>CLI:</strong></p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">virtctl restart fedora-app-vm -n my-vms</code></pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+Restart waits for graceful shutdown before starting. If the guest OS is unresponsive, the restart may take longer or require a force stop first.
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_deleting_vms"><a class="anchor" href="#_deleting_vms"></a>Deleting VMs</h3>
+<div class="paragraph">
+<p>When deleting a VM, you can choose whether to also delete associated storage (PVCs/DataVolumes).</p>
+</div>
+<div class="paragraph">
+<p><strong>Web Console:</strong></p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Navigate to your VM&#8217;s details page</p>
+</li>
+<li>
+<p>Click <strong>Actions</strong> &#8594; <strong>Delete</strong></p>
+</li>
+<li>
+<p>In the confirmation dialog, choose whether to delete disks</p>
+</li>
+<li>
+<p>Click <strong>Delete</strong></p>
+<div class="imageblock">
+<div class="content">
+<img src="_images/vm-lifecycle-states/vm-stopped-delete-action.png" alt="VM details page showing the Actions menu with Delete option">
+</div>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="_images/vm-lifecycle-states/vm-delete-confirmation-dialog.png" alt="Delete VirtualMachine confirmation dialog">
+</div>
+</div>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p><strong>CLI (delete VM, keep disks):</strong></p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc delete vm fedora-app-vm -n my-vms</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>By default, DataVolumes owned by the VM are deleted. To preserve them, remove the owner reference first or use the web console option.</p>
+</div>
+<div class="paragraph">
+<p><strong>Verify deletion:</strong></p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># VM should not exist
+oc get vm fedora-app-vm -n my-vms
+
+# Check if PVCs were preserved (if desired)
+oc get pvc -n my-vms</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Example output:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">Error from server (NotFound): virtualmachines.kubevirt.io "fedora-app-vm" not found
+
+No resources found in my-vms namespace.</code></pre>
+</div>
+</div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+VM deletion is permanent. Ensure you have backups of important data before deleting.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_monitoring_vm_status"><a class="anchor" href="#_monitoring_vm_status"></a>Monitoring VM Status</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_checking_vm_and_vmi_status"><a class="anchor" href="#_checking_vm_and_vmi_status"></a>Checking VM and VMI Status</h3>
+<div class="paragraph">
+<p><strong>Detailed VM information:</strong></p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc describe vm fedora-app-vm -n my-vms</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Example output (relevant sections):</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">Name:         fedora-app-vm
+Namespace:    my-vms
+Labels:       app=fedora-app-vm
+...
+Status:
+  Conditions:
+    Last Transition Time:  2026-03-05T17:10:11Z
+    Status:                True
+    Type:                  Ready
+    Message:               All of the VMI's DVs are bound and ready
+    Reason:                AllDVsReady
+    Status:                True
+    Type:                  DataVolumesReady
+    Status:                True
+    Type:                  AgentConnected
+  Printable Status:        Running
+  Ready:                   true
+  Run Strategy:            Manual</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Key sections to review:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Status.Conditions</strong> - Shows current state and any issues</p>
+</li>
+<li>
+<p><strong>Status.PrintableStatus</strong> - Human-readable status</p>
+</li>
+<li>
+<p><strong>Status.Ready</strong> - Whether the VM is ready for use</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p><strong>Detailed VMI information:</strong></p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc describe vmi fedora-app-vm -n my-vms</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Example output (relevant sections):</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">Name:         fedora-app-vm
+Namespace:    my-vms
+...
+Status:
+  Guest OS Info:
+    Id:              fedora
+    Kernel Release:  6.17.1-300.fc43.x86_64
+    Name:            Fedora Linux
+    Pretty Name:     Fedora Linux 43 (Cloud Edition)
+    Version Id:      43
+  Interfaces:
+    Interface Name:  enp1s0
+    Ip Address:      10.128.0.184
+    Mac:             02:7e:e2:0a:7c:df
+    Name:            default
+  Node Name:         ocplab01
+  Phase:             Running
+  Phase Transition Timestamps:
+    Phase:  Pending
+    Phase:  Scheduling
+    Phase:  Scheduled
+    Phase:  Running</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Key sections:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Status.Phase</strong> - Current lifecycle phase</p>
+</li>
+<li>
+<p><strong>Status.Interfaces</strong> - Network information including IP addresses</p>
+</li>
+<li>
+<p><strong>Status.NodeName</strong> - Which node the VM is running on</p>
+</li>
+<li>
+<p><strong>Status.GuestOSInfo</strong> - Guest OS details (requires guest agent)</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_understanding_conditions"><a class="anchor" href="#_understanding_conditions"></a>Understanding Conditions</h3>
+<div class="paragraph">
+<p>VMs report conditions that indicate their state. Check these with:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vm fedora-app-vm -n my-vms -o jsonpath='{.status.conditions}' | jq</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Example output:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-json hljs" data-lang="json">[
+  {
+    "lastTransitionTime": "2026-03-05T17:10:11Z",
+    "status": "True",
+    "type": "Ready"
+  },
+  {
+    "message": "All of the VMI's DVs are bound and ready",
+    "reason": "AllDVsReady",
+    "status": "True",
+    "type": "DataVolumesReady"
+  },
+  {
+    "message": "cannot migrate VMI: PVC fedora-app-vm-rootdisk is not shared...",
+    "reason": "DisksNotLiveMigratable",
+    "status": "False",
+    "type": "LiveMigratable"
+  },
+  {
+    "status": "True",
+    "type": "AgentConnected"
+  }
+]</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Common conditions:</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 33.3333%;">
+<col style="width: 66.6667%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Condition</th>
+<th class="tableblock halign-left valign-top">Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Ready</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">VM is running and accessible</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Paused</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">VM execution is paused</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">AgentConnected</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">QEMU guest agent is communicating</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Synchronized</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">VM spec is synchronized with VMI</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect2">
+<h3 id="_vm_events"><a class="anchor" href="#_vm_events"></a>VM Events</h3>
+<div class="paragraph">
+<p>Events provide detailed information about what is happening with your VM:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Get events for a specific VM
+oc get events -n my-vms --field-selector involvedObject.name=fedora-app-vm</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Example output:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">LAST SEEN   TYPE     REASON                       OBJECT                                 MESSAGE
+14m         Normal   SuccessfulDataVolumeCreate   virtualmachine/fedora-app-vm           Created DataVolume fedora-app-vm-rootdisk
+90s         Normal   SuccessfulCreate             virtualmachine/fedora-app-vm           Started the virtual machine by creating the new virtual machine instance fedora-app-vm
+90s         Normal   SuccessfulCreate             virtualmachineinstance/fedora-app-vm   Created virtual machine pod virt-launcher-fedora-app-vm-fktmb
+84s         Normal   Created                      virtualmachineinstance/fedora-app-vm   VirtualMachineInstance defined.
+84s         Normal   Started                      virtualmachineinstance/fedora-app-vm   VirtualMachineInstance started.</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Watch events in real-time:</strong></p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get events -n my-vms -w</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Common events and their meanings:</strong></p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 33.3333%;">
+<col style="width: 66.6667%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Event</th>
+<th class="tableblock halign-left valign-top">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">SuccessfulCreate</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">VMI was successfully created</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Started</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">VM started successfully</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Stopped</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">VM stopped (graceful shutdown)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Killing</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Force stop initiated</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">FailedScheduling</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Could not find suitable node</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">FailedCreate</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">VMI creation failed (check for details)</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_run_strategies"><a class="anchor" href="#_run_strategies"></a>Run Strategies</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Run strategies define how a VM behaves automatically throughout its lifecycle. The strategy is set in the VM specification and determines whether the VM starts automatically, restarts after stopping, or stays stopped.</p>
+</div>
+<div class="sect2">
+<h3 id="_available_run_strategies"><a class="anchor" href="#_available_run_strategies"></a>Available Run Strategies</h3>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 20%;">
+<col style="width: 40%;">
+<col style="width: 40%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Strategy</th>
+<th class="tableblock halign-left valign-top">Behavior</th>
+<th class="tableblock halign-left valign-top">Use Case</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Always</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">VM starts automatically and restarts if it stops for any reason (including guest-initiated shutdown).</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Production workloads that must always be running.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>RerunOnFailure</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">VM starts automatically and restarts only on failure. Guest-initiated shutdown keeps VM stopped.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Services that should recover from crashes but respect intentional shutdowns.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Manual</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">VM only starts or stops when explicitly requested via <code>virtctl</code> or web console.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Development/test VMs or workloads with specific scheduling needs.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Halted</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">VM stays stopped. Start commands are ignored.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Temporarily decommissioned VMs or maintenance mode.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect2">
+<h3 id="_setting_run_strategy"><a class="anchor" href="#_setting_run_strategy"></a>Setting Run Strategy</h3>
+<div class="paragraph">
+<p><strong>In VM YAML:</strong></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: my-vm
+spec:
+  runStrategy: Always    # or RerunOnFailure, Manual, Halted
+  template:
+    # ... VM template spec</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Via Web Console:</strong></p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Navigate to your VM&#8217;s details page</p>
+</li>
+<li>
+<p>Click the <strong>YAML</strong> tab</p>
+</li>
+<li>
+<p>Modify the <code>spec.runStrategy</code> field</p>
+</li>
+<li>
+<p>Click <strong>Save</strong></p>
+<div class="imageblock">
+<div class="content">
+<img src="_images/vm-lifecycle-states/vm-yaml-run-strategy.png" alt="VM YAML tab showing the runStrategy field">
+</div>
+</div>
+</li>
+</ol>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+You cannot use both <code>runStrategy</code> and the deprecated <code>running</code> field simultaneously. Use <code>runStrategy</code> for new VMs.
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_run_strategy_vs_manual_commands"><a class="anchor" href="#_run_strategy_vs_manual_commands"></a>Run Strategy vs Manual Commands</h3>
+<div class="paragraph">
+<p>When using <code>Always</code> or <code>RerunOnFailure</code>, be aware that:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>virtctl stop</code> temporarily stops the VM, but it will restart automatically</p>
+</li>
+<li>
+<p>To keep the VM stopped, change the run strategy to <code>Halted</code> or <code>Manual</code></p>
+</li>
+<li>
+<p>Guest-initiated shutdowns (e.g., <code>shutdown -h now</code> inside the VM) behave differently depending on the strategy</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_summary"><a class="anchor" href="#_summary"></a>Summary</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>You have learned:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>The difference between VirtualMachine and VirtualMachineInstance resources</p>
+</li>
+<li>
+<p>VM lifecycle states and transitions</p>
+</li>
+<li>
+<p>How to start, stop, pause, resume, restart, and delete VMs</p>
+</li>
+<li>
+<p>How to monitor VM status using conditions and events</p>
+</li>
+<li>
+<p>How run strategies control automatic VM behavior</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_see_also"><a class="anchor" href="#_see_also"></a>See Also</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p><a href="create-vm-web-console.html" class="xref page">Creating VMs from Web Console Using Templates</a> - Creating VMs from the web console</p>
+</li>
+<li>
+<p><a href="virtctl-basics.html" class="xref page">Using virtctl for VM Management</a> - CLI commands for VM management</p>
+</li>
+<li>
+<p><a href="https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/virtualization/managing-vms" target="_blank" rel="noopener">Managing Virtual Machines - Official Documentation</a></p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<nav class="pagination">
+  <span class="prev"><a href="create-vm-web-console.html">Create VM from Web Console</a></span>
+  <span class="next"><a href="virtctl-basics.html">Virtctl Basics</a></span>
+</nav>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <img src="../../../_/img/rhl-logo-red.png" height="40px" alt="Red Hat"  href="https://redhat.com" >
+</footer><script id="site-script" src="../../../_/js/site.js" data-ui-root-path="../../../_"></script>
+<script async src="../../../_/js/vendor/highlight.js"></script>
+  </body>
+</html>
