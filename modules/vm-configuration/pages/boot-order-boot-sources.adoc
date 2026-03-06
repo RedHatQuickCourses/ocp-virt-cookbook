@@ -1,0 +1,1096 @@
+= Configuring VM Boot Order and Boot Sources
+:navtitle: VM Boot Order and Boot Sources
+
+== Overview
+
+This tutorial demonstrates how to configure VM boot order, boot sources, and boot options in OpenShift Virtualization. Understanding boot configuration is essential for custom OS installations, rescue and recovery scenarios, multi-boot environments, and security compliance requirements.
+
+Boot configuration allows you to control which devices a VM attempts to boot from, in what order, and which firmware mode to use (BIOS or UEFI). OpenShift Virtualization supports various boot sources including persistent volumes, container images, and network-based sources.
+
+== Prerequisites
+
+* OpenShift 4.18+ with OpenShift Virtualization operator installed
+* CLI tools: `oc`, `virtctl`, `kubectl`
+* Basic understanding of VM boot process
+* Storage class configured for persistent volumes
+* For container registry examples: access to a container registry (Quay.io, Docker Hub, or internal registry)
+
+== Boot Source Types in OpenShift Virtualization
+
+OpenShift Virtualization supports multiple boot source types:
+
+[cols="1,2,2",options="header"]
+|===
+|Boot Source Type |Description |Use Case
+
+|**PersistentVolumeClaim (PVC)**
+|Boot from a persistent disk backed by storage
+|Production VMs, stateful workloads, custom OS installations
+
+|**ContainerDisk**
+|Boot from disk image packaged in a container
+|Ephemeral VMs, testing, CI/CD, immutable workloads
+
+|**DataVolume**
+|Boot from disk provisioned via Containerized Data Importer (CDI)
+|Importing images from HTTP, S3, or registry sources
+
+|**CloudInitNoCloud**
+|Initialization disk (not bootable, but commonly used alongside boot disks)
+|VM configuration and initialization
+|===
+
+== Boot Firmware Modes
+
+OpenShift Virtualization supports two firmware modes:
+
+=== BIOS (Legacy Mode)
+
+* Traditional PC BIOS firmware
+* Compatible with older operating systems
+* Limited boot device size (2TB with MBR)
+* Faster boot times
+* Default for most Linux distributions
+
+=== UEFI (Unified Extensible Firmware Interface)
+
+* Modern firmware interface
+* Required for Secure Boot
+* Supports GPT partition tables and larger disks (>2TB)
+* Required for Windows 11 and modern Windows Server versions
+* Better security features
+
+== Understanding Boot Device Order
+
+The boot device order determines which devices the VM firmware checks for bootable content and in what sequence. In KubeVirt, you control boot order using the `bootOrder` field on disks and interfaces.
+
+**Key concepts:**
+
+* Lower `bootOrder` numbers have higher priority (1 boots before 2)
+* Only disks and interfaces can have boot order specified
+* If no `bootOrder` is specified, the firmware decides
+* Typically you assign `bootOrder: 1` to your primary boot disk
+
+== Scenario 1: Boot from PersistentVolumeClaim (Most Common)
+
+This is the standard configuration for production VMs with persistent storage.
+
+Create a namespace for testing:
+
+[source,bash,role=execute]
+----
+oc create namespace boot-demo
+----
+
+xref:attachment$vm-boot-from-pvc.yaml[Download vm-boot-from-pvc.yaml]
+
+[source,yaml]
+----
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: vm-boot-pvc
+  namespace: boot-demo
+spec:
+  dataVolumeTemplates:
+    - apiVersion: cdi.kubevirt.io/v1beta1
+      kind: DataVolume
+      metadata:
+        name: vm-boot-pvc-disk
+      spec:
+        sourceRef:
+          kind: DataSource
+          name: fedora
+          namespace: openshift-virtualization-os-images
+        storage:
+          resources:
+            requests:
+              storage: 30Gi
+  runStrategy: RerunOnFailure
+  template:
+    metadata:
+      labels:
+        kubevirt.io/domain: vm-boot-pvc
+    spec:
+      domain:
+        cpu:
+          cores: 2
+        devices:
+          disks:
+            - disk:
+                bus: virtio
+              name: rootdisk
+              bootOrder: 1
+            - disk:
+                bus: virtio
+              name: cloudinitdisk
+          interfaces:
+            - masquerade: {}
+              name: default
+          rng: {}
+        machine:
+          type: pc-q35-rhel9.4.0
+        memory:
+          guest: 4Gi
+      networks:
+        - name: default
+          pod: {}
+      volumes:
+        - dataVolume:
+            name: vm-boot-pvc-disk
+          name: rootdisk
+        - cloudInitNoCloud:
+            userData: |-
+              #cloud-config
+              user: fedora
+              password: fedora123
+              chpasswd: { expire: False }
+              ssh_pwauth: True
+          name: cloudinitdisk
+----
+
+Key points:
+
+* `bootOrder: 1` on the rootdisk ensures it boots first
+* DataVolume automatically provisions and populates the PVC
+* Cloud-init disk provides configuration but is not bootable
+* Changes to the disk persist across VM restarts
+
+Deploy and verify:
+
+[source,bash,role=execute]
+----
+oc apply -f vm-boot-from-pvc.yaml
+oc get vm vm-boot-pvc -n boot-demo
+oc get vmi vm-boot-pvc -n boot-demo
+----
+
+When to use:
+
+* Production workloads requiring persistent storage
+* VMs that need to retain data across restarts
+* Traditional server deployments
+* Development environments needing state persistence
+
+== Scenario 2: Boot from ContainerDisk (Ephemeral)
+
+ContainerDisks package disk images in OCI container formats. They're ideal for immutable, stateless workloads.
+
+xref:attachment$vm-boot-from-containerdisk.yaml[Download vm-boot-from-containerdisk.yaml]
+
+[source,yaml]
+----
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: vm-boot-containerdisk
+  namespace: boot-demo
+spec:
+  runStrategy: RerunOnFailure
+  template:
+    metadata:
+      labels:
+        kubevirt.io/domain: vm-boot-containerdisk
+    spec:
+      domain:
+        cpu:
+          cores: 2
+        devices:
+          disks:
+            - disk:
+                bus: virtio
+              name: containerdisk
+              bootOrder: 1
+            - disk:
+                bus: virtio
+              name: cloudinitdisk
+          interfaces:
+            - masquerade: {}
+              name: default
+          rng: {}
+        machine:
+          type: pc-q35-rhel9.4.0
+        memory:
+          guest: 4Gi
+      networks:
+        - name: default
+          pod: {}
+      volumes:
+        - name: containerdisk
+          containerDisk:
+            image: quay.io/containerdisks/fedora:latest
+        - cloudInitNoCloud:
+            userData: |-
+              #cloud-config
+              user: fedora
+              password: fedora123
+              chpasswd: { expire: False }
+              ssh_pwauth: True
+          name: cloudinitdisk
+----
+
+Important notes:
+
+* ContainerDisks are ephemeral - all changes are lost when VM stops
+* Faster deployment since image is pulled from registry
+* Ideal for testing and CI/CD pipelines
+* Can use public images from quay.io/containerdisks or build your own
+
+Deploy:
+
+[source,bash,role=execute]
+----
+oc apply -f vm-boot-from-containerdisk.yaml
+----
+
+When to use:
+
+* Testing and development
+* CI/CD pipelines
+* Immutable infrastructure patterns
+* Scenarios where persistence is not needed
+* Quick VM provisioning without storage overhead
+
+== Scenario 3: Boot from HTTP-Sourced DataVolume
+
+Import boot images from HTTP/HTTPS sources using DataVolumes. This is useful for automating VM provisioning from centrally hosted images.
+
+xref:attachment$vm-boot-from-http.yaml[Download vm-boot-from-http.yaml]
+
+[source,yaml]
+----
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: vm-boot-http
+  namespace: boot-demo
+spec:
+  dataVolumeTemplates:
+    - apiVersion: cdi.kubevirt.io/v1beta1
+      kind: DataVolume
+      metadata:
+        name: vm-boot-http-disk
+        annotations:
+          cdi.kubevirt.io/storage.bind.immediate.requested: "true"
+      spec:
+        source:
+          http:
+            url: "https://download.fedoraproject.org/pub/fedora/linux/releases/43/Cloud/x86_64/images/Fedora-Cloud-Base-Generic-43-1.6.x86_64.qcow2"
+        storage:
+          resources:
+            requests:
+              storage: 30Gi
+  runStrategy: RerunOnFailure
+  template:
+    metadata:
+      labels:
+        kubevirt.io/domain: vm-boot-http
+    spec:
+      domain:
+        cpu:
+          cores: 2
+        devices:
+          disks:
+            - disk:
+                bus: virtio
+              name: rootdisk
+              bootOrder: 1
+            - disk:
+                bus: virtio
+              name: cloudinitdisk
+          interfaces:
+            - masquerade: {}
+              name: default
+          rng: {}
+        machine:
+          type: pc-q35-rhel9.4.0
+        memory:
+          guest: 4Gi
+      networks:
+        - name: default
+          pod: {}
+      volumes:
+        - dataVolume:
+            name: vm-boot-http-disk
+          name: rootdisk
+        - cloudInitNoCloud:
+            userData: |-
+              #cloud-config
+              user: fedora
+              password: fedora123
+              chpasswd: { expire: False }
+              ssh_pwauth: True
+          name: cloudinitdisk
+----
+
+Key features:
+
+* CDI automatically downloads and converts the image
+* Image is imported only once, then stored in PVC
+* Subsequent boots use the PVC (persistent)
+* Annotation `cdi.kubevirt.io/storage.bind.immediate.requested: "true"` required for some storage classes
+
+Monitor the import progress:
+
+[source,bash,role=execute]
+----
+oc apply -f vm-boot-from-http.yaml
+oc get dv vm-boot-http-disk -n boot-demo --watch
+----
+
+When to use:
+
+* Automated deployment pipelines
+* Importing golden images from central repositories
+* Standardized VM provisioning
+* When images are hosted on web servers or object storage
+
+== Scenario 4: Multiple Boot Devices with Boot Order
+
+Configure multiple bootable devices with explicit ordering. Useful for rescue scenarios or multi-boot configurations.
+
+xref:attachment$vm-multiple-boot-devices.yaml[Download vm-multiple-boot-devices.yaml]
+
+[source,yaml]
+----
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: vm-multi-boot
+  namespace: boot-demo
+spec:
+  dataVolumeTemplates:
+    - apiVersion: cdi.kubevirt.io/v1beta1
+      kind: DataVolume
+      metadata:
+        name: vm-multi-boot-primary
+      spec:
+        sourceRef:
+          kind: DataSource
+          name: fedora
+          namespace: openshift-virtualization-os-images
+        storage:
+          resources:
+            requests:
+              storage: 30Gi
+    - apiVersion: cdi.kubevirt.io/v1beta1
+      kind: DataVolume
+      metadata:
+        name: vm-multi-boot-secondary
+      spec:
+        source:
+          blank: {}
+        storage:
+          resources:
+            requests:
+              storage: 20Gi
+  runStrategy: RerunOnFailure
+  template:
+    metadata:
+      labels:
+        kubevirt.io/domain: vm-multi-boot
+    spec:
+      domain:
+        cpu:
+          cores: 2
+        devices:
+          disks:
+            - disk:
+                bus: virtio
+              name: primarydisk
+              bootOrder: 1
+            - disk:
+                bus: virtio
+              name: secondarydisk
+              bootOrder: 2
+            - cdrom:
+                bus: sata
+              name: installcdrom
+              bootOrder: 3
+            - disk:
+                bus: virtio
+              name: cloudinitdisk
+          interfaces:
+            - masquerade: {}
+              name: default
+          rng: {}
+        machine:
+          type: pc-q35-rhel9.4.0
+        memory:
+          guest: 4Gi
+      networks:
+        - name: default
+          pod: {}
+      volumes:
+        - dataVolume:
+            name: vm-multi-boot-primary
+          name: primarydisk
+        - dataVolume:
+            name: vm-multi-boot-secondary
+          name: secondarydisk
+        - name: installcdrom
+          containerDisk:
+            image: quay.io/containerdisks/fedora:latest
+        - cloudInitNoCloud:
+            userData: |-
+              #cloud-config
+              user: fedora
+              password: fedora123
+              chpasswd: { expire: False }
+              ssh_pwauth: True
+          name: cloudinitdisk
+----
+
+Boot sequence explanation:
+
+1. `bootOrder: 1` - Primary disk (tries to boot first)
+2. `bootOrder: 2` - Secondary disk (fallback if primary fails)
+3. `bootOrder: 3` - CD-ROM (installation media, last resort)
+
+Deploy:
+
+[source,bash,role=execute]
+----
+oc apply -f vm-multiple-boot-devices.yaml
+----
+
+When to use:
+
+* Disaster recovery scenarios
+* Custom OS installations
+* Testing different OS configurations
+* Environments requiring fallback boot options
+
+== Scenario 5: UEFI Boot Mode
+
+Configure a VM to use UEFI firmware instead of traditional BIOS. Required for Secure Boot and modern Windows versions.
+
+xref:attachment$vm-boot-uefi.yaml[Download vm-boot-uefi.yaml]
+
+[source,yaml]
+----
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: vm-boot-uefi
+  namespace: boot-demo
+spec:
+  dataVolumeTemplates:
+    - apiVersion: cdi.kubevirt.io/v1beta1
+      kind: DataVolume
+      metadata:
+        name: vm-boot-uefi-disk
+      spec:
+        sourceRef:
+          kind: DataSource
+          name: fedora
+          namespace: openshift-virtualization-os-images
+        storage:
+          resources:
+            requests:
+              storage: 30Gi
+  runStrategy: RerunOnFailure
+  template:
+    metadata:
+      labels:
+        kubevirt.io/domain: vm-boot-uefi
+    spec:
+      domain:
+        cpu:
+          cores: 2
+        devices:
+          disks:
+            - disk:
+                bus: virtio
+              name: rootdisk
+              bootOrder: 1
+            - disk:
+                bus: virtio
+              name: cloudinitdisk
+          interfaces:
+            - masquerade: {}
+              name: default
+          rng: {}
+        firmware:
+          bootloader:
+            efi:
+              secureBoot: false
+        machine:
+          type: pc-q35-rhel9.4.0
+        memory:
+          guest: 4Gi
+      networks:
+        - name: default
+          pod: {}
+      volumes:
+        - dataVolume:
+            name: vm-boot-uefi-disk
+          name: rootdisk
+        - cloudInitNoCloud:
+            userData: |-
+              #cloud-config
+              user: fedora
+              password: fedora123
+              chpasswd: { expire: False }
+              ssh_pwauth: True
+          name: cloudinitdisk
+----
+
+Key configuration:
+
+* `firmware.bootloader.efi` enables UEFI mode
+* `secureBoot: false` - Secure Boot is disabled (can be enabled for supported OSes)
+* Machine type `pc-q35-rhel9.4.0` is compatible with UEFI
+
+Deploy:
+
+[source,bash,role=execute]
+----
+oc apply -f vm-boot-uefi.yaml
+----
+
+When to use:
+
+* Windows 11 or modern Windows Server VMs
+* Systems requiring Secure Boot
+* Large disk support (>2TB)
+* Enhanced security requirements
+* Modern Linux distributions preferring UEFI
+
+== Scenario 6: UEFI with Secure Boot (Advanced)
+
+Secure Boot prevents unauthorized code from running during the boot process. It requires UEFI firmware and a compatible operating system.
+
+xref:attachment$vm-boot-uefi-secureboot.yaml[Download vm-boot-uefi-secureboot.yaml]
+
+[source,yaml]
+----
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: vm-boot-secureboot
+  namespace: boot-demo
+spec:
+  dataVolumeTemplates:
+    - apiVersion: cdi.kubevirt.io/v1beta1
+      kind: DataVolume
+      metadata:
+        name: vm-boot-secureboot-disk
+      spec:
+        sourceRef:
+          kind: DataSource
+          name: fedora
+          namespace: openshift-virtualization-os-images
+        storage:
+          resources:
+            requests:
+              storage: 30Gi
+  runStrategy: RerunOnFailure
+  template:
+    metadata:
+      labels:
+        kubevirt.io/domain: vm-boot-secureboot
+    spec:
+      domain:
+        cpu:
+          cores: 2
+        devices:
+          disks:
+            - disk:
+                bus: virtio
+              name: rootdisk
+              bootOrder: 1
+            - disk:
+                bus: virtio
+              name: cloudinitdisk
+          interfaces:
+            - masquerade: {}
+              name: default
+          rng: {}
+        firmware:
+          bootloader:
+            efi:
+              secureBoot: true
+        machine:
+          type: pc-q35-rhel9.4.0
+        memory:
+          guest: 4Gi
+        features:
+          smm:
+            enabled: true
+      networks:
+        - name: default
+          pod: {}
+      volumes:
+        - dataVolume:
+            name: vm-boot-secureboot-disk
+          name: rootdisk
+        - cloudInitNoCloud:
+            userData: |-
+              #cloud-config
+              user: fedora
+              password: fedora123
+              chpasswd: { expire: False }
+              ssh_pwauth: True
+          name: cloudinitdisk
+----
+
+Important requirements:
+
+* `secureBoot: true` enables Secure Boot
+* `features.smm.enabled: true` is required for Secure Boot (System Management Mode)
+* Operating system must support Secure Boot (most modern Linux distributions and Windows)
+* Bootloader and kernel must be signed with trusted keys
+
+Deploy:
+
+[source,bash,role=execute]
+----
+oc apply -f vm-boot-uefi-secureboot.yaml
+----
+
+When to use:
+
+* Security compliance requirements
+* Windows 11 (requires Secure Boot)
+* Environments with strict boot integrity requirements
+* Protection against rootkits and boot-level malware
+
+WARNING: Not all operating systems support Secure Boot. If the VM fails to boot, disable Secure Boot and use standard UEFI instead.
+
+== Scenario 7: Network Boot (PXE)
+
+Configure a VM to boot from network using PXE (Preboot Execution Environment). Useful for automated OS installation and diskless workstations.
+
+xref:attachment$vm-boot-pxe.yaml[Download vm-boot-pxe.yaml]
+
+[source,yaml]
+----
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: vm-boot-pxe
+  namespace: boot-demo
+spec:
+  dataVolumeTemplates:
+    - apiVersion: cdi.kubevirt.io/v1beta1
+      kind: DataVolume
+      metadata:
+        name: vm-boot-pxe-disk
+      spec:
+        source:
+          blank: {}
+        storage:
+          resources:
+            requests:
+              storage: 30Gi
+  runStrategy: RerunOnFailure
+  template:
+    metadata:
+      labels:
+        kubevirt.io/domain: vm-boot-pxe
+    spec:
+      domain:
+        cpu:
+          cores: 2
+        devices:
+          disks:
+            - disk:
+                bus: virtio
+              name: rootdisk
+              bootOrder: 2
+            - disk:
+                bus: virtio
+              name: cloudinitdisk
+          interfaces:
+            - masquerade: {}
+              name: default
+            - bridge: {}
+              name: pxe-net
+              bootOrder: 1
+          rng: {}
+        machine:
+          type: pc-q35-rhel9.4.0
+        memory:
+          guest: 4Gi
+      networks:
+        - name: default
+          pod: {}
+        - name: pxe-net
+          multus:
+            networkName: pxe-network
+      volumes:
+        - dataVolume:
+            name: vm-boot-pxe-disk
+          name: rootdisk
+        - cloudInitNoCloud:
+            userData: |-
+              #cloud-config
+              user: fedora
+              password: fedora123
+              chpasswd: { expire: False }
+              ssh_pwauth: True
+          name: cloudinitdisk
+----
+
+Key configuration:
+
+* Secondary network interface (`pxe-net`) has `bootOrder: 1` (boots before disk)
+* Disk has `bootOrder: 2` (fallback after network boot attempt)
+* Requires a secondary network configured via Multus (e.g., `pxe-network`)
+* Uses bridge interface binding for direct network access
+* Primary pod network (`default`) remains for general connectivity
+
+Prerequisites for PXE boot:
+
+* Secondary network configured and accessible (see networking tutorials)
+* PXE server configured on the secondary network
+* DHCP server providing boot information
+* TFTP server serving boot files
+* Network connectivity between VM and PXE infrastructure
+
+When to use:
+
+* Automated OS installations
+* Diskless workstation environments
+* Network-based recovery systems
+* Large-scale automated deployments
+
+== Boot Menu Configuration
+
+You can enable an interactive boot menu that allows selecting boot devices at VM startup.
+
+xref:attachment$vm-boot-menu.yaml[Download vm-boot-menu.yaml]
+
+[source,yaml]
+----
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: vm-boot-menu
+  namespace: boot-demo
+spec:
+  dataVolumeTemplates:
+    - apiVersion: cdi.kubevirt.io/v1beta1
+      kind: DataVolume
+      metadata:
+        name: vm-boot-menu-disk
+      spec:
+        sourceRef:
+          kind: DataSource
+          name: fedora
+          namespace: openshift-virtualization-os-images
+        storage:
+          resources:
+            requests:
+              storage: 30Gi
+  runStrategy: RerunOnFailure
+  template:
+    metadata:
+      labels:
+        kubevirt.io/domain: vm-boot-menu
+    spec:
+      domain:
+        cpu:
+          cores: 2
+        devices:
+          disks:
+            - disk:
+                bus: virtio
+              name: rootdisk
+              bootOrder: 1
+            - cdrom:
+                bus: sata
+              name: installcdrom
+              bootOrder: 2
+            - disk:
+                bus: virtio
+              name: cloudinitdisk
+          interfaces:
+            - masquerade: {}
+              name: default
+          rng: {}
+        firmware:
+          bootloader:
+            bios:
+              useSerial: true
+        machine:
+          type: pc-q35-rhel9.4.0
+        memory:
+          guest: 4Gi
+      networks:
+        - name: default
+          pod: {}
+      volumes:
+        - dataVolume:
+            name: vm-boot-menu-disk
+          name: rootdisk
+        - name: installcdrom
+          containerDisk:
+            image: quay.io/containerdisks/fedora:latest
+        - cloudInitNoCloud:
+            userData: |-
+              #cloud-config
+              user: fedora
+              password: fedora123
+              chpasswd: { expire: False }
+              ssh_pwauth: True
+          name: cloudinitdisk
+----
+
+Access the boot menu:
+
+[source,bash,role=execute]
+----
+oc apply -f vm-boot-menu.yaml
+
+# Access via VNC to see the boot menu
+virtctl vnc vm-boot-menu -n boot-demo
+
+# Or via console
+virtctl console vm-boot-menu -n boot-demo
+----
+
+* Press ESC or F12 during boot to access the boot menu
+* Select boot device from the available options
+* `useSerial: true` makes boot menu accessible via serial console
+
+== Verification Commands
+
+After deploying any boot configuration, use these commands to verify:
+
+=== Check VM Status
+
+[source,bash,role=execute]
+----
+# List VMs
+oc get vm -n boot-demo
+
+# Check if VM is running
+oc get vmi -n boot-demo
+----
+
+[source,bash,role=execute]
+----
+# Detailed VM information (replace vm-boot-pvc with your VM name)
+oc describe vm vm-boot-pvc -n boot-demo
+----
+
+=== View Boot Configuration
+
+[source,bash,role=execute]
+----
+# Get VM spec showing boot order (replace vm-boot-pvc with your VM name)
+oc get vm vm-boot-pvc -n boot-demo -o yaml | grep -A 5 bootOrder
+
+# Check firmware configuration (replace vm-boot-uefi with your VM name)
+oc get vm vm-boot-uefi -n boot-demo -o yaml | grep -A 10 firmware
+----
+
+=== Access VM Console
+
+[source,bash,role=execute]
+----
+# Serial console access (replace vm-boot-pvc with your VM name)
+virtctl console vm-boot-pvc -n boot-demo
+
+# VNC graphical console (replace vm-boot-menu with your VM name)
+virtctl vnc vm-boot-menu -n boot-demo
+----
+
+=== Check Boot Logs
+
+Inside the VM:
+
+[source,bash]
+----
+# View boot messages
+dmesg | head -50
+
+# Check system boot time
+systemd-analyze
+
+# List boot log
+journalctl -b
+
+# Check UEFI or BIOS mode
+[ -d /sys/firmware/efi ] && echo "UEFI" || echo "BIOS"
+----
+
+== Common Issues and Solutions
+
+=== Issue: VM fails to boot from specified device
+
+**Problem**: VM doesn't boot from the device with `bootOrder: 1`.
+
+**Solution**:
+
+* Verify the device is actually bootable (has boot loader)
+* Check that the device is properly attached to the VM
+* Review VM events:
+
+[source,bash,role=execute]
+----
+oc describe vmi vm-boot-pvc -n boot-demo
+----
+
+* Access console to see error messages:
+
+[source,bash,role=execute]
+----
+virtctl console vm-boot-pvc -n boot-demo
+----
+
+=== Issue: Secure Boot prevents VM from booting
+
+**Problem**: VM with `secureBoot: true` fails to start or shows boot errors.
+
+**Solution**:
+
+* Ensure the OS supports Secure Boot
+* Verify `smm.enabled: true` is set in features
+* Try disabling Secure Boot temporarily to isolate the issue
+* Check that bootloader and kernel are properly signed
+
+[source,bash,role=execute]
+----
+# Edit VM to disable Secure Boot
+oc edit vm vm-boot-secureboot -n boot-demo
+# Change secureBoot: true to secureBoot: false
+----
+
+=== Issue: PXE boot doesn't work
+
+**Problem**: VM configured for PXE boot doesn't receive boot information.
+
+**Solution**:
+
+* Verify PXE server is accessible from the network
+* Check DHCP is configured to provide PXE boot options
+* Ensure VM network interface uses bridge binding
+* Confirm firewall rules allow PXE traffic (DHCP, TFTP)
+* Check network interface has `bootOrder` set
+
+=== Issue: ContainerDisk image fails to pull
+
+**Problem**: VM with ContainerDisk fails with image pull errors.
+
+**Solution**:
+
+* Verify the container image exists and is accessible
+* Check image pull secrets if using private registry
+* Ensure image uses correct format (disk at /disk/ path in container)
+
+[source,bash,role=execute]
+----
+# Review pod events
+oc get events -n boot-demo
+----
+
+[source,bash,role=execute]
+----
+# Check virt-launcher pod logs (find the actual pod name first)
+oc get pods -n boot-demo
+oc logs -n boot-demo virt-launcher-vm-boot-containerdisk-xxxxx
+----
+
+=== Issue: HTTP DataVolume import fails
+
+**Problem**: DataVolume with HTTP source gets stuck in ImportInProgress or fails.
+
+**Solution**:
+
+* Verify the URL is accessible from the cluster
+* Ensure sufficient storage quota
+* Verify storage class supports dynamic provisioning
+* Add annotation for immediate binding if needed
+
+[source,bash,role=execute]
+----
+# Check DataVolume status
+oc get dv -n boot-demo
+oc describe dv vm-boot-http-disk -n boot-demo
+
+# Check importer pod logs (find the actual pod name first)
+oc get pods -n boot-demo
+oc logs -n boot-demo importer-vm-boot-http-disk-xxxxx
+
+# Check CDI controller logs if needed
+oc get pods -n openshift-cnv | grep cdi-deployment
+oc logs -n openshift-cnv cdi-deployment-xxxxx
+----
+
+== Best Practices
+
+=== Boot Order Configuration
+
+* Always explicitly set `bootOrder` on your primary boot device
+* Use sequential numbering: 1, 2, 3 (don't skip numbers)
+* Document the boot sequence in VM annotations or labels
+* Test boot order by accessing BIOS/UEFI setup via console
+
+=== Firmware Selection
+
+* Use UEFI for new deployments (better security, modern features)
+* Use BIOS only for compatibility with older operating systems
+* Enable Secure Boot only when required and supported by the OS
+* Always enable SMM when using Secure Boot
+
+=== Boot Source Selection
+
+* Use PVC for production workloads requiring persistence
+* Use ContainerDisk for ephemeral, immutable workloads
+* Use HTTP DataVolume for automated deployments from central repositories
+* Package custom images as ContainerDisks for version control
+
+=== Security
+
+* Enable Secure Boot for Windows 11 and security-sensitive workloads
+* Use UEFI instead of BIOS for enhanced security features
+* Regularly update boot images to include security patches
+* Scan container images for vulnerabilities before deployment
+
+=== Performance
+
+* Use virtio bus for better disk performance
+* Consider disk caching modes for performance tuning
+* Use appropriate storage classes (SSD for boot disks)
+* Pre-provision PVCs for faster VM startup
+
+== Cleanup
+
+To remove all resources created in this tutorial:
+
+[source,bash,role=execute]
+----
+# Delete all VMs
+oc delete vm --all -n boot-demo
+
+# Delete the namespace
+oc delete namespace boot-demo
+----
+
+WARNING: Deleting VMs will also delete their associated DataVolumes and PVCs, resulting in data loss.
+
+== Summary
+
+In this tutorial, you learned:
+
+* Different boot source types (PVC, ContainerDisk, HTTP DataVolume)
+* How to configure boot device order
+* Difference between BIOS and UEFI firmware modes
+* How to enable and configure Secure Boot
+* Network boot configuration with PXE
+* Boot menu configuration
+* Best practices for boot configuration
+* Common issues and troubleshooting
+
+Understanding boot configuration is essential for proper VM lifecycle management, security compliance, and supporting diverse operating system requirements.
+
+== References
+
+* link:https://kubevirt.io/user-guide/user_workloads/boot_from_external_source/[KubeVirt Booting From External Source,window=_blank]
+* link:https://kubevirt.io/user-guide/virtual_machines/disks_and_volumes/[KubeVirt Disks and Volumes,window=_blank]
+* link:https://docs.openshift.com/container-platform/latest/virt/about_virt/about-virt.html[OpenShift Virtualization Documentation,window=_blank]
+* link:https://kubevirt.io/user-guide/virtual_machines/virtual_hardware/[KubeVirt Virtual Hardware,window=_blank]
+* link:https://uefi.org/specifications[UEFI Specifications,window=_blank]
