@@ -1,0 +1,845 @@
+= VM Node Placement with Selectors and Affinity Rules
+:navtitle: Node Placement and Affinity
+
+== Overview
+
+Node placement controls which OpenShift cluster nodes run your virtual machines. By default, the Kubernetes scheduler automatically places VMs across available nodes, but you often need more control—running specific VMs on nodes with particular hardware, isolating workloads, or ensuring VMs run close together or far apart for performance or availability reasons.
+
+This tutorial covers node selectors, node affinity, and pod affinity/anti-affinity rules to control VM placement in OpenShift Virtualization.
+
+=== What You'll Learn
+
+* How to use node selectors for simple node placement
+* How to configure node affinity rules (required and preferred)
+* How to use pod affinity and anti-affinity to control VM co-location
+* How to label nodes and verify placement
+* Common placement patterns and troubleshooting
+
+== Prerequisites
+
+* OpenShift 4.18+ with OpenShift Virtualization installed
+* Cluster admin access to label nodes
+* `oc` and `virtctl` CLI tools installed
+* Multiple worker nodes in your cluster (for meaningful placement)
+
+== Understanding Node Placement Options
+
+OpenShift Virtualization provides three main mechanisms for controlling where VMs run:
+
+[cols="1,2,2",options="header"]
+|===
+|Mechanism |Use Case |Strength
+
+|Node Selector
+|Place VMs on nodes with specific labels
+|Simple, easy to understand
+
+|Node Affinity
+|Complex node selection with required/preferred rules
+|Flexible, supports multiple conditions
+
+|Pod Affinity/Anti-Affinity
+|Place VMs relative to other VMs or Pods
+|Controls VM co-location patterns
+|===
+
+IMPORTANT: VM placement rules are applied to the underlying virt-launcher pod that runs the VM. The Kubernetes scheduler evaluates these rules when placing the pod on a node.
+
+== Labeling Nodes
+
+Before using selectors or affinity rules, label your nodes to identify their characteristics.
+
+=== View Existing Node Labels
+
+[source,bash,role=execute]
+----
+oc get nodes --show-labels
+----
+
+Example output:
+[source,text]
+----
+NAME                          STATUS   ROLES                  AGE   VERSION    LABELS
+ip-10-0-8-25.ec2.internal     Ready    control-plane,master   23d   v1.31.14   beta.kubernetes.io/arch=amd64,kubernetes.io/hostname=ip-10-0-8-25.ec2.internal,...
+ip-10-0-24-89.ec2.internal    Ready    worker                 22d   v1.31.14   beta.kubernetes.io/arch=amd64,kubernetes.io/hostname=ip-10-0-24-89.ec2.internal,...
+ip-10-0-43-58.ec2.internal    Ready    worker                 22d   v1.31.14   beta.kubernetes.io/arch=amd64,kubernetes.io/hostname=ip-10-0-43-58.ec2.internal,...
+ip-10-0-82-27.ec2.internal    Ready    worker                 22d   v1.31.14   beta.kubernetes.io/arch=amd64,kubernetes.io/hostname=ip-10-0-82-27.ec2.internal,...
+----
+
+=== Add Custom Labels to Nodes
+
+Label nodes based on their characteristics (hardware, location, workload type):
+
+[source,bash]
+----
+# Label nodes by environment
+oc label node <node_name> env=development
+oc label node <node_name> env=production
+
+# Label nodes by GPU type
+oc label node <node_name> gpu=nvidia-t4
+oc label node <node_name> gpu=nvidia-a100
+
+# Label nodes by disk type
+oc label node <node_name> storage=ssd
+oc label node <node_name> storage=nvme
+
+# Label nodes by workload type
+oc label node <node_name> workload=database
+----
+
+Verify labels:
+
+[source,bash]
+----
+oc get node <node_name> -o jsonpath='{.metadata.labels}' | jq
+----
+
+=== Remove Labels
+
+[source,bash]
+----
+oc label node <node_name> gpu-
+----
+
+== Using Node Selectors
+
+Node selectors provide the simplest way to control VM placement by matching node labels exactly.
+
+=== Basic Node Selector Example
+
+Create a VM that runs only on nodes with `storage=ssd`:
+
+xref:attachment$vm-node-selector.yaml[Download vm-node-selector.yaml]
+
+[source,yaml]
+----
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: database-vm
+  namespace: vm-placement
+spec:
+  runStrategy: Manual
+  template:
+    metadata:
+      labels:
+        app: database
+    spec:
+      nodeSelector:
+        storage: ssd  # VM will only run on nodes with storage=ssd label
+      domain:
+        cpu:
+          cores: 2
+        memory:
+          guest: 4Gi
+        devices:
+          disks:
+          - name: rootdisk
+            disk:
+              bus: virtio
+          - name: cloudinitdisk
+            disk:
+              bus: virtio
+      volumes:
+      - name: rootdisk
+        containerDisk:
+          image: quay.io/containerdisks/fedora:43
+      - name: cloudinitdisk
+        cloudInitNoCloud:
+          userData: |
+            #cloud-config
+            user: fedora
+            password: fedora
+            chpasswd: { expire: False }
+----
+
+Apply and start the VM:
+
+[source,bash,role=execute]
+----
+oc apply -f vm-node-selector.yaml
+virtctl start database-vm -n vm-placement
+----
+
+=== Verify Node Placement
+
+Check which node the VM is running on:
+
+[source,bash,role=execute]
+----
+oc get vmi database-vm -n vm-placement -o wide
+----
+
+Example output:
+[source,text]
+----
+NAME          AGE   PHASE     IP             NODENAME   READY
+database-vm   45s   Running   10.128.0.200   ocplab02   True
+----
+
+Verify the node has the required label:
+
+[source,bash]
+----
+oc get node <node_name> -L storage
+----
+
+Example output:
+[source,text]
+----
+NAME       STATUS   ROLES    AGE   VERSION   STORAGE
+ip-10-0-24-89.ec2.internal   Ready    worker   30d   v1.30.0   ssd
+----
+
+=== Multiple Label Selection
+
+Node selectors support multiple labels (all must match):
+
+[source,yaml]
+----
+spec:
+  template:
+    spec:
+      nodeSelector:
+        storage: ssd
+        env: production
+        gpu: nvidia-t4
+----
+
+The VM will only run on nodes that have ALL three labels with the specified values.
+
+== Using Node Affinity
+
+Node affinity provides more flexible node selection with required and preferred rules.
+
+=== Required Node Affinity
+
+Required affinity (hard requirement) prevents scheduling if no matching nodes exist:
+
+xref:attachment$vm-node-affinity-required.yaml[Download vm-node-affinity-required.yaml]
+
+[source,yaml]
+----
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: gpu-workload-vm
+  namespace: vm-placement
+spec:
+  runStrategy: Manual
+  template:
+    metadata:
+      labels:
+        app: ml-training
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: gpu
+                operator: In
+                values:
+                - nvidia-t4
+                - nvidia-a100
+              - key: env
+                operator: In
+                values:
+                - production
+      domain:
+        cpu:
+          cores: 4
+        memory:
+          guest: 8Gi
+        devices:
+          disks:
+          - name: rootdisk
+            disk:
+              bus: virtio
+      volumes:
+      - name: rootdisk
+        containerDisk:
+          image: quay.io/containerdisks/fedora:43
+----
+
+Key points:
+
+* **requiredDuringSchedulingIgnoredDuringExecution**: VM will not start if no matching node exists
+* **matchExpressions**: Supports operators like `In`, `NotIn`, `Exists`, `DoesNotExist`, `Gt`, `Lt`
+* **nodeSelectorTerms**: Multiple terms are OR'ed (any term can match)
+* Multiple **matchExpressions** within a term are AND'ed (all must match)
+
+=== Preferred Node Affinity
+
+Preferred affinity (soft requirement) tries to place VMs on matching nodes but allows other nodes if needed:
+
+xref:attachment$vm-node-affinity-preferred.yaml[Download vm-node-affinity-preferred.yaml]
+
+[source,yaml]
+----
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: web-vm
+  namespace: vm-placement
+spec:
+  runStrategy: Manual
+  template:
+    metadata:
+      labels:
+        app: webserver
+    spec:
+      affinity:
+        nodeAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            preference:
+              matchExpressions:
+              - key: storage
+                operator: In
+                values:
+                - nvme
+          - weight: 50
+            preference:
+              matchExpressions:
+              - key: storage
+                operator: In
+                values:
+                - ssd
+      domain:
+        cpu:
+          cores: 2
+        memory:
+          guest: 2Gi
+        devices:
+          disks:
+          - name: rootdisk
+            disk:
+              bus: virtio
+      volumes:
+      - name: rootdisk
+        containerDisk:
+          image: quay.io/containerdisks/fedora:43
+----
+
+Key points:
+
+* **preferredDuringSchedulingIgnoredDuringExecution**: Scheduler prefers matching nodes but can place elsewhere
+* **weight**: 1-100, higher weight = stronger preference
+* Multiple preferences are additive (scores combine)
+
+=== Combining Required and Preferred Affinity
+
+[source,yaml]
+----
+spec:
+  template:
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: env
+                operator: In
+                values:
+                - production
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            preference:
+              matchExpressions:
+              - key: storage
+                operator: In
+                values:
+                - nvme
+----
+
+This VM MUST run on production nodes, but preferably on those with NVMe storage.
+
+== Using Pod Affinity and Anti-Affinity
+
+Pod affinity and anti-affinity control VM placement relative to other VMs or pods, enabling co-location or separation patterns.
+
+=== Pod Affinity: Running VMs Together
+
+Use pod affinity to run VMs on the same node or in the same availability zone:
+
+xref:attachment$vm-pod-affinity.yaml[Download vm-pod-affinity.yaml]
+
+[source,yaml]
+----
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: web-frontend-vm
+  namespace: vm-placement
+spec:
+  runStrategy: Manual
+  template:
+    metadata:
+      labels:
+        app: web-frontend
+        tier: frontend
+    spec:
+      affinity:
+        podAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - database
+            topologyKey: kubernetes.io/hostname
+      domain:
+        cpu:
+          cores: 2
+        memory:
+          guest: 2Gi
+        devices:
+          disks:
+          - name: rootdisk
+            disk:
+              bus: virtio
+      volumes:
+      - name: rootdisk
+        containerDisk:
+          image: quay.io/containerdisks/fedora:43
+----
+
+This VM will run on the same node (`topologyKey: kubernetes.io/hostname`) as pods/VMs with `app=database`.
+
+Common topology keys:
+
+[cols="1,2",options="header"]
+|===
+|Topology Key |Effect
+
+|`kubernetes.io/hostname`
+|Same physical node
+
+|`topology.kubernetes.io/zone`
+|Same availability zone
+
+|`topology.kubernetes.io/region`
+|Same region
+|===
+
+=== Pod Anti-Affinity: Separating VMs
+
+Use pod anti-affinity to spread VMs across nodes for high availability:
+
+xref:attachment$vm-pod-anti-affinity.yaml[Download vm-pod-anti-affinity.yaml]
+
+[source,yaml]
+----
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: cache-vm-01
+  namespace: vm-placement
+spec:
+  runStrategy: Manual
+  template:
+    metadata:
+      labels:
+        app: redis-cache
+        role: cache
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - redis-cache
+            topologyKey: kubernetes.io/hostname
+      domain:
+        cpu:
+          cores: 2
+        memory:
+          guest: 4Gi
+        devices:
+          disks:
+          - name: rootdisk
+            disk:
+              bus: virtio
+      volumes:
+      - name: rootdisk
+        containerDisk:
+          image: quay.io/containerdisks/fedora:43
+----
+
+This ensures multiple cache VMs never run on the same node, improving availability.
+
+=== Preferred Pod Anti-Affinity
+
+For best-effort spreading without hard constraints:
+
+[source,yaml]
+----
+spec:
+  template:
+    spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - redis-cache
+              topologyKey: kubernetes.io/hostname
+----
+
+=== Combining Multiple Affinity Rules
+
+[source,yaml]
+----
+spec:
+  template:
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: env
+                operator: In
+                values:
+                - production
+        podAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: tier
+                  operator: In
+                  values:
+                  - database
+              topologyKey: kubernetes.io/hostname
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - web-frontend
+            topologyKey: kubernetes.io/hostname
+----
+
+This VM:
+
+* MUST run on production nodes
+* SHOULD run on nodes with database tier VMs
+* MUST NOT run on nodes with other web-frontend VMs
+
+== Common Placement Patterns
+
+=== Pattern 1: High Availability Database Cluster
+
+Spread database VMs across nodes:
+
+[source,yaml]
+----
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: postgres-vm-01
+  labels:
+    app: postgres-cluster
+    instance: "01"
+spec:
+  template:
+    metadata:
+      labels:
+        app: postgres-cluster
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchLabels:
+                app: postgres-cluster
+            topologyKey: kubernetes.io/hostname
+----
+
+Each database VM replica runs on a different node, preventing single node failure from affecting the entire cluster.
+
+=== Pattern 2: GPU Workload Isolation
+
+Dedicate specific nodes to GPU workloads:
+
+[source,yaml]
+----
+spec:
+  template:
+    spec:
+      nodeSelector:
+        gpu: "true"
+      tolerations:
+      - key: "nvidia.com/gpu"
+        operator: "Exists"
+        effect: "NoSchedule"
+----
+
+Combine node selectors with taints/tolerations to reserve GPU nodes exclusively for GPU workloads.
+
+=== Pattern 3: Latency-Sensitive Application Stack
+
+Co-locate application tiers on the same node:
+
+[source,yaml]
+----
+# Backend VM
+spec:
+  template:
+    metadata:
+      labels:
+        app: trading-platform
+        tier: backend
+    spec:
+      affinity:
+        podAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: tier
+                operator: In
+                values:
+                - cache
+                - database
+            topologyKey: kubernetes.io/hostname
+----
+
+=== Pattern 4: Environment Separation
+
+Ensure development VMs don't run on production nodes:
+
+[source,yaml]
+----
+spec:
+  template:
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: env
+                operator: In
+                values:
+                - development
+              - key: env
+                operator: NotIn
+                values:
+                - production
+----
+
+== Viewing Placement via Web Console
+
+. Navigate to **Virtualization** -> **VirtualMachines**
+. Click on a VM to view details
+. Go to the **Scheduling** tab
+. View configured node selectors, affinity, and tolerations
+. Check the **Overview** tab to see which node the VM is running on
+
+== Troubleshooting
+
+=== VM Stuck in Pending State
+
+**Problem**: VM remains in Pending state and never starts.
+
+**Diagnosis**:
+
+[source,bash,role=execute]
+----
+# Check VM status
+oc get vm -n vm-placement
+
+# Check VMI events
+oc describe vmi <vm-name> -n vm-placement
+----
+
+Look for events like:
+
+[source,text]
+----
+Warning  FailedScheduling  0/3 nodes are available: 3 node(s) didn't match Pod's node affinity/selector
+----
+
+**Possible causes**:
+
+* No nodes match the node selector or required affinity rules
+* All matching nodes are full (insufficient CPU/memory)
+* Taints on nodes prevent scheduling
+
+**Solutions**:
+
+[source,bash,role=execute]
+----
+# Verify node labels exist
+oc get nodes -L storage,env,gpu
+
+# Check if nodes have required labels
+oc get nodes --selector=storage=ssd
+
+# Review VM placement constraints
+oc get vm <vm-name> -n vm-placement -o yaml | grep -A 20 "affinity:"
+----
+
+If no nodes match, either:
+
+* Add required labels to nodes
+* Relax the placement constraints
+* Change required affinity to preferred affinity
+
+=== VM Running on Unexpected Node
+
+**Problem**: VM runs on a node that doesn't match preferred affinity.
+
+**Explanation**: Preferred affinity is a soft constraint. The scheduler can ignore it if:
+
+* No nodes match the preference
+* Matching nodes lack resources
+* Other VMs have higher priority
+
+**Verification**:
+
+[source,bash,role=execute]
+----
+# Check where VM is running
+oc get vmi <vm-name> -n vm-placement -o jsonpath='{.status.nodeName}'
+
+# Check that node's labels
+oc get node <node-name> --show-labels
+----
+
+**Solutions**:
+
+* Change preferred affinity to required if placement is critical
+* Increase the weight of preferred rules
+* Ensure matching nodes have sufficient resources
+
+=== Anti-Affinity Not Working
+
+**Problem**: Multiple VMs with anti-affinity rules run on the same node.
+
+**Diagnosis**:
+
+[source,bash,role=execute]
+----
+# List all VMs and their nodes
+oc get vmi -n vm-placement -o wide
+
+# Check anti-affinity configuration
+oc get vm <vm-name> -n vm-placement -o yaml | grep -A 15 "podAntiAffinity:"
+----
+
+**Common issues**:
+
+* **Label mismatch**: Anti-affinity label selector doesn't match VM labels
+* **Wrong topology key**: Using zone instead of hostname
+* **Preferred vs required**: Using preferred allows same-node placement when necessary
+* **Insufficient nodes**: Not enough nodes to satisfy anti-affinity for all replicas
+
+**Solutions**:
+
+Verify labels match:
+
+[source,bash,role=execute]
+----
+# Check VM labels
+oc get vm <vm-name> -n vm-placement -o jsonpath='{.spec.template.metadata.labels}' | jq
+
+# Verify anti-affinity selector matches those labels
+oc get vm <vm-name> -n vm-placement -o yaml | grep -A 5 "labelSelector:"
+----
+
+=== Node Selector Ignored
+
+**Problem**: VM runs on nodes without the specified label.
+
+**Check if node selector is properly defined**:
+
+[source,bash,role=execute]
+----
+# View VM spec
+oc get vm <vm-name> -n vm-placement -o yaml | grep -A 5 "nodeSelector:"
+
+# Verify it's under spec.template.spec, not just spec
+oc get vm <vm-name> -n vm-placement -o jsonpath='{.spec.template.spec.nodeSelector}' | jq
+----
+
+**Common mistake**: Placing `nodeSelector` at the wrong level in the YAML:
+
+[source,yaml]
+----
+# WRONG - nodeSelector at VM spec level
+spec:
+  nodeSelector:    # This is ignored!
+    storage: ssd
+  template:
+    spec:
+      domain:
+        ...
+
+# CORRECT - nodeSelector at pod spec level
+spec:
+  template:
+    spec:
+      nodeSelector:  # This works!
+        storage: ssd
+      domain:
+        ...
+----
+
+== Cleanup
+
+Remove the resources created in this tutorial:
+
+[source,bash,role=execute]
+----
+# Delete VMs
+oc delete vm --all -n vm-placement
+
+# Remove custom node labels
+oc label node ocplab02 storage- env- gpu- workload-
+oc label node ocplab03 storage- env-
+----
+
+Verify cleanup:
+
+[source,bash,role=execute]
+----
+oc get vm -n vm-placement
+oc get nodes --show-labels | grep -E "storage|workload"
+----
+
+== Summary
+
+In this tutorial you learned:
+
+* The differences between node selectors, node affinity, and pod affinity/anti-affinity
+* How to label nodes for placement control
+* How to use node selectors for simple placement constraints
+* How to configure required and preferred node affinity rules
+* How to use pod affinity to co-locate VMs and anti-affinity to separate them
+* Common placement patterns for HA, performance, and isolation
+* How to troubleshoot placement issues
+
+== See Also
+
+* xref:getting-started:vm-lifecycle-states.adoc[] - VM states and lifecycle management
+* xref:getting-started:virtctl-basics.adoc[] - CLI commands for VM management
+* link:https://docs.redhat.com/en/documentation/openshift_container_platform/latest/html/virtualization/nodes#virt-node-placement-vms[Node Placement for Virtual Machines - Red Hat Documentation,window=_blank]
+* link:https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/[Assigning Pods to Nodes - Kubernetes Documentation,window=_blank]
+* link:https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/[Taints and Tolerations - Kubernetes Documentation,window=_blank]
