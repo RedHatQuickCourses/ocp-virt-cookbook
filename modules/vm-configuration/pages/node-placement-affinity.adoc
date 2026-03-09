@@ -72,39 +72,72 @@ Label nodes based on their characteristics (hardware, location, workload type):
 
 [source,bash]
 ----
+# Get worker node names
+WORKER1=$(oc get nodes -l node-role.kubernetes.io/worker -o jsonpath='{.items[0].metadata.name}')
+WORKER2=$(oc get nodes -l node-role.kubernetes.io/worker -o jsonpath='{.items[1].metadata.name}')
+WORKER3=$(oc get nodes -l node-role.kubernetes.io/worker -o jsonpath='{.items[2].metadata.name}')
+
 # Label nodes by environment
-oc label node <node_name> env=development
-oc label node <node_name> env=production
+oc label node $WORKER1 env=development
+oc label node $WORKER2 env=production
 
 # Label nodes by GPU type
-oc label node <node_name> gpu=nvidia-t4
-oc label node <node_name> gpu=nvidia-a100
+oc label node $WORKER1 gpu=nvidia-t4
+oc label node $WORKER2 gpu=nvidia-a100
 
 # Label nodes by disk type
-oc label node <node_name> storage=ssd
-oc label node <node_name> storage=nvme
+oc label node $WORKER1 storage=ssd
+oc label node $WORKER3 storage=nvme
 
 # Label nodes by workload type
-oc label node <node_name> workload=database
+oc label node $WORKER1 workload=database
 ----
 
 Verify labels:
 
 [source,bash]
 ----
-oc get node <node_name> -o jsonpath='{.metadata.labels}' | jq
+WORKER1=$(oc get nodes -l node-role.kubernetes.io/worker -o jsonpath='{.items[0].metadata.name}')
+oc get node $WORKER1 -o jsonpath='{.metadata.labels}' | jq
+----
+
+Example output:
+[source,json]
+----
+{
+  "beta.kubernetes.io/arch": "amd64",
+  "beta.kubernetes.io/os": "linux",
+  "env": "development",
+  "gpu": "nvidia-t4",
+  "kubernetes.io/arch": "amd64",
+  "kubernetes.io/hostname": "ip-10-0-24-89.ec2.internal",
+  "kubernetes.io/os": "linux",
+  "node-role.kubernetes.io/worker": "",
+  "storage": "ssd",
+  "workload": "database"
+}
 ----
 
 === Remove Labels
 
 [source,bash]
 ----
-oc label node <node_name> gpu-
+WORKER1=$(oc get nodes -l node-role.kubernetes.io/worker -o jsonpath='{.items[0].metadata.name}')
+oc label node $WORKER1 gpu-
 ----
 
 == Using Node Selectors
 
 Node selectors provide the simplest way to control VM placement by matching node labels exactly.
+
+=== Create the Tutorial Namespace
+
+First, create a namespace for the tutorial resources:
+
+[source,bash,role=execute]
+----
+oc create namespace vm-placement
+----
 
 === Basic Node Selector Example
 
@@ -182,7 +215,7 @@ Verify the node has the required label:
 
 [source,bash]
 ----
-oc get node <node_name> -L storage
+oc get vmi database-vm -n vm-placement -o jsonpath='{.status.nodeName}' | xargs oc get node -L storage
 ----
 
 Example output:
@@ -257,10 +290,20 @@ spec:
           - name: rootdisk
             disk:
               bus: virtio
+          - name: cloudinitdisk
+            disk:
+              bus: virtio
       volumes:
       - name: rootdisk
         containerDisk:
           image: quay.io/containerdisks/fedora:43
+      - name: cloudinitdisk
+        cloudInitNoCloud:
+          userData: |
+            #cloud-config
+            user: fedora
+            password: fedora
+            chpasswd: { expire: False }
 ----
 
 Key points:
@@ -317,10 +360,20 @@ spec:
           - name: rootdisk
             disk:
               bus: virtio
+          - name: cloudinitdisk
+            disk:
+              bus: virtio
       volumes:
       - name: rootdisk
         containerDisk:
           image: quay.io/containerdisks/fedora:43
+      - name: cloudinitdisk
+        cloudInitNoCloud:
+          userData: |
+            #cloud-config
+            user: fedora
+            password: fedora
+            chpasswd: { expire: False }
 ----
 
 Key points:
@@ -402,10 +455,20 @@ spec:
           - name: rootdisk
             disk:
               bus: virtio
+          - name: cloudinitdisk
+            disk:
+              bus: virtio
       volumes:
       - name: rootdisk
         containerDisk:
           image: quay.io/containerdisks/fedora:43
+      - name: cloudinitdisk
+        cloudInitNoCloud:
+          userData: |
+            #cloud-config
+            user: fedora
+            password: fedora
+            chpasswd: { expire: False }
 ----
 
 This VM will run on the same node (`topologyKey: kubernetes.io/hostname`) as pods/VMs with `app=database`.
@@ -467,10 +530,20 @@ spec:
           - name: rootdisk
             disk:
               bus: virtio
+          - name: cloudinitdisk
+            disk:
+              bus: virtio
       volumes:
       - name: rootdisk
         containerDisk:
           image: quay.io/containerdisks/fedora:43
+      - name: cloudinitdisk
+        cloudInitNoCloud:
+          userData: |
+            #cloud-config
+            user: fedora
+            password: fedora
+            chpasswd: { expire: False }
 ----
 
 This ensures multiple cache VMs never run on the same node, improving availability.
@@ -638,10 +711,6 @@ spec:
                 operator: In
                 values:
                 - development
-              - key: env
-                operator: NotIn
-                values:
-                - production
 ----
 
 == Viewing Placement via Web Console
@@ -811,9 +880,14 @@ Remove the resources created in this tutorial:
 # Delete VMs
 oc delete vm --all -n vm-placement
 
-# Remove custom node labels
-oc label node ocplab02 storage- env- gpu- workload-
-oc label node ocplab03 storage- env-
+# Remove custom node labels from all workers
+WORKER1=$(oc get nodes -l node-role.kubernetes.io/worker -o jsonpath='{.items[0].metadata.name}')
+WORKER2=$(oc get nodes -l node-role.kubernetes.io/worker -o jsonpath='{.items[1].metadata.name}')
+WORKER3=$(oc get nodes -l node-role.kubernetes.io/worker -o jsonpath='{.items[2].metadata.name}')
+
+oc label node $WORKER1 storage- env- gpu- workload-
+oc label node $WORKER2 storage- env- gpu-
+oc label node $WORKER3 storage-
 ----
 
 Verify cleanup:
