@@ -1,0 +1,623 @@
+= OpenShift Virtualization Infrastructure Node Placement
+:navtitle: Infrastructure Node Placement
+
+== Overview
+
+OpenShift Virtualization infrastructure components (virt-controller, virt-api, virt-handler, CDI) run as pods in the `openshift-cnv` namespace. In production environments, you often need to control where these infrastructure components run—whether to dedicate specific nodes for virtualization infrastructure, separate infrastructure from VM workloads, or optimize for high availability across zones.
+
+This tutorial covers how to configure node placement for OpenShift Virtualization infrastructure components using the HyperConverged custom resource.
+
+=== What You'll Learn
+
+* How OpenShift Virtualization infrastructure components work
+* How to configure infrastructure placement via the HyperConverged CR
+* Node selector and affinity configurations for infrastructure pods
+* Common placement patterns for different cluster sizes
+* How to use taints and tolerations for dedicated infrastructure nodes
+
+== Prerequisites
+
+* OpenShift 4.18+ with OpenShift Virtualization installed
+* Cluster admin access to modify HyperConverged CR
+* `oc` CLI tool installed
+* Multiple worker nodes (recommended for meaningful placement)
+
+== Understanding Infrastructure Components
+
+OpenShift Virtualization infrastructure includes several key components:
+
+[cols="1,2,1",options="header"]
+|===
+|Component |Purpose |Deployment Type
+
+|virt-controller
+|Manages VM lifecycle and orchestration
+|Deployment (2 replicas)
+
+|virt-api
+|Provides API server for virtualization resources
+|Deployment (2 replicas)
+
+|virt-handler
+|Manages VM instances on each node
+|DaemonSet
+
+|cdi-controller
+|Manages Containerized Data Importer for disk imports
+|Deployment (1 replica)
+
+|cdi-uploadproxy
+|Handles VM disk uploads via web console
+|Deployment (1 replica)
+
+|cdi-apiserver
+|Provides CDI API endpoints
+|Deployment (1 replica)
+
+|hco-webhook
+|Validates HyperConverged CR changes
+|Deployment (1 replica)
+|===
+
+=== Viewing Current Infrastructure Placement
+
+Check where infrastructure pods are currently running:
+
+[source,bash,role=execute]
+----
+# View all virtualization infrastructure pods and their nodes
+oc get pods -n openshift-cnv -o wide
+----
+
+Example output:
+[source,text]
+----
+NAME                                   READY   STATUS    NODE
+virt-api-6d9f8c7b9d-4xk2l              1/1     Running   ip-10-0-24-89.ec2.internal
+virt-api-6d9f8c7b9d-8tz5p              1/1     Running   ip-10-0-43-58.ec2.internal
+virt-controller-7c8d9f5b6d-5nvlm       1/1     Running   ip-10-0-24-89.ec2.internal
+virt-controller-7c8d9f5b6d-9kqwz       1/1     Running   ip-10-0-43-58.ec2.internal
+virt-handler-8zkgp                     1/1     Running   ip-10-0-24-89.ec2.internal
+virt-handler-f2nlb                     1/1     Running   ip-10-0-43-58.ec2.internal
+virt-handler-q7xmc                     1/1     Running   ip-10-0-82-27.ec2.internal
+cdi-apiserver-5f8c9d7b6c-7nlqx         1/1     Running   ip-10-0-24-89.ec2.internal
+cdi-deployment-7c8f9b5d6e-2kxmp        1/1     Running   ip-10-0-43-58.ec2.internal
+cdi-uploadproxy-6d9f8c7b9d-5pqrs       1/1     Running   ip-10-0-24-89.ec2.internal
+----
+
+Check specific components:
+
+[source,bash,role=execute]
+----
+# View virt-controller pods
+oc get pods -n openshift-cnv -l kubevirt.io=virt-controller -o wide
+
+# View virt-api pods
+oc get pods -n openshift-cnv -l kubevirt.io=virt-api -o wide
+
+# View virt-handler DaemonSet
+oc get pods -n openshift-cnv -l kubevirt.io=virt-handler -o wide
+
+# View CDI components
+oc get pods -n openshift-cnv -l app.kubernetes.io/component=storage -o wide
+----
+
+== The HyperConverged Custom Resource
+
+Infrastructure placement is configured through the HyperConverged CR:
+
+[source,bash,role=execute]
+----
+# View current HyperConverged configuration
+oc get hyperconverged kubevirt-hyperconverged -n openshift-cnv -o yaml
+----
+
+The HyperConverged CR provides two main placement configurations:
+
+[cols="1,2",options="header"]
+|===
+|Field |Controls
+
+|`spec.infra.nodePlacement`
+|Control plane components: virt-api, virt-controller, CDI controller, CDI uploadproxy
+
+|`spec.workloads.nodePlacement`
+|Per-node components: virt-handler DaemonSet
+|===
+
+IMPORTANT: The HyperConverged CR is managed by the OpenShift Virtualization operator. Changes are applied cluster-wide and automatically propagate to all infrastructure components.
+
+== Placement Configuration Options
+
+=== Using Node Selectors
+
+Node selectors provide simple label-based placement:
+
+[source,bash,role=execute]
+----
+# Label nodes for virtualization infrastructure
+oc label node ip-10-0-24-89.ec2.internal node-role.kubernetes.io/infra=
+oc label node ip-10-0-43-58.ec2.internal node-role.kubernetes.io/infra=
+----
+
+Edit the HyperConverged CR:
+
+[source,bash,role=execute]
+----
+oc edit hyperconverged kubevirt-hyperconverged -n openshift-cnv
+----
+
+Add node selector configuration:
+
+[source,yaml]
+----
+apiVersion: hco.kubevirt.io/v1beta1
+kind: HyperConverged
+metadata:
+  name: kubevirt-hyperconverged
+  namespace: openshift-cnv
+spec:
+  infra:
+    nodePlacement:
+      nodeSelector:
+        node-role.kubernetes.io/infra: ""
+  workloads:
+    nodePlacement:
+      nodeSelector:
+        node-role.kubernetes.io/worker: ""
+----
+
+This configuration:
+
+* **Control plane components** (virt-api, virt-controller, CDI) run only on nodes with `node-role.kubernetes.io/infra` label
+* **virt-handler DaemonSet** runs on all nodes with `node-role.kubernetes.io/worker` label
+
+=== Using Node Affinity
+
+For more complex placement rules, use node affinity:
+
+[source,yaml]
+----
+apiVersion: hco.kubevirt.io/v1beta1
+kind: HyperConverged
+metadata:
+  name: kubevirt-hyperconverged
+  namespace: openshift-cnv
+spec:
+  infra:
+    nodePlacement:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: node-role.kubernetes.io/infra
+                operator: Exists
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            preference:
+              matchExpressions:
+              - key: topology.kubernetes.io/zone
+                operator: In
+                values:
+                - us-east-1a
+                - us-east-1b
+----
+
+This configuration:
+
+* **Requires** infrastructure nodes (hard constraint)
+* **Prefers** specific availability zones (soft constraint)
+
+=== Using Tolerations with Tainted Nodes
+
+Taint infrastructure nodes to prevent regular workloads from running on them:
+
+[source,bash,role=execute]
+----
+# Taint infrastructure nodes
+oc adm taint node ip-10-0-24-89.ec2.internal node-role.kubernetes.io/infra=:NoSchedule
+oc adm taint node ip-10-0-43-58.ec2.internal node-role.kubernetes.io/infra=:NoSchedule
+----
+
+Add corresponding tolerations to the HyperConverged CR:
+
+[source,yaml]
+----
+apiVersion: hco.kubevirt.io/v1beta1
+kind: HyperConverged
+metadata:
+  name: kubevirt-hyperconverged
+  namespace: openshift-cnv
+spec:
+  infra:
+    nodePlacement:
+      nodeSelector:
+        node-role.kubernetes.io/infra: ""
+      tolerations:
+      - key: node-role.kubernetes.io/infra
+        operator: Exists
+        effect: NoSchedule
+  workloads:
+    nodePlacement:
+      nodeSelector:
+        node-role.kubernetes.io/worker: ""
+----
+
+Now only pods with the matching toleration (virtualization infrastructure) can run on tainted infrastructure nodes.
+
+=== Using Pod Anti-Affinity for High Availability
+
+Spread infrastructure components across zones for better availability:
+
+[source,yaml]
+----
+apiVersion: hco.kubevirt.io/v1beta1
+kind: HyperConverged
+metadata:
+  name: kubevirt-hyperconverged
+  namespace: openshift-cnv
+spec:
+  infra:
+    nodePlacement:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchLabels:
+                  kubevirt.io: virt-api
+              topologyKey: topology.kubernetes.io/zone
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchLabels:
+                  kubevirt.io: virt-controller
+              topologyKey: topology.kubernetes.io/zone
+----
+
+This ensures multiple replicas of virt-api and virt-controller are spread across different zones.
+
+== Common Deployment Patterns
+
+=== Pattern 1: Small Clusters (3-6 nodes)
+
+Run infrastructure and VM workloads on the same worker nodes:
+
+[source,yaml]
+----
+apiVersion: hco.kubevirt.io/v1beta1
+kind: HyperConverged
+metadata:
+  name: kubevirt-hyperconverged
+  namespace: openshift-cnv
+spec:
+  infra:
+    nodePlacement:
+      nodeSelector:
+        node-role.kubernetes.io/worker: ""
+  workloads:
+    nodePlacement:
+      nodeSelector:
+        node-role.kubernetes.io/worker: ""
+----
+
+**Use case**: Development, testing, or small production clusters where dedicating nodes is not cost-effective.
+
+=== Pattern 2: Medium Clusters with Dedicated Infrastructure
+
+Separate infrastructure from VM workloads:
+
+[source,bash,role=execute]
+----
+# Label infrastructure nodes
+oc label node ip-10-0-24-89.ec2.internal node-role.kubernetes.io/infra=
+oc label node ip-10-0-43-58.ec2.internal node-role.kubernetes.io/infra=
+
+# Taint infrastructure nodes
+oc adm taint node ip-10-0-24-89.ec2.internal node-role.kubernetes.io/infra=:NoSchedule
+oc adm taint node ip-10-0-43-58.ec2.internal node-role.kubernetes.io/infra=:NoSchedule
+
+# Label worker nodes for VMs
+oc label node ip-10-0-82-27.ec2.internal kubevirt.io/schedulable=true
+----
+
+HyperConverged configuration:
+
+[source,yaml]
+----
+apiVersion: hco.kubevirt.io/v1beta1
+kind: HyperConverged
+metadata:
+  name: kubevirt-hyperconverged
+  namespace: openshift-cnv
+spec:
+  infra:
+    nodePlacement:
+      nodeSelector:
+        node-role.kubernetes.io/infra: ""
+      tolerations:
+      - key: node-role.kubernetes.io/infra
+        operator: Exists
+        effect: NoSchedule
+  workloads:
+    nodePlacement:
+      nodeSelector:
+        kubevirt.io/schedulable: "true"
+----
+
+**Use case**: Production clusters where you want predictable infrastructure performance isolated from VM workload resource contention.
+
+=== Pattern 3: Large Multi-Zone High Availability
+
+Spread infrastructure across zones with anti-affinity:
+
+[source,yaml]
+----
+apiVersion: hco.kubevirt.io/v1beta1
+kind: HyperConverged
+metadata:
+  name: kubevirt-hyperconverged
+  namespace: openshift-cnv
+spec:
+  infra:
+    nodePlacement:
+      nodeSelector:
+        node-role.kubernetes.io/infra: ""
+      affinity:
+        nodeAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            preference:
+              matchExpressions:
+              - key: topology.kubernetes.io/zone
+                operator: In
+                values:
+                - us-east-1a
+                - us-east-1b
+                - us-east-1c
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchLabels:
+                  kubevirt.io: virt-api
+              topologyKey: topology.kubernetes.io/zone
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchLabels:
+                  kubevirt.io: virt-controller
+              topologyKey: topology.kubernetes.io/zone
+      tolerations:
+      - key: node-role.kubernetes.io/infra
+        operator: Exists
+        effect: NoSchedule
+  workloads:
+    nodePlacement:
+      nodeSelector:
+        kubevirt.io/schedulable: "true"
+----
+
+**Use case**: Enterprise production with strict availability SLAs requiring zone-level fault tolerance.
+
+== Applying Configuration Changes
+
+=== Edit HyperConverged CR Directly
+
+[source,bash,role=execute]
+----
+oc edit hyperconverged kubevirt-hyperconverged -n openshift-cnv
+----
+
+=== Patch HyperConverged CR
+
+[source,bash,role=execute]
+----
+oc patch hyperconverged kubevirt-hyperconverged -n openshift-cnv --type=merge -p '
+{
+  "spec": {
+    "infra": {
+      "nodePlacement": {
+        "nodeSelector": {
+          "node-role.kubernetes.io/infra": ""
+        }
+      }
+    }
+  }
+}'
+----
+
+=== Verify Changes Applied
+
+Watch infrastructure pods get rescheduled:
+
+[source,bash,role=execute]
+----
+# Watch pod changes in real-time
+oc get pods -n openshift-cnv -w
+
+# Verify new placement after changes settle
+oc get pods -n openshift-cnv -o wide
+
+# Check specific component placement
+oc get pods -n openshift-cnv -l kubevirt.io=virt-api -o jsonpath='{range .items[*]}{.metadata.name}{"\t"}{.spec.nodeName}{"\n"}{end}'
+----
+
+Expected behavior:
+
+* Infrastructure pods will be terminated and recreated on matching nodes
+* virt-handler DaemonSet will add/remove pods based on node selector changes
+* Changes typically complete within 2-5 minutes
+
+== Monitoring and Verification
+
+=== Check Pod Distribution
+
+[source,bash,role=execute]
+----
+# Group pods by node
+oc get pods -n openshift-cnv -o jsonpath='{range .items[*]}{.spec.nodeName}{"\t"}{.metadata.name}{"\n"}{end}' | sort | column -t
+
+# Count pods per node
+oc get pods -n openshift-cnv -o jsonpath='{range .items[*]}{.spec.nodeName}{"\n"}{end}' | sort | uniq -c
+----
+
+=== Verify Tolerations
+
+[source,bash,role=execute]
+----
+# Check if virt-api pods have correct tolerations
+oc get pods -n openshift-cnv -l kubevirt.io=virt-api -o jsonpath='{.items[0].spec.tolerations}' | jq
+----
+
+=== Check Node Affinity Applied
+
+[source,bash,role=execute]
+----
+# View node affinity for virt-controller
+oc get pods -n openshift-cnv -l kubevirt.io=virt-controller -o jsonpath='{.items[0].spec.affinity}' | jq
+----
+
+== Troubleshooting
+
+=== Infrastructure Pods Stuck in Pending
+
+**Problem**: After changing placement configuration, infrastructure pods remain in Pending state.
+
+**Diagnosis**:
+
+[source,bash,role=execute]
+----
+# Check pod events
+oc describe pod <pod-name> -n openshift-cnv
+
+# Look for scheduling errors
+oc get events -n openshift-cnv --sort-by='.lastTimestamp' | grep -i failedscheduling
+----
+
+**Common causes**:
+
+* No nodes match the node selector or affinity rules
+* Nodes are tainted but tolerations are missing
+* Insufficient resources on matching nodes
+
+**Solutions**:
+
+[source,bash,role=execute]
+----
+# Verify nodes have required labels
+oc get nodes -L node-role.kubernetes.io/infra
+
+# Check node taints
+oc get nodes -o jsonpath='{range .items[*]}{.metadata.name}{"\t"}{.spec.taints}{"\n"}{end}'
+
+# Verify node capacity
+oc describe nodes | grep -A 5 "Allocated resources"
+----
+
+=== virt-handler Not Running on All Nodes
+
+**Problem**: virt-handler DaemonSet is missing pods on some nodes.
+
+**Diagnosis**:
+
+[source,bash,role=execute]
+----
+# Check virt-handler DaemonSet status
+oc get daemonset virt-handler -n openshift-cnv
+
+# Compare desired vs current pods
+oc describe daemonset virt-handler -n openshift-cnv | grep -E "Desired|Current|Ready"
+----
+
+**Solution**: Check if `spec.workloads.nodePlacement` selector matches the nodes:
+
+[source,bash,role=execute]
+----
+# View workloads node selector
+oc get hyperconverged kubevirt-hyperconverged -n openshift-cnv -o jsonpath='{.spec.workloads.nodePlacement}' | jq
+
+# Verify nodes match the selector
+oc get nodes --selector=<label-from-workloads-nodeSelector>
+----
+
+=== Configuration Changes Not Applied
+
+**Problem**: Edited HyperConverged CR but infrastructure pods didn't change.
+
+**Check HyperConverged CR status**:
+
+[source,bash,role=execute]
+----
+# View HyperConverged status
+oc get hyperconverged kubevirt-hyperconverged -n openshift-cnv -o yaml | grep -A 10 status:
+
+# Check for validation errors
+oc get events -n openshift-cnv --sort-by='.lastTimestamp' | grep HyperConverged
+----
+
+**Force reconciliation**:
+
+[source,bash,role=execute]
+----
+# Add annotation to trigger reconciliation
+oc annotate hyperconverged kubevirt-hyperconverged -n openshift-cnv reconcile-trigger="$(date +%s)" --overwrite
+----
+
+== Best Practices
+
+1. **Plan infrastructure capacity**: Infrastructure nodes need sufficient CPU and memory for virt-controller, virt-api, and CDI components (recommend 4 vCPU, 8GB RAM minimum per node)
+
+2. **Use multiple infrastructure nodes**: Run at least 2 infrastructure nodes for high availability of control plane components
+
+3. **Separate workloads in large clusters**: Dedicated infrastructure nodes prevent VM workload resource contention from affecting virtualization control plane
+
+4. **Leverage zone topology**: Spread infrastructure across availability zones using node/pod affinity for better fault tolerance
+
+5. **Monitor infrastructure health**: Set up alerts for infrastructure pod failures or resource exhaustion
+
+6. **Test placement changes**: Apply configuration changes in development/staging before production
+
+7. **Document node roles**: Clearly label and document which nodes serve which purpose
+
+== Cleanup
+
+To revert to default placement (all worker nodes):
+
+[source,bash,role=execute]
+----
+# Edit HyperConverged CR and remove nodePlacement sections
+oc patch hyperconverged kubevirt-hyperconverged -n openshift-cnv --type=json -p='[
+  {"op": "remove", "path": "/spec/infra/nodePlacement"},
+  {"op": "remove", "path": "/spec/workloads/nodePlacement"}
+]'
+
+# Remove infrastructure node labels
+oc label node ip-10-0-24-89.ec2.internal node-role.kubernetes.io/infra-
+oc label node ip-10-0-43-58.ec2.internal node-role.kubernetes.io/infra-
+
+# Remove taints if applied
+oc adm taint node ip-10-0-24-89.ec2.internal node-role.kubernetes.io/infra:NoSchedule-
+oc adm taint node ip-10-0-43-58.ec2.internal node-role.kubernetes.io/infra:NoSchedule-
+----
+
+== Summary
+
+In this tutorial you learned:
+
+* How OpenShift Virtualization infrastructure components are deployed
+* How to configure infrastructure placement via the HyperConverged CR
+* The difference between `spec.infra.nodePlacement` and `spec.workloads.nodePlacement`
+* How to use node selectors, affinity, and tolerations for infrastructure pods
+* Common deployment patterns for different cluster sizes
+* How to verify and troubleshoot infrastructure placement changes
+
+== See Also
+
+* xref:node-placement-affinity.adoc[] - VM workload node placement
+* xref:getting-started:vm-lifecycle-states.adoc[] - VM lifecycle management
+* link:https://docs.redhat.com/en/documentation/openshift_container_platform/latest/html/virtualization/postinstallation-configuration#virt-about-node-placement-virt-components_virt-specifying-nodes-for-virtualization-components[About node placement for virtualization components - Red Hat Documentation,window=_blank]
+* link:https://docs.redhat.com/en/documentation/openshift_container_platform/latest/html/virtualization/getting_started#about-hco_virt-using-the-cli-tools[About the HyperConverged custom resource - Red Hat Documentation,window=_blank]
