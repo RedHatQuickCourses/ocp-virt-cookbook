@@ -1,0 +1,1480 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>VM Node Placement with Selectors and Affinity Rules :: OpenShift Virtualization cookbook</title>
+    <link rel="prev" href="boot-order-boot-sources.html">
+    <link rel="next" href="../manifests/index.html">
+    <meta name="generator" content="Antora 3.1.3">
+    <link rel="stylesheet" href="../../../_/css/site.css">
+    <script>var uiRootPath = '../../../_'</script>
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://www.redhat.com" target="_blank"><img src="../../../_/img/redhat-logo.png" height="40px" alt="Red Hat"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="../../..">OpenShift Virtualization cookbook</a>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues" target="_blank">Report Issues</a>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="ocp-virt-cookbook" data-version="1">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="../index.html">OpenShift Virtualization cookbook</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../getting-started/index.html">Getting Started</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/prerequisites.html">Prerequisites</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/install-openshift-virtualization.html">Install OpenShift Virtualization</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/default-storage-class.html">Storage Setup</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/create-vm-web-console.html">Create VM from Web Console</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/vm-lifecycle-states.html">VM Lifecycle States</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/virtctl-basics.html">Virtctl Basics</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../storage/index.html">Storage Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/lvm-operator.html">LVM Operator Installation</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/lvm-troubleshooting.html">LVM Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/creating-managing-storage-class.html">Creating and Managing Storage Classes</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../networking/index.html">Networking Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/udn-primary-networks.html">UDN Primary Networks</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/localnet-secondary.html">Localnet Secondary Networks with CUDN</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/localnet-vlan.html">Localnet Secondary Networks with VLAN using NAD</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/cudn-localnet-vlan.html">Localnet VLAN with CUDN</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/layer2-secondary.html">Layer 2 Secondary Networks</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/linux-bridges.html">Linux Bridges</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/ovs-bridge-troubleshooting.html">Troubleshooting Localnet Networks</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="index.html">Virtual Machine Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="cloud-init-ip-configuration.html">Cloud-init IP Configuration</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="cloud-init-troubleshooting.html">Cloud-init Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="internal-dns-for-vms.html">Internal DNS for VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="remote-access-linux-vms.html">Remote Access to Linux VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="remote-access-linux-troubleshooting.html">Remote Access to Linux VMs Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="remote-access-windows-vms.html">Remote Access to Windows VMs via RDP</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="import-qcow2-boot-volume.html">Import qcow2 Boot Volume</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="custom-golden-images.html">Custom Golden Images</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="golden-images-troubleshooting.html">Golden Images Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="cloning-vms.html">Cloning VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="vm-snapshots.html">VM Snapshots</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="boot-order-boot-sources.html">VM Boot Order and Boot Sources</a>
+  </li>
+  <li class="nav-item is-current-page" data-depth="2">
+    <a class="nav-link" href="node-placement-affinity.html">Node Placement and Affinity</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../manifests/index.html">Manifests</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../api/index.html">API Guide</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../api/api_component_overview.html">API Component Overview</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../lab-env/index.html">Lab Environment</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../appendix/glossary.html">Glossary</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">OpenShift Virtualization cookbook</span>
+    <span class="version">1</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <a class="title" href="../index.html">OpenShift Virtualization cookbook</a>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">1</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">OpenShift Virtualization cookbook</a></li>
+    <li><a href="index.html">Virtual Machine Configuration</a></li>
+    <li><a href="node-placement-affinity.html">Node Placement and Affinity</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">VM Node Placement with Selectors and Affinity Rules</h1>
+<div class="sect1">
+<h2 id="_overview"><a class="anchor" href="#_overview"></a>Overview</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Node placement controls which OpenShift cluster nodes run your virtual machines. By default, the Kubernetes scheduler automatically places VMs across available nodes, but you often need more control—running specific VMs on nodes with particular hardware, isolating workloads, or ensuring VMs run close together or far apart for performance or availability reasons.</p>
+</div>
+<div class="paragraph">
+<p>This tutorial covers node selectors, node affinity, and pod affinity/anti-affinity rules to control VM placement in OpenShift Virtualization.</p>
+</div>
+<div class="sect2">
+<h3 id="_what_youll_learn"><a class="anchor" href="#_what_youll_learn"></a>What You&#8217;ll Learn</h3>
+<div class="ulist">
+<ul>
+<li>
+<p>How to use node selectors for simple node placement</p>
+</li>
+<li>
+<p>How to configure node affinity rules (required and preferred)</p>
+</li>
+<li>
+<p>How to use pod affinity and anti-affinity to control VM co-location</p>
+</li>
+<li>
+<p>How to label nodes and verify placement</p>
+</li>
+<li>
+<p>Common placement patterns and troubleshooting</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_prerequisites"><a class="anchor" href="#_prerequisites"></a>Prerequisites</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p>OpenShift 4.18+ with OpenShift Virtualization installed</p>
+</li>
+<li>
+<p>Cluster admin access to label nodes</p>
+</li>
+<li>
+<p><code>oc</code> and <code>virtctl</code> CLI tools installed</p>
+</li>
+<li>
+<p>Multiple worker nodes in your cluster (for meaningful placement)</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_understanding_node_placement_options"><a class="anchor" href="#_understanding_node_placement_options"></a>Understanding Node Placement Options</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>OpenShift Virtualization provides three main mechanisms for controlling where VMs run:</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 20%;">
+<col style="width: 40%;">
+<col style="width: 40%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Mechanism</th>
+<th class="tableblock halign-left valign-top">Use Case</th>
+<th class="tableblock halign-left valign-top">Strength</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Node Selector</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Place VMs on nodes with specific labels</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Simple, easy to understand</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Node Affinity</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Complex node selection with required/preferred rules</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Flexible, supports multiple conditions</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Pod Affinity/Anti-Affinity</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Place VMs relative to other VMs or Pods</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Controls VM co-location patterns</p></td>
+</tr>
+</tbody>
+</table>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-important" title="Important"></i>
+</td>
+<td class="content">
+VM placement rules are applied to the underlying virt-launcher pod that runs the VM. The Kubernetes scheduler evaluates these rules when placing the pod on a node.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_labeling_nodes"><a class="anchor" href="#_labeling_nodes"></a>Labeling Nodes</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Before using selectors or affinity rules, label your nodes to identify their characteristics.</p>
+</div>
+<div class="sect2">
+<h3 id="_view_existing_node_labels"><a class="anchor" href="#_view_existing_node_labels"></a>View Existing Node Labels</h3>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get nodes --show-labels</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Example output:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">NAME                          STATUS   ROLES                  AGE   VERSION    LABELS
+ip-10-0-8-25.ec2.internal     Ready    control-plane,master   23d   v1.31.14   beta.kubernetes.io/arch=amd64,kubernetes.io/hostname=ip-10-0-8-25.ec2.internal,...
+ip-10-0-24-89.ec2.internal    Ready    worker                 22d   v1.31.14   beta.kubernetes.io/arch=amd64,kubernetes.io/hostname=ip-10-0-24-89.ec2.internal,...
+ip-10-0-43-58.ec2.internal    Ready    worker                 22d   v1.31.14   beta.kubernetes.io/arch=amd64,kubernetes.io/hostname=ip-10-0-43-58.ec2.internal,...
+ip-10-0-82-27.ec2.internal    Ready    worker                 22d   v1.31.14   beta.kubernetes.io/arch=amd64,kubernetes.io/hostname=ip-10-0-82-27.ec2.internal,...</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_add_custom_labels_to_nodes"><a class="anchor" href="#_add_custom_labels_to_nodes"></a>Add Custom Labels to Nodes</h3>
+<div class="paragraph">
+<p>Label nodes based on their characteristics (hardware, location, workload type):</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Get worker node names
+WORKER1=$(oc get nodes -l node-role.kubernetes.io/worker -o jsonpath='{.items[0].metadata.name}')
+WORKER2=$(oc get nodes -l node-role.kubernetes.io/worker -o jsonpath='{.items[1].metadata.name}')
+WORKER3=$(oc get nodes -l node-role.kubernetes.io/worker -o jsonpath='{.items[2].metadata.name}')
+
+# Label nodes by environment
+oc label node $WORKER1 env=development
+oc label node $WORKER2 env=production
+
+# Label nodes by GPU type
+oc label node $WORKER1 gpu=nvidia-t4
+oc label node $WORKER2 gpu=nvidia-a100
+
+# Label nodes by disk type
+oc label node $WORKER1 storage=ssd
+oc label node $WORKER3 storage=nvme
+
+# Label nodes by workload type
+oc label node $WORKER1 workload=database</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Verify labels:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">WORKER1=$(oc get nodes -l node-role.kubernetes.io/worker -o jsonpath='{.items[0].metadata.name}')
+oc get node $WORKER1 -o jsonpath='{.metadata.labels}' | jq</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Example output:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-json hljs" data-lang="json">{
+  "beta.kubernetes.io/arch": "amd64",
+  "beta.kubernetes.io/os": "linux",
+  "env": "development",
+  "gpu": "nvidia-t4",
+  "kubernetes.io/arch": "amd64",
+  "kubernetes.io/hostname": "ip-10-0-24-89.ec2.internal",
+  "kubernetes.io/os": "linux",
+  "node-role.kubernetes.io/worker": "",
+  "storage": "ssd",
+  "workload": "database"
+}</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_remove_labels"><a class="anchor" href="#_remove_labels"></a>Remove Labels</h3>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">WORKER1=$(oc get nodes -l node-role.kubernetes.io/worker -o jsonpath='{.items[0].metadata.name}')
+oc label node $WORKER1 gpu-</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_using_node_selectors"><a class="anchor" href="#_using_node_selectors"></a>Using Node Selectors</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Node selectors provide the simplest way to control VM placement by matching node labels exactly.</p>
+</div>
+<div class="sect2">
+<h3 id="_create_the_tutorial_namespace"><a class="anchor" href="#_create_the_tutorial_namespace"></a>Create the Tutorial Namespace</h3>
+<div class="paragraph">
+<p>First, create a namespace for the tutorial resources:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc create namespace vm-placement</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_basic_node_selector_example"><a class="anchor" href="#_basic_node_selector_example"></a>Basic Node Selector Example</h3>
+<div class="paragraph">
+<p>Create a VM that runs only on nodes with <code>storage=ssd</code>:</p>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/vm-node-selector.yaml" class="xref attachment">Download vm-node-selector.yaml</a></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: database-vm
+  namespace: vm-placement
+spec:
+  runStrategy: Manual
+  template:
+    metadata:
+      labels:
+        app: database
+    spec:
+      nodeSelector:
+        storage: ssd  # VM will only run on nodes with storage=ssd label
+      domain:
+        cpu:
+          cores: 2
+        memory:
+          guest: 4Gi
+        devices:
+          disks:
+          - name: rootdisk
+            disk:
+              bus: virtio
+          - name: cloudinitdisk
+            disk:
+              bus: virtio
+      volumes:
+      - name: rootdisk
+        containerDisk:
+          image: quay.io/containerdisks/fedora:43
+      - name: cloudinitdisk
+        cloudInitNoCloud:
+          userData: |
+            #cloud-config
+            user: fedora
+            password: fedora
+            chpasswd: { expire: False }</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Apply and start the VM:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f vm-node-selector.yaml
+virtctl start database-vm -n vm-placement</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_verify_node_placement"><a class="anchor" href="#_verify_node_placement"></a>Verify Node Placement</h3>
+<div class="paragraph">
+<p>Check which node the VM is running on:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vmi database-vm -n vm-placement -o wide</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Example output:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">NAME          AGE   PHASE     IP             NODENAME   READY
+database-vm   45s   Running   10.128.0.200   ocplab02   True</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Verify the node has the required label:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vmi database-vm -n vm-placement -o jsonpath='{.status.nodeName}' | xargs oc get node -L storage</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Example output:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">NAME       STATUS   ROLES    AGE   VERSION   STORAGE
+ip-10-0-24-89.ec2.internal   Ready    worker   30d   v1.30.0   ssd</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_multiple_label_selection"><a class="anchor" href="#_multiple_label_selection"></a>Multiple Label Selection</h3>
+<div class="paragraph">
+<p>Node selectors support multiple labels (all must match):</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">spec:
+  template:
+    spec:
+      nodeSelector:
+        storage: ssd
+        env: production
+        gpu: nvidia-t4</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The VM will only run on nodes that have ALL three labels with the specified values.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_using_node_affinity"><a class="anchor" href="#_using_node_affinity"></a>Using Node Affinity</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Node affinity provides more flexible node selection with required and preferred rules.</p>
+</div>
+<div class="sect2">
+<h3 id="_required_node_affinity"><a class="anchor" href="#_required_node_affinity"></a>Required Node Affinity</h3>
+<div class="paragraph">
+<p>Required affinity (hard requirement) prevents scheduling if no matching nodes exist:</p>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/vm-node-affinity-required.yaml" class="xref attachment">Download vm-node-affinity-required.yaml</a></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: gpu-workload-vm
+  namespace: vm-placement
+spec:
+  runStrategy: Manual
+  template:
+    metadata:
+      labels:
+        app: ml-training
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: gpu
+                operator: In
+                values:
+                - nvidia-t4
+                - nvidia-a100
+              - key: env
+                operator: In
+                values:
+                - production
+      domain:
+        cpu:
+          cores: 4
+        memory:
+          guest: 8Gi
+        devices:
+          disks:
+          - name: rootdisk
+            disk:
+              bus: virtio
+          - name: cloudinitdisk
+            disk:
+              bus: virtio
+      volumes:
+      - name: rootdisk
+        containerDisk:
+          image: quay.io/containerdisks/fedora:43
+      - name: cloudinitdisk
+        cloudInitNoCloud:
+          userData: |
+            #cloud-config
+            user: fedora
+            password: fedora
+            chpasswd: { expire: False }</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Key points:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>requiredDuringSchedulingIgnoredDuringExecution</strong>: VM will not start if no matching node exists</p>
+</li>
+<li>
+<p><strong>matchExpressions</strong>: Supports operators like <code>In</code>, <code>NotIn</code>, <code>Exists</code>, <code>DoesNotExist</code>, <code>Gt</code>, <code>Lt</code></p>
+</li>
+<li>
+<p><strong>nodeSelectorTerms</strong>: Multiple terms are OR&#8217;ed (any term can match)</p>
+</li>
+<li>
+<p>Multiple <strong>matchExpressions</strong> within a term are AND&#8217;ed (all must match)</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_preferred_node_affinity"><a class="anchor" href="#_preferred_node_affinity"></a>Preferred Node Affinity</h3>
+<div class="paragraph">
+<p>Preferred affinity (soft requirement) tries to place VMs on matching nodes but allows other nodes if needed:</p>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/vm-node-affinity-preferred.yaml" class="xref attachment">Download vm-node-affinity-preferred.yaml</a></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: web-vm
+  namespace: vm-placement
+spec:
+  runStrategy: Manual
+  template:
+    metadata:
+      labels:
+        app: webserver
+    spec:
+      affinity:
+        nodeAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            preference:
+              matchExpressions:
+              - key: storage
+                operator: In
+                values:
+                - nvme
+          - weight: 50
+            preference:
+              matchExpressions:
+              - key: storage
+                operator: In
+                values:
+                - ssd
+      domain:
+        cpu:
+          cores: 2
+        memory:
+          guest: 2Gi
+        devices:
+          disks:
+          - name: rootdisk
+            disk:
+              bus: virtio
+          - name: cloudinitdisk
+            disk:
+              bus: virtio
+      volumes:
+      - name: rootdisk
+        containerDisk:
+          image: quay.io/containerdisks/fedora:43
+      - name: cloudinitdisk
+        cloudInitNoCloud:
+          userData: |
+            #cloud-config
+            user: fedora
+            password: fedora
+            chpasswd: { expire: False }</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Key points:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>preferredDuringSchedulingIgnoredDuringExecution</strong>: Scheduler prefers matching nodes but can place elsewhere</p>
+</li>
+<li>
+<p><strong>weight</strong>: 1-100, higher weight = stronger preference</p>
+</li>
+<li>
+<p>Multiple preferences are additive (scores combine)</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_combining_required_and_preferred_affinity"><a class="anchor" href="#_combining_required_and_preferred_affinity"></a>Combining Required and Preferred Affinity</h3>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">spec:
+  template:
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: env
+                operator: In
+                values:
+                - production
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            preference:
+              matchExpressions:
+              - key: storage
+                operator: In
+                values:
+                - nvme</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This VM MUST run on production nodes, but preferably on those with NVMe storage.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_using_pod_affinity_and_anti_affinity"><a class="anchor" href="#_using_pod_affinity_and_anti_affinity"></a>Using Pod Affinity and Anti-Affinity</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Pod affinity and anti-affinity control VM placement relative to other VMs or pods, enabling co-location or separation patterns.</p>
+</div>
+<div class="sect2">
+<h3 id="_pod_affinity_running_vms_together"><a class="anchor" href="#_pod_affinity_running_vms_together"></a>Pod Affinity: Running VMs Together</h3>
+<div class="paragraph">
+<p>Use pod affinity to run VMs on the same node or in the same availability zone:</p>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/vm-pod-affinity.yaml" class="xref attachment">Download vm-pod-affinity.yaml</a></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: web-frontend-vm
+  namespace: vm-placement
+spec:
+  runStrategy: Manual
+  template:
+    metadata:
+      labels:
+        app: web-frontend
+        tier: frontend
+    spec:
+      affinity:
+        podAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - database
+            topologyKey: kubernetes.io/hostname
+      domain:
+        cpu:
+          cores: 2
+        memory:
+          guest: 2Gi
+        devices:
+          disks:
+          - name: rootdisk
+            disk:
+              bus: virtio
+          - name: cloudinitdisk
+            disk:
+              bus: virtio
+      volumes:
+      - name: rootdisk
+        containerDisk:
+          image: quay.io/containerdisks/fedora:43
+      - name: cloudinitdisk
+        cloudInitNoCloud:
+          userData: |
+            #cloud-config
+            user: fedora
+            password: fedora
+            chpasswd: { expire: False }</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This VM will run on the same node (<code>topologyKey: kubernetes.io/hostname</code>) as pods/VMs with <code>app=database</code>.</p>
+</div>
+<div class="paragraph">
+<p>Common topology keys:</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 33.3333%;">
+<col style="width: 66.6667%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Topology Key</th>
+<th class="tableblock halign-left valign-top">Effect</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>kubernetes.io/hostname</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Same physical node</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>topology.kubernetes.io/zone</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Same availability zone</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>topology.kubernetes.io/region</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Same region</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect2">
+<h3 id="_pod_anti_affinity_separating_vms"><a class="anchor" href="#_pod_anti_affinity_separating_vms"></a>Pod Anti-Affinity: Separating VMs</h3>
+<div class="paragraph">
+<p>Use pod anti-affinity to spread VMs across nodes for high availability:</p>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/vm-pod-anti-affinity.yaml" class="xref attachment">Download vm-pod-anti-affinity.yaml</a></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: cache-vm-01
+  namespace: vm-placement
+spec:
+  runStrategy: Manual
+  template:
+    metadata:
+      labels:
+        app: redis-cache
+        role: cache
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - redis-cache
+            topologyKey: kubernetes.io/hostname
+      domain:
+        cpu:
+          cores: 2
+        memory:
+          guest: 4Gi
+        devices:
+          disks:
+          - name: rootdisk
+            disk:
+              bus: virtio
+          - name: cloudinitdisk
+            disk:
+              bus: virtio
+      volumes:
+      - name: rootdisk
+        containerDisk:
+          image: quay.io/containerdisks/fedora:43
+      - name: cloudinitdisk
+        cloudInitNoCloud:
+          userData: |
+            #cloud-config
+            user: fedora
+            password: fedora
+            chpasswd: { expire: False }</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This ensures multiple cache VMs never run on the same node, improving availability.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_preferred_pod_anti_affinity"><a class="anchor" href="#_preferred_pod_anti_affinity"></a>Preferred Pod Anti-Affinity</h3>
+<div class="paragraph">
+<p>For best-effort spreading without hard constraints:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">spec:
+  template:
+    spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - redis-cache
+              topologyKey: kubernetes.io/hostname</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_combining_multiple_affinity_rules"><a class="anchor" href="#_combining_multiple_affinity_rules"></a>Combining Multiple Affinity Rules</h3>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">spec:
+  template:
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: env
+                operator: In
+                values:
+                - production
+        podAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: tier
+                  operator: In
+                  values:
+                  - database
+              topologyKey: kubernetes.io/hostname
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - web-frontend
+            topologyKey: kubernetes.io/hostname</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This VM:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>MUST run on production nodes</p>
+</li>
+<li>
+<p>SHOULD run on nodes with database tier VMs</p>
+</li>
+<li>
+<p>MUST NOT run on nodes with other web-frontend VMs</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_common_placement_patterns"><a class="anchor" href="#_common_placement_patterns"></a>Common Placement Patterns</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_pattern_1_high_availability_database_cluster"><a class="anchor" href="#_pattern_1_high_availability_database_cluster"></a>Pattern 1: High Availability Database Cluster</h3>
+<div class="paragraph">
+<p>Spread database VMs across nodes:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: postgres-vm-01
+  labels:
+    app: postgres-cluster
+    instance: "01"
+spec:
+  template:
+    metadata:
+      labels:
+        app: postgres-cluster
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchLabels:
+                app: postgres-cluster
+            topologyKey: kubernetes.io/hostname</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Each database VM replica runs on a different node, preventing single node failure from affecting the entire cluster.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_pattern_2_gpu_workload_isolation"><a class="anchor" href="#_pattern_2_gpu_workload_isolation"></a>Pattern 2: GPU Workload Isolation</h3>
+<div class="paragraph">
+<p>Dedicate specific nodes to GPU workloads:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">spec:
+  template:
+    spec:
+      nodeSelector:
+        gpu: "true"
+      tolerations:
+      - key: "nvidia.com/gpu"
+        operator: "Exists"
+        effect: "NoSchedule"</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Combine node selectors with taints/tolerations to reserve GPU nodes exclusively for GPU workloads.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_pattern_3_latency_sensitive_application_stack"><a class="anchor" href="#_pattern_3_latency_sensitive_application_stack"></a>Pattern 3: Latency-Sensitive Application Stack</h3>
+<div class="paragraph">
+<p>Co-locate application tiers on the same node:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml"># Backend VM
+spec:
+  template:
+    metadata:
+      labels:
+        app: trading-platform
+        tier: backend
+    spec:
+      affinity:
+        podAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: tier
+                operator: In
+                values:
+                - cache
+                - database
+            topologyKey: kubernetes.io/hostname</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_pattern_4_environment_separation"><a class="anchor" href="#_pattern_4_environment_separation"></a>Pattern 4: Environment Separation</h3>
+<div class="paragraph">
+<p>Ensure development VMs don&#8217;t run on production nodes:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">spec:
+  template:
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: env
+                operator: In
+                values:
+                - development</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_viewing_placement_via_web_console"><a class="anchor" href="#_viewing_placement_via_web_console"></a>Viewing Placement via Web Console</h2>
+<div class="sectionbody">
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Navigate to <strong>Virtualization</strong> &#8594; <strong>VirtualMachines</strong></p>
+</li>
+<li>
+<p>Click on a VM to view details</p>
+</li>
+<li>
+<p>Go to the <strong>Scheduling</strong> tab</p>
+</li>
+<li>
+<p>View configured node selectors, affinity, and tolerations</p>
+</li>
+<li>
+<p>Check the <strong>Overview</strong> tab to see which node the VM is running on</p>
+</li>
+</ol>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_troubleshooting"><a class="anchor" href="#_troubleshooting"></a>Troubleshooting</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_vm_stuck_in_pending_state"><a class="anchor" href="#_vm_stuck_in_pending_state"></a>VM Stuck in Pending State</h3>
+<div class="paragraph">
+<p><strong>Problem</strong>: VM remains in Pending state and never starts.</p>
+</div>
+<div class="paragraph">
+<p><strong>Diagnosis</strong>:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Check VM status
+oc get vm -n vm-placement
+
+# Check VMI events
+oc describe vmi &lt;vm-name&gt; -n vm-placement</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Look for events like:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">Warning  FailedScheduling  0/3 nodes are available: 3 node(s) didn't match Pod's node affinity/selector</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Possible causes</strong>:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>No nodes match the node selector or required affinity rules</p>
+</li>
+<li>
+<p>All matching nodes are full (insufficient CPU/memory)</p>
+</li>
+<li>
+<p>Taints on nodes prevent scheduling</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p><strong>Solutions</strong>:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Verify node labels exist
+oc get nodes -L storage,env,gpu
+
+# Check if nodes have required labels
+oc get nodes --selector=storage=ssd
+
+# Review VM placement constraints
+oc get vm &lt;vm-name&gt; -n vm-placement -o yaml | grep -A 20 "affinity:"</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If no nodes match, either:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Add required labels to nodes</p>
+</li>
+<li>
+<p>Relax the placement constraints</p>
+</li>
+<li>
+<p>Change required affinity to preferred affinity</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_vm_running_on_unexpected_node"><a class="anchor" href="#_vm_running_on_unexpected_node"></a>VM Running on Unexpected Node</h3>
+<div class="paragraph">
+<p><strong>Problem</strong>: VM runs on a node that doesn&#8217;t match preferred affinity.</p>
+</div>
+<div class="paragraph">
+<p><strong>Explanation</strong>: Preferred affinity is a soft constraint. The scheduler can ignore it if:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>No nodes match the preference</p>
+</li>
+<li>
+<p>Matching nodes lack resources</p>
+</li>
+<li>
+<p>Other VMs have higher priority</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p><strong>Verification</strong>:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Check where VM is running
+oc get vmi &lt;vm-name&gt; -n vm-placement -o jsonpath='{.status.nodeName}'
+
+# Check that node's labels
+oc get node &lt;node-name&gt; --show-labels</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Solutions</strong>:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Change preferred affinity to required if placement is critical</p>
+</li>
+<li>
+<p>Increase the weight of preferred rules</p>
+</li>
+<li>
+<p>Ensure matching nodes have sufficient resources</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_anti_affinity_not_working"><a class="anchor" href="#_anti_affinity_not_working"></a>Anti-Affinity Not Working</h3>
+<div class="paragraph">
+<p><strong>Problem</strong>: Multiple VMs with anti-affinity rules run on the same node.</p>
+</div>
+<div class="paragraph">
+<p><strong>Diagnosis</strong>:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># List all VMs and their nodes
+oc get vmi -n vm-placement -o wide
+
+# Check anti-affinity configuration
+oc get vm &lt;vm-name&gt; -n vm-placement -o yaml | grep -A 15 "podAntiAffinity:"</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Common issues</strong>:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Label mismatch</strong>: Anti-affinity label selector doesn&#8217;t match VM labels</p>
+</li>
+<li>
+<p><strong>Wrong topology key</strong>: Using zone instead of hostname</p>
+</li>
+<li>
+<p><strong>Preferred vs required</strong>: Using preferred allows same-node placement when necessary</p>
+</li>
+<li>
+<p><strong>Insufficient nodes</strong>: Not enough nodes to satisfy anti-affinity for all replicas</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p><strong>Solutions</strong>:</p>
+</div>
+<div class="paragraph">
+<p>Verify labels match:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Check VM labels
+oc get vm &lt;vm-name&gt; -n vm-placement -o jsonpath='{.spec.template.metadata.labels}' | jq
+
+# Verify anti-affinity selector matches those labels
+oc get vm &lt;vm-name&gt; -n vm-placement -o yaml | grep -A 5 "labelSelector:"</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_node_selector_ignored"><a class="anchor" href="#_node_selector_ignored"></a>Node Selector Ignored</h3>
+<div class="paragraph">
+<p><strong>Problem</strong>: VM runs on nodes without the specified label.</p>
+</div>
+<div class="paragraph">
+<p><strong>Check if node selector is properly defined</strong>:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># View VM spec
+oc get vm &lt;vm-name&gt; -n vm-placement -o yaml | grep -A 5 "nodeSelector:"
+
+# Verify it's under spec.template.spec, not just spec
+oc get vm &lt;vm-name&gt; -n vm-placement -o jsonpath='{.spec.template.spec.nodeSelector}' | jq</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Common mistake</strong>: Placing <code>nodeSelector</code> at the wrong level in the YAML:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml"># WRONG - nodeSelector at VM spec level
+spec:
+  nodeSelector:    # This is ignored!
+    storage: ssd
+  template:
+    spec:
+      domain:
+        ...
+
+# CORRECT - nodeSelector at pod spec level
+spec:
+  template:
+    spec:
+      nodeSelector:  # This works!
+        storage: ssd
+      domain:
+        ...</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_cleanup"><a class="anchor" href="#_cleanup"></a>Cleanup</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Remove the resources created in this tutorial:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Delete VMs
+oc delete vm --all -n vm-placement
+
+# Remove custom node labels from all workers
+WORKER1=$(oc get nodes -l node-role.kubernetes.io/worker -o jsonpath='{.items[0].metadata.name}')
+WORKER2=$(oc get nodes -l node-role.kubernetes.io/worker -o jsonpath='{.items[1].metadata.name}')
+WORKER3=$(oc get nodes -l node-role.kubernetes.io/worker -o jsonpath='{.items[2].metadata.name}')
+
+oc label node $WORKER1 storage- env- gpu- workload-
+oc label node $WORKER2 storage- env- gpu-
+oc label node $WORKER3 storage-</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Verify cleanup:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vm -n vm-placement
+oc get nodes --show-labels | grep -E "storage|workload"</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_summary"><a class="anchor" href="#_summary"></a>Summary</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>In this tutorial you learned:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>The differences between node selectors, node affinity, and pod affinity/anti-affinity</p>
+</li>
+<li>
+<p>How to label nodes for placement control</p>
+</li>
+<li>
+<p>How to use node selectors for simple placement constraints</p>
+</li>
+<li>
+<p>How to configure required and preferred node affinity rules</p>
+</li>
+<li>
+<p>How to use pod affinity to co-locate VMs and anti-affinity to separate them</p>
+</li>
+<li>
+<p>Common placement patterns for HA, performance, and isolation</p>
+</li>
+<li>
+<p>How to troubleshoot placement issues</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_see_also"><a class="anchor" href="#_see_also"></a>See Also</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p><a href="../getting-started/vm-lifecycle-states.html" class="xref page">Understanding VM Lifecycle States and Basic Operations</a> - VM states and lifecycle management</p>
+</li>
+<li>
+<p><a href="../getting-started/virtctl-basics.html" class="xref page">Using virtctl for VM Management</a> - CLI commands for VM management</p>
+</li>
+<li>
+<p><a href="https://docs.redhat.com/en/documentation/openshift_container_platform/latest/html/virtualization/nodes#virt-node-placement-vms" target="_blank" rel="noopener">Node Placement for Virtual Machines - Red Hat Documentation</a></p>
+</li>
+<li>
+<p><a href="https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/" target="_blank" rel="noopener">Assigning Pods to Nodes - Kubernetes Documentation</a></p>
+</li>
+<li>
+<p><a href="https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/" target="_blank" rel="noopener">Taints and Tolerations - Kubernetes Documentation</a></p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<nav class="pagination">
+  <span class="prev"><a href="boot-order-boot-sources.html">VM Boot Order and Boot Sources</a></span>
+  <span class="next"><a href="../manifests/index.html">Manifests</a></span>
+</nav>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <img src="../../../_/img/rhl-logo-red.png" height="40px" alt="Red Hat"  href="https://redhat.com" >
+</footer><script id="site-script" src="../../../_/js/site.js" data-ui-root-path="../../../_"></script>
+<script async src="../../../_/js/vendor/highlight.js"></script>
+  </body>
+</html>
