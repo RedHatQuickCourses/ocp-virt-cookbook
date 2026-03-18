@@ -120,9 +120,11 @@ spec:
     requests:
       storage: 5Gi
   storageClassName: lvms-vg1
-  volumeMode: Filesystem
+  volumeMode: Block
 EOF
 ----
+
+IMPORTANT: Hotplug volumes must use `volumeMode: Block`. Filesystem-mode PVCs require a pre-created `disk.img` file and are not suitable for direct hotplug of blank volumes.
 
 Wait for the PVC to be provisioned. With `WaitForFirstConsumer` binding mode, it may remain `Pending` until attached:
 
@@ -163,7 +165,7 @@ cloudinitdisk: vdb (hotplugVolume: )
 hotplug-disk: sda (hotplugVolume: {"attachPodName":"...","attachPodUID":"..."})
 ----
 
-The hotplugged volume appears as a new device (typically `sda` for hotplugged SCSI disks). Note the `hotplugVolume` field with attach pod information.
+The hotplugged volume appears as a SCSI device (`sda`) with phase `Ready`. Note the `hotplugVolume` field with attach pod information.
 
 Verify the PVC is now bound:
 
