@@ -1,0 +1,349 @@
+= Multi-Disk VM Configuration with Different Storage Classes
+:navtitle: Multi-Disk VMs
+
+== Overview
+
+This tutorial demonstrates how to configure virtual machines with multiple disks, each using a different storage class. Multi-disk configurations enable storage tiering -- using faster storage for the OS boot disk and slower, cheaper storage for data volumes. This pattern is common in database workloads, application servers, and any VM that separates OS and application data.
+
+You will create a VM with two disks: a boot disk using the default StorageClass and a data disk using a second StorageClass, then verify both disks are accessible inside the guest OS.
+
+== Prerequisites
+
+* **OpenShift 4.18+** with OpenShift Virtualization operator installed
+* **Cluster admin access** (`system:admin` or equivalent)
+* **`oc` CLI** and **`virtctl` CLI** installed
+* **Default StorageClass** configured (e.g., `lvms-vg1`)
+
+Versions tested:
+----
+OpenShift 4.20
+----
+
+== Step 1: Understand Disk and Volume Mapping
+
+In a KubeVirt VM specification, disks and volumes work together:
+
+* **`spec.template.spec.domain.devices.disks`** defines how each disk is presented to the guest OS (bus type, disk ordering).
+* **`spec.template.spec.volumes`** defines the backing storage for each disk (PVC, DataVolume, containerDisk, cloudInitNoCloud).
+* Each disk's `name` must match a corresponding volume `name`.
+
+Disks appear inside the guest as `/dev/vda`, `/dev/vdb`, etc., in the order they are defined.
+
+== Step 2: Create a Namespace
+
+[source,bash,role=execute]
+----
+oc create namespace multi-disk-demo
+----
+
+== Step 3: Create a Second StorageClass (Optional)
+
+If your cluster has only one StorageClass, you can still use this tutorial by specifying the same StorageClass for both disks. However, to demonstrate storage tiering, you can create a second StorageClass.
+
+On clusters with LVM Storage, the default `lvms-vg1` StorageClass already exists. For this tutorial, we create a second StorageClass with `Retain` reclaim policy to simulate a different storage tier:
+
+xref:attachment$multi-disk-configuration/sc-data-retain.yaml[Download sc-data-retain.yaml]
+
+[source,yaml]
+----
+oc apply -f - <<EOF
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: lvms-vg1-retain
+provisioner: topolvm.io
+reclaimPolicy: Retain
+volumeBindingMode: WaitForFirstConsumer
+allowVolumeExpansion: true
+EOF
+----
+
+Verify both StorageClasses:
+
+[source,bash,role=execute]
+----
+oc get storageclass
+----
+
+Expected output:
+----
+NAME                 PROVISIONER   RECLAIMPOLICY   VOLUMEBINDINGMODE      ALLOWVOLUMEEXPANSION   AGE
+lvms-vg1 (default)   topolvm.io    Delete          WaitForFirstConsumer   true                   30d
+lvms-vg1-retain      topolvm.io    Retain          WaitForFirstConsumer   true                   5s
+----
+
+== Step 4: Deploy a VM with Multiple Disks
+
+Create a VM with three disks:
+
+* **rootdisk**: Boot disk (30Gi, default StorageClass) cloned from the Fedora boot source
+* **datadisk**: Data disk (10Gi, second StorageClass) created as a blank volume
+* **cloudinitdisk**: Cloud-init configuration disk
+
+xref:attachment$multi-disk-configuration/vm-multi-disk.yaml[Download vm-multi-disk.yaml]
+
+[source,yaml]
+----
+oc apply -f - <<EOF
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: multi-disk-vm
+  namespace: multi-disk-demo
+spec:
+  runStrategy: Always
+  template:
+    metadata:
+      labels:
+        kubevirt.io/domain: multi-disk-vm
+    spec:
+      domain:
+        devices:
+          disks:
+          - name: rootdisk
+            disk:
+              bus: virtio
+            bootOrder: 1
+          - name: datadisk
+            disk:
+              bus: virtio
+          - name: cloudinitdisk
+            disk:
+              bus: virtio
+          interfaces:
+          - name: default
+            masquerade: {}
+        resources:
+          requests:
+            memory: 1Gi
+      networks:
+      - name: default
+        pod: {}
+      volumes:
+      - name: rootdisk
+        dataVolume:
+          name: multi-disk-rootdisk
+      - name: datadisk
+        dataVolume:
+          name: multi-disk-datadisk
+      - name: cloudinitdisk
+        cloudInitNoCloud:
+          userData: |
+            #cloud-config
+            password: redhat
+            chpasswd:
+              expire: false
+  dataVolumeTemplates:
+  - metadata:
+      name: multi-disk-rootdisk
+    spec:
+      pvc:
+        accessModes:
+        - ReadWriteOnce
+        resources:
+          requests:
+            storage: 30Gi
+        storageClassName: lvms-vg1
+      source:
+        registry:
+          pullMethod: node
+          url: docker://quay.io/containerdisks/fedora:latest
+  - metadata:
+      name: multi-disk-datadisk
+    spec:
+      pvc:
+        accessModes:
+        - ReadWriteOnce
+        resources:
+          requests:
+            storage: 10Gi
+        storageClassName: lvms-vg1-retain
+      source:
+        blank: {}
+EOF
+----
+
+=== Key Configuration Details
+
+* **`bootOrder: 1`** on the rootdisk ensures the VM boots from the OS disk.
+* **`source.registry`** on the rootdisk pulls the Fedora container disk image.
+* **`source.blank: {}`** on the datadisk creates an empty, unformatted volume.
+* Each `dataVolumeTemplates` entry can specify a different `storageClassName`.
+* Disk names in `devices.disks` must match volume names in `volumes`, which must match `dataVolumeTemplates` metadata names.
+
+== Step 5: Verify the VM and Disks
+
+Wait for both DataVolumes to complete and the VM to start:
+
+[source,bash,role=execute]
+----
+oc get dv -n multi-disk-demo -w
+----
+
+Once both show `Succeeded`, check the VM:
+
+[source,bash,role=execute]
+----
+oc get vm -n multi-disk-demo
+----
+
+Expected output:
+----
+NAME            AGE   STATUS    READY
+multi-disk-vm   3m    Running   True
+----
+
+Verify the PVCs are bound with their respective StorageClasses:
+
+[source,bash,role=execute]
+----
+oc get pvc -n multi-disk-demo
+----
+
+Expected output:
+----
+NAME                   STATUS   VOLUME       CAPACITY   ACCESS MODES   STORAGECLASS      AGE
+multi-disk-rootdisk    Bound    pvc-xxxx     30Gi       RWO            lvms-vg1          3m
+multi-disk-datadisk    Bound    pvc-yyyy     10Gi       RWO            lvms-vg1-retain   3m
+----
+
+== Step 6: Format and Mount the Data Disk Inside the VM
+
+Access the VM console:
+
+[source,bash,role=execute]
+----
+virtctl console multi-disk-vm -n multi-disk-demo
+----
+
+Log in with username `fedora` and password `redhat`.
+
+List all block devices inside the guest:
+
+[source,bash]
+----
+lsblk
+----
+
+Expected output:
+----
+NAME   MAJ:MIN RM  SIZE RO TYPE MOUNTPOINTS
+vda    252:0    0   30G  0 disk
+|-vda1 252:1    0    1M  0 part
+|-vda2 252:2    0  1.9G  0 part [SWAP]
+|-vda3 252:3    0    1G  0 part /boot
+`-vda4 252:4    0 27.1G  0 part /
+vdb    252:16   0   10G  0 disk
+vdc    252:32   0    1M  0 disk
+----
+
+The data disk appears as `vdb` (10G, unformatted). Format and mount it:
+
+[source,bash]
+----
+sudo mkfs.xfs /dev/vdb
+sudo mkdir -p /mnt/data
+sudo mount /dev/vdb /mnt/data
+df -h /mnt/data
+----
+
+Expected output:
+----
+Filesystem      Size  Used Avail Use% Mounted on
+/dev/vdb         10G   105M  9.9G   2% /mnt/data
+----
+
+Write a test file:
+
+[source,bash]
+----
+sudo sh -c "echo 'Multi-disk test data' > /mnt/data/test.txt"
+cat /mnt/data/test.txt
+----
+
+To make the mount persistent across reboots, add it to `/etc/fstab`:
+
+[source,bash]
+----
+sudo sh -c "echo '/dev/vdb /mnt/data xfs defaults 0 0' >> /etc/fstab"
+----
+
+Press `Ctrl+]` to exit the console.
+
+== Step 7: Verify Storage Isolation
+
+Confirm each PVC uses a different StorageClass and PersistentVolume:
+
+[source,bash,role=execute]
+----
+oc get pvc multi-disk-rootdisk -n multi-disk-demo -o jsonpath='StorageClass: {.spec.storageClassName}, Volume: {.spec.volumeName}, Capacity: {.status.capacity.storage}'
+----
+
+[source,bash,role=execute]
+----
+oc get pvc multi-disk-datadisk -n multi-disk-demo -o jsonpath='StorageClass: {.spec.storageClassName}, Volume: {.spec.volumeName}, Capacity: {.status.capacity.storage}'
+----
+
+This confirms each disk is independently provisioned and can be managed separately (e.g., different backup policies, expansion schedules, or reclaim behavior).
+
+== Use Cases for Multi-Disk VMs
+
+[cols="1,1,1",options="header"]
+|===
+| Use Case
+| Boot Disk
+| Data Disk
+
+| Database server
+| Fast SSD (OS + binaries)
+| Large HDD (data files, logs)
+
+| Application server
+| Standard storage (OS)
+| Fast SSD (application state)
+
+| Development VM
+| Shared storage (OS template)
+| Local storage (scratch space)
+
+| Logging/monitoring
+| Standard storage (OS)
+| High-capacity storage (log retention)
+|===
+
+== Cleanup
+
+Remove all resources created in this tutorial:
+
+[source,bash,role=execute]
+----
+# Delete the namespace (VMs, PVCs, DVs)
+oc delete namespace multi-disk-demo
+
+# Delete the second StorageClass
+oc delete storageclass lvms-vg1-retain
+
+# If Retain reclaim policy was used, manually clean up PVs
+oc get pv | grep Released
+# oc delete pv <pv-name> for any Released PVs
+----
+
+NOTE: PersistentVolumes created with `reclaimPolicy: Retain` are not automatically deleted when the PVC is removed. Check for Released PVs and delete them manually to reclaim storage.
+
+== Summary
+
+In this tutorial you learned how to:
+
+* Configure a VM with multiple disks using different StorageClasses
+* Use `dataVolumeTemplates` to define storage for each disk independently
+* Set boot order to control which disk the VM boots from
+* Create blank data volumes for additional storage
+* Format and mount additional disks inside the guest OS
+* Understand storage tiering patterns for VMs
+
+== References
+
+* link:https://kubevirt.io/user-guide/storage/disks_and_volumes/[Disks and Volumes - KubeVirt User Guide,window=_blank]
+* link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.18/html/virtualization/storage#virt-configuring-storage-profile[Configuring Storage Profiles - OpenShift Documentation,window=_blank]
+* xref:vm-configuration:boot-order-boot-sources.adoc[Boot Order and Boot Sources]
+* xref:lvm-operator.adoc[LVM Storage Operator]
