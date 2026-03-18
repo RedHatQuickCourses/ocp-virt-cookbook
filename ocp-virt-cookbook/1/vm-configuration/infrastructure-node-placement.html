@@ -1,0 +1,1105 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>OpenShift Virtualization Infrastructure Node Placement :: OpenShift Virtualization cookbook</title>
+    <link rel="prev" href="boot-order-boot-sources.html">
+    <link rel="next" href="node-placement-affinity.html">
+    <meta name="generator" content="Antora 3.1.3">
+    <link rel="stylesheet" href="../../../_/css/site.css">
+    <script>var uiRootPath = '../../../_'</script>
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://www.redhat.com" target="_blank"><img src="../../../_/img/redhat-logo.png" height="40px" alt="Red Hat"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="../../..">OpenShift Virtualization cookbook</a>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues" target="_blank">Report Issues</a>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="ocp-virt-cookbook" data-version="1">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="../index.html">OpenShift Virtualization cookbook</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../getting-started/index.html">Getting Started</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/prerequisites.html">Prerequisites</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/install-openshift-virtualization.html">Install OpenShift Virtualization</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/default-storage-class.html">Storage Setup</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/create-vm-web-console.html">Create VM from Web Console</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/vm-lifecycle-states.html">VM Lifecycle States</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/virtctl-basics.html">Virtctl Basics</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../storage/index.html">Storage Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/lvm-operator.html">LVM Operator Installation</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/lvm-troubleshooting.html">LVM Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/creating-managing-storage-class.html">Creating and Managing Storage Classes</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../networking/index.html">Networking Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/udn-primary-networks.html">UDN Primary Networks</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/localnet-secondary.html">Localnet Secondary Networks with CUDN</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/localnet-vlan.html">Localnet Secondary Networks with VLAN using NAD</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/cudn-localnet-vlan.html">Localnet VLAN with CUDN</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/layer2-secondary.html">Layer 2 Secondary Networks</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/linux-bridges.html">Linux Bridges</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/ovs-bridge-troubleshooting.html">Troubleshooting Localnet Networks</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="index.html">Virtual Machine Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="cloud-init-ip-configuration.html">Cloud-init IP Configuration</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="cloud-init-troubleshooting.html">Cloud-init Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="internal-dns-for-vms.html">Internal DNS for VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="remote-access-linux-vms.html">Remote Access to Linux VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="remote-access-linux-troubleshooting.html">Remote Access to Linux VMs Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="remote-access-windows-vms.html">Remote Access to Windows VMs via RDP</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="import-qcow2-boot-volume.html">Import qcow2 Boot Volume</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="custom-golden-images.html">Custom Golden Images</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="golden-images-troubleshooting.html">Golden Images Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="cloning-vms.html">Cloning VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="vm-snapshots.html">VM Snapshots</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="boot-order-boot-sources.html">VM Boot Order and Boot Sources</a>
+  </li>
+  <li class="nav-item is-current-page" data-depth="2">
+    <a class="nav-link" href="infrastructure-node-placement.html">Infrastructure Node Placement</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="node-placement-affinity.html">Node Placement and Affinity</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../manifests/index.html">Manifests</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../api/index.html">API Guide</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../api/api_component_overview.html">API Component Overview</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../lab-env/index.html">Lab Environment</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../appendix/glossary.html">Glossary</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">OpenShift Virtualization cookbook</span>
+    <span class="version">1</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <a class="title" href="../index.html">OpenShift Virtualization cookbook</a>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">1</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">OpenShift Virtualization cookbook</a></li>
+    <li><a href="index.html">Virtual Machine Configuration</a></li>
+    <li><a href="infrastructure-node-placement.html">Infrastructure Node Placement</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">OpenShift Virtualization Infrastructure Node Placement</h1>
+<div class="sect1">
+<h2 id="_overview"><a class="anchor" href="#_overview"></a>Overview</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>OpenShift Virtualization infrastructure components (virt-controller, virt-api, virt-handler, CDI) run as pods in the <code>openshift-cnv</code> namespace. In production environments, you often need to control where these infrastructure components run—whether to dedicate specific nodes for virtualization infrastructure, separate infrastructure from VM workloads, or optimize for high availability across zones.</p>
+</div>
+<div class="paragraph">
+<p>This tutorial covers how to configure node placement for OpenShift Virtualization infrastructure components using the HyperConverged custom resource.</p>
+</div>
+<div class="sect2">
+<h3 id="_what_youll_learn"><a class="anchor" href="#_what_youll_learn"></a>What You&#8217;ll Learn</h3>
+<div class="ulist">
+<ul>
+<li>
+<p>How OpenShift Virtualization infrastructure components work</p>
+</li>
+<li>
+<p>How to configure infrastructure placement via the HyperConverged CR</p>
+</li>
+<li>
+<p>Node selector and affinity configurations for infrastructure pods</p>
+</li>
+<li>
+<p>Common placement patterns for different cluster sizes</p>
+</li>
+<li>
+<p>How to use taints and tolerations for dedicated infrastructure nodes</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_prerequisites"><a class="anchor" href="#_prerequisites"></a>Prerequisites</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p>OpenShift 4.18+ with OpenShift Virtualization installed</p>
+</li>
+<li>
+<p>Cluster admin access to modify HyperConverged CR</p>
+</li>
+<li>
+<p><code>oc</code> CLI tool installed</p>
+</li>
+<li>
+<p>Multiple worker nodes (recommended for meaningful placement)</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_understanding_infrastructure_components"><a class="anchor" href="#_understanding_infrastructure_components"></a>Understanding Infrastructure Components</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>OpenShift Virtualization infrastructure includes several key components:</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 25%;">
+<col style="width: 50%;">
+<col style="width: 25%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Component</th>
+<th class="tableblock halign-left valign-top">Purpose</th>
+<th class="tableblock halign-left valign-top">Deployment Type</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">virt-controller</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Manages VM lifecycle and orchestration</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Deployment (2 replicas)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">virt-api</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Provides API server for virtualization resources</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Deployment (2 replicas)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">virt-handler</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Manages VM instances on each node</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">DaemonSet</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">cdi-controller</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Manages Containerized Data Importer for disk imports</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Deployment (1 replica)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">cdi-uploadproxy</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Handles VM disk uploads via web console</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Deployment (1 replica)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">cdi-apiserver</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Provides CDI API endpoints</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Deployment (1 replica)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">hco-webhook</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Validates HyperConverged CR changes</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Deployment (1 replica)</p></td>
+</tr>
+</tbody>
+</table>
+<div class="sect2">
+<h3 id="_viewing_current_infrastructure_placement"><a class="anchor" href="#_viewing_current_infrastructure_placement"></a>Viewing Current Infrastructure Placement</h3>
+<div class="paragraph">
+<p>Check where infrastructure pods are currently running:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># View all virtualization infrastructure pods and their nodes
+oc get pods -n openshift-cnv -o wide</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Example output:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">NAME                                   READY   STATUS    NODE
+virt-api-6d9f8c7b9d-4xk2l              1/1     Running   ip-10-0-24-89.ec2.internal
+virt-api-6d9f8c7b9d-8tz5p              1/1     Running   ip-10-0-43-58.ec2.internal
+virt-controller-7c8d9f5b6d-5nvlm       1/1     Running   ip-10-0-24-89.ec2.internal
+virt-controller-7c8d9f5b6d-9kqwz       1/1     Running   ip-10-0-43-58.ec2.internal
+virt-handler-8zkgp                     1/1     Running   ip-10-0-24-89.ec2.internal
+virt-handler-f2nlb                     1/1     Running   ip-10-0-43-58.ec2.internal
+virt-handler-q7xmc                     1/1     Running   ip-10-0-82-27.ec2.internal
+cdi-apiserver-5f8c9d7b6c-7nlqx         1/1     Running   ip-10-0-24-89.ec2.internal
+cdi-deployment-7c8f9b5d6e-2kxmp        1/1     Running   ip-10-0-43-58.ec2.internal
+cdi-uploadproxy-6d9f8c7b9d-5pqrs       1/1     Running   ip-10-0-24-89.ec2.internal</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Check specific components:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># View virt-controller pods
+oc get pods -n openshift-cnv -l kubevirt.io=virt-controller -o wide
+
+# View virt-api pods
+oc get pods -n openshift-cnv -l kubevirt.io=virt-api -o wide
+
+# View virt-handler DaemonSet
+oc get pods -n openshift-cnv -l kubevirt.io=virt-handler -o wide
+
+# View CDI components
+oc get pods -n openshift-cnv -l app.kubernetes.io/component=storage -o wide</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_the_hyperconverged_custom_resource"><a class="anchor" href="#_the_hyperconverged_custom_resource"></a>The HyperConverged Custom Resource</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Infrastructure placement is configured through the HyperConverged CR:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># View current HyperConverged configuration
+oc get hyperconverged kubevirt-hyperconverged -n openshift-cnv -o yaml</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The HyperConverged CR provides two main placement configurations:</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 33.3333%;">
+<col style="width: 66.6667%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Field</th>
+<th class="tableblock halign-left valign-top">Controls</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>spec.infra.nodePlacement</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Control plane components: virt-api, virt-controller, CDI controller, CDI uploadproxy</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>spec.workloads.nodePlacement</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Per-node components: virt-handler DaemonSet</p></td>
+</tr>
+</tbody>
+</table>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-important" title="Important"></i>
+</td>
+<td class="content">
+The HyperConverged CR is managed by the OpenShift Virtualization operator. Changes are applied cluster-wide and automatically propagate to all infrastructure components.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_placement_configuration_options"><a class="anchor" href="#_placement_configuration_options"></a>Placement Configuration Options</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_using_node_selectors"><a class="anchor" href="#_using_node_selectors"></a>Using Node Selectors</h3>
+<div class="paragraph">
+<p>Node selectors provide simple label-based placement:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Label nodes for virtualization infrastructure
+oc label node ip-10-0-24-89.ec2.internal node-role.kubernetes.io/infra=
+oc label node ip-10-0-43-58.ec2.internal node-role.kubernetes.io/infra=</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Edit the HyperConverged CR:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc edit hyperconverged kubevirt-hyperconverged -n openshift-cnv</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Add node selector configuration:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: hco.kubevirt.io/v1beta1
+kind: HyperConverged
+metadata:
+  name: kubevirt-hyperconverged
+  namespace: openshift-cnv
+spec:
+  infra:
+    nodePlacement:
+      nodeSelector:
+        node-role.kubernetes.io/infra: ""
+  workloads:
+    nodePlacement:
+      nodeSelector:
+        node-role.kubernetes.io/worker: ""</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This configuration:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Control plane components</strong> (virt-api, virt-controller, CDI) run only on nodes with <code>node-role.kubernetes.io/infra</code> label</p>
+</li>
+<li>
+<p><strong>virt-handler DaemonSet</strong> runs on all nodes with <code>node-role.kubernetes.io/worker</code> label</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_using_node_affinity"><a class="anchor" href="#_using_node_affinity"></a>Using Node Affinity</h3>
+<div class="paragraph">
+<p>For more complex placement rules, use node affinity:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: hco.kubevirt.io/v1beta1
+kind: HyperConverged
+metadata:
+  name: kubevirt-hyperconverged
+  namespace: openshift-cnv
+spec:
+  infra:
+    nodePlacement:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: node-role.kubernetes.io/infra
+                operator: Exists
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            preference:
+              matchExpressions:
+              - key: topology.kubernetes.io/zone
+                operator: In
+                values:
+                - us-east-1a
+                - us-east-1b</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This configuration:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Requires</strong> infrastructure nodes (hard constraint)</p>
+</li>
+<li>
+<p><strong>Prefers</strong> specific availability zones (soft constraint)</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_using_tolerations_with_tainted_nodes"><a class="anchor" href="#_using_tolerations_with_tainted_nodes"></a>Using Tolerations with Tainted Nodes</h3>
+<div class="paragraph">
+<p>Taint infrastructure nodes to prevent regular workloads from running on them:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Taint infrastructure nodes
+oc adm taint node ip-10-0-24-89.ec2.internal node-role.kubernetes.io/infra=:NoSchedule
+oc adm taint node ip-10-0-43-58.ec2.internal node-role.kubernetes.io/infra=:NoSchedule</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Add corresponding tolerations to the HyperConverged CR:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: hco.kubevirt.io/v1beta1
+kind: HyperConverged
+metadata:
+  name: kubevirt-hyperconverged
+  namespace: openshift-cnv
+spec:
+  infra:
+    nodePlacement:
+      nodeSelector:
+        node-role.kubernetes.io/infra: ""
+      tolerations:
+      - key: node-role.kubernetes.io/infra
+        operator: Exists
+        effect: NoSchedule
+  workloads:
+    nodePlacement:
+      nodeSelector:
+        node-role.kubernetes.io/worker: ""</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Now only pods with the matching toleration (virtualization infrastructure) can run on tainted infrastructure nodes.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_using_pod_anti_affinity_for_high_availability"><a class="anchor" href="#_using_pod_anti_affinity_for_high_availability"></a>Using Pod Anti-Affinity for High Availability</h3>
+<div class="paragraph">
+<p>Spread infrastructure components across zones for better availability:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: hco.kubevirt.io/v1beta1
+kind: HyperConverged
+metadata:
+  name: kubevirt-hyperconverged
+  namespace: openshift-cnv
+spec:
+  infra:
+    nodePlacement:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchLabels:
+                  kubevirt.io: virt-api
+              topologyKey: topology.kubernetes.io/zone
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchLabels:
+                  kubevirt.io: virt-controller
+              topologyKey: topology.kubernetes.io/zone</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This ensures multiple replicas of virt-api and virt-controller are spread across different zones.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_common_deployment_patterns"><a class="anchor" href="#_common_deployment_patterns"></a>Common Deployment Patterns</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_pattern_1_small_clusters_3_6_nodes"><a class="anchor" href="#_pattern_1_small_clusters_3_6_nodes"></a>Pattern 1: Small Clusters (3-6 nodes)</h3>
+<div class="paragraph">
+<p>Run infrastructure and VM workloads on the same worker nodes:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: hco.kubevirt.io/v1beta1
+kind: HyperConverged
+metadata:
+  name: kubevirt-hyperconverged
+  namespace: openshift-cnv
+spec:
+  infra:
+    nodePlacement:
+      nodeSelector:
+        node-role.kubernetes.io/worker: ""
+  workloads:
+    nodePlacement:
+      nodeSelector:
+        node-role.kubernetes.io/worker: ""</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Use case</strong>: Development, testing, or small production clusters where dedicating nodes is not cost-effective.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_pattern_2_medium_clusters_with_dedicated_infrastructure"><a class="anchor" href="#_pattern_2_medium_clusters_with_dedicated_infrastructure"></a>Pattern 2: Medium Clusters with Dedicated Infrastructure</h3>
+<div class="paragraph">
+<p>Separate infrastructure from VM workloads:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Label infrastructure nodes
+oc label node ip-10-0-24-89.ec2.internal node-role.kubernetes.io/infra=
+oc label node ip-10-0-43-58.ec2.internal node-role.kubernetes.io/infra=
+
+# Taint infrastructure nodes
+oc adm taint node ip-10-0-24-89.ec2.internal node-role.kubernetes.io/infra=:NoSchedule
+oc adm taint node ip-10-0-43-58.ec2.internal node-role.kubernetes.io/infra=:NoSchedule
+
+# Label worker nodes for VMs
+oc label node ip-10-0-82-27.ec2.internal kubevirt.io/schedulable=true</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>HyperConverged configuration:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: hco.kubevirt.io/v1beta1
+kind: HyperConverged
+metadata:
+  name: kubevirt-hyperconverged
+  namespace: openshift-cnv
+spec:
+  infra:
+    nodePlacement:
+      nodeSelector:
+        node-role.kubernetes.io/infra: ""
+      tolerations:
+      - key: node-role.kubernetes.io/infra
+        operator: Exists
+        effect: NoSchedule
+  workloads:
+    nodePlacement:
+      nodeSelector:
+        kubevirt.io/schedulable: "true"</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Use case</strong>: Production clusters where you want predictable infrastructure performance isolated from VM workload resource contention.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_pattern_3_large_multi_zone_high_availability"><a class="anchor" href="#_pattern_3_large_multi_zone_high_availability"></a>Pattern 3: Large Multi-Zone High Availability</h3>
+<div class="paragraph">
+<p>Spread infrastructure across zones with anti-affinity:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: hco.kubevirt.io/v1beta1
+kind: HyperConverged
+metadata:
+  name: kubevirt-hyperconverged
+  namespace: openshift-cnv
+spec:
+  infra:
+    nodePlacement:
+      nodeSelector:
+        node-role.kubernetes.io/infra: ""
+      affinity:
+        nodeAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            preference:
+              matchExpressions:
+              - key: topology.kubernetes.io/zone
+                operator: In
+                values:
+                - us-east-1a
+                - us-east-1b
+                - us-east-1c
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchLabels:
+                  kubevirt.io: virt-api
+              topologyKey: topology.kubernetes.io/zone
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchLabels:
+                  kubevirt.io: virt-controller
+              topologyKey: topology.kubernetes.io/zone
+      tolerations:
+      - key: node-role.kubernetes.io/infra
+        operator: Exists
+        effect: NoSchedule
+  workloads:
+    nodePlacement:
+      nodeSelector:
+        kubevirt.io/schedulable: "true"</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Use case</strong>: Enterprise production with strict availability SLAs requiring zone-level fault tolerance.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_applying_configuration_changes"><a class="anchor" href="#_applying_configuration_changes"></a>Applying Configuration Changes</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_edit_hyperconverged_cr_directly"><a class="anchor" href="#_edit_hyperconverged_cr_directly"></a>Edit HyperConverged CR Directly</h3>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc edit hyperconverged kubevirt-hyperconverged -n openshift-cnv</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_patch_hyperconverged_cr"><a class="anchor" href="#_patch_hyperconverged_cr"></a>Patch HyperConverged CR</h3>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc patch hyperconverged kubevirt-hyperconverged -n openshift-cnv --type=merge -p '
+{
+  "spec": {
+    "infra": {
+      "nodePlacement": {
+        "nodeSelector": {
+          "node-role.kubernetes.io/infra": ""
+        }
+      }
+    }
+  }
+}'</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_verify_changes_applied"><a class="anchor" href="#_verify_changes_applied"></a>Verify Changes Applied</h3>
+<div class="paragraph">
+<p>Watch infrastructure pods get rescheduled:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Watch pod changes in real-time
+oc get pods -n openshift-cnv -w
+
+# Verify new placement after changes settle
+oc get pods -n openshift-cnv -o wide
+
+# Check specific component placement
+oc get pods -n openshift-cnv -l kubevirt.io=virt-api -o jsonpath='{range .items[*]}{.metadata.name}{"\t"}{.spec.nodeName}{"\n"}{end}'</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Expected behavior:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Infrastructure pods will be terminated and recreated on matching nodes</p>
+</li>
+<li>
+<p>virt-handler DaemonSet will add/remove pods based on node selector changes</p>
+</li>
+<li>
+<p>Changes typically complete within 2-5 minutes</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_monitoring_and_verification"><a class="anchor" href="#_monitoring_and_verification"></a>Monitoring and Verification</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_check_pod_distribution"><a class="anchor" href="#_check_pod_distribution"></a>Check Pod Distribution</h3>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Group pods by node
+oc get pods -n openshift-cnv -o jsonpath='{range .items[*]}{.spec.nodeName}{"\t"}{.metadata.name}{"\n"}{end}' | sort | column -t
+
+# Count pods per node
+oc get pods -n openshift-cnv -o jsonpath='{range .items[*]}{.spec.nodeName}{"\n"}{end}' | sort | uniq -c</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_verify_tolerations"><a class="anchor" href="#_verify_tolerations"></a>Verify Tolerations</h3>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Check if virt-api pods have correct tolerations
+oc get pods -n openshift-cnv -l kubevirt.io=virt-api -o jsonpath='{.items[0].spec.tolerations}' | jq</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_check_node_affinity_applied"><a class="anchor" href="#_check_node_affinity_applied"></a>Check Node Affinity Applied</h3>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># View node affinity for virt-controller
+oc get pods -n openshift-cnv -l kubevirt.io=virt-controller -o jsonpath='{.items[0].spec.affinity}' | jq</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_troubleshooting"><a class="anchor" href="#_troubleshooting"></a>Troubleshooting</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_infrastructure_pods_stuck_in_pending"><a class="anchor" href="#_infrastructure_pods_stuck_in_pending"></a>Infrastructure Pods Stuck in Pending</h3>
+<div class="paragraph">
+<p><strong>Problem</strong>: After changing placement configuration, infrastructure pods remain in Pending state.</p>
+</div>
+<div class="paragraph">
+<p><strong>Diagnosis</strong>:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Check pod events
+oc describe pod &lt;pod-name&gt; -n openshift-cnv
+
+# Look for scheduling errors
+oc get events -n openshift-cnv --sort-by='.lastTimestamp' | grep -i failedscheduling</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Common causes</strong>:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>No nodes match the node selector or affinity rules</p>
+</li>
+<li>
+<p>Nodes are tainted but tolerations are missing</p>
+</li>
+<li>
+<p>Insufficient resources on matching nodes</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p><strong>Solutions</strong>:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Verify nodes have required labels
+oc get nodes -L node-role.kubernetes.io/infra
+
+# Check node taints
+oc get nodes -o jsonpath='{range .items[*]}{.metadata.name}{"\t"}{.spec.taints}{"\n"}{end}'
+
+# Verify node capacity
+oc describe nodes | grep -A 5 "Allocated resources"</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_virt_handler_not_running_on_all_nodes"><a class="anchor" href="#_virt_handler_not_running_on_all_nodes"></a>virt-handler Not Running on All Nodes</h3>
+<div class="paragraph">
+<p><strong>Problem</strong>: virt-handler DaemonSet is missing pods on some nodes.</p>
+</div>
+<div class="paragraph">
+<p><strong>Diagnosis</strong>:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Check virt-handler DaemonSet status
+oc get daemonset virt-handler -n openshift-cnv
+
+# Compare desired vs current pods
+oc describe daemonset virt-handler -n openshift-cnv | grep -E "Desired|Current|Ready"</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Solution</strong>: Check if <code>spec.workloads.nodePlacement</code> selector matches the nodes:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># View workloads node selector
+oc get hyperconverged kubevirt-hyperconverged -n openshift-cnv -o jsonpath='{.spec.workloads.nodePlacement}' | jq
+
+# Verify nodes match the selector
+oc get nodes --selector=&lt;label-from-workloads-nodeSelector&gt;</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_configuration_changes_not_applied"><a class="anchor" href="#_configuration_changes_not_applied"></a>Configuration Changes Not Applied</h3>
+<div class="paragraph">
+<p><strong>Problem</strong>: Edited HyperConverged CR but infrastructure pods didn&#8217;t change.</p>
+</div>
+<div class="paragraph">
+<p><strong>Check HyperConverged CR status</strong>:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># View HyperConverged status
+oc get hyperconverged kubevirt-hyperconverged -n openshift-cnv -o yaml | grep -A 10 status:
+
+# Check for validation errors
+oc get events -n openshift-cnv --sort-by='.lastTimestamp' | grep HyperConverged</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Force reconciliation</strong>:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Add annotation to trigger reconciliation
+oc annotate hyperconverged kubevirt-hyperconverged -n openshift-cnv reconcile-trigger="$(date +%s)" --overwrite</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_best_practices"><a class="anchor" href="#_best_practices"></a>Best Practices</h2>
+<div class="sectionbody">
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p><strong>Plan infrastructure capacity</strong>: Infrastructure nodes need sufficient CPU and memory for virt-controller, virt-api, and CDI components (recommend 4 vCPU, 8GB RAM minimum per node)</p>
+</li>
+<li>
+<p><strong>Use multiple infrastructure nodes</strong>: Run at least 2 infrastructure nodes for high availability of control plane components</p>
+</li>
+<li>
+<p><strong>Separate workloads in large clusters</strong>: Dedicated infrastructure nodes prevent VM workload resource contention from affecting virtualization control plane</p>
+</li>
+<li>
+<p><strong>Leverage zone topology</strong>: Spread infrastructure across availability zones using node/pod affinity for better fault tolerance</p>
+</li>
+<li>
+<p><strong>Monitor infrastructure health</strong>: Set up alerts for infrastructure pod failures or resource exhaustion</p>
+</li>
+<li>
+<p><strong>Test placement changes</strong>: Apply configuration changes in development/staging before production</p>
+</li>
+<li>
+<p><strong>Document node roles</strong>: Clearly label and document which nodes serve which purpose</p>
+</li>
+</ol>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_cleanup"><a class="anchor" href="#_cleanup"></a>Cleanup</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>To revert to default placement (all worker nodes):</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Edit HyperConverged CR and remove nodePlacement sections
+oc patch hyperconverged kubevirt-hyperconverged -n openshift-cnv --type=json -p='[
+  {"op": "remove", "path": "/spec/infra/nodePlacement"},
+  {"op": "remove", "path": "/spec/workloads/nodePlacement"}
+]'
+
+# Remove infrastructure node labels
+oc label node ip-10-0-24-89.ec2.internal node-role.kubernetes.io/infra-
+oc label node ip-10-0-43-58.ec2.internal node-role.kubernetes.io/infra-
+
+# Remove taints if applied
+oc adm taint node ip-10-0-24-89.ec2.internal node-role.kubernetes.io/infra:NoSchedule-
+oc adm taint node ip-10-0-43-58.ec2.internal node-role.kubernetes.io/infra:NoSchedule-</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_summary"><a class="anchor" href="#_summary"></a>Summary</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>In this tutorial you learned:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>How OpenShift Virtualization infrastructure components are deployed</p>
+</li>
+<li>
+<p>How to configure infrastructure placement via the HyperConverged CR</p>
+</li>
+<li>
+<p>The difference between <code>spec.infra.nodePlacement</code> and <code>spec.workloads.nodePlacement</code></p>
+</li>
+<li>
+<p>How to use node selectors, affinity, and tolerations for infrastructure pods</p>
+</li>
+<li>
+<p>Common deployment patterns for different cluster sizes</p>
+</li>
+<li>
+<p>How to verify and troubleshoot infrastructure placement changes</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_see_also"><a class="anchor" href="#_see_also"></a>See Also</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p><a href="node-placement-affinity.html" class="xref page">VM workload node placement</a></p>
+</li>
+<li>
+<p><a href="../getting-started/vm-lifecycle-states.html" class="xref page">VM lifecycle management</a></p>
+</li>
+<li>
+<p><a href="https://docs.redhat.com/en/documentation/openshift_container_platform/latest/html/virtualization/postinstallation-configuration#virt-about-node-placement-virt-components_virt-specifying-nodes-for-virtualization-components" target="_blank" rel="noopener">About node placement for virtualization components</a></p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<nav class="pagination">
+  <span class="prev"><a href="boot-order-boot-sources.html">VM Boot Order and Boot Sources</a></span>
+  <span class="next"><a href="node-placement-affinity.html">Node Placement and Affinity</a></span>
+</nav>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <img src="../../../_/img/rhl-logo-red.png" height="40px" alt="Red Hat"  href="https://redhat.com" >
+</footer><script id="site-script" src="../../../_/js/site.js" data-ui-root-path="../../../_"></script>
+<script async src="../../../_/js/vendor/highlight.js"></script>
+  </body>
+</html>
