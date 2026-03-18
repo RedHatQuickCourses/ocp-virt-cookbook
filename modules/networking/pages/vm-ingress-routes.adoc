@@ -80,18 +80,17 @@ spec:
               expire: false
             packages:
             - nginx
-            write_files:
-            - path: /usr/share/nginx/html/index.html
-              content: |
-                <html>
-                <head><title>OpenShift Virt - Ingress Demo</title></head>
-                <body>
-                <h1>Hello from OpenShift Virtualization</h1>
-                <p>This page is served by Nginx inside a VM, exposed via an OpenShift Route.</p>
-                </body>
-                </html>
-              permissions: '0644'
             runcmd:
+            - |
+              cat > /usr/share/nginx/html/index.html <<HTMLEOF
+              <html>
+              <head><title>OpenShift Virt - Ingress Demo</title></head>
+              <body>
+              <h1>Hello from OpenShift Virtualization</h1>
+              <p>This page is served by Nginx inside a VM, exposed via an OpenShift Route.</p>
+              </body>
+              </html>
+              HTMLEOF
             - systemctl enable nginx
             - systemctl start nginx
 EOF
