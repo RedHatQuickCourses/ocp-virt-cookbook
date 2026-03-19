@@ -78,17 +78,18 @@ networkData: |
   version: 2
   ethernets:
     enp1s0:
+      dhcp4: true
+    enp2s0:
       dhcp4: false
       dhcp6: false
       addresses:
         - 192.168.100.50/24
-      routes:
-        - to: default
-          via: 192.168.100.1
       nameservers:
         addresses:
-          - 8.8.8.8
+          - 192.168.100.1
 ----
+
+In this example, `enp1s0` (the primary pod network interface) uses DHCP, while `enp2s0` (the secondary interface) receives a static IP.
 
 === Precedence Order
 
@@ -106,9 +107,17 @@ KubeVirt uses predictable network interface naming inside guest VMs. Interfaces 
 
 IMPORTANT: Do not use legacy names like `eth0`. Use the predictable names (`enpXs0`) that match the order of interfaces defined in the VM spec.
 
-=== Scenario: Single Interface with Static IP
+=== Where Static IPs Apply
 
-This example configures a static IP on the primary interface. While not common for the pod network, it demonstrates the syntax.
+Static IP configuration applies to **secondary network interfaces only**. The primary interface connects to the pod network via masquerade and receives its IP automatically from the cluster -- do not assign a static IP to it. The masquerade bridge operates on an internal subnet (`10.0.2.0/24`) that is translated by NAT to the pod IP. Overriding this with a static address on a different subnet will break connectivity.
+
+All examples in this tutorial configure static IPs on secondary interfaces (`enp2s0` and above) while leaving the primary interface (`enp1s0`) on DHCP.
+
+=== Scenario: Primary DHCP + Secondary Static IP
+
+This is the standard approach. The primary interface uses DHCP on the pod network, while a secondary interface on a VLAN or bridge network gets a static IP.
+
+Prerequisites: Ensure you have a secondary network configured (for example, a localnet VLAN 100 NetworkAttachmentDefinition (NAD)). See xref:networking:localnet-vlan.adoc[Localnet VLAN Tutorial] for setup instructions.
 
 Create a namespace for this tutorial:
 
@@ -116,112 +125,6 @@ Create a namespace for this tutorial:
 ----
 oc create namespace static-ip-demo
 ----
-
-xref:attachment$static-ip-configuration/fedora-static-ip-vm.yaml[Download fedora-static-ip-vm.yaml]
-
-[source,yaml]
-----
-apiVersion: kubevirt.io/v1
-kind: VirtualMachine
-metadata:
-  name: fedora-static-vm
-  namespace: static-ip-demo
-spec:
-  dataVolumeTemplates:
-    - apiVersion: cdi.kubevirt.io/v1beta1
-      kind: DataVolume
-      metadata:
-        name: fedora-static-vm-disk
-      spec:
-        sourceRef:
-          kind: DataSource
-          name: fedora
-          namespace: openshift-virtualization-os-images
-        storage:
-          resources:
-            requests:
-              storage: 30Gi
-  runStrategy: RerunOnFailure
-  template:
-    metadata:
-      labels:
-        kubevirt.io/domain: fedora-static-vm
-    spec:
-      domain:
-        cpu:
-          cores: 2
-        devices:
-          disks:
-            - disk:
-                bus: virtio
-              name: rootdisk
-            - disk:
-                bus: virtio
-              name: cloudinitdisk
-          interfaces:
-            - masquerade: {}
-              name: default
-          rng: {}
-        machine:
-          type: pc-q35-rhel9.4.0
-        memory:
-          guest: 4Gi
-      networks:
-        - name: default
-          pod: {}
-      volumes:
-        - dataVolume:
-            name: fedora-static-vm-disk
-          name: rootdisk
-        - cloudInitNoCloud:
-            userData: |-
-              #cloud-config
-              user: fedora
-              password: fedora123
-              chpasswd: { expire: False }
-              ssh_pwauth: True
-            networkData: |-
-              version: 2
-              ethernets:
-                enp1s0:
-                  dhcp4: false
-                  dhcp6: false
-                  addresses:
-                    - 10.128.1.100/23
-                  routes:
-                    - to: default
-                      via: 10.128.1.1
-                  nameservers:
-                    addresses:
-                      - 8.8.8.8
-                      - 8.8.4.4
-          name: cloudinitdisk
-----
-
-Deploy and verify:
-
-[source,bash,role=execute]
-----
-oc apply -f fedora-static-ip-vm.yaml
-----
-
-[source,bash,role=execute]
-----
-oc get vmi -n static-ip-demo
-----
-
-Key points:
-
-* `dhcp4: false` and `dhcp6: false` disable DHCP explicitly
-* `addresses` sets the static IP with CIDR notation
-* `routes` with `to: default` sets the default gateway
-* `nameservers` configures DNS servers
-
-=== Scenario: Primary DHCP + Secondary Static IP
-
-This is the most common real-world scenario. The primary interface uses DHCP on the pod network, while a secondary interface on a VLAN or bridge network gets a static IP.
-
-Prerequisites: Ensure you have a secondary network configured (for example, a localnet VLAN 100 NAD).
 
 xref:attachment$static-ip-configuration/fedora-multi-network-vm.yaml[Download fedora-multi-network-vm.yaml]
 
@@ -803,11 +706,6 @@ For detailed cloud-init troubleshooting, see the xref:cloud-init-troubleshooting
 == Cleanup
 
 To remove all resources created in this tutorial, delete any VMs you deployed:
-
-[source,bash,role=execute]
-----
-oc delete vm fedora-static-vm -n static-ip-demo --ignore-not-found
-----
 
 [source,bash,role=execute]
 ----
