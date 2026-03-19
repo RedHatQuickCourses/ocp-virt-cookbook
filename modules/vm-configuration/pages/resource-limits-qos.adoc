@@ -1,0 +1,440 @@
+= Configuring VM Resource Limits and QoS
+:navtitle: Resource Limits and QoS
+
+== Overview
+
+This tutorial demonstrates how to configure CPU and memory resource requests, limits, and Quality of Service (QoS) classes for virtual machines in OpenShift Virtualization. Proper resource management prevents resource exhaustion, ensures predictable VM performance, and enables efficient multi-tenant cluster utilization.
+
+You will learn how KubeVirt translates VM resource specifications into container-level requests and limits, how Kubernetes QoS classes apply to VMs, and how to use ResourceQuotas and LimitRanges to enforce governance at the namespace level.
+
+== Prerequisites
+
+* **OpenShift 4.18+** with OpenShift Virtualization operator installed
+* **Cluster admin access** (`system:admin` or equivalent)
+* **`oc` CLI** and **`virtctl` CLI** installed
+* **Default StorageClass** configured (for VM boot disks)
+
+Versions tested:
+----
+OpenShift 4.20
+----
+
+== Understanding VM Resource Management
+
+When you create a VM in OpenShift Virtualization, KubeVirt translates the VM's resource specification into requests and limits on the `virt-launcher` container that hosts the VM. Understanding this mapping is essential for capacity planning.
+
+=== CPU Allocation
+
+* By default, the container requests `1/cpuAllocationRatio` CPU per vCPU, where `cpuAllocationRatio` defaults to 10. A VM with 1 vCPU requests 100m CPU.
+* No CPU limit is set by default, allowing VMs to burst beyond their request when capacity is available.
+* If you manually set CPU limits on the VM, no CPU request is automatically derived -- requests match limits.
+* The number of vCPUs is calculated as `sockets * cores * threads`, defaulting to 1.
+
+=== Memory Allocation
+
+* VMs specify desired memory via `spec.domain.memory.guest` or `spec.domain.resources.requests.memory`.
+* KubeVirt adds a calculated overhead (for QEMU, firmware, and other hypervisor components) to the guest memory, forming the container memory request.
+* No memory limit is set by default.
+* If you set memory limits, they must be at least 500 MiB or 2% larger than the guest memory value to account for overhead.
+
+WARNING: Setting memory limits on VMs can cause VM crashes if the guest OS or hypervisor temporarily exceeds the limit. Use limits cautiously and set them higher than the guest memory plus overhead.
+
+== Step 1: Create a Namespace for Testing
+
+[source,bash,role=execute]
+----
+oc create namespace resource-qos-demo
+----
+
+== Step 2: Deploy VMs with Different QoS Classes
+
+Kubernetes assigns one of three QoS classes to every pod based on its resource configuration. Since VMs run inside pods, the same rules apply.
+
+=== Burstable QoS (Default)
+
+A VM with only resource requests (no limits) gets Burstable QoS. This is the default behavior for OpenShift Virtualization VMs.
+
+xref:attachment$resource-limits-qos/vm-burstable.yaml[Download vm-burstable.yaml]
+
+[source,yaml]
+----
+oc apply -f - <<EOF
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: vm-burstable
+  namespace: resource-qos-demo
+spec:
+  runStrategy: Always
+  template:
+    metadata:
+      labels:
+        kubevirt.io/domain: vm-burstable
+    spec:
+      domain:
+        memory:
+          guest: 512Mi
+        resources:
+          requests:
+            memory: 512Mi
+        devices:
+          disks:
+          - name: rootdisk
+            disk:
+              bus: virtio
+          - name: cloudinitdisk
+            disk:
+              bus: virtio
+          interfaces:
+          - name: default
+            masquerade: {}
+      networks:
+      - name: default
+        pod: {}
+      volumes:
+      - name: rootdisk
+        containerDisk:
+          image: quay.io/containerdisks/fedora:latest
+      - name: cloudinitdisk
+        cloudInitNoCloud:
+          userData: |
+            #cloud-config
+            password: redhat
+            chpasswd:
+              expire: false
+EOF
+----
+
+=== Guaranteed QoS
+
+A VM with equal requests and limits for both CPU and memory gets Guaranteed QoS. These VMs have the highest scheduling priority and are the last to be evicted under memory pressure.
+
+xref:attachment$resource-limits-qos/vm-guaranteed.yaml[Download vm-guaranteed.yaml]
+
+[source,yaml]
+----
+oc apply -f - <<EOF
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: vm-guaranteed
+  namespace: resource-qos-demo
+spec:
+  runStrategy: Always
+  template:
+    metadata:
+      labels:
+        kubevirt.io/domain: vm-guaranteed
+    spec:
+      domain:
+        memory:
+          guest: 512Mi
+        resources:
+          requests:
+            memory: 1Gi
+            cpu: "1"
+          limits:
+            memory: 1Gi
+            cpu: "1"
+        devices:
+          disks:
+          - name: rootdisk
+            disk:
+              bus: virtio
+          - name: cloudinitdisk
+            disk:
+              bus: virtio
+          interfaces:
+          - name: default
+            masquerade: {}
+      networks:
+      - name: default
+        pod: {}
+      volumes:
+      - name: rootdisk
+        containerDisk:
+          image: quay.io/containerdisks/fedora:latest
+      - name: cloudinitdisk
+        cloudInitNoCloud:
+          userData: |
+            #cloud-config
+            password: redhat
+            chpasswd:
+              expire: false
+EOF
+----
+
+NOTE: The memory limit (1Gi) must be significantly larger than the guest memory (512Mi) to account for hypervisor overhead. If the limit is too close to the guest memory, the pod will be rejected.
+
+=== BestEffort QoS
+
+A VM with no resource requests or limits gets BestEffort QoS. These VMs are the first to be evicted under resource pressure. This configuration is generally not recommended for production.
+
+xref:attachment$resource-limits-qos/vm-besteffort.yaml[Download vm-besteffort.yaml]
+
+[source,yaml]
+----
+oc apply -f - <<EOF
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: vm-besteffort
+  namespace: resource-qos-demo
+spec:
+  runStrategy: Always
+  template:
+    metadata:
+      labels:
+        kubevirt.io/domain: vm-besteffort
+    spec:
+      domain:
+        memory:
+          guest: 512Mi
+        devices:
+          disks:
+          - name: rootdisk
+            disk:
+              bus: virtio
+          - name: cloudinitdisk
+            disk:
+              bus: virtio
+          interfaces:
+          - name: default
+            masquerade: {}
+      networks:
+      - name: default
+        pod: {}
+      volumes:
+      - name: rootdisk
+        containerDisk:
+          image: quay.io/containerdisks/fedora:latest
+      - name: cloudinitdisk
+        cloudInitNoCloud:
+          userData: |
+            #cloud-config
+            password: redhat
+            chpasswd:
+              expire: false
+EOF
+----
+
+== Step 3: Verify QoS Classes
+
+Wait for the VMs to start:
+
+[source,bash,role=execute]
+----
+oc get vm -n resource-qos-demo
+----
+
+Expected output:
+----
+NAME             AGE   STATUS    READY
+vm-besteffort    30s   Running   True
+vm-burstable     60s   Running   True
+vm-guaranteed    45s   Running   True
+----
+
+Check the QoS class assigned to each VM's pod:
+
+[source,bash,role=execute]
+----
+for vm in vm-burstable vm-guaranteed vm-besteffort; do
+  pod=$(oc get vmi $vm -n resource-qos-demo -o jsonpath='{.metadata.name}')
+  qos=$(oc get pod -n resource-qos-demo -l kubevirt.io/domain=$vm -o jsonpath='{.items[0].status.qosClass}')
+  echo "$vm: QoS=$qos"
+done
+----
+
+Expected output:
+----
+vm-burstable: QoS=Burstable
+vm-guaranteed: QoS=Guaranteed
+vm-besteffort: QoS=Burstable
+----
+
+NOTE: Even vm-besteffort shows Burstable rather than BestEffort because KubeVirt always adds some base resource requests for the virt-launcher container overhead.
+
+Inspect the actual resource values on the virt-launcher pods:
+
+[source,bash,role=execute]
+----
+for vm in vm-burstable vm-guaranteed vm-besteffort; do
+  echo "=== $vm ==="
+  oc get pod -n resource-qos-demo -l kubevirt.io/domain=$vm \
+    -o jsonpath='{range .items[0].spec.containers[*]}{.name}: requests={.resources.requests} limits={.resources.limits}{"\n"}{end}'
+  echo ""
+done
+----
+
+== Step 4: Apply ResourceQuotas
+
+ResourceQuotas enforce aggregate resource limits across all VMs and pods in a namespace. When a ResourceQuota with limits is applied, KubeVirt automatically sets resource limits on VMs.
+
+xref:attachment$resource-limits-qos/resource-quota.yaml[Download resource-quota.yaml]
+
+[source,yaml]
+----
+oc apply -f - <<EOF
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: vm-resource-quota
+  namespace: resource-qos-demo
+spec:
+  hard:
+    requests.cpu: "4"
+    requests.memory: 8Gi
+    limits.cpu: "8"
+    limits.memory: 16Gi
+    pods: "10"
+EOF
+----
+
+Verify the quota:
+
+[source,bash,role=execute]
+----
+oc describe resourcequota vm-resource-quota -n resource-qos-demo
+----
+
+The output shows current usage versus hard limits for the namespace. New VMs created in this namespace will automatically receive CPU limits (1 per vCPU) and memory limits (2x requests) because the quota contains limits fields.
+
+=== Customizing Auto Memory Limits Ratio
+
+By default, auto memory limits are set to 2x the requested memory. You can customize this per namespace:
+
+[source,bash,role=execute]
+----
+oc label namespace resource-qos-demo alpha.kubevirt.io/auto-memory-limits-ratio=1.5
+----
+
+This sets the auto memory limit ratio to 1.5x for all new VMs in the namespace.
+
+== Step 5: Apply LimitRanges
+
+LimitRanges set per-pod default and maximum resource values within a namespace, ensuring every VM has a minimum resource allocation.
+
+xref:attachment$resource-limits-qos/limit-range.yaml[Download limit-range.yaml]
+
+[source,yaml]
+----
+oc apply -f - <<EOF
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: vm-limit-range
+  namespace: resource-qos-demo
+spec:
+  limits:
+  - type: Pod
+    max:
+      cpu: "4"
+      memory: 8Gi
+    min:
+      cpu: 100m
+      memory: 256Mi
+  - type: Container
+    default:
+      cpu: 500m
+      memory: 1Gi
+    defaultRequest:
+      cpu: 100m
+      memory: 512Mi
+    max:
+      cpu: "4"
+      memory: 8Gi
+    min:
+      cpu: 50m
+      memory: 128Mi
+EOF
+----
+
+Verify:
+
+[source,bash,role=execute]
+----
+oc describe limitrange vm-limit-range -n resource-qos-demo
+----
+
+With this LimitRange in place, any new pod (including virt-launcher pods for VMs) that does not specify resource requests or limits will receive the defaults.
+
+== Step 6: Monitor Resource Usage
+
+Check actual resource consumption for VM pods:
+
+[source,bash,role=execute]
+----
+oc adm top pods -n resource-qos-demo
+----
+
+This shows current CPU and memory usage for each virt-launcher pod. Compare these values against the requests and limits to identify right-sizing opportunities.
+
+Check namespace-level resource consumption against quotas:
+
+[source,bash,role=execute]
+----
+oc describe resourcequota vm-resource-quota -n resource-qos-demo
+----
+
+== QoS Classes Summary
+
+[cols="1,1,1,1",options="header"]
+|===
+| QoS Class
+| Configuration
+| Eviction Priority
+| Use Case
+
+| Guaranteed
+| requests == limits for CPU and memory
+| Last to be evicted
+| Production databases, critical applications
+
+| Burstable
+| requests set, limits unset or different
+| Evicted after BestEffort
+| General workloads, development VMs
+
+| BestEffort
+| No requests or limits set
+| First to be evicted
+| Temporary, expendable workloads
+|===
+
+== Right-Sizing Recommendations
+
+* **Start with Burstable** for new workloads: set memory requests to the expected usage and let VMs burst when needed.
+* **Use Guaranteed** for production VMs that need predictable performance and should not be evicted.
+* **Set memory limits conservatively**: at least 2x the guest memory to account for hypervisor overhead and memory spikes.
+* **Monitor before constraining**: use `oc adm top pods` to observe actual usage before setting tight limits.
+* **Use ResourceQuotas** at the namespace level to prevent any single team from consuming all cluster resources.
+* **Use LimitRanges** to ensure every VM has minimum resource allocation and sensible defaults.
+
+== Cleanup
+
+Remove all resources created in this tutorial:
+
+[source,bash,role=execute]
+----
+oc delete namespace resource-qos-demo
+----
+
+== Summary
+
+In this tutorial you learned how to:
+
+* Configure CPU and memory requests and limits for VMs
+* Understand how KubeVirt maps VM resources to container resources
+* Deploy VMs with Guaranteed, Burstable, and BestEffort QoS classes
+* Apply ResourceQuotas to enforce namespace-level resource governance
+* Apply LimitRanges to set per-pod defaults and boundaries
+* Monitor VM resource usage and right-size allocations
+* Customize the auto memory limits ratio per namespace
+
+== References
+
+* link:https://kubevirt.io/user-guide/compute/resources_requests_and_limits/[KubeVirt Resource Requests and Limits,window=_blank]
+* link:https://docs.openshift.com/container-platform/4.18/virt/managing_vms/advanced_vm_management/virt-working-with-resource-quotas-for-vms.html[Working with Resource Quotas for VMs - OpenShift Documentation,window=_blank]
+* link:https://kubernetes.io/docs/tasks/configure-pod-container/quality-service-pod/[Configure QoS for Pods - Kubernetes Documentation,window=_blank]
+* link:https://docs.openshift.com/container-platform/4.18/applications/quotas/quotas-setting-per-project.html[Resource Quotas Per Project - OpenShift Documentation,window=_blank]
