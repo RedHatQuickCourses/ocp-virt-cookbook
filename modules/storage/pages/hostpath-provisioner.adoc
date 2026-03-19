@@ -1,0 +1,601 @@
+= Local Storage with HostPath Provisioner
+:navtitle: HostPath Provisioner
+
+== Overview
+
+The HostPath Provisioner (HPP) provides a simple way to use local node storage for OpenShift Virtualization workloads. It's included as part of the OpenShift Virtualization operator and creates persistent volumes backed by directories on the host filesystem.
+
+=== When to Use HostPath Provisioner
+
+HPP is ideal for:
+
+* **Development and testing environments**: Quick setup without complex storage infrastructure
+* **Single-node clusters**: Where distributed storage isn't necessary
+* **Prototyping**: Rapid iteration before production storage deployment
+* **Edge deployments**: Minimal infrastructure requirements
+
+=== Comparison with LVM Storage
+
+[cols="2,2,2"]
+|===
+|Feature |HostPath Provisioner |LVM Storage
+
+|Setup complexity
+|Simple (directory-based)
+|Moderate (requires dedicated disk)
+
+|Thin provisioning
+|No
+|Yes
+
+|Snapshots
+|No
+|Yes
+
+|Space efficiency
+|Lower (full allocation)
+|Higher (thin provisioning)
+
+|Multi-node support
+|Yes (per-node storage pools)
+|Yes
+
+|Production readiness
+|Dev/test recommended
+|Production ready
+
+|===
+
+For production deployments requiring advanced features like snapshots and thin provisioning, see the xref:lvm-operator.adoc[LVM Storage Operator] tutorial.
+
+=== What You'll Learn
+
+* Configure HostPathProvisioner for local storage
+* Create a StorageClass for HPP
+* Prepare node directories with proper permissions
+* Create PVCs and use with VMs
+
+Versions tested:
+----
+OpenShift 4.18+
+OpenShift Virtualization 4.18+
+----
+
+== Prerequisites
+
+* **OpenShift 4.18+** with OpenShift Virtualization installed
+* **Cluster admin access**: Required to create HostPathProvisioner and StorageClass resources
+* **Available local disk space**: Sufficient space on worker nodes for VM storage
+* **oc CLI**: Installed and configured
+
+Verify OpenShift Virtualization is installed:
+
+[source,bash,role=execute]
+----
+oc get csv -n openshift-cnv | grep kubevirt
+----
+
+Expected output shows the operator version:
+----
+kubevirt-hyperconverged-operator.v4.21.1   OpenShift Virtualization   4.21.1   Succeeded
+----
+
+== Step 1: Prepare Host Directories
+
+HPP requires a directory on each node where volumes will be stored. This directory must exist and have proper SELinux context.
+
+=== Option A: Using MachineConfig (Recommended for Production)
+
+Create a MachineConfig to ensure the directory exists on all worker nodes and persists across reboots:
+
+xref:attachment$hpp-machineconfig.yaml[Download hpp-machineconfig.yaml]
+
+[source,yaml]
+----
+oc apply -f - <<EOF
+apiVersion: machineconfiguration.openshift.io/v1
+kind: MachineConfig
+metadata:
+  name: 50-hpp-directory
+  labels:
+    machineconfiguration.openshift.io/role: worker
+spec:
+  config:
+    ignition:
+      version: 3.2.0
+    systemd:
+      units:
+      - name: create-hpp-directory.service
+        enabled: true
+        contents: |
+          [Unit]
+          Description=Create HostPath Provisioner directory
+          Before=kubelet.service
+
+          [Service]
+          Type=oneshot
+          ExecStart=/bin/mkdir -p /var/hpvolumes
+          ExecStart=/bin/chcon -Rt container_file_t /var/hpvolumes
+          RemainAfterExit=yes
+
+          [Install]
+          WantedBy=multi-user.target
+EOF
+----
+
+NOTE: Applying a MachineConfig will trigger a rolling reboot of worker nodes. Allow time for all nodes to update before proceeding.
+
+Monitor the MachineConfig rollout:
+
+[source,bash,role=execute]
+----
+oc get mcp worker
+----
+
+Wait until `UPDATED` shows `True` and `UPDATING` shows `False`:
+----
+NAME     CONFIG                                             UPDATED   UPDATING   DEGRADED   MACHINECOUNT   READYMACHINECOUNT
+worker   rendered-worker-abc123                             True      False      False      6              6
+----
+
+=== Option B: Manual Directory Creation (Quick Testing)
+
+For quick testing, manually create directories on each node:
+
+[source,bash,role=execute]
+----
+# Get list of worker nodes
+oc get nodes -l node-role.kubernetes.io/worker
+
+# Create directory on each worker node
+for node in $(oc get nodes -l node-role.kubernetes.io/worker -o name); do
+  echo "Creating directory on ${node}..."
+  oc debug ${node} -- chroot /host mkdir -p /var/hpvolumes
+  oc debug ${node} -- chroot /host chcon -Rt container_file_t /var/hpvolumes
+done
+----
+
+NOTE: Manual directory creation does not persist across node reboots. Use MachineConfig for persistent configuration.
+
+=== Verify Directory Creation
+
+Confirm the directory exists with correct SELinux context:
+
+[source,bash,role=execute]
+----
+# Check one worker node
+oc debug node/worker01 -- chroot /host ls -laZ /var/hpvolumes
+----
+
+Expected output:
+----
+total 0
+drwxr-xr-x. 2 root root system_u:object_r:container_file_t:s0 6 Mar 19 10:00 .
+drwxr-xr-x. 22 root root system_u:object_r:var_t:s0          4096 Mar 19 10:00 ..
+----
+
+The `container_file_t` SELinux context allows containers to read and write to this directory.
+
+== Step 2: Create HostPathProvisioner
+
+Create the HostPathProvisioner custom resource to configure the CSI driver:
+
+xref:attachment$hpp-hostpathprovisioner.yaml[Download hpp-hostpathprovisioner.yaml]
+
+[source,yaml]
+----
+oc apply -f - <<EOF
+apiVersion: hostpathprovisioner.kubevirt.io/v1beta1
+kind: HostPathProvisioner
+metadata:
+  name: hostpath-provisioner
+spec:
+  imagePullPolicy: IfNotPresent
+  storagePools:
+  - name: local
+    path: /var/hpvolumes
+  workload:
+    nodeSelector:
+      kubernetes.io/os: linux
+EOF
+----
+
+=== Configuration Parameters
+
+* **`storagePools`**: Define one or more storage pools, each with a unique name and path
+** `name`: Identifier used in StorageClass to reference this pool
+** `path`: Directory on host nodes where volumes are created
+* **`workload.nodeSelector`**: Controls which nodes run the HPP CSI pods
+* **`imagePullPolicy`**: Container image pull policy
+
+=== Verify HostPathProvisioner
+
+Check the HostPathProvisioner status:
+
+[source,bash,role=execute]
+----
+oc get hostpathprovisioner hostpath-provisioner
+----
+
+Expected output:
+----
+NAME                   AGE   STATUS
+hostpath-provisioner   30s   Ready
+----
+
+Verify the CSI pods are running on worker nodes:
+
+[source,bash,role=execute]
+----
+oc get pods -n openshift-cnv -l k8s-app=hostpath-provisioner
+----
+
+Expected output (one pod per worker node):
+----
+NAME                                           READY   STATUS    RESTARTS   AGE
+hostpath-provisioner-csi-xxxxx                 4/4     Running   0          2m
+hostpath-provisioner-csi-yyyyy                 4/4     Running   0          2m
+hostpath-provisioner-csi-zzzzz                 4/4     Running   0          2m
+----
+
+== Step 3: Create StorageClass
+
+Create a StorageClass that uses the HostPath Provisioner:
+
+xref:attachment$hpp-storageclass.yaml[Download hpp-storageclass.yaml]
+
+[source,yaml]
+----
+oc apply -f - <<EOF
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: hostpath-csi
+provisioner: kubevirt.io.hostpath-provisioner
+reclaimPolicy: Delete
+volumeBindingMode: WaitForFirstConsumer
+parameters:
+  storagePool: local
+EOF
+----
+
+=== Configuration Parameters
+
+* **`provisioner`**: Must be `kubevirt.io.hostpath-provisioner`
+* **`reclaimPolicy`**: `Delete` removes the PV data when PVC is deleted; use `Retain` to preserve data
+* **`volumeBindingMode`**: `WaitForFirstConsumer` delays PV creation until a pod uses the PVC, ensuring the volume is created on the correct node
+* **`parameters.storagePool`**: References the storage pool name defined in HostPathProvisioner
+
+=== Verify StorageClass
+
+[source,bash,role=execute]
+----
+oc get storageclass hostpath-csi
+----
+
+Expected output:
+----
+NAME           PROVISIONER                        RECLAIMPOLICY   VOLUMEBINDINGMODE      ALLOWVOLUMEEXPANSION   AGE
+hostpath-csi   kubevirt.io.hostpath-provisioner   Delete          WaitForFirstConsumer   false                  10s
+----
+
+=== Optional: Set as Default StorageClass
+
+To make HPP the default storage class (useful for dev/test clusters without other storage):
+
+[source,bash,role=execute]
+----
+oc patch storageclass hostpath-csi -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}'
+----
+
+NOTE: A cluster should have only one default StorageClass. If another default exists, remove its annotation first:
+
+[source,bash,role=execute]
+----
+# Remove default from existing storage class
+oc patch storageclass <existing-default> -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"false"}}}'
+----
+
+== Step 4: Test Storage Provisioning
+
+Create a test PVC to verify HPP is working:
+
+xref:attachment$hpp-test-pvc.yaml[Download hpp-test-pvc.yaml]
+
+[source,yaml]
+----
+oc apply -f - <<EOF
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: hpp-test-pvc
+  namespace: default
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+  storageClassName: hostpath-csi
+EOF
+----
+
+Check PVC status:
+
+[source,bash,role=execute]
+----
+oc get pvc hpp-test-pvc
+----
+
+With `WaitForFirstConsumer`, the PVC remains `Pending` until a pod uses it:
+----
+NAME           STATUS    VOLUME   CAPACITY   ACCESS MODES   STORAGECLASS   AGE
+hpp-test-pvc   Pending                                      hostpath-csi   5s
+----
+
+Create a test pod to trigger volume binding:
+
+[source,yaml]
+----
+oc apply -f - <<EOF
+apiVersion: v1
+kind: Pod
+metadata:
+  name: hpp-test-pod
+  namespace: default
+spec:
+  containers:
+  - name: test
+    image: registry.access.redhat.com/ubi9/ubi:latest
+    command: ["sleep", "3600"]
+    volumeMounts:
+    - name: data
+      mountPath: /data
+  volumes:
+  - name: data
+    persistentVolumeClaim:
+      claimName: hpp-test-pvc
+EOF
+----
+
+Verify the PVC is now bound:
+
+[source,bash,role=execute]
+----
+oc get pvc hpp-test-pvc
+----
+
+Expected output:
+----
+NAME           STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   AGE
+hpp-test-pvc   Bound    pvc-abc12345-6789-def0-1234-567890abcdef   5Gi        RWO            hostpath-csi   30s
+----
+
+Test writing to the volume:
+
+[source,bash,role=execute]
+----
+oc exec hpp-test-pod -- sh -c "echo 'HPP Storage Test' > /data/test.txt && cat /data/test.txt"
+----
+
+Expected output:
+----
+HPP Storage Test
+----
+
+Clean up test resources:
+
+[source,bash,role=execute]
+----
+oc delete pod hpp-test-pod
+oc delete pvc hpp-test-pvc
+----
+
+== Step 5: Use with Virtual Machines
+
+Create a VM that uses HPP-backed storage:
+
+xref:attachment$hpp-test-vm.yaml[Download hpp-test-vm.yaml]
+
+[source,yaml]
+----
+oc apply -f - <<EOF
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: hpp-test-vm
+  namespace: default
+spec:
+  running: true
+  template:
+    metadata:
+      labels:
+        kubevirt.io/vm: hpp-test-vm
+    spec:
+      domain:
+        cpu:
+          cores: 1
+        devices:
+          disks:
+          - name: rootdisk
+            disk:
+              bus: virtio
+          - name: cloudinitdisk
+            disk:
+              bus: virtio
+          interfaces:
+          - name: default
+            masquerade: {}
+        resources:
+          requests:
+            memory: 1Gi
+      networks:
+      - name: default
+        pod: {}
+      volumes:
+      - name: rootdisk
+        dataVolume:
+          name: hpp-test-vm-rootdisk
+      - name: cloudinitdisk
+        cloudInitNoCloud:
+          userData: |
+            #cloud-config
+            user: fedora
+            password: fedora
+            chpasswd:
+              expire: false
+  dataVolumeTemplates:
+  - metadata:
+      name: hpp-test-vm-rootdisk
+    spec:
+      storage:
+        accessModes:
+        - ReadWriteOnce
+        resources:
+          requests:
+            storage: 10Gi
+        storageClassName: hostpath-csi
+      source:
+        registry:
+          url: docker://quay.io/containerdisks/fedora:latest
+EOF
+----
+
+Monitor VM and DataVolume status:
+
+[source,bash,role=execute]
+----
+# Watch DataVolume import progress
+oc get dv -n default hpp-test-vm-rootdisk -w
+----
+
+Expected progression:
+----
+NAME                    PHASE              PROGRESS   AGE
+hpp-test-vm-rootdisk    ImportScheduled    N/A        5s
+hpp-test-vm-rootdisk    ImportInProgress   0.00%      10s
+hpp-test-vm-rootdisk    ImportInProgress   45.50%     30s
+hpp-test-vm-rootdisk    Succeeded          100%       1m
+----
+
+Check VM status:
+
+[source,bash,role=execute]
+----
+oc get vm hpp-test-vm
+oc get vmi hpp-test-vm
+----
+
+Expected output:
+----
+NAME          AGE   STATUS    READY
+hpp-test-vm   2m    Running   True
+----
+
+Access the VM console:
+
+[source,bash,role=execute]
+----
+virtctl console hpp-test-vm
+----
+
+Clean up VM resources:
+
+[source,bash,role=execute]
+----
+oc delete vm hpp-test-vm
+----
+
+== Troubleshooting
+
+=== PVC Stuck in Pending
+
+If PVC remains pending after pod creation:
+
+[source,bash,role=execute]
+----
+# Check PVC events
+oc describe pvc <pvc-name>
+
+# Check HPP pod logs
+oc logs -n openshift-cnv -l k8s-app=hostpath-provisioner -c hostpath-provisioner
+----
+
+Common causes:
+
+* **Directory doesn't exist**: Verify `/var/hpvolumes` exists on the target node
+* **SELinux context incorrect**: Check `chcon -Rt container_file_t /var/hpvolumes` was applied
+* **HPP pods not running**: Verify HPP CSI pods are running on all worker nodes
+
+=== Permission Denied Errors
+
+If pods fail with permission errors when writing to volumes:
+
+[source,bash,role=execute]
+----
+# Check SELinux context on host
+oc debug node/<node-name> -- chroot /host ls -laZ /var/hpvolumes
+
+# Reapply SELinux context if needed
+oc debug node/<node-name> -- chroot /host chcon -Rt container_file_t /var/hpvolumes
+----
+
+=== HPP Pods Not Starting
+
+Check HostPathProvisioner status and events:
+
+[source,bash,role=execute]
+----
+oc describe hostpathprovisioner hostpath-provisioner
+
+# Check for issues in openshift-cnv namespace
+oc get events -n openshift-cnv --sort-by='.lastTimestamp' | tail -20
+----
+
+=== Volume Not Created on Expected Node
+
+With `WaitForFirstConsumer`, the volume is created on the node where the pod is scheduled. If you need control over node placement:
+
+[source,yaml]
+----
+# Add nodeSelector to pod spec
+spec:
+  nodeSelector:
+    kubernetes.io/hostname: worker01
+----
+
+== Cleanup
+
+To remove HPP from your cluster:
+
+[source,bash,role=execute]
+----
+# Delete StorageClass
+oc delete storageclass hostpath-csi
+
+# Delete HostPathProvisioner
+oc delete hostpathprovisioner hostpath-provisioner
+
+# Optional: Remove MachineConfig (will trigger node reboot)
+oc delete machineconfig 50-hpp-directory
+----
+
+NOTE: Deleting the HostPathProvisioner does not remove existing PVs. Delete PVCs first if you want to clean up all data.
+
+== Summary
+
+You have learned how to:
+
+* Configure HostPath Provisioner for local storage on OpenShift
+* Create storage pools and StorageClasses for HPP
+* Prepare node directories with proper SELinux context
+* Use HPP storage with both pods and VMs
+* Troubleshoot common HPP issues
+
+HPP provides a simple, lightweight storage solution ideal for development and testing. For production workloads requiring advanced features, consider the xref:lvm-operator.adoc[LVM Storage Operator].
+
+== See Also
+
+* xref:lvm-operator.adoc[LVM Storage Operator] - Production-ready local storage with thin provisioning and snapshots
+* xref:lvm-troubleshooting.adoc[LVM Storage Troubleshooting] - Diagnosing storage issues
+* link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.18/html/virtualization/storage#virt-configuring-local-storage-with-hpp_virt-configuring-storage[OpenShift Virtualization: Configuring Local Storage with HPP,window=_blank]

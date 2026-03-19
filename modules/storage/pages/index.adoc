@@ -3,7 +3,7 @@
 
 == Overview
 
-This module covers storage configuration for OpenShift Virtualization, including installation and configuration of the LVM Storage operator and troubleshooting storage issues.
+This module covers storage configuration for OpenShift Virtualization, including LVM Storage operator, HostPath Provisioner, and troubleshooting storage issues.
 
 Proper storage configuration is essential for virtual machine deployments, as VMs require persistent storage for their disks and data.
 
@@ -12,8 +12,9 @@ Proper storage configuration is essential for virtual machine deployments, as VM
 In this section, you will learn:
 
 * How to install and configure the LVM Storage operator for local disk storage
+* How to configure HostPath Provisioner for simple local storage
 * How to set a default storage class for automatic provisioning
-* How to troubleshoot common LVM storage issues
+* How to troubleshoot common storage issues
 * Best practices for storage configuration in OpenShift Virtualization
 
 == Storage Options for OpenShift Virtualization
@@ -21,12 +22,12 @@ In this section, you will learn:
 OpenShift Virtualization supports various storage backends:
 
 * **LVM Storage**: Local disk storage using Logical Volume Manager (covered in this module)
+* **HostPath Provisioner**: Simple local storage provisioning (covered in this module)
 * **Ceph/ODF**: Distributed block and file storage
-* **HostPath Provisioner**: Simple local storage provisioning
 * **NFS**: Network-attached storage
 * **External storage providers**: AWS EBS, Azure Disk, etc.
 
-This module focuses on LVM Storage, which is ideal for Single Node OpenShift (SNO) and bare-metal deployments with local disks.
+This module covers LVM Storage and HostPath Provisioner for local storage scenarios, ideal for Single Node OpenShift (SNO) and bare-metal deployments.
 
 == Prerequisites
 
@@ -44,6 +45,9 @@ Step-by-step guide to install and configure the LVM Storage operator with a loca
 
 xref:lvm-troubleshooting.adoc[]::
 Troubleshooting guide for diagnosing and resolving LVM storage issues.
+
+xref:hostpath-provisioner.adoc[]::
+Configure local storage using the HostPath Provisioner for development, testing, and single-node cluster scenarios.
 
 == Why Default Storage Class Matters
 
