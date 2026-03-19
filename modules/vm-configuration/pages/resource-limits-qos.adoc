@@ -235,36 +235,67 @@ vm-burstable     60s   Running   True
 vm-guaranteed    45s   Running   True
 ----
 
-Check the QoS class assigned to each VM's pod:
+Check the QoS class assigned to each VM's pod.
+
+For the burstable VM:
 
 [source,bash,role=execute]
 ----
-for vm in vm-burstable vm-guaranteed vm-besteffort; do
-  pod=$(oc get vmi $vm -n resource-qos-demo -o jsonpath='{.metadata.name}')
-  qos=$(oc get pod -n resource-qos-demo -l kubevirt.io/domain=$vm -o jsonpath='{.items[0].status.qosClass}')
-  echo "$vm: QoS=$qos"
-done
+oc get pod -n resource-qos-demo -l kubevirt.io/domain=vm-burstable -o jsonpath='{.items[0].status.qosClass}{"\n"}'
 ----
 
 Expected output:
 ----
-vm-burstable: QoS=Burstable
-vm-guaranteed: QoS=Guaranteed
-vm-besteffort: QoS=Burstable
+Burstable
+----
+
+For the guaranteed VM:
+
+[source,bash,role=execute]
+----
+oc get pod -n resource-qos-demo -l kubevirt.io/domain=vm-guaranteed -o jsonpath='{.items[0].status.qosClass}{"\n"}'
+----
+
+Expected output:
+----
+Guaranteed
+----
+
+For the best-effort VM:
+
+[source,bash,role=execute]
+----
+oc get pod -n resource-qos-demo -l kubevirt.io/domain=vm-besteffort -o jsonpath='{.items[0].status.qosClass}{"\n"}'
+----
+
+Expected output:
+----
+Burstable
 ----
 
 NOTE: Even vm-besteffort shows Burstable rather than BestEffort because KubeVirt always adds some base resource requests for the virt-launcher container overhead.
 
-Inspect the actual resource values on the virt-launcher pods:
+Inspect the actual resource values on the virt-launcher pods.
+
+For the burstable VM:
 
 [source,bash,role=execute]
 ----
-for vm in vm-burstable vm-guaranteed vm-besteffort; do
-  echo "=== $vm ==="
-  oc get pod -n resource-qos-demo -l kubevirt.io/domain=$vm \
-    -o jsonpath='{range .items[0].spec.containers[*]}{.name}: requests={.resources.requests} limits={.resources.limits}{"\n"}{end}'
-  echo ""
-done
+oc get pod -n resource-qos-demo -l kubevirt.io/domain=vm-burstable -o yaml
+----
+
+For the guaranteed VM:
+
+[source,bash,role=execute]
+----
+oc get pod -n resource-qos-demo -l kubevirt.io/domain=vm-guaranteed -o yaml
+----
+
+For the best-effort VM:
+
+[source,bash,role=execute]
+----
+oc get pod -n resource-qos-demo -l kubevirt.io/domain=vm-besteffort -o yaml
 ----
 
 == Step 4: Apply ResourceQuotas
