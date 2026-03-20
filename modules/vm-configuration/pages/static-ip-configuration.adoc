@@ -1,0 +1,747 @@
+= Configuring Static IPs for VMs
+:navtitle: Static IP Configuration
+
+== Overview
+
+This tutorial covers the methods available for assigning static IP addresses to virtual machines in OpenShift Virtualization. While DHCP is the default and simplest approach, many workloads require predictable, fixed IP addresses for integration with external systems, compliance, or legacy application requirements.
+
+You will learn how to configure static IPs using four distinct methods:
+
+* **Cloud-init `networkData`** -- configure networking at first boot (Linux VMs)
+* **DHCP reservations** -- bind a fixed IP to a MAC address on an external DHCP server
+* **QEMU guest agent with `nmcli`** -- apply static IPs post-boot via the guest agent
+* **Sysprep (Windows VMs)** -- configure networking through `unattend.xml`
+
+Each method has different trade-offs in terms of automation, flexibility, and operational overhead. Choose the one that best fits your environment.
+
+== What You Will Learn
+
+* The trade-offs of assigning static IPs in OpenShift Virtualization
+* How to configure static IPs at first boot using cloud-init `networkData`
+* How to use DHCP reservations with fixed MAC addresses
+* How to apply static IPs post-boot using the QEMU guest agent and `nmcli`
+* How to configure static IPs for Windows VMs using Sysprep
+* How to choose the right method for your environment
+
+== Trade-offs and Considerations
+
+Before assigning static IPs, understand the implications:
+
+Loss of cluster-managed networking::
+When you assign a static IP on a secondary network, the VM may lose access to OpenShift `Services` and `Routes` that rely on the default pod network. The primary interface (connected to the pod network) should retain its DHCP-assigned address to preserve cluster connectivity.
+
+No cluster awareness of assigned addresses::
+Static IPs bypass OVN-Kubernetes IPAM. The cluster does not track these addresses, which can lead to IP conflicts if assignments are not managed externally. Maintain an IP address inventory or use an external IPAM solution.
+
+Maintenance overhead::
+Static IP assignments must be tracked and updated manually (or via external IPAM) as VMs are created, moved, or removed. DHCP with reservations can reduce this burden.
+
+When static IPs are appropriate::
+* Legacy workloads that require fixed addresses
+* Integration with external systems (firewalls, load balancers, monitoring) that reference IPs directly
+* Environments without a DHCP server on the target network
+* Regulatory or compliance requirements for address traceability
+
+When to prefer DHCP or OVN-Kubernetes IPAM::
+* Ephemeral or frequently recreated VMs
+* Environments with reliable DHCP infrastructure
+* Workloads that communicate exclusively through Kubernetes Services and DNS
+
+== Prerequisites
+
+* OpenShift 4.18+ with OpenShift Virtualization operator installed
+* CLI tools: `oc`, `virtctl`
+* At least one configured network (primary pod network)
+* For secondary network scenarios: a NetworkAttachmentDefinition (NAD) configured (see xref:networking:localnet-vlan.adoc[Localnet VLAN Tutorial])
+* For DHCP reservation scenarios: administrative access to an external DHCP server
+* Basic understanding of networking (IP addressing, subnets, gateways, DNS)
+
+== Method 1: Cloud-init networkData
+
+Cloud-init is an industry-standard initialization tool that runs during VM boot. The `networkData` field in the `cloudInitNoCloud` volume provides dedicated network configuration using netplan-compatible version 2 format.
+
+This is the most common method for Linux VMs in OpenShift Virtualization.
+
+=== How It Works
+
+. The VM boots and cloud-init reads the `networkData` from the NoCloud datasource.
+. Cloud-init applies the network configuration before user-space services start.
+. The configuration persists across reboots.
+
+=== Configuration Format
+
+Cloud-init network configuration uses version 2 (netplan) format:
+
+[source,yaml]
+----
+networkData: |
+  version: 2
+  ethernets:
+    enp1s0:
+      dhcp4: true
+    enp2s0:
+      dhcp4: false
+      dhcp6: false
+      addresses:
+        - 192.168.100.50/24
+      nameservers:
+        addresses:
+          - 192.168.100.1
+----
+
+In this example, `enp1s0` (the primary pod network interface) uses DHCP, while `enp2s0` (the secondary interface) receives a static IP.
+
+=== Precedence Order
+
+. `networkData` configuration (highest priority)
+. Datasource network configuration
+. Fallback to DHCP (default)
+
+=== Interface Naming in KubeVirt
+
+KubeVirt uses predictable network interface naming inside guest VMs. Interfaces are named sequentially based on their PCI slot:
+
+* `enp1s0` -- first interface (typically the pod network)
+* `enp2s0` -- second interface (first secondary network)
+* `enp3s0` -- third interface (second secondary network)
+
+IMPORTANT: Do not use legacy names like `eth0`. Use the predictable names (`enpXs0`) that match the order of interfaces defined in the VM spec.
+
+=== Where Static IPs Apply
+
+Static IP configuration applies to **secondary network interfaces only**. The primary interface connects to the pod network via masquerade and receives its IP automatically from the cluster -- do not assign a static IP to it. The masquerade bridge operates on an internal subnet (`10.0.2.0/24`) that is translated by NAT to the pod IP. Overriding this with a static address on a different subnet will break connectivity.
+
+All examples in this tutorial configure static IPs on secondary interfaces (`enp2s0` and above) while leaving the primary interface (`enp1s0`) on DHCP.
+
+=== Scenario: Primary DHCP + Secondary Static IP
+
+This is the standard approach. The primary interface uses DHCP on the pod network, while a secondary interface on a VLAN or bridge network gets a static IP.
+
+Prerequisites: Ensure you have a secondary network configured (for example, a localnet VLAN 100 NetworkAttachmentDefinition (NAD)). See xref:networking:localnet-vlan.adoc[Localnet VLAN Tutorial] for setup instructions.
+
+Create a namespace for this tutorial:
+
+[source,bash,role=execute]
+----
+oc create namespace static-ip-demo
+----
+
+xref:attachment$static-ip-configuration/fedora-multi-network-vm.yaml[Download fedora-multi-network-vm.yaml]
+
+[source,yaml]
+----
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: fedora-multi-vm
+  namespace: static-ip-demo
+spec:
+  dataVolumeTemplates:
+    - apiVersion: cdi.kubevirt.io/v1beta1
+      kind: DataVolume
+      metadata:
+        name: fedora-multi-vm-disk
+      spec:
+        sourceRef:
+          kind: DataSource
+          name: fedora
+          namespace: openshift-virtualization-os-images
+        storage:
+          resources:
+            requests:
+              storage: 30Gi
+  runStrategy: RerunOnFailure
+  template:
+    metadata:
+      labels:
+        kubevirt.io/domain: fedora-multi-vm
+    spec:
+      domain:
+        cpu:
+          cores: 2
+        devices:
+          disks:
+            - disk:
+                bus: virtio
+              name: rootdisk
+            - disk:
+                bus: virtio
+              name: cloudinitdisk
+          interfaces:
+            - masquerade: {}
+              name: default
+            - bridge: {}
+              name: vlan-network
+          rng: {}
+        machine:
+          type: pc-q35-rhel9.4.0
+        memory:
+          guest: 4Gi
+      networks:
+        - name: default
+          pod: {}
+        - name: vlan-network
+          multus:
+            networkName: localnet-vlan-100
+      volumes:
+        - dataVolume:
+            name: fedora-multi-vm-disk
+          name: rootdisk
+        - cloudInitNoCloud:
+            userData: |-
+              #cloud-config
+              user: fedora
+              password: fedora123
+              chpasswd: { expire: False }
+              ssh_pwauth: True
+            networkData: |-
+              version: 2
+              ethernets:
+                enp1s0:
+                  dhcp4: true
+                enp2s0:
+                  dhcp4: false
+                  dhcp6: false
+                  addresses:
+                    - 192.168.100.50/24
+                  nameservers:
+                    addresses:
+                      - 192.168.100.1
+          name: cloudinitdisk
+----
+
+Deploy and verify:
+
+[source,bash,role=execute]
+----
+oc apply -f fedora-multi-network-vm.yaml
+----
+
+Access the VM console to confirm both interfaces:
+
+[source,bash,role=execute]
+----
+virtctl console fedora-multi-vm -n static-ip-demo
+----
+
+Inside the VM, verify the configuration:
+
+[source,bash]
+----
+ip addr show
+----
+
+[source,bash]
+----
+ip route show
+----
+
+NOTE: The first interface (`enp1s0`) uses DHCP and receives the default route automatically. The second interface (`enp2s0`) has a static IP without a default route. Do not set a default route on the secondary interface to avoid routing conflicts.
+
+=== Cloud-init Verification
+
+After deploying a VM with cloud-init, verify that the configuration was applied:
+
+[source,bash,role=execute]
+----
+virtctl console <vm-name> -n static-ip-demo
+----
+
+Inside the VM:
+
+[source,bash]
+----
+cloud-init status
+----
+
+[source,bash]
+----
+ip addr show
+----
+
+[source,bash]
+----
+nmcli connection show
+----
+
+Exit the console with `Ctrl+]`.
+
+If cloud-init reports errors, check the logs:
+
+[source,bash]
+----
+sudo cat /var/log/cloud-init.log
+----
+
+For detailed troubleshooting, see the xref:cloud-init-troubleshooting.adoc[Cloud-init Troubleshooting Guide].
+
+== Method 2: DHCP Reservations
+
+DHCP reservations (also called static DHCP or fixed-address DHCP) combine the automation of DHCP with the predictability of static IP assignment. The DHCP server maps a specific MAC address to a fixed IP, so the VM always receives the same address.
+
+=== How It Works
+
+. You assign a fixed MAC address to the VM's network interface in the VM spec.
+. On your external DHCP server, you create a reservation that maps that MAC to a specific IP.
+. The VM boots, sends a DHCP request, and receives its reserved address.
+
+=== When to Use This Method
+
+* You have an existing DHCP infrastructure and want centralized IP management
+* You prefer not to embed network configuration in VM manifests
+* You need the VM to be portable (the IP follows the MAC, not the manifest)
+
+=== Assigning a Static MAC Address
+
+To use DHCP reservations, you must set a fixed MAC address on the VM interface. Without this, KubeVirt assigns a random MAC at each boot, breaking the reservation.
+
+xref:attachment$static-ip-configuration/fedora-dhcp-reserved-vm.yaml[Download fedora-dhcp-reserved-vm.yaml]
+
+[source,yaml]
+----
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: fedora-dhcp-reserved-vm
+  namespace: static-ip-demo
+spec:
+  dataVolumeTemplates:
+    - apiVersion: cdi.kubevirt.io/v1beta1
+      kind: DataVolume
+      metadata:
+        name: fedora-dhcp-reserved-vm-disk
+      spec:
+        sourceRef:
+          kind: DataSource
+          name: fedora
+          namespace: openshift-virtualization-os-images
+        storage:
+          resources:
+            requests:
+              storage: 30Gi
+  runStrategy: RerunOnFailure
+  template:
+    metadata:
+      labels:
+        kubevirt.io/domain: fedora-dhcp-reserved-vm
+    spec:
+      domain:
+        cpu:
+          cores: 2
+        devices:
+          disks:
+            - disk:
+                bus: virtio
+              name: rootdisk
+            - disk:
+                bus: virtio
+              name: cloudinitdisk
+          interfaces:
+            - masquerade: {}
+              name: default
+            - bridge: {}
+              name: vlan-network
+              macAddress: "02:00:00:01:00:01"
+          rng: {}
+        machine:
+          type: pc-q35-rhel9.4.0
+        memory:
+          guest: 4Gi
+      networks:
+        - name: default
+          pod: {}
+        - name: vlan-network
+          multus:
+            networkName: localnet-vlan-100
+      volumes:
+        - dataVolume:
+            name: fedora-dhcp-reserved-vm-disk
+          name: rootdisk
+        - cloudInitNoCloud:
+            userData: |-
+              #cloud-config
+              user: fedora
+              password: fedora123
+              chpasswd: { expire: False }
+              ssh_pwauth: True
+          name: cloudinitdisk
+----
+
+The key difference from the cloud-init method is the `macAddress` field on the secondary interface. No `networkData` is needed because the DHCP server handles IP assignment.
+
+=== Configuring the DHCP Server
+
+On your external DHCP server, create a reservation for the MAC address. The exact configuration depends on your DHCP software.
+
+Example for ISC DHCP (`dhcpd.conf`):
+
+[source,text]
+----
+host fedora-dhcp-reserved-vm {
+  hardware ethernet 02:00:00:01:00:01;
+  fixed-address 192.168.100.60;
+}
+----
+
+Example for dnsmasq:
+
+[source,text]
+----
+dhcp-host=02:00:00:01:00:01,192.168.100.60,fedora-dhcp-reserved-vm
+----
+
+After configuring the reservation, deploy the VM:
+
+[source,bash,role=execute]
+----
+oc apply -f fedora-dhcp-reserved-vm.yaml
+----
+
+=== Verification
+
+Access the VM and confirm the IP matches the reservation:
+
+[source,bash,role=execute]
+----
+virtctl console fedora-dhcp-reserved-vm -n static-ip-demo
+----
+
+Inside the VM:
+
+[source,bash]
+----
+ip addr show enp2s0
+----
+
+The interface should have the IP `192.168.100.60` assigned by the DHCP server.
+
+NOTE: MAC addresses starting with `02:` are in the locally administered range and will not conflict with hardware vendor-assigned MACs.
+
+== Method 3: QEMU Guest Agent with nmcli
+
+The QEMU guest agent allows the host (KubeVirt) to communicate with a running VM. You can use this channel to configure networking after the VM has booted, using standard tools like `nmcli` inside the guest.
+
+This method is useful when you need to change network configuration on an already-running VM, or when cloud-init is not available or practical.
+
+=== How It Works
+
+. The VM boots with DHCP or no IP on the target interface.
+. The QEMU guest agent starts inside the VM.
+. You connect to the VM console (or SSH) and use `nmcli` to apply a static IP.
+. The configuration persists across reboots because NetworkManager saves it.
+
+=== Prerequisites
+
+* The VM image must include the `qemu-guest-agent` package (most Red Hat and Fedora images include it by default)
+* The guest agent must be running inside the VM
+
+=== Applying a Static IP
+
+First, deploy a VM with DHCP on the secondary interface (or no `networkData` for that interface).
+
+Connect to the VM:
+
+[source,bash,role=execute]
+----
+virtctl console <vm-name> -n static-ip-demo
+----
+
+Verify the guest agent is running:
+
+[source,bash]
+----
+systemctl status qemu-guest-agent
+----
+
+If the guest agent is not running, start and enable it:
+
+[source,bash]
+----
+sudo systemctl enable --now qemu-guest-agent
+----
+
+List the current network connections:
+
+[source,bash]
+----
+nmcli connection show
+----
+
+Identify the connection name for the target interface (for example, `enp2s0` or `Wired connection 2`).
+
+Apply the static IP configuration:
+
+[source,bash]
+----
+sudo nmcli connection modify "Wired connection 2" \
+  ipv4.method manual \
+  ipv4.addresses 192.168.100.70/24 \
+  ipv4.dns 192.168.100.1
+----
+
+Activate the updated configuration:
+
+[source,bash]
+----
+sudo nmcli connection up "Wired connection 2"
+----
+
+Verify the result:
+
+[source,bash]
+----
+ip addr show enp2s0
+----
+
+The configuration is saved by NetworkManager and persists across VM reboots.
+
+=== When to Use This Method
+
+* Post-deployment network changes on running VMs
+* VMs migrated from other platforms where cloud-init was not used
+* Temporary or dynamic network reconfiguration
+* Troubleshooting scenarios where you need to override cloud-init settings
+
+CAUTION: If the VM was originally configured with cloud-init `networkData`, cloud-init may overwrite `nmcli` changes on reboot (depending on the cloud-init configuration). To prevent this, either remove the `networkData` from the VM spec or configure cloud-init to not manage the target interface.
+
+== Method 4: Sysprep for Windows VMs
+
+For Windows virtual machines, Microsoft Sysprep with an `unattend.xml` answer file provides static IP configuration during the Windows Out-of-Box Experience (OOBE) or specialize pass.
+
+=== How It Works
+
+. You create an `unattend.xml` file with network settings.
+. The file is injected into the VM via a `sysprep` volume.
+. Windows reads the answer file during setup and applies the network configuration.
+
+=== Example unattend.xml Network Section
+
+The following snippet configures a static IP on the first network interface during the specialize pass:
+
+[source,xml]
+----
+<?xml version="1.0" encoding="utf-8"?>
+<unattend xmlns="urn:schemas-microsoft-com:unattend">
+  <settings pass="specialize">
+    <component name="Microsoft-Windows-TCPIP"
+               processorArchitecture="amd64"
+               publicKeyToken="31bf3856ad364e35"
+               language="neutral"
+               versionScope="nonSxS"
+               xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State">
+      <Interfaces>
+        <Interface wcm:action="add">
+          <Identifier>Ethernet</Identifier>
+          <Ipv4Settings>
+            <DhcpEnabled>false</DhcpEnabled>
+          </Ipv4Settings>
+          <UnicastIpAddresses>
+            <IpAddress wcm:action="add" wcm:keyValue="1">192.168.100.80/24</IpAddress>
+          </UnicastIpAddresses>
+          <Routes>
+            <Route wcm:action="add">
+              <Identifier>0</Identifier>
+              <NextHopAddress>192.168.100.1</NextHopAddress>
+              <Prefix>0.0.0.0/0</Prefix>
+            </Route>
+          </Routes>
+        </Interface>
+      </Interfaces>
+    </component>
+    <component name="Microsoft-Windows-DNS-Client"
+               processorArchitecture="amd64"
+               publicKeyToken="31bf3856ad364e35"
+               language="neutral"
+               versionScope="nonSxS"
+               xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State">
+      <Interfaces>
+        <Interface wcm:action="add">
+          <Identifier>Ethernet</Identifier>
+          <DNSServerSearchOrder>
+            <IpAddress wcm:action="add" wcm:keyValue="1">8.8.8.8</IpAddress>
+          </DNSServerSearchOrder>
+        </Interface>
+      </Interfaces>
+    </component>
+  </settings>
+</unattend>
+----
+
+=== Injecting the Answer File
+
+Store the `unattend.xml` in a ConfigMap and reference it in the VM spec as a `sysprep` volume. For a complete walkthrough of Windows VM deployment with Sysprep, see the link:https://docs.openshift.com/container-platform/latest/virt/virtual_machines/creating_vms_custom/virt-creating-vms-by-using-the-cli.html#virt-sysprep-windows[OpenShift documentation on creating Windows VMs with Sysprep,window=_blank].
+
+Create a ConfigMap with the answer file:
+
+[source,bash,role=execute]
+----
+oc create configmap windows-sysprep --from-file=unattend.xml -n static-ip-demo
+----
+
+Reference it in the VM spec:
+
+[source,yaml]
+----
+volumes:
+  - name: sysprep
+    sysprep:
+      configMap:
+        name: windows-sysprep
+----
+
+And add the corresponding disk:
+
+[source,yaml]
+----
+devices:
+  disks:
+    - cdrom:
+        bus: sata
+      name: sysprep
+----
+
+=== When to Use This Method
+
+* Windows Server VMs that require static IPs
+* Automated Windows deployments with answer files
+* Environments migrating Windows workloads from VMware or Hyper-V
+
+NOTE: Sysprep runs only during initial Windows setup. For post-deployment IP changes on Windows VMs, use PowerShell remoting or RDP to configure networking manually.
+
+== Choosing the Right Method
+
+The following table summarizes when to use each method:
+
+[cols="1,1,1,1,1",options="header"]
+|===
+| Criteria
+| Cloud-init networkData
+| DHCP Reservations
+| Guest Agent / nmcli
+| Sysprep
+
+| Guest OS
+| Linux
+| Linux / Windows
+| Linux
+| Windows
+
+| Configuration timing
+| First boot
+| Every boot (DHCP)
+| Post-boot
+| First boot (OOBE)
+
+| Requires external server
+| No
+| Yes (DHCP server)
+| No
+| No
+
+| Persists across reboots
+| Yes
+| Yes (via DHCP)
+| Yes (NetworkManager)
+| Yes
+
+| Supports multi-interface
+| Yes
+| Yes
+| Yes
+| Limited
+
+| Declarative / in manifest
+| Yes
+| Partially (MAC only)
+| No
+| Yes (ConfigMap)
+
+| Post-deployment changes
+| Requires VM recreate
+| Update DHCP server
+| Direct on running VM
+| Manual via RDP/PowerShell
+|===
+
+== Common Issues and Solutions
+
+=== Interface names do not match
+
+**Problem**: Used `eth0` instead of `enp1s0` in `networkData`.
+
+**Solution**: Use predictable interface names as they appear inside the guest OS. Modern Linux distributions (RHEL 8+, Fedora, Ubuntu 16.04+) use `enp1s0`, `enp2s0`, and so on. The order matches the interface order in the VM spec.
+
+=== No connectivity on secondary interface
+
+**Problem**: Forgot to disable DHCP on the static interface.
+
+**Solution**: Always set `dhcp4: false` and `dhcp6: false` when using static IPs in cloud-init `networkData`.
+
+=== Multiple default routes cause connectivity issues
+
+**Problem**: Default route set on both primary and secondary interfaces.
+
+**Solution**: Only set a default route on the primary interface (usually `enp1s0`). Secondary interfaces should not have a default route.
+
+=== Cloud-init configuration not applied
+
+**Problem**: Syntax error in YAML or cloud-init configuration.
+
+**Solution**: Check cloud-init logs inside the VM at `/var/log/cloud-init.log`. Verify YAML indentation and use `cloud-init status` to check for errors.
+
+=== DNS not resolving on secondary network
+
+**Problem**: Nameservers not configured or incorrect on the secondary interface.
+
+**Solution**: Add appropriate nameservers in the `networkData` for the interface. If the secondary interface is on an isolated network, external DNS may not be needed.
+
+=== DHCP reservation not working
+
+**Problem**: VM receives a different IP each boot despite DHCP reservation.
+
+**Solution**: Verify the `macAddress` field is set in the VM interface spec. Without a fixed MAC, KubeVirt assigns a random one at each boot. Also confirm the DHCP server reservation matches the MAC address exactly.
+
+For detailed cloud-init troubleshooting, see the xref:cloud-init-troubleshooting.adoc[Cloud-init Troubleshooting Guide].
+
+== Cleanup
+
+To remove all resources created in this tutorial, delete any VMs you deployed:
+
+[source,bash,role=execute]
+----
+oc delete vm fedora-multi-vm -n static-ip-demo --ignore-not-found
+----
+
+[source,bash,role=execute]
+----
+oc delete vm fedora-dhcp-reserved-vm -n static-ip-demo --ignore-not-found
+----
+
+Then delete the namespace:
+
+[source,bash,role=execute]
+----
+oc delete namespace static-ip-demo
+----
+
+== Summary
+
+In this tutorial, you learned:
+
+* The trade-offs of using static IPs in OpenShift Virtualization
+* How to configure static IPs with cloud-init `networkData` for Linux VMs
+* How to use DHCP reservations with fixed MAC addresses for predictable addressing
+* How to apply static IPs post-boot using the QEMU guest agent and `nmcli`
+* How to configure static IPs for Windows VMs using Sysprep and `unattend.xml`
+* How to choose the right method based on your environment and requirements
+* Common issues and their solutions
+
+== References
+
+* link:https://cloudinit.readthedocs.io/en/latest/reference/network-config.html[Cloud-init Network Configuration,window=_blank]
+* link:https://docs.openshift.com/container-platform/latest/virt/virtual_machines/creating_vms_custom/virt-creating-vms-by-using-the-cli.html[Creating VMs by Using the CLI,window=_blank]
+* link:https://docs.openshift.com/container-platform/latest/virt/about_virt/about-virt.html[OpenShift Virtualization Documentation,window=_blank]
+* link:https://kubevirt.io/user-guide/network/interfaces_and_networks/[KubeVirt Network Interfaces and Networks,window=_blank]
+* link:https://learn.microsoft.com/en-us/windows-hardware/manufacture/desktop/automate-windows-setup[Microsoft Sysprep and Unattend Reference,window=_blank]
+* xref:cloud-init-troubleshooting.adoc[Cloud-init Troubleshooting Guide]
+* xref:networking:localnet-vlan.adoc[Localnet VLAN Tutorial]
