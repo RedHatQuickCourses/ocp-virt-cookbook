@@ -57,16 +57,17 @@ For production deployments requiring advanced features like snapshots and thin p
 
 Versions tested:
 ----
-OpenShift 4.18+
-OpenShift Virtualization 4.18+
+OpenShift 4.21+
+OpenShift Virtualization 4.21+
 ----
 
 == Prerequisites
 
-* **OpenShift 4.18+** with OpenShift Virtualization installed
+* **OpenShift 4.21+** with OpenShift Virtualization installed
 * **Cluster admin access**: Required to create HostPathProvisioner and StorageClass resources
 * **Available local disk space**: Sufficient space on worker nodes for VM storage
 * **oc CLI**: Installed and configured
+* **virtctl CLI**: Required for VM console access
 
 Verify OpenShift Virtualization is installed:
 
@@ -75,9 +76,9 @@ Verify OpenShift Virtualization is installed:
 oc get csv -n openshift-cnv | grep kubevirt
 ----
 
-Expected output shows the operator version:
+Expected output shows the operator version (version will vary):
 ----
-kubevirt-hyperconverged-operator.v4.21.1   OpenShift Virtualization   4.21.1   Succeeded
+kubevirt-hyperconverged-operator.v4.x.x   OpenShift Virtualization   4.x.x   Succeeded
 ----
 
 == Step 1: Prepare Host Directories
@@ -90,7 +91,7 @@ Create a MachineConfig to ensure the directory exists on all worker nodes and pe
 
 xref:attachment$hpp-machineconfig.yaml[Download hpp-machineconfig.yaml]
 
-[source,yaml]
+[source,bash,role=execute]
 ----
 oc apply -f - <<EOF
 apiVersion: machineconfiguration.openshift.io/v1
@@ -140,19 +141,25 @@ worker   rendered-worker-abc123                             True      False     
 
 === Option B: Manual Directory Creation (Quick Testing)
 
-For quick testing, manually create directories on each node:
+For quick testing, manually create directories on each node.
+
+First, get the list of worker nodes:
 
 [source,bash,role=execute]
 ----
-# Get list of worker nodes
 oc get nodes -l node-role.kubernetes.io/worker
+----
 
-# Create directory on each worker node
-for node in $(oc get nodes -l node-role.kubernetes.io/worker -o name); do
-  echo "Creating directory on ${node}..."
-  oc debug ${node} -- chroot /host mkdir -p /var/hpvolumes
-  oc debug ${node} -- chroot /host chcon -Rt container_file_t /var/hpvolumes
-done
+Then, for each worker node, run the following commands (replace `<worker-node-name>` with the actual node name):
+
+[source,bash,role=execute]
+----
+oc debug node/<worker-node-name> -- chroot /host mkdir -p /var/hpvolumes
+----
+
+[source,bash,role=execute]
+----
+oc debug node/<worker-node-name> -- chroot /host chcon -Rt container_file_t /var/hpvolumes
 ----
 
 NOTE: Manual directory creation does not persist across node reboots. Use MachineConfig for persistent configuration.
@@ -163,8 +170,7 @@ Confirm the directory exists with correct SELinux context:
 
 [source,bash,role=execute]
 ----
-# Check one worker node
-oc debug node/worker01 -- chroot /host ls -laZ /var/hpvolumes
+oc debug node/<worker-node-name> -- chroot /host ls -laZ /var/hpvolumes
 ----
 
 Expected output:
@@ -182,7 +188,7 @@ Create the HostPathProvisioner custom resource to configure the CSI driver:
 
 xref:attachment$hpp-hostpathprovisioner.yaml[Download hpp-hostpathprovisioner.yaml]
 
-[source,yaml]
+[source,bash,role=execute]
 ----
 oc apply -f - <<EOF
 apiVersion: hostpathprovisioner.kubevirt.io/v1beta1
@@ -219,8 +225,8 @@ oc get hostpathprovisioner hostpath-provisioner
 
 Expected output:
 ----
-NAME                   AGE   STATUS
-hostpath-provisioner   30s   Ready
+NAME                   AGE
+hostpath-provisioner   30s
 ----
 
 Verify the CSI pods are running on worker nodes:
@@ -244,7 +250,7 @@ Create a StorageClass that uses the HostPath Provisioner:
 
 xref:attachment$hpp-storageclass.yaml[Download hpp-storageclass.yaml]
 
-[source,yaml]
+[source,bash,role=execute]
 ----
 oc apply -f - <<EOF
 apiVersion: storage.k8s.io/v1
@@ -302,7 +308,7 @@ Create a test PVC to verify HPP is working:
 
 xref:attachment$hpp-test-pvc.yaml[Download hpp-test-pvc.yaml]
 
-[source,yaml]
+[source,bash,role=execute]
 ----
 oc apply -f - <<EOF
 apiVersion: v1
@@ -329,13 +335,13 @@ oc get pvc hpp-test-pvc
 
 With `WaitForFirstConsumer`, the PVC remains `Pending` until a pod uses it:
 ----
-NAME           STATUS    VOLUME   CAPACITY   ACCESS MODES   STORAGECLASS   AGE
-hpp-test-pvc   Pending                                      hostpath-csi   5s
+NAME           STATUS    VOLUME   CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   AGE
+hpp-test-pvc   Pending                                      hostpath-csi   <unset>                 5s
 ----
 
 Create a test pod to trigger volume binding:
 
-[source,yaml]
+[source,bash,role=execute]
 ----
 oc apply -f - <<EOF
 apiVersion: v1
@@ -367,9 +373,11 @@ oc get pvc hpp-test-pvc
 
 Expected output:
 ----
-NAME           STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   AGE
-hpp-test-pvc   Bound    pvc-abc12345-6789-def0-1234-567890abcdef   5Gi        RWO            hostpath-csi   30s
+NAME           STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   AGE
+hpp-test-pvc   Bound    pvc-abc12345-6789-def0-1234-567890abcdef   5Gi        RWO            hostpath-csi   <unset>                 30s
 ----
+
+NOTE: HPP may report the full available space on the host path rather than the requested size. This is expected behavior for hostpath-based storage.
 
 Test writing to the volume:
 
@@ -397,7 +405,7 @@ Create a VM that uses HPP-backed storage:
 
 xref:attachment$hpp-test-vm.yaml[Download hpp-test-vm.yaml]
 
-[source,yaml]
+[source,bash,role=execute]
 ----
 oc apply -f - <<EOF
 apiVersion: kubevirt.io/v1
@@ -406,7 +414,7 @@ metadata:
   name: hpp-test-vm
   namespace: default
 spec:
-  running: true
+  runStrategy: Always
   template:
     metadata:
       labels:
@@ -471,11 +479,11 @@ oc get dv -n default hpp-test-vm-rootdisk -w
 
 Expected progression:
 ----
-NAME                    PHASE              PROGRESS   AGE
-hpp-test-vm-rootdisk    ImportScheduled    N/A        5s
-hpp-test-vm-rootdisk    ImportInProgress   0.00%      10s
-hpp-test-vm-rootdisk    ImportInProgress   45.50%     30s
-hpp-test-vm-rootdisk    Succeeded          100%       1m
+NAME                    PHASE              PROGRESS   RESTARTS   AGE
+hpp-test-vm-rootdisk    ImportScheduled    N/A                   5s
+hpp-test-vm-rootdisk    ImportInProgress   0.00%                 10s
+hpp-test-vm-rootdisk    ImportInProgress   45.50%                30s
+hpp-test-vm-rootdisk    Succeeded          100.0%                1m
 ----
 
 Check VM status:
@@ -490,6 +498,9 @@ Expected output:
 ----
 NAME          AGE   STATUS    READY
 hpp-test-vm   2m    Running   True
+
+NAME          AGE   PHASE     IP             NODENAME   READY
+hpp-test-vm   2m    Running   10.x.x.x       workerXX   True
 ----
 
 Access the VM console:
@@ -534,10 +545,10 @@ If pods fail with permission errors when writing to volumes:
 [source,bash,role=execute]
 ----
 # Check SELinux context on host
-oc debug node/<node-name> -- chroot /host ls -laZ /var/hpvolumes
+oc debug node/<worker-node-name> -- chroot /host ls -laZ /var/hpvolumes
 
 # Reapply SELinux context if needed
-oc debug node/<node-name> -- chroot /host chcon -Rt container_file_t /var/hpvolumes
+oc debug node/<worker-node-name> -- chroot /host chcon -Rt container_file_t /var/hpvolumes
 ----
 
 === HPP Pods Not Starting
@@ -561,7 +572,7 @@ With `WaitForFirstConsumer`, the volume is created on the node where the pod is 
 # Add nodeSelector to pod spec
 spec:
   nodeSelector:
-    kubernetes.io/hostname: worker01
+    kubernetes.io/hostname: <worker-node-name>
 ----
 
 == Cleanup
@@ -598,4 +609,4 @@ HPP provides a simple, lightweight storage solution ideal for development and te
 
 * xref:lvm-operator.adoc[LVM Storage Operator] - Production-ready local storage with thin provisioning and snapshots
 * xref:lvm-troubleshooting.adoc[LVM Storage Troubleshooting] - Diagnosing storage issues
-* link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.18/html/virtualization/storage#virt-configuring-local-storage-with-hpp_virt-configuring-storage[OpenShift Virtualization: Configuring Local Storage with HPP,window=_blank]
+* link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.21/html/virtualization/storage#virt-configuring-local-storage-with-hpp[OpenShift Virtualization: Configuring Local Storage with HPP,window=_blank]
