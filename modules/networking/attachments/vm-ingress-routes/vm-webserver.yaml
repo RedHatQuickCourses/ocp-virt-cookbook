@@ -1,0 +1,57 @@
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: web-vm
+  namespace: ingress-demo
+spec:
+  runStrategy: Always
+  template:
+    metadata:
+      labels:
+        kubevirt.io/domain: web-vm
+        app: web-vm
+    spec:
+      domain:
+        devices:
+          disks:
+          - name: rootdisk
+            disk:
+              bus: virtio
+          - name: cloudinitdisk
+            disk:
+              bus: virtio
+          interfaces:
+          - name: default
+            masquerade: {}
+        resources:
+          requests:
+            memory: 1Gi
+      networks:
+      - name: default
+        pod: {}
+      volumes:
+      - name: rootdisk
+        containerDisk:
+          image: quay.io/containerdisks/fedora:latest
+      - name: cloudinitdisk
+        cloudInitNoCloud:
+          userData: |
+            #cloud-config
+            password: redhat
+            chpasswd:
+              expire: false
+            packages:
+            - nginx
+            write_files:
+            - path: /usr/share/nginx/html/index.html
+              content: |
+                <html>
+                <head><title>OpenShift Virt - Ingress Demo</title></head>
+                <body>
+                <h1>Hello from OpenShift Virtualization</h1>
+                <p>This page is served by Nginx inside a VM, exposed via an OpenShift Route.</p>
+                </body>
+                </html>
+            runcmd:
+            - systemctl enable nginx
+            - systemctl start nginx
