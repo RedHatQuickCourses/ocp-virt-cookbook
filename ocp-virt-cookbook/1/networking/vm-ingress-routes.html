@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Integrating VMs with OpenShift Ingress for HTTP/HTTPS Traffic :: OpenShift Virtualization cookbook</title>
+    <link rel="prev" href="linux-bridges.html">
+    <link rel="next" href="ovs-bridge-troubleshooting.html">
+    <meta name="generator" content="Antora 3.1.3">
+    <link rel="stylesheet" href="../../../_/css/site.css">
+    <script>var uiRootPath = '../../../_'</script>
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://www.redhat.com" target="_blank"><img src="../../../_/img/redhat-logo.png" height="40px" alt="Red Hat"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="../../..">OpenShift Virtualization cookbook</a>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues" target="_blank">Report Issues</a>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="ocp-virt-cookbook" data-version="1">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="../index.html">OpenShift Virtualization cookbook</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../getting-started/index.html">Getting Started</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/prerequisites.html">Prerequisites</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/install-openshift-virtualization.html">Install OpenShift Virtualization</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/default-storage-class.html">Storage Setup</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/create-vm-web-console.html">Create VM from Web Console</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/vm-lifecycle-states.html">VM Lifecycle States</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/virtctl-basics.html">Virtctl Basics</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../storage/index.html">Storage Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/lvm-operator.html">LVM Operator Installation</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/lvm-troubleshooting.html">LVM Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/hostpath-provisioner.html">HostPath Provisioner</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/creating-managing-storage-class.html">Creating and Managing Storage Classes</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="index.html">Networking Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="udn-primary-networks.html">UDN Primary Networks</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="localnet-secondary.html">Localnet Secondary Networks with CUDN</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="localnet-vlan.html">Localnet Secondary Networks with VLAN using NAD</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="cudn-localnet-vlan.html">Localnet VLAN with CUDN</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="layer2-secondary.html">Layer 2 Secondary Networks</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="linux-bridges.html">Linux Bridges</a>
+  </li>
+  <li class="nav-item is-current-page" data-depth="2">
+    <a class="nav-link" href="vm-ingress-routes.html">VM Ingress and Routes</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="ovs-bridge-troubleshooting.html">Troubleshooting Localnet Networks</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../vm-configuration/index.html">Virtual Machine Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/cloud-init-ip-configuration.html">Cloud-init IP Configuration</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/cloud-init-troubleshooting.html">Cloud-init Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/internal-dns-for-vms.html">Internal DNS for VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/remote-access-linux-vms.html">Remote Access to Linux VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/remote-access-linux-troubleshooting.html">Remote Access to Linux VMs Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/remote-access-windows-vms.html">Remote Access to Windows VMs via RDP</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/import-qcow2-boot-volume.html">Import qcow2 Boot Volume</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/custom-golden-images.html">Custom Golden Images</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/golden-images-troubleshooting.html">Golden Images Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/cloning-vms.html">Cloning VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/vm-snapshots.html">VM Snapshots</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/boot-order-boot-sources.html">VM Boot Order and Boot Sources</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/infrastructure-node-placement.html">Infrastructure Node Placement</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/node-placement-affinity.html">Node Placement and Affinity</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/resource-limits-qos.html">Resource Limits and QoS</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/hotplug-volumes-interfaces.html">Hotplug Volumes and Interfaces</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../manifests/index.html">Manifests</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../api/index.html">API Guide</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../api/api_component_overview.html">API Component Overview</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../lab-env/index.html">Lab Environment</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../appendix/glossary.html">Glossary</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">OpenShift Virtualization cookbook</span>
+    <span class="version">1</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <a class="title" href="../index.html">OpenShift Virtualization cookbook</a>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">1</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">OpenShift Virtualization cookbook</a></li>
+    <li><a href="index.html">Networking Configuration</a></li>
+    <li><a href="vm-ingress-routes.html">VM Ingress and Routes</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">Integrating VMs with OpenShift Ingress for HTTP/HTTPS Traffic</h1>
+<div class="sect1">
+<h2 id="_overview"><a class="anchor" href="#_overview"></a>Overview</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>This tutorial demonstrates how to expose applications running inside OpenShift Virtualization VMs to external clients using OpenShift Routes and Services. You will deploy a VM running a web server, create a ClusterIP Service to reach it internally, and expose it externally through an OpenShift Route with optional TLS termination.</p>
+</div>
+<div class="paragraph">
+<p>This approach uses the same OpenShift Ingress infrastructure that serves container workloads, providing a consistent external access model for both VMs and pods.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_prerequisites"><a class="anchor" href="#_prerequisites"></a>Prerequisites</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p><strong>OpenShift 4.18+</strong> with OpenShift Virtualization operator installed</p>
+</li>
+<li>
+<p><strong>Cluster admin access</strong> (<code>system:admin</code> or equivalent)</p>
+</li>
+<li>
+<p><strong><code>oc</code> CLI</strong> and <strong><code>virtctl</code> CLI</strong> installed</p>
+</li>
+<li>
+<p><strong>Default StorageClass</strong> configured</p>
+</li>
+<li>
+<p><strong>Ingress controller</strong> running (default with OpenShift installation)</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Versions tested:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>OpenShift 4.20</pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_1_create_a_namespace"><a class="anchor" href="#_step_1_create_a_namespace"></a>Step 1: Create a Namespace</h2>
+<div class="sectionbody">
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc create namespace ingress-demo</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_2_deploy_a_vm_with_a_web_server"><a class="anchor" href="#_step_2_deploy_a_vm_with_a_web_server"></a>Step 2: Deploy a VM with a Web Server</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Deploy a Fedora VM that automatically starts an Nginx web server using cloud-init. The VM is labeled so a Service can select it.</p>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/vm-ingress-routes/vm-webserver.yaml" class="xref attachment">Download vm-webserver.yaml</a></p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f - &lt;&lt;EOF
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: web-vm
+  namespace: ingress-demo
+spec:
+  runStrategy: Always
+  template:
+    metadata:
+      labels:
+        kubevirt.io/domain: web-vm
+        app: web-vm
+    spec:
+      domain:
+        devices:
+          disks:
+          - name: rootdisk
+            disk:
+              bus: virtio
+          - name: cloudinitdisk
+            disk:
+              bus: virtio
+          interfaces:
+          - name: default
+            masquerade: {}
+        resources:
+          requests:
+            memory: 1Gi
+      networks:
+      - name: default
+        pod: {}
+      volumes:
+      - name: rootdisk
+        containerDisk:
+          image: quay.io/containerdisks/fedora:latest
+      - name: cloudinitdisk
+        cloudInitNoCloud:
+          userData: |
+            #cloud-config
+            password: redhat
+            chpasswd:
+              expire: false
+            packages:
+            - nginx
+            write_files:
+            - path: /usr/share/nginx/html/index.html
+              content: |
+                &lt;html&gt;
+                &lt;head&gt;&lt;title&gt;OpenShift Virt - Ingress Demo&lt;/title&gt;&lt;/head&gt;
+                &lt;body&gt;
+                &lt;h1&gt;Hello from OpenShift Virtualization&lt;/h1&gt;
+                &lt;p&gt;This page is served by Nginx inside a VM, exposed via an OpenShift Route.&lt;/p&gt;
+                &lt;/body&gt;
+                &lt;/html&gt;
+            runcmd:
+            - systemctl enable nginx
+            - systemctl start nginx
+EOF</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The <code>app: web-vm</code> label on <code>spec.template.metadata.labels</code> is passed through to the virt-launcher pod, allowing a Service to select it.</p>
+</div>
+<div class="paragraph">
+<p>Wait for the VM to start:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vm -n ingress-demo -w</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Once the VM shows <code>Running</code> and <code>Ready=True</code>, proceed to the next step. Press <code>Ctrl+C</code> to exit the watch.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_3_verify_the_web_server"><a class="anchor" href="#_step_3_verify_the_web_server"></a>Step 3: Verify the Web Server</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Wait for cloud-init to finish installing and starting Nginx (this may take 1-2 minutes after the VM reaches Running state).</p>
+</div>
+<div class="paragraph">
+<p>Connect to the VM console:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">virtctl console web-vm -n ingress-demo</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Log in with username <code>fedora</code> and password <code>redhat</code>, then run:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">curl -s http://localhost</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>You should see the custom HTML page. Press <code>Ctrl+]</code> to exit the console.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_4_create_a_service"><a class="anchor" href="#_step_4_create_a_service"></a>Step 4: Create a Service</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Create a ClusterIP Service that targets port 80 on the VM. The Service selector must match the labels defined on the VM template.</p>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/vm-ingress-routes/service-web-vm.yaml" class="xref attachment">Download service-web-vm.yaml</a></p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f - &lt;&lt;EOF
+apiVersion: v1
+kind: Service
+metadata:
+  name: web-vm-svc
+  namespace: ingress-demo
+spec:
+  selector:
+    app: web-vm
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 80
+  type: ClusterIP
+EOF</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Verify the Service exists:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get svc web-vm-svc -n ingress-demo</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Confirm it has an endpoint:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get endpoints web-vm-svc -n ingress-demo</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Expected output:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>NAME         TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)   AGE
+web-vm-svc   ClusterIP   172.30.x.x      &lt;none&gt;        80/TCP    5s
+
+NAME         ENDPOINTS          AGE
+web-vm-svc   10.128.x.x:80      5s</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The endpoint IP matches the VM&#8217;s pod IP, confirming the Service is correctly routing to the VM.</p>
+</div>
+<div class="paragraph">
+<p>Test internal connectivity from within the cluster:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc run curl-test --rm -it --restart=Never --image=registry.access.redhat.com/ubi9/ubi:latest -n ingress-demo -- curl -s http://web-vm-svc.ingress-demo.svc.cluster.local</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>You should see the HTML page content.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_5_expose_the_service_via_an_openshift_route"><a class="anchor" href="#_step_5_expose_the_service_via_an_openshift_route"></a>Step 5: Expose the Service via an OpenShift Route</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_http_route_edge_termination_with_auto_generated_certificate"><a class="anchor" href="#_http_route_edge_termination_with_auto_generated_certificate"></a>HTTP Route (Edge Termination with Auto-Generated Certificate)</h3>
+<div class="paragraph">
+<p>Create a Route with edge TLS termination. OpenShift automatically provides a certificate for the route hostname.</p>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/vm-ingress-routes/route-web-vm.yaml" class="xref attachment">Download route-web-vm.yaml</a></p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f - &lt;&lt;EOF
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: web-vm-route
+  namespace: ingress-demo
+spec:
+  to:
+    kind: Service
+    name: web-vm-svc
+    weight: 100
+  port:
+    targetPort: 80
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
+  wildcardPolicy: None
+EOF</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_configuration_parameters"><a class="anchor" href="#_configuration_parameters"></a>Configuration Parameters</h3>
+<div class="ulist">
+<ul>
+<li>
+<p><strong><code>spec.to.name</code></strong>: References the Service created in Step 4.</p>
+</li>
+<li>
+<p><strong><code>spec.port.targetPort</code></strong>: Must match the Service port (80).</p>
+</li>
+<li>
+<p><strong><code>tls.termination: edge</code></strong>: TLS is terminated at the router; traffic from the router to the VM is plain HTTP.</p>
+</li>
+<li>
+<p><strong><code>insecureEdgeTerminationPolicy: Redirect</code></strong>: HTTP requests are automatically redirected to HTTPS.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_verify_the_route"><a class="anchor" href="#_verify_the_route"></a>Verify the Route</h3>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get route web-vm-route -n ingress-demo</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Expected output:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>NAME           HOST/PORT                                          PATH  SERVICES     PORT  TERMINATION     WILDCARD
+web-vm-route   web-vm-route-ingress-demo.apps.ocplab01.example.com       web-vm-svc   80    edge/Redirect   None</pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_test_external_access"><a class="anchor" href="#_test_external_access"></a>Test External Access</h3>
+<div class="paragraph">
+<p>Retrieve the route hostname:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">ROUTE_HOST=$(oc get route web-vm-route -n ingress-demo -o jsonpath='{.spec.host}')
+echo "Route URL: https://$ROUTE_HOST"</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Test external access with <code>curl</code>:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">curl -sk https://$ROUTE_HOST</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>You should see the HTML page served by Nginx inside the VM.</p>
+</div>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+If DNS does not resolve the route hostname from your workstation, add an entry to <code>/etc/hosts</code> pointing the hostname to the cluster ingress IP, or use <code>curl --resolve</code>.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_6_passthrough_tls_optional"><a class="anchor" href="#_step_6_passthrough_tls_optional"></a>Step 6: Passthrough TLS (Optional)</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>For applications that handle their own TLS certificates inside the VM, use passthrough termination. The router forwards encrypted traffic directly to the VM without decrypting it.</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f - &lt;&lt;EOF
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: web-vm-passthrough
+  namespace: ingress-demo
+spec:
+  to:
+    kind: Service
+    name: web-vm-svc
+    weight: 100
+  port:
+    targetPort: 443
+  tls:
+    termination: passthrough
+  wildcardPolicy: None
+EOF</code></pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+Passthrough requires the application inside the VM to serve HTTPS on the target port. The Nginx instance in this tutorial serves only HTTP, so this route type is shown for reference. To use it, configure Nginx with a TLS certificate inside the VM.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_how_it_works"><a class="anchor" href="#_how_it_works"></a>How It Works</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The traffic flow for a VM exposed via an OpenShift Route:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>External client sends HTTPS request to the route hostname.</p>
+</li>
+<li>
+<p>OpenShift Ingress Controller (HAProxy router) terminates TLS (for edge termination).</p>
+</li>
+<li>
+<p>Router forwards the request to the ClusterIP Service on port 80.</p>
+</li>
+<li>
+<p>The Service routes traffic to the virt-launcher pod&#8217;s IP on port 80.</p>
+</li>
+<li>
+<p>Inside the virt-launcher pod, the request reaches the VM&#8217;s Nginx process via the masquerade network interface.</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>This is identical to how container workloads are exposed, making VMs first-class citizens in the OpenShift networking model.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_troubleshooting"><a class="anchor" href="#_troubleshooting"></a>Troubleshooting</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_route_returns_503_service_unavailable"><a class="anchor" href="#_route_returns_503_service_unavailable"></a>Route Returns 503 Service Unavailable</h3>
+<div class="paragraph">
+<p>The Service has no healthy endpoints. Verify:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get endpoints web-vm-svc -n ingress-demo</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If empty, check that the Service selector matches the VM labels:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get pods -n ingress-demo -l app=web-vm</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_route_returns_504_gateway_timeout"><a class="anchor" href="#_route_returns_504_gateway_timeout"></a>Route Returns 504 Gateway Timeout</h3>
+<div class="paragraph">
+<p>The VM application is not responding on the expected port. Connect to the VM console:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">virtctl console web-vm -n ingress-demo</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Inside the VM, check that Nginx is running and responding:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">systemctl status nginx
+curl -s http://localhost</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_dns_resolution_fails"><a class="anchor" href="#_dns_resolution_fails"></a>DNS Resolution Fails</h3>
+<div class="paragraph">
+<p>If the route hostname does not resolve, verify the ingress wildcard DNS is configured:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get ingresscontroller default -n openshift-ingress-operator -o jsonpath='{.status.domain}'</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The route hostname follows the pattern <code>&lt;route-name&gt;-&lt;namespace&gt;.&lt;ingress-domain&gt;</code>.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_cleanup"><a class="anchor" href="#_cleanup"></a>Cleanup</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Remove all resources created in this tutorial:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc delete namespace ingress-demo</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_summary"><a class="anchor" href="#_summary"></a>Summary</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>In this tutorial you learned how to:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Deploy a VM running a web server using cloud-init</p>
+</li>
+<li>
+<p>Create a Kubernetes Service to expose VM ports internally</p>
+</li>
+<li>
+<p>Create OpenShift Routes with edge TLS termination for external HTTPS access</p>
+</li>
+<li>
+<p>Understand passthrough TLS for VMs that manage their own certificates</p>
+</li>
+<li>
+<p>Troubleshoot common Service and Route issues for VMs</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_see_also"><a class="anchor" href="#_see_also"></a>See Also</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p><a href="https://docs.openshift.com/container-platform/4.18/virt/vm_networking/virt-exposing-vm-with-service.html" target="_blank" rel="noopener">Exposing a VM by Using a Service - OpenShift Documentation</a></p>
+</li>
+<li>
+<p><a href="https://docs.redhat.com/en/documentation/openshift_container_platform/4.18/html/ingress_and_load_balancing/index" target="_blank" rel="noopener">Route Configuration - OpenShift Documentation</a></p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<nav class="pagination">
+  <span class="prev"><a href="linux-bridges.html">Linux Bridges</a></span>
+  <span class="next"><a href="ovs-bridge-troubleshooting.html">Troubleshooting Localnet Networks</a></span>
+</nav>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <img src="../../../_/img/rhl-logo-red.png" height="40px" alt="Red Hat"  href="https://redhat.com" >
+</footer><script id="site-script" src="../../../_/js/site.js" data-ui-root-path="../../../_"></script>
+<script async src="../../../_/js/vendor/highlight.js"></script>
+  </body>
+</html>
