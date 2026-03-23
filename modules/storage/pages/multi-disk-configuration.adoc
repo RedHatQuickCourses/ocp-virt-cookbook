@@ -44,7 +44,7 @@ On clusters with LVM Storage, the default `lvms-vg1` StorageClass already exists
 
 xref:attachment$multi-disk-configuration/sc-data-retain.yaml[Download sc-data-retain.yaml]
 
-[source,yaml]
+[source,bash,role=execute]
 ----
 oc apply -f - <<EOF
 apiVersion: storage.k8s.io/v1
@@ -82,7 +82,7 @@ Create a VM with three disks:
 
 xref:attachment$multi-disk-configuration/vm-multi-disk.yaml[Download vm-multi-disk.yaml]
 
-[source,yaml]
+[source,bash,role=execute]
 ----
 oc apply -f - <<EOF
 apiVersion: kubevirt.io/v1
@@ -237,13 +237,25 @@ vdb    252:16   0   10G  0 disk
 vdc    252:32   0    1M  0 disk
 ----
 
-The data disk appears as `vdb` (10G, unformatted). Format and mount it:
+The data disk appears as `vdb` (10G, unformatted). Format it with XFS:
 
 [source,bash]
 ----
 sudo mkfs.xfs /dev/vdb
+----
+
+Create a mount point and mount the disk:
+
+[source,bash]
+----
 sudo mkdir -p /mnt/data
 sudo mount /dev/vdb /mnt/data
+----
+
+Verify the mount:
+
+[source,bash]
+----
 df -h /mnt/data
 ----
 
@@ -258,6 +270,12 @@ Write a test file:
 [source,bash]
 ----
 sudo sh -c "echo 'Multi-disk test data' > /mnt/data/test.txt"
+----
+
+Read it back to confirm:
+
+[source,bash]
+----
 cat /mnt/data/test.txt
 ----
 
@@ -313,22 +331,33 @@ This confirms each disk is independently provisioned and can be managed separate
 
 == Cleanup
 
-Remove all resources created in this tutorial:
+Delete the namespace, which removes the VM, PVCs, and DataVolumes:
 
 [source,bash,role=execute]
 ----
-# Delete the namespace (VMs, PVCs, DVs)
 oc delete namespace multi-disk-demo
-
-# Delete the second StorageClass
-oc delete storageclass lvms-vg1-retain
-
-# If Retain reclaim policy was used, manually clean up PVs
-oc get pv | grep Released
-# oc delete pv <pv-name> for any Released PVs
 ----
 
-NOTE: PersistentVolumes created with `reclaimPolicy: Retain` are not automatically deleted when the PVC is removed. Check for Released PVs and delete them manually to reclaim storage.
+Delete the second StorageClass:
+
+[source,bash,role=execute]
+----
+oc delete storageclass lvms-vg1-retain
+----
+
+Because the `lvms-vg1-retain` StorageClass uses `reclaimPolicy: Retain`, the underlying PersistentVolumes are not automatically deleted when the PVC is removed. Check for any Released PVs:
+
+[source,bash,role=execute]
+----
+oc get pv | grep Released
+----
+
+If any appear, delete them manually to reclaim storage:
+
+[source,bash,role=execute]
+----
+oc delete pv <pv-name>
+----
 
 == Summary
 
@@ -341,7 +370,7 @@ In this tutorial you learned how to:
 * Format and mount additional disks inside the guest OS
 * Understand storage tiering patterns for VMs
 
-== References
+== See Also
 
 * link:https://kubevirt.io/user-guide/storage/disks_and_volumes/[Disks and Volumes - KubeVirt User Guide,window=_blank]
 * link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.18/html/virtualization/storage#virt-configuring-storage-profile[Configuring Storage Profiles - OpenShift Documentation,window=_blank]
