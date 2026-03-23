@@ -28,9 +28,15 @@ help:
 	@echo "  make test MODULE=vm-configuration NAME=internal-dns-for-vms"
 	@echo "  make test-no-cleanup MODULE=... NAME=...            (keep resources)"
 	@echo ""
+	@echo "Review documentation:"
+	@echo "  make review-file FILE=path/to/file.adoc              Review a single file"
+	@echo "  make review                                           Review changed .adoc files (vs main)"
+	@echo "  make review-all                                       Review all .adoc files"
+	@echo ""
 	@echo "Examples:"
 	@echo "  make generate-dry TUTORIAL=modules/vm-configuration/pages/internal-dns-for-vms.adoc"
 	@echo "  make test MODULE=vm-configuration NAME=internal-dns-for-vms"
+	@echo "  make review-file FILE=modules/networking/pages/localnet-secondary.adoc"
 	@echo ""
 
 # ── Setup ───────────────────────────────────────────────────────────
@@ -99,6 +105,28 @@ endif
 	@$(ANSIBLE) tests/$(MODULE)/$(NAME)/test-$(NAME).yaml -e cleanup=false $(EXTRA_ARGS) \
 		&& echo "" && echo "PASS: $(MODULE)/$(NAME)" \
 		|| { echo "" && echo "FAIL: $(MODULE)/$(NAME)"; exit 1; }
+
+# ── Review ──────────────────────────────────────────────────────────
+
+.PHONY: review-file
+review-file:
+ifndef FILE
+	$(error FILE is required. Example: make review-file FILE=modules/networking/pages/some-tutorial.adoc)
+endif
+	@bash scripts/review-docs.sh $(FILE)
+
+.PHONY: review
+review:
+	@CHANGED=$$(git diff --name-only origin/main -- '*.adoc'); \
+	if [ -z "$$CHANGED" ]; then \
+		echo "No changed .adoc files found."; \
+	else \
+		bash scripts/review-docs.sh $$CHANGED; \
+	fi
+
+.PHONY: review-all
+review-all:
+	@bash scripts/review-docs.sh --all
 
 # ── Clean ───────────────────────────────────────────────────────────
 
