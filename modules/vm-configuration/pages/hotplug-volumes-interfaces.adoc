@@ -30,7 +30,7 @@ oc create namespace hotplug-demo
 
 xref:attachment$hotplug-volumes-interfaces/vm-hotplug.yaml[Download vm-hotplug.yaml]
 
-[source,yaml]
+[source,bash,role=execute]
 ----
 oc apply -f - <<EOF
 apiVersion: kubevirt.io/v1
@@ -105,7 +105,7 @@ Create a PersistentVolumeClaim that will be hotplugged into the running VM.
 
 xref:attachment$hotplug-volumes-interfaces/hotplug-pvc.yaml[Download hotplug-pvc.yaml]
 
-[source,yaml]
+[source,bash,role=execute]
 ----
 oc apply -f - <<EOF
 apiVersion: v1
@@ -198,14 +198,30 @@ You should see a new disk device (e.g., `sda`) with the size matching the PVC. P
 
 == Step 5: Format and Use the Hotplugged Disk (Inside the Guest)
 
-Inside the VM console, format and mount the new disk:
+Inside the VM console, format the new disk:
 
 [source,bash]
 ----
 sudo mkfs.xfs /dev/sda
+----
+
+Create a mount point and mount the disk:
+
+[source,bash]
+----
 sudo mkdir -p /mnt/hotplug
 sudo mount /dev/sda /mnt/hotplug
+----
+
+Write a test file and verify:
+
+[source,bash]
+----
 echo "Hotplug test" | sudo tee /mnt/hotplug/test.txt
+----
+
+[source,bash]
+----
 cat /mnt/hotplug/test.txt
 ----
 
@@ -348,7 +364,7 @@ In this tutorial you learned how to:
 * Remove hotplugged volumes with `virtctl removevolume`
 * Understand the requirements and methods for network interface hotplugging
 
-== References
+== See Also
 
 * link:https://kubevirt.io/user-guide/storage/hotplug_volumes/[Hotplug Volumes - KubeVirt User Guide,window=_blank]
 * link:https://kubevirt.io/user-guide/network/hotplug_interfaces/[Hotplug Network Interfaces - KubeVirt User Guide,window=_blank]
