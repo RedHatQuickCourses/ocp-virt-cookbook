@@ -1,0 +1,1155 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Local Storage with HostPath Provisioner :: OpenShift Virtualization cookbook</title>
+    <link rel="prev" href="lvm-troubleshooting.html">
+    <link rel="next" href="creating-managing-storage-class.html">
+    <meta name="generator" content="Antora 3.1.3">
+    <link rel="stylesheet" href="../../../_/css/site.css">
+    <script>var uiRootPath = '../../../_'</script>
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://www.redhat.com" target="_blank"><img src="../../../_/img/redhat-logo.png" height="40px" alt="Red Hat"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="../../..">OpenShift Virtualization cookbook</a>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues" target="_blank">Report Issues</a>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="ocp-virt-cookbook" data-version="1">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="../index.html">OpenShift Virtualization cookbook</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../getting-started/index.html">Getting Started</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/prerequisites.html">Prerequisites</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/install-openshift-virtualization.html">Install OpenShift Virtualization</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/default-storage-class.html">Storage Setup</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/create-vm-web-console.html">Create VM from Web Console</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/vm-lifecycle-states.html">VM Lifecycle States</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/virtctl-basics.html">Virtctl Basics</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="index.html">Storage Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="lvm-operator.html">LVM Operator Installation</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="lvm-troubleshooting.html">LVM Troubleshooting</a>
+  </li>
+  <li class="nav-item is-current-page" data-depth="2">
+    <a class="nav-link" href="hostpath-provisioner.html">HostPath Provisioner</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="creating-managing-storage-class.html">Creating and Managing Storage Classes</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../networking/index.html">Networking Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/udn-primary-networks.html">UDN Primary Networks</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/localnet-secondary.html">Localnet Secondary Networks with CUDN</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/localnet-vlan.html">Localnet Secondary Networks with VLAN using NAD</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/cudn-localnet-vlan.html">Localnet VLAN with CUDN</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/layer2-secondary.html">Layer 2 Secondary Networks</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/linux-bridges.html">Linux Bridges</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/ovs-bridge-troubleshooting.html">Troubleshooting Localnet Networks</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../vm-configuration/index.html">Virtual Machine Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/cloud-init-ip-configuration.html">Cloud-init IP Configuration</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/cloud-init-troubleshooting.html">Cloud-init Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/internal-dns-for-vms.html">Internal DNS for VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/remote-access-linux-vms.html">Remote Access to Linux VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/remote-access-linux-troubleshooting.html">Remote Access to Linux VMs Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/remote-access-windows-vms.html">Remote Access to Windows VMs via RDP</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/import-qcow2-boot-volume.html">Import qcow2 Boot Volume</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/custom-golden-images.html">Custom Golden Images</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/golden-images-troubleshooting.html">Golden Images Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/cloning-vms.html">Cloning VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/vm-snapshots.html">VM Snapshots</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/boot-order-boot-sources.html">VM Boot Order and Boot Sources</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/infrastructure-node-placement.html">Infrastructure Node Placement</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/node-placement-affinity.html">Node Placement and Affinity</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../manifests/index.html">Manifests</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../api/index.html">API Guide</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../api/api_component_overview.html">API Component Overview</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../lab-env/index.html">Lab Environment</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../appendix/glossary.html">Glossary</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">OpenShift Virtualization cookbook</span>
+    <span class="version">1</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <a class="title" href="../index.html">OpenShift Virtualization cookbook</a>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">1</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">OpenShift Virtualization cookbook</a></li>
+    <li><a href="index.html">Storage Configuration</a></li>
+    <li><a href="hostpath-provisioner.html">HostPath Provisioner</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">Local Storage with HostPath Provisioner</h1>
+<div class="sect1">
+<h2 id="_overview"><a class="anchor" href="#_overview"></a>Overview</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The HostPath Provisioner (HPP) provides a simple way to use local node storage for OpenShift Virtualization workloads. It&#8217;s included as part of the OpenShift Virtualization operator and creates persistent volumes backed by directories on the host filesystem.</p>
+</div>
+<div class="sect2">
+<h3 id="_when_to_use_hostpath_provisioner"><a class="anchor" href="#_when_to_use_hostpath_provisioner"></a>When to Use HostPath Provisioner</h3>
+<div class="paragraph">
+<p>HPP is ideal for:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Development and testing environments</strong>: Quick setup without complex storage infrastructure</p>
+</li>
+<li>
+<p><strong>Single-node clusters</strong>: Where distributed storage isn&#8217;t necessary</p>
+</li>
+<li>
+<p><strong>Prototyping</strong>: Rapid iteration before production storage deployment</p>
+</li>
+<li>
+<p><strong>Edge deployments</strong>: Minimal infrastructure requirements</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_comparison_with_lvm_storage"><a class="anchor" href="#_comparison_with_lvm_storage"></a>Comparison with LVM Storage</h3>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 33.3333%;">
+<col style="width: 33.3333%;">
+<col style="width: 33.3334%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Feature</th>
+<th class="tableblock halign-left valign-top">HostPath Provisioner</th>
+<th class="tableblock halign-left valign-top">LVM Storage</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Setup complexity</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Simple (directory-based)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Moderate (requires dedicated disk)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Thin provisioning</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">No</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Yes</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Snapshots</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">No</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Yes</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Space efficiency</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Lower (full allocation)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Higher (thin provisioning)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Multi-node support</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Yes (per-node storage pools)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Yes</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Production readiness</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Dev/test recommended</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Production ready</p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>For production deployments requiring advanced features like snapshots and thin provisioning, see the <a href="lvm-operator.html" class="xref page">LVM Storage Operator</a> tutorial.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_what_youll_learn"><a class="anchor" href="#_what_youll_learn"></a>What You&#8217;ll Learn</h3>
+<div class="ulist">
+<ul>
+<li>
+<p>Configure HostPathProvisioner for local storage</p>
+</li>
+<li>
+<p>Create a StorageClass for HPP</p>
+</li>
+<li>
+<p>Prepare node directories with proper permissions</p>
+</li>
+<li>
+<p>Create PVCs and use with VMs</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Versions tested:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>OpenShift 4.21+
+OpenShift Virtualization 4.21+</pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_prerequisites"><a class="anchor" href="#_prerequisites"></a>Prerequisites</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p><strong>OpenShift 4.21+</strong> with OpenShift Virtualization installed</p>
+</li>
+<li>
+<p><strong>Cluster admin access</strong>: Required to create HostPathProvisioner and StorageClass resources</p>
+</li>
+<li>
+<p><strong>Available local disk space</strong>: Sufficient space on worker nodes for VM storage</p>
+</li>
+<li>
+<p><strong>oc CLI</strong>: Installed and configured</p>
+</li>
+<li>
+<p><strong>virtctl CLI</strong>: Required for VM console access</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Verify OpenShift Virtualization is installed:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get csv -n openshift-cnv | grep kubevirt</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Expected output shows the operator version (version will vary):</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>kubevirt-hyperconverged-operator.v4.x.x   OpenShift Virtualization   4.x.x   Succeeded</pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_1_prepare_host_directories"><a class="anchor" href="#_step_1_prepare_host_directories"></a>Step 1: Prepare Host Directories</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>HPP requires a directory on each node where volumes will be stored. This directory must exist and have proper SELinux context.</p>
+</div>
+<div class="sect2">
+<h3 id="_option_a_using_machineconfig_recommended_for_production"><a class="anchor" href="#_option_a_using_machineconfig_recommended_for_production"></a>Option A: Using MachineConfig (Recommended for Production)</h3>
+<div class="paragraph">
+<p>Create a MachineConfig to ensure the directory exists on all worker nodes and persists across reboots:</p>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/hpp-machineconfig.yaml" class="xref attachment">Download hpp-machineconfig.yaml</a></p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f - &lt;&lt;EOF
+apiVersion: machineconfiguration.openshift.io/v1
+kind: MachineConfig
+metadata:
+  name: 50-hpp-directory
+  labels:
+    machineconfiguration.openshift.io/role: worker
+spec:
+  config:
+    ignition:
+      version: 3.2.0
+    systemd:
+      units:
+      - name: create-hpp-directory.service
+        enabled: true
+        contents: |
+          [Unit]
+          Description=Create HostPath Provisioner directory
+          Before=kubelet.service
+
+          [Service]
+          Type=oneshot
+          ExecStart=/bin/mkdir -p /var/hpvolumes
+          ExecStart=/bin/chcon -Rt container_file_t /var/hpvolumes
+          RemainAfterExit=yes
+
+          [Install]
+          WantedBy=multi-user.target
+EOF</code></pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+Applying a MachineConfig will trigger a rolling reboot of worker nodes. Allow time for all nodes to update before proceeding.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Monitor the MachineConfig rollout:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get mcp worker</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Wait until <code>UPDATED</code> shows <code>True</code> and <code>UPDATING</code> shows <code>False</code>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>NAME     CONFIG                                             UPDATED   UPDATING   DEGRADED   MACHINECOUNT   READYMACHINECOUNT
+worker   rendered-worker-abc123                             True      False      False      6              6</pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_option_b_manual_directory_creation_quick_testing"><a class="anchor" href="#_option_b_manual_directory_creation_quick_testing"></a>Option B: Manual Directory Creation (Quick Testing)</h3>
+<div class="paragraph">
+<p>For quick testing, manually create directories on each node.</p>
+</div>
+<div class="paragraph">
+<p>First, get the list of worker nodes:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get nodes -l node-role.kubernetes.io/worker</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Then, for each worker node, run the following commands (replace <code>&lt;worker-node-name&gt;</code> with the actual node name):</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc debug node/&lt;worker-node-name&gt; -- chroot /host mkdir -p /var/hpvolumes</code></pre>
+</div>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc debug node/&lt;worker-node-name&gt; -- chroot /host chcon -Rt container_file_t /var/hpvolumes</code></pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+Manual directory creation does not persist across node reboots. Use MachineConfig for persistent configuration.
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_verify_directory_creation"><a class="anchor" href="#_verify_directory_creation"></a>Verify Directory Creation</h3>
+<div class="paragraph">
+<p>Confirm the directory exists with correct SELinux context:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc debug node/&lt;worker-node-name&gt; -- chroot /host ls -laZ /var/hpvolumes</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Expected output:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>total 0
+drwxr-xr-x. 2 root root system_u:object_r:container_file_t:s0 6 Mar 19 10:00 .
+drwxr-xr-x. 22 root root system_u:object_r:var_t:s0          4096 Mar 19 10:00 ..</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The <code>container_file_t</code> SELinux context allows containers to read and write to this directory.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_2_create_hostpathprovisioner"><a class="anchor" href="#_step_2_create_hostpathprovisioner"></a>Step 2: Create HostPathProvisioner</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Create the HostPathProvisioner custom resource to configure the CSI driver:</p>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/hpp-hostpathprovisioner.yaml" class="xref attachment">Download hpp-hostpathprovisioner.yaml</a></p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f - &lt;&lt;EOF
+apiVersion: hostpathprovisioner.kubevirt.io/v1beta1
+kind: HostPathProvisioner
+metadata:
+  name: hostpath-provisioner
+spec:
+  imagePullPolicy: IfNotPresent
+  storagePools:
+  - name: local
+    path: /var/hpvolumes
+  workload:
+    nodeSelector:
+      kubernetes.io/os: linux
+EOF</code></pre>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_configuration_parameters"><a class="anchor" href="#_configuration_parameters"></a>Configuration Parameters</h3>
+<div class="ulist">
+<ul>
+<li>
+<p><strong><code>storagePools</code></strong>: Define one or more storage pools, each with a unique name and path</p>
+<div class="ulist">
+<ul>
+<li>
+<p><code>name</code>: Identifier used in StorageClass to reference this pool</p>
+</li>
+<li>
+<p><code>path</code>: Directory on host nodes where volumes are created</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p><strong><code>workload.nodeSelector</code></strong>: Controls which nodes run the HPP CSI pods</p>
+</li>
+<li>
+<p><strong><code>imagePullPolicy</code></strong>: Container image pull policy</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_verify_hostpathprovisioner"><a class="anchor" href="#_verify_hostpathprovisioner"></a>Verify HostPathProvisioner</h3>
+<div class="paragraph">
+<p>Check the HostPathProvisioner status:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get hostpathprovisioner hostpath-provisioner</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Expected output:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>NAME                   AGE
+hostpath-provisioner   30s</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Verify the CSI pods are running on worker nodes:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get pods -n openshift-cnv -l k8s-app=hostpath-provisioner</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Expected output (one pod per worker node):</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>NAME                                           READY   STATUS    RESTARTS   AGE
+hostpath-provisioner-csi-xxxxx                 4/4     Running   0          2m
+hostpath-provisioner-csi-yyyyy                 4/4     Running   0          2m
+hostpath-provisioner-csi-zzzzz                 4/4     Running   0          2m</pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_3_create_storageclass"><a class="anchor" href="#_step_3_create_storageclass"></a>Step 3: Create StorageClass</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Create a StorageClass that uses the HostPath Provisioner:</p>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/hpp-storageclass.yaml" class="xref attachment">Download hpp-storageclass.yaml</a></p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f - &lt;&lt;EOF
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: hostpath-csi
+provisioner: kubevirt.io.hostpath-provisioner
+reclaimPolicy: Delete
+volumeBindingMode: WaitForFirstConsumer
+parameters:
+  storagePool: local
+EOF</code></pre>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_configuration_parameters_2"><a class="anchor" href="#_configuration_parameters_2"></a>Configuration Parameters</h3>
+<div class="ulist">
+<ul>
+<li>
+<p><strong><code>provisioner</code></strong>: Must be <code>kubevirt.io.hostpath-provisioner</code></p>
+</li>
+<li>
+<p><strong><code>reclaimPolicy</code></strong>: <code>Delete</code> removes the PV data when PVC is deleted; use <code>Retain</code> to preserve data</p>
+</li>
+<li>
+<p><strong><code>volumeBindingMode</code></strong>: <code>WaitForFirstConsumer</code> delays PV creation until a pod uses the PVC, ensuring the volume is created on the correct node</p>
+</li>
+<li>
+<p><strong><code>parameters.storagePool</code></strong>: References the storage pool name defined in HostPathProvisioner</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_verify_storageclass"><a class="anchor" href="#_verify_storageclass"></a>Verify StorageClass</h3>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get storageclass hostpath-csi</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Expected output:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>NAME           PROVISIONER                        RECLAIMPOLICY   VOLUMEBINDINGMODE      ALLOWVOLUMEEXPANSION   AGE
+hostpath-csi   kubevirt.io.hostpath-provisioner   Delete          WaitForFirstConsumer   false                  10s</pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_optional_set_as_default_storageclass"><a class="anchor" href="#_optional_set_as_default_storageclass"></a>Optional: Set as Default StorageClass</h3>
+<div class="paragraph">
+<p>To make HPP the default storage class (useful for dev/test clusters without other storage):</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc patch storageclass hostpath-csi -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}'</code></pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+A cluster should have only one default StorageClass. If another default exists, remove its annotation first:
+</td>
+</tr>
+</table>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Remove default from existing storage class
+oc patch storageclass &lt;existing-default&gt; -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"false"}}}'</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_4_test_storage_provisioning"><a class="anchor" href="#_step_4_test_storage_provisioning"></a>Step 4: Test Storage Provisioning</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Create a test PVC to verify HPP is working:</p>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/hpp-test-pvc.yaml" class="xref attachment">Download hpp-test-pvc.yaml</a></p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f - &lt;&lt;EOF
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: hpp-test-pvc
+  namespace: default
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+  storageClassName: hostpath-csi
+EOF</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Check PVC status:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get pvc hpp-test-pvc</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>With <code>WaitForFirstConsumer</code>, the PVC remains <code>Pending</code> until a pod uses it:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>NAME           STATUS    VOLUME   CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   AGE
+hpp-test-pvc   Pending                                      hostpath-csi   &lt;unset&gt;                 5s</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Create a test pod to trigger volume binding:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f - &lt;&lt;EOF
+apiVersion: v1
+kind: Pod
+metadata:
+  name: hpp-test-pod
+  namespace: default
+spec:
+  containers:
+  - name: test
+    image: registry.access.redhat.com/ubi9/ubi:latest
+    command: ["sleep", "3600"]
+    volumeMounts:
+    - name: data
+      mountPath: /data
+  volumes:
+  - name: data
+    persistentVolumeClaim:
+      claimName: hpp-test-pvc
+EOF</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Verify the PVC is now bound:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get pvc hpp-test-pvc</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Expected output:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>NAME           STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   AGE
+hpp-test-pvc   Bound    pvc-abc12345-6789-def0-1234-567890abcdef   5Gi        RWO            hostpath-csi   &lt;unset&gt;                 30s</pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+HPP may report the full available space on the host path rather than the requested size. This is expected behavior for hostpath-based storage.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Test writing to the volume:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc exec hpp-test-pod -- sh -c "echo 'HPP Storage Test' &gt; /data/test.txt &amp;&amp; cat /data/test.txt"</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Expected output:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>HPP Storage Test</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Clean up test resources:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc delete pod hpp-test-pod
+oc delete pvc hpp-test-pvc</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_5_use_with_virtual_machines"><a class="anchor" href="#_step_5_use_with_virtual_machines"></a>Step 5: Use with Virtual Machines</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Create a VM that uses HPP-backed storage:</p>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/hpp-test-vm.yaml" class="xref attachment">Download hpp-test-vm.yaml</a></p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f - &lt;&lt;EOF
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: hpp-test-vm
+  namespace: default
+spec:
+  runStrategy: Always
+  template:
+    metadata:
+      labels:
+        kubevirt.io/vm: hpp-test-vm
+    spec:
+      domain:
+        cpu:
+          cores: 1
+        devices:
+          disks:
+          - name: rootdisk
+            disk:
+              bus: virtio
+          - name: cloudinitdisk
+            disk:
+              bus: virtio
+          interfaces:
+          - name: default
+            masquerade: {}
+        resources:
+          requests:
+            memory: 1Gi
+      networks:
+      - name: default
+        pod: {}
+      volumes:
+      - name: rootdisk
+        dataVolume:
+          name: hpp-test-vm-rootdisk
+      - name: cloudinitdisk
+        cloudInitNoCloud:
+          userData: |
+            #cloud-config
+            user: fedora
+            password: fedora
+            chpasswd:
+              expire: false
+  dataVolumeTemplates:
+  - metadata:
+      name: hpp-test-vm-rootdisk
+    spec:
+      storage:
+        accessModes:
+        - ReadWriteOnce
+        resources:
+          requests:
+            storage: 10Gi
+        storageClassName: hostpath-csi
+      source:
+        registry:
+          url: docker://quay.io/containerdisks/fedora:latest
+EOF</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Monitor VM and DataVolume status:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Watch DataVolume import progress
+oc get dv -n default hpp-test-vm-rootdisk -w</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Expected progression:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>NAME                    PHASE              PROGRESS   RESTARTS   AGE
+hpp-test-vm-rootdisk    ImportScheduled    N/A                   5s
+hpp-test-vm-rootdisk    ImportInProgress   0.00%                 10s
+hpp-test-vm-rootdisk    ImportInProgress   45.50%                30s
+hpp-test-vm-rootdisk    Succeeded          100.0%                1m</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Check VM status:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vm hpp-test-vm
+oc get vmi hpp-test-vm</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Expected output:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>NAME          AGE   STATUS    READY
+hpp-test-vm   2m    Running   True
+
+NAME          AGE   PHASE     IP             NODENAME   READY
+hpp-test-vm   2m    Running   10.x.x.x       workerXX   True</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Access the VM console:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">virtctl console hpp-test-vm</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Clean up VM resources:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc delete vm hpp-test-vm</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_troubleshooting"><a class="anchor" href="#_troubleshooting"></a>Troubleshooting</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_pvc_stuck_in_pending"><a class="anchor" href="#_pvc_stuck_in_pending"></a>PVC Stuck in Pending</h3>
+<div class="paragraph">
+<p>If PVC remains pending after pod creation:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Check PVC events
+oc describe pvc &lt;pvc-name&gt;
+
+# Check HPP pod logs
+oc logs -n openshift-cnv -l k8s-app=hostpath-provisioner -c hostpath-provisioner</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Common causes:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Directory doesn&#8217;t exist</strong>: Verify <code>/var/hpvolumes</code> exists on the target node</p>
+</li>
+<li>
+<p><strong>SELinux context incorrect</strong>: Check <code>chcon -Rt container_file_t /var/hpvolumes</code> was applied</p>
+</li>
+<li>
+<p><strong>HPP pods not running</strong>: Verify HPP CSI pods are running on all worker nodes</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_permission_denied_errors"><a class="anchor" href="#_permission_denied_errors"></a>Permission Denied Errors</h3>
+<div class="paragraph">
+<p>If pods fail with permission errors when writing to volumes:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Check SELinux context on host
+oc debug node/&lt;worker-node-name&gt; -- chroot /host ls -laZ /var/hpvolumes
+
+# Reapply SELinux context if needed
+oc debug node/&lt;worker-node-name&gt; -- chroot /host chcon -Rt container_file_t /var/hpvolumes</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_hpp_pods_not_starting"><a class="anchor" href="#_hpp_pods_not_starting"></a>HPP Pods Not Starting</h3>
+<div class="paragraph">
+<p>Check HostPathProvisioner status and events:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc describe hostpathprovisioner hostpath-provisioner
+
+# Check for issues in openshift-cnv namespace
+oc get events -n openshift-cnv --sort-by='.lastTimestamp' | tail -20</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_volume_not_created_on_expected_node"><a class="anchor" href="#_volume_not_created_on_expected_node"></a>Volume Not Created on Expected Node</h3>
+<div class="paragraph">
+<p>With <code>WaitForFirstConsumer</code>, the volume is created on the node where the pod is scheduled. If you need control over node placement:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml"># Add nodeSelector to pod spec
+spec:
+  nodeSelector:
+    kubernetes.io/hostname: &lt;worker-node-name&gt;</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_cleanup"><a class="anchor" href="#_cleanup"></a>Cleanup</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>To remove HPP from your cluster:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Delete StorageClass
+oc delete storageclass hostpath-csi
+
+# Delete HostPathProvisioner
+oc delete hostpathprovisioner hostpath-provisioner
+
+# Optional: Remove MachineConfig (will trigger node reboot)
+oc delete machineconfig 50-hpp-directory</code></pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+Deleting the HostPathProvisioner does not remove existing PVs. Delete PVCs first if you want to clean up all data.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_summary"><a class="anchor" href="#_summary"></a>Summary</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>You have learned how to:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Configure HostPath Provisioner for local storage on OpenShift</p>
+</li>
+<li>
+<p>Create storage pools and StorageClasses for HPP</p>
+</li>
+<li>
+<p>Prepare node directories with proper SELinux context</p>
+</li>
+<li>
+<p>Use HPP storage with both pods and VMs</p>
+</li>
+<li>
+<p>Troubleshoot common HPP issues</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>HPP provides a simple, lightweight storage solution ideal for development and testing. For production workloads requiring advanced features, consider the <a href="lvm-operator.html" class="xref page">LVM Storage Operator</a>.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_see_also"><a class="anchor" href="#_see_also"></a>See Also</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p><a href="lvm-operator.html" class="xref page">LVM Storage Operator</a> - Production-ready local storage with thin provisioning and snapshots</p>
+</li>
+<li>
+<p><a href="lvm-troubleshooting.html" class="xref page">LVM Storage Troubleshooting</a> - Diagnosing storage issues</p>
+</li>
+<li>
+<p><a href="https://docs.redhat.com/en/documentation/openshift_container_platform/4.21/html/virtualization/storage#virt-configuring-local-storage-with-hpp" target="_blank" rel="noopener">OpenShift Virtualization: Configuring Local Storage with HPP</a></p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<nav class="pagination">
+  <span class="prev"><a href="lvm-troubleshooting.html">LVM Troubleshooting</a></span>
+  <span class="next"><a href="creating-managing-storage-class.html">Creating and Managing Storage Classes</a></span>
+</nav>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <img src="../../../_/img/rhl-logo-red.png" height="40px" alt="Red Hat"  href="https://redhat.com" >
+</footer><script id="site-script" src="../../../_/js/site.js" data-ui-root-path="../../../_"></script>
+<script async src="../../../_/js/vendor/highlight.js"></script>
+  </body>
+</html>
