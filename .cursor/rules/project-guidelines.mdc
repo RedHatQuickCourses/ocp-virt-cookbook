@@ -1,0 +1,252 @@
+---
+description: Comprehensive project guidelines for OpenShift Virtualization Cookbook
+globs: ["**/*"]
+alwaysApply: true
+---
+
+# OpenShift Virtualization Cookbook - Project Rules
+
+## Branch Management and Version Control
+
+Git policy (local branches only, no push, no PRs, commit attribution) is enforced by `shared-constraints.mdc`. Additional project-level guidance:
+
+- For each task, create a new branch with a descriptive name
+- Use clear, descriptive commit messages that explain what was changed and why
+- Keep commits focused on a single logical change
+
+## Communication and Documentation Style
+
+- NEVER use icons or emojis in any documentation, code comments, or communication
+- Use clear, professional technical writing
+- Keep language concise and to the point
+- Use AsciiDoc formatting appropriately (code blocks, headers, lists, tables, callouts)
+- Follow Antora documentation best practices
+
+## Verification and Research Requirements
+
+- ALWAYS verify information against official OpenShift documentation before implementation
+- Check OKD, KubeVirt, and related project documentation for accuracy
+- Search online documentation for current best practices and latest features
+- Verify API versions and resource definitions are current for the target OpenShift version
+- Cross-reference multiple sources when uncertain
+
+## Documentation Content Requirements
+
+### Length and Scope
+- Keep documentation pages to appropriate read time for the topic
+- Focus on one specific topic or use case per page
+- Avoid unnecessary complexity or tangential topics
+- Use clear, step-by-step instructions
+
+### Structure
+- Start with a brief overview of what will be accomplished
+- List prerequisites clearly
+- Provide complete YAML manifests and code examples, not partial snippets
+- Include verification steps after each major section
+- End with a summary of what was accomplished
+- Add "See Also" sections linking to related content
+
+### Technical Accuracy
+- Use correct terminology (e.g., "logical network interface name" not "physnet name")
+- Specify exact resource names, namespaces, and versions
+- Include all required fields in YAML manifests
+- Explain non-obvious configuration choices
+- Link to official documentation where appropriate
+
+## File Organization
+
+### Module Structure
+- Place content in appropriate modules under `modules/`
+- Each module should have:
+  - `pages/` directory for AsciiDoc content files
+  - `nav.adoc` for navigation structure
+  - `images/` directory if module needs images (optional)
+- Use descriptive, kebab-case filenames for pages
+- Keep related content together in the same module
+
+### AsciiDoc Files
+- Start each page with a level-1 heading (`= Page Title`)
+- Use consistent header hierarchy (`=`, `==`, `===`)
+- Add blank lines between sections for readability
+- Use appropriate AsciiDoc attributes when needed
+
+### Navigation Files
+- Keep `nav.adoc` files updated when adding/removing pages
+- When adding a new page to a module, also update the module's `index.adoc` Sections list (if one exists) to include a corresponding xref entry
+- Use logical hierarchy in navigation
+- Use clear, descriptive navigation labels
+- Test navigation in preview after changes
+
+## Code and Manifest Quality
+
+- Use proper YAML indentation (2 spaces)
+- Include all required Kubernetes/OpenShift metadata (apiVersion, kind, metadata, spec)
+- Add comments in YAML where configuration choices are non-obvious
+- Use descriptive resource names
+- Follow OpenShift and Kubernetes naming conventions
+- Validate YAML syntax before committing
+- Use proper AsciiDoc code block syntax with language specification:
+  ```
+  [source,yaml]
+  ----
+  yaml content
+  ----
+  ```
+
+## AsciiDoc Best Practices
+
+### Code Blocks
+- Always specify language: `[source,bash]`, `[source,yaml]`, `[source,json]`
+- Use `role=execute` for commands users should run: `[source,bash,role=execute]`
+- When a code block starts with a shell command that embeds YAML (e.g., `oc apply -f - <<EOF`), tag it `[source,bash,role=execute]`, not `[source,yaml]`. Reserve `[source,yaml]` for standalone YAML content that is not wrapped in a shell command.
+- Each code block should contain a single command (or a single tightly coupled pipeline). When a step involves multiple commands, use a separate code block for each with a brief sentence of prose in between.
+- Do not mix host-side commands (`oc`, `virtctl`, `kubectl`) and guest-side commands (commands run inside a VM) in the same code block. Separate them with prose explaining the context switch.
+- Preserve proper indentation
+- Test that code blocks render correctly in preview
+
+### Cross-References
+- Use `xref:` for internal links within the documentation
+- Same module: `xref:page-name.adoc[Link Text]`
+- Different module: `xref:module-name:page-name.adoc[Link Text]`
+- External links: `https://example.com[Link Text,window=_blank]`
+- Verify all xrefs resolve correctly by building the site
+
+### Images
+- Place images in module's `images/` directory
+- Reference with: `image::filename.png[Alt Text]`
+- Use descriptive alt text for accessibility
+- Verify images display in preview
+
+### Callouts
+- Use AsciiDoc admonitions appropriately:
+  - `NOTE:` for informational notes
+  - `WARNING:` for important warnings
+  - `IMPORTANT:` for critical information
+  - `TIP:` for helpful tips
+  - `CAUTION:` for caution messages
+
+### Tables
+- Use proper AsciiDoc table syntax with column definitions
+- Include header rows when appropriate
+- Test table rendering in preview
+
+## Build and Preview Workflow
+
+### Before Making Changes
+```bash
+# Build to check current state
+npm run build
+
+# Check for errors
+```
+
+### During Development
+```bash
+# Terminal 1: Auto-rebuild on changes (optional)
+npm run watch:adoc
+
+# Terminal 2: Serve the site
+npm run serve
+
+# Access at: http://localhost:8080
+```
+
+### After Making Changes
+```bash
+# Clean build to verify
+rm -rf build
+npm run build
+
+# Check for errors or warnings
+# Fix any issues before committing
+```
+
+### Build Verification
+- Site builds without errors
+- No Antora warnings about broken xrefs
+- No missing images or resources
+- Navigation displays correctly
+- Code blocks have proper syntax highlighting
+
+## Content Quality Standards
+
+- All AsciiDoc syntax is correct
+- Headers use proper hierarchy
+- Code blocks specify language
+- Images have alt text
+- Tables render correctly
+- Cross-references work (no 404s)
+- External links open in new tabs
+- Navigation is logical and complete
+
+## Cloud-init and VM Configuration
+
+- Use networkData section for network configuration in cloud-init
+- Use the `write_files` cloud-init module instead of shell file-creation commands (`echo`, `cat > file <<HEREDOC`, `tee`, etc.) in `runcmd`. The `write_files` module is declarative, avoids shell quoting issues, and is easier to read in YAML.
+- Match interface names to KubeVirt's predictable naming (enpXsY format)
+- Explicitly disable DHCP when using static IPs (dhcp4: false, dhcp6: false)
+- Document verification steps for cloud-init configurations
+
+## Network Configuration Best Practices
+
+- Explain bridge mapping clearly (physical bridge to logical network name)
+- Specify VLAN tagging requirements (trunk mode on physical switches)
+- Clarify IPAM behavior (when OVN-Kubernetes provides IPs vs external DHCP vs cloud-init)
+- Include physicalNetworkName in NADs for localnet topologies
+- Document bridge verification steps using ovs-vsctl commands
+
+## Storage Configuration Best Practices
+
+- Always specify a default deviceClass when documenting LVMCluster
+- Explain the importance of default StorageClass for OpenShift Virtualization
+- Document storage verification commands
+- Include PVC testing examples in storage documentation
+
+## Error Handling
+
+- When build errors occur, troubleshoot systematically
+- Check Antora error messages for specific issues
+- Common issues:
+  - Broken xref links
+  - Invalid AsciiDoc syntax
+  - Missing files in navigation
+  - Incorrect image paths
+- Fix issues and verify with another build
+
+## Git and GitHub Workflow
+
+Core git policy and commit attribution are in `shared-constraints.mdc`. Additional workflow guidance:
+
+- Stage only relevant files for each commit
+- Review changes before committing (`git diff`)
+- Use git status to verify clean working tree
+- Handle merge conflicts carefully, preserving both old and new work appropriately
+
+## Resource Naming Conventions
+
+- Use descriptive names for Kubernetes resources
+- Include purpose or topology in network resource names (e.g., localnet-vlan-100)
+- Use consistent namespace naming
+- Follow existing naming patterns in examples
+
+## Cross-Module Consistency
+
+- Use similar structure across all modules
+- Maintain consistent terminology throughout
+- Reference related content where appropriate using xrefs
+- Build on concepts from other modules without excessive repetition
+
+## Final Checklist Before Committing
+
+- [ ] Site builds without errors (`npm run build`)
+- [ ] All pages render correctly in preview
+- [ ] Code blocks have syntax highlighting
+- [ ] Images display correctly
+- [ ] Navigation is updated if needed
+- [ ] Cross-references work (no broken xrefs)
+- [ ] External links work and open in new tab
+- [ ] No emojis or icons used
+- [ ] AsciiDoc syntax is correct
+- [ ] Changes committed to appropriate branch (not main)
+- [ ] Clear commit messages used
+- [ ] No pull request created (wait for validation)
