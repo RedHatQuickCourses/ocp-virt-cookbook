@@ -33,7 +33,7 @@ Deploy a Fedora VM that automatically starts an Nginx web server using cloud-ini
 
 xref:attachment$vm-ingress-routes/vm-webserver.yaml[Download vm-webserver.yaml]
 
-[source,yaml]
+[source,bash,role=execute]
 ----
 oc apply -f - <<EOF
 apiVersion: kubevirt.io/v1
@@ -80,17 +80,17 @@ spec:
               expire: false
             packages:
             - nginx
+            write_files:
+            - path: /usr/share/nginx/html/index.html
+              content: |
+                <html>
+                <head><title>OpenShift Virt - Ingress Demo</title></head>
+                <body>
+                <h1>Hello from OpenShift Virtualization</h1>
+                <p>This page is served by Nginx inside a VM, exposed via an OpenShift Route.</p>
+                </body>
+                </html>
             runcmd:
-            - |
-              cat > /usr/share/nginx/html/index.html <<HTMLEOF
-              <html>
-              <head><title>OpenShift Virt - Ingress Demo</title></head>
-              <body>
-              <h1>Hello from OpenShift Virtualization</h1>
-              <p>This page is served by Nginx inside a VM, exposed via an OpenShift Route.</p>
-              </body>
-              </html>
-              HTMLEOF
             - systemctl enable nginx
             - systemctl start nginx
 EOF
@@ -133,7 +133,7 @@ Create a ClusterIP Service that targets port 80 on the VM. The Service selector 
 
 xref:attachment$vm-ingress-routes/service-web-vm.yaml[Download service-web-vm.yaml]
 
-[source,yaml]
+[source,bash,role=execute]
 ----
 oc apply -f - <<EOF
 apiVersion: v1
@@ -152,11 +152,17 @@ spec:
 EOF
 ----
 
-Verify the Service has an endpoint:
+Verify the Service exists:
 
 [source,bash,role=execute]
 ----
 oc get svc web-vm-svc -n ingress-demo
+----
+
+Confirm it has an endpoint:
+
+[source,bash,role=execute]
+----
 oc get endpoints web-vm-svc -n ingress-demo
 ----
 
@@ -188,7 +194,7 @@ Create a Route with edge TLS termination. OpenShift automatically provides a cer
 
 xref:attachment$vm-ingress-routes/route-web-vm.yaml[Download route-web-vm.yaml]
 
-[source,yaml]
+[source,bash,role=execute]
 ----
 oc apply -f - <<EOF
 apiVersion: route.openshift.io/v1
@@ -232,12 +238,18 @@ web-vm-route   web-vm-route-ingress-demo.apps.ocplab01.example.com       web-vm-
 
 === Test External Access
 
-Retrieve the route hostname and test with `curl`:
+Retrieve the route hostname:
 
 [source,bash,role=execute]
 ----
 ROUTE_HOST=$(oc get route web-vm-route -n ingress-demo -o jsonpath='{.spec.host}')
 echo "Route URL: https://$ROUTE_HOST"
+----
+
+Test external access with `curl`:
+
+[source,bash,role=execute]
+----
 curl -sk https://$ROUTE_HOST
 ----
 
@@ -249,7 +261,7 @@ TIP: If DNS does not resolve the route hostname from your workstation, add an en
 
 For applications that handle their own TLS certificates inside the VM, use passthrough termination. The router forwards encrypted traffic directly to the VM without decrypting it.
 
-[source,yaml]
+[source,bash,role=execute]
 ----
 oc apply -f - <<EOF
 apiVersion: route.openshift.io/v1
@@ -304,12 +316,17 @@ oc get pods -n ingress-demo -l app=web-vm
 
 === Route Returns 504 Gateway Timeout
 
-The VM application is not responding on the expected port. Verify Nginx is running inside the VM:
+The VM application is not responding on the expected port. Connect to the VM console:
 
 [source,bash,role=execute]
 ----
 virtctl console web-vm -n ingress-demo
-# Then inside the VM:
+----
+
+Inside the VM, check that Nginx is running and responding:
+
+[source,bash]
+----
 systemctl status nginx
 curl -s http://localhost
 ----
@@ -344,7 +361,7 @@ In this tutorial you learned how to:
 * Understand passthrough TLS for VMs that manage their own certificates
 * Troubleshoot common Service and Route issues for VMs
 
-== References
+== See Also
 
 * link:https://docs.openshift.com/container-platform/4.18/virt/vm_networking/virt-exposing-vm-with-service.html[Exposing a VM by Using a Service - OpenShift Documentation,window=_blank]
 * link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.18/html/ingress_and_load_balancing/index[Route Configuration - OpenShift Documentation,window=_blank]
