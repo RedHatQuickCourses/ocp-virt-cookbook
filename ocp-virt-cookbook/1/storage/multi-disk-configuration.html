@@ -1,0 +1,817 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Multi-Disk VM Configuration with Different Storage Classes :: OpenShift Virtualization cookbook</title>
+    <link rel="prev" href="creating-managing-storage-class.html">
+    <link rel="next" href="../networking/index.html">
+    <meta name="generator" content="Antora 3.1.3">
+    <link rel="stylesheet" href="../../../_/css/site.css">
+    <script>var uiRootPath = '../../../_'</script>
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://www.redhat.com" target="_blank"><img src="../../../_/img/redhat-logo.png" height="40px" alt="Red Hat"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="../../..">OpenShift Virtualization cookbook</a>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues" target="_blank">Report Issues</a>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="ocp-virt-cookbook" data-version="1">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="../index.html">OpenShift Virtualization cookbook</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../getting-started/index.html">Getting Started</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/prerequisites.html">Prerequisites</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/install-openshift-virtualization.html">Install OpenShift Virtualization</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/default-storage-class.html">Storage Setup</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/create-vm-web-console.html">Create VM from Web Console</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/vm-lifecycle-states.html">VM Lifecycle States</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/virtctl-basics.html">Virtctl Basics</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="index.html">Storage Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="lvm-operator.html">LVM Operator Installation</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="lvm-troubleshooting.html">LVM Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="hostpath-provisioner.html">HostPath Provisioner</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="creating-managing-storage-class.html">Creating and Managing Storage Classes</a>
+  </li>
+  <li class="nav-item is-current-page" data-depth="2">
+    <a class="nav-link" href="multi-disk-configuration.html">Multi-Disk VMs</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../networking/index.html">Networking Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/udn-primary-networks.html">UDN Primary Networks</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/localnet-secondary.html">Localnet Secondary Networks with CUDN</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/localnet-vlan.html">Localnet Secondary Networks with VLAN using NAD</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/cudn-localnet-vlan.html">Localnet VLAN with CUDN</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/layer2-secondary.html">Layer 2 Secondary Networks</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/linux-bridges.html">Linux Bridges</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/vm-ingress-routes.html">VM Ingress and Routes</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/ovs-bridge-troubleshooting.html">Troubleshooting Localnet Networks</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../vm-configuration/index.html">Virtual Machine Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/cloud-init-ip-configuration.html">Cloud-init IP Configuration</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/cloud-init-troubleshooting.html">Cloud-init Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/internal-dns-for-vms.html">Internal DNS for VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/remote-access-linux-vms.html">Remote Access to Linux VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/remote-access-linux-troubleshooting.html">Remote Access to Linux VMs Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/remote-access-windows-vms.html">Remote Access to Windows VMs via RDP</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/import-qcow2-boot-volume.html">Import qcow2 Boot Volume</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/custom-golden-images.html">Custom Golden Images</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/golden-images-troubleshooting.html">Golden Images Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/cloning-vms.html">Cloning VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/vm-snapshots.html">VM Snapshots</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/boot-order-boot-sources.html">VM Boot Order and Boot Sources</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/infrastructure-node-placement.html">Infrastructure Node Placement</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/node-placement-affinity.html">Node Placement and Affinity</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/resource-limits-qos.html">Resource Limits and QoS</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/hotplug-volumes-interfaces.html">Hotplug Volumes and Interfaces</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../manifests/index.html">Manifests</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../api/index.html">API Guide</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../api/api_component_overview.html">API Component Overview</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../lab-env/index.html">Lab Environment</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../appendix/glossary.html">Glossary</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">OpenShift Virtualization cookbook</span>
+    <span class="version">1</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <a class="title" href="../index.html">OpenShift Virtualization cookbook</a>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">1</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">OpenShift Virtualization cookbook</a></li>
+    <li><a href="index.html">Storage Configuration</a></li>
+    <li><a href="multi-disk-configuration.html">Multi-Disk VMs</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">Multi-Disk VM Configuration with Different Storage Classes</h1>
+<div class="sect1">
+<h2 id="_overview"><a class="anchor" href="#_overview"></a>Overview</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>This tutorial demonstrates how to configure virtual machines with multiple disks, each using a different storage class. Multi-disk configurations enable storage tiering&#8201;&#8212;&#8201;using faster storage for the OS boot disk and slower, cheaper storage for data volumes. This pattern is common in database workloads, application servers, and any VM that separates OS and application data.</p>
+</div>
+<div class="paragraph">
+<p>You will create a VM with two disks: a boot disk using the default StorageClass and a data disk using a second StorageClass, then verify both disks are accessible inside the guest OS.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_prerequisites"><a class="anchor" href="#_prerequisites"></a>Prerequisites</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p><strong>OpenShift 4.18+</strong> with OpenShift Virtualization operator installed</p>
+</li>
+<li>
+<p><strong>Cluster admin access</strong> (<code>system:admin</code> or equivalent)</p>
+</li>
+<li>
+<p><strong><code>oc</code> CLI</strong> and <strong><code>virtctl</code> CLI</strong> installed</p>
+</li>
+<li>
+<p><strong>Default StorageClass</strong> configured (e.g., <code>lvms-vg1</code>)</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Versions tested:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>OpenShift 4.20</pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_1_understand_disk_and_volume_mapping"><a class="anchor" href="#_step_1_understand_disk_and_volume_mapping"></a>Step 1: Understand Disk and Volume Mapping</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>In a KubeVirt VM specification, disks and volumes work together:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong><code>spec.template.spec.domain.devices.disks</code></strong> defines how each disk is presented to the guest OS (bus type, disk ordering).</p>
+</li>
+<li>
+<p><strong><code>spec.template.spec.volumes</code></strong> defines the backing storage for each disk (PVC, DataVolume, containerDisk, cloudInitNoCloud).</p>
+</li>
+<li>
+<p>Each disk&#8217;s <code>name</code> must match a corresponding volume <code>name</code>.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Disks appear inside the guest as <code>/dev/vda</code>, <code>/dev/vdb</code>, etc., in the order they are defined.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_2_create_a_namespace"><a class="anchor" href="#_step_2_create_a_namespace"></a>Step 2: Create a Namespace</h2>
+<div class="sectionbody">
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc create namespace multi-disk-demo</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_3_create_a_second_storageclass_optional"><a class="anchor" href="#_step_3_create_a_second_storageclass_optional"></a>Step 3: Create a Second StorageClass (Optional)</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>If your cluster has only one StorageClass, you can still use this tutorial by specifying the same StorageClass for both disks. However, to demonstrate storage tiering, you can create a second StorageClass.</p>
+</div>
+<div class="paragraph">
+<p>On clusters with LVM Storage, the default <code>lvms-vg1</code> StorageClass already exists. For this tutorial, we create a second StorageClass with <code>Retain</code> reclaim policy to simulate a different storage tier:</p>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/multi-disk-configuration/sc-data-retain.yaml" class="xref attachment">Download sc-data-retain.yaml</a></p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f - &lt;&lt;EOF
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: lvms-vg1-retain
+provisioner: topolvm.io
+reclaimPolicy: Retain
+volumeBindingMode: WaitForFirstConsumer
+allowVolumeExpansion: true
+EOF</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Verify both StorageClasses:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get storageclass</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Expected output:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>NAME                 PROVISIONER   RECLAIMPOLICY   VOLUMEBINDINGMODE      ALLOWVOLUMEEXPANSION   AGE
+lvms-vg1 (default)   topolvm.io    Delete          WaitForFirstConsumer   true                   30d
+lvms-vg1-retain      topolvm.io    Retain          WaitForFirstConsumer   true                   5s</pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_4_deploy_a_vm_with_multiple_disks"><a class="anchor" href="#_step_4_deploy_a_vm_with_multiple_disks"></a>Step 4: Deploy a VM with Multiple Disks</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Create a VM with three disks:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>rootdisk</strong>: Boot disk (30Gi, default StorageClass) cloned from the Fedora boot source</p>
+</li>
+<li>
+<p><strong>datadisk</strong>: Data disk (10Gi, second StorageClass) created as a blank volume</p>
+</li>
+<li>
+<p><strong>cloudinitdisk</strong>: Cloud-init configuration disk</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/multi-disk-configuration/vm-multi-disk.yaml" class="xref attachment">Download vm-multi-disk.yaml</a></p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f - &lt;&lt;EOF
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: multi-disk-vm
+  namespace: multi-disk-demo
+spec:
+  runStrategy: Always
+  template:
+    metadata:
+      labels:
+        kubevirt.io/domain: multi-disk-vm
+    spec:
+      domain:
+        devices:
+          disks:
+          - name: rootdisk
+            disk:
+              bus: virtio
+            bootOrder: 1
+          - name: datadisk
+            disk:
+              bus: virtio
+          - name: cloudinitdisk
+            disk:
+              bus: virtio
+          interfaces:
+          - name: default
+            masquerade: {}
+        resources:
+          requests:
+            memory: 1Gi
+      networks:
+      - name: default
+        pod: {}
+      volumes:
+      - name: rootdisk
+        dataVolume:
+          name: multi-disk-rootdisk
+      - name: datadisk
+        dataVolume:
+          name: multi-disk-datadisk
+      - name: cloudinitdisk
+        cloudInitNoCloud:
+          userData: |
+            #cloud-config
+            password: redhat
+            chpasswd:
+              expire: false
+  dataVolumeTemplates:
+  - metadata:
+      name: multi-disk-rootdisk
+    spec:
+      pvc:
+        accessModes:
+        - ReadWriteOnce
+        resources:
+          requests:
+            storage: 30Gi
+        storageClassName: lvms-vg1
+      source:
+        registry:
+          pullMethod: node
+          url: docker://quay.io/containerdisks/fedora:latest
+  - metadata:
+      name: multi-disk-datadisk
+    spec:
+      pvc:
+        accessModes:
+        - ReadWriteOnce
+        resources:
+          requests:
+            storage: 10Gi
+        storageClassName: lvms-vg1-retain
+      source:
+        blank: {}
+EOF</code></pre>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_key_configuration_details"><a class="anchor" href="#_key_configuration_details"></a>Key Configuration Details</h3>
+<div class="ulist">
+<ul>
+<li>
+<p><strong><code>bootOrder: 1</code></strong> on the rootdisk ensures the VM boots from the OS disk.</p>
+</li>
+<li>
+<p><strong><code>source.registry</code></strong> on the rootdisk pulls the Fedora container disk image.</p>
+</li>
+<li>
+<p><strong><code>source.blank: {}</code></strong> on the datadisk creates an empty, unformatted volume.</p>
+</li>
+<li>
+<p>Each <code>dataVolumeTemplates</code> entry can specify a different <code>storageClassName</code>.</p>
+</li>
+<li>
+<p>Disk names in <code>devices.disks</code> must match volume names in <code>volumes</code>, which must match <code>dataVolumeTemplates</code> metadata names.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_5_verify_the_vm_and_disks"><a class="anchor" href="#_step_5_verify_the_vm_and_disks"></a>Step 5: Verify the VM and Disks</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Wait for both DataVolumes to complete and the VM to start:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get dv -n multi-disk-demo -w</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Once both show <code>Succeeded</code>, check the VM:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vm -n multi-disk-demo</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Expected output:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>NAME            AGE   STATUS    READY
+multi-disk-vm   3m    Running   True</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Verify the PVCs are bound with their respective StorageClasses:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get pvc -n multi-disk-demo</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Expected output:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>NAME                   STATUS   VOLUME       CAPACITY   ACCESS MODES   STORAGECLASS      AGE
+multi-disk-rootdisk    Bound    pvc-xxxx     30Gi       RWO            lvms-vg1          3m
+multi-disk-datadisk    Bound    pvc-yyyy     10Gi       RWO            lvms-vg1-retain   3m</pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_6_format_and_mount_the_data_disk_inside_the_vm"><a class="anchor" href="#_step_6_format_and_mount_the_data_disk_inside_the_vm"></a>Step 6: Format and Mount the Data Disk Inside the VM</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Access the VM console:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">virtctl console multi-disk-vm -n multi-disk-demo</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Log in with username <code>fedora</code> and password <code>redhat</code>.</p>
+</div>
+<div class="paragraph">
+<p>List all block devices inside the guest:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">lsblk</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Expected output:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>NAME   MAJ:MIN RM  SIZE RO TYPE MOUNTPOINTS
+vda    252:0    0   30G  0 disk
+|-vda1 252:1    0    1M  0 part
+|-vda2 252:2    0  1.9G  0 part [SWAP]
+|-vda3 252:3    0    1G  0 part /boot
+`-vda4 252:4    0 27.1G  0 part /
+vdb    252:16   0   10G  0 disk
+vdc    252:32   0    1M  0 disk</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The data disk appears as <code>vdb</code> (10G, unformatted). Format it with XFS:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">sudo mkfs.xfs /dev/vdb</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Create a mount point and mount the disk:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">sudo mkdir -p /mnt/data
+sudo mount /dev/vdb /mnt/data</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Verify the mount:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">df -h /mnt/data</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Expected output:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>Filesystem      Size  Used Avail Use% Mounted on
+/dev/vdb         10G   105M  9.9G   2% /mnt/data</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Write a test file:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">sudo sh -c "echo 'Multi-disk test data' &gt; /mnt/data/test.txt"</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Read it back to confirm:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">cat /mnt/data/test.txt</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>To make the mount persistent across reboots, add it to <code>/etc/fstab</code>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">sudo sh -c "echo '/dev/vdb /mnt/data xfs defaults 0 0' &gt;&gt; /etc/fstab"</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Press <code>Ctrl+]</code> to exit the console.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_7_verify_storage_isolation"><a class="anchor" href="#_step_7_verify_storage_isolation"></a>Step 7: Verify Storage Isolation</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Confirm each PVC uses a different StorageClass and PersistentVolume:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get pvc multi-disk-rootdisk -n multi-disk-demo -o jsonpath='StorageClass: {.spec.storageClassName}, Volume: {.spec.volumeName}, Capacity: {.status.capacity.storage}'</code></pre>
+</div>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get pvc multi-disk-datadisk -n multi-disk-demo -o jsonpath='StorageClass: {.spec.storageClassName}, Volume: {.spec.volumeName}, Capacity: {.status.capacity.storage}'</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This confirms each disk is independently provisioned and can be managed separately (e.g., different backup policies, expansion schedules, or reclaim behavior).</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_use_cases_for_multi_disk_vms"><a class="anchor" href="#_use_cases_for_multi_disk_vms"></a>Use Cases for Multi-Disk VMs</h2>
+<div class="sectionbody">
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 33.3333%;">
+<col style="width: 33.3333%;">
+<col style="width: 33.3334%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Use Case</th>
+<th class="tableblock halign-left valign-top">Boot Disk</th>
+<th class="tableblock halign-left valign-top">Data Disk</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Database server</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Fast SSD (OS + binaries)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Large HDD (data files, logs)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Application server</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Standard storage (OS)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Fast SSD (application state)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Development VM</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Shared storage (OS template)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Local storage (scratch space)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Logging/monitoring</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Standard storage (OS)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">High-capacity storage (log retention)</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_cleanup"><a class="anchor" href="#_cleanup"></a>Cleanup</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Delete the namespace, which removes the VM, PVCs, and DataVolumes:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc delete namespace multi-disk-demo</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Delete the second StorageClass:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc delete storageclass lvms-vg1-retain</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Because the <code>lvms-vg1-retain</code> StorageClass uses <code>reclaimPolicy: Retain</code>, the underlying PersistentVolumes are not automatically deleted when the PVC is removed. Check for any Released PVs:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get pv | grep Released</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If any appear, delete them manually to reclaim storage:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc delete pv &lt;pv-name&gt;</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_summary"><a class="anchor" href="#_summary"></a>Summary</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>In this tutorial you learned how to:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Configure a VM with multiple disks using different StorageClasses</p>
+</li>
+<li>
+<p>Use <code>dataVolumeTemplates</code> to define storage for each disk independently</p>
+</li>
+<li>
+<p>Set boot order to control which disk the VM boots from</p>
+</li>
+<li>
+<p>Create blank data volumes for additional storage</p>
+</li>
+<li>
+<p>Format and mount additional disks inside the guest OS</p>
+</li>
+<li>
+<p>Understand storage tiering patterns for VMs</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_see_also"><a class="anchor" href="#_see_also"></a>See Also</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p><a href="https://kubevirt.io/user-guide/storage/disks_and_volumes/" target="_blank" rel="noopener">Disks and Volumes - KubeVirt User Guide</a></p>
+</li>
+<li>
+<p><a href="https://docs.redhat.com/en/documentation/openshift_container_platform/4.18/html/virtualization/storage#virt-configuring-storage-profile" target="_blank" rel="noopener">Configuring Storage Profiles - OpenShift Documentation</a></p>
+</li>
+<li>
+<p><a href="../vm-configuration/boot-order-boot-sources.html" class="xref page">Boot Order and Boot Sources</a></p>
+</li>
+<li>
+<p><a href="lvm-operator.html" class="xref page">LVM Storage Operator</a></p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<nav class="pagination">
+  <span class="prev"><a href="creating-managing-storage-class.html">Creating and Managing Storage Classes</a></span>
+  <span class="next"><a href="../networking/index.html">Networking Configuration</a></span>
+</nav>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <img src="../../../_/img/rhl-logo-red.png" height="40px" alt="Red Hat"  href="https://redhat.com" >
+</footer><script id="site-script" src="../../../_/js/site.js" data-ui-root-path="../../../_"></script>
+<script async src="../../../_/js/vendor/highlight.js"></script>
+  </body>
+</html>
