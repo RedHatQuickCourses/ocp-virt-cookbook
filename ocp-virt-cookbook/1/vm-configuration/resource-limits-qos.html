@@ -1,0 +1,948 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Configuring VM Resource Limits and QoS :: OpenShift Virtualization cookbook</title>
+    <link rel="prev" href="node-placement-affinity.html">
+    <link rel="next" href="../manifests/index.html">
+    <meta name="generator" content="Antora 3.1.3">
+    <link rel="stylesheet" href="../../../_/css/site.css">
+    <script>var uiRootPath = '../../../_'</script>
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://www.redhat.com" target="_blank"><img src="../../../_/img/redhat-logo.png" height="40px" alt="Red Hat"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="../../..">OpenShift Virtualization cookbook</a>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues" target="_blank">Report Issues</a>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="ocp-virt-cookbook" data-version="1">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="../index.html">OpenShift Virtualization cookbook</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../getting-started/index.html">Getting Started</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/prerequisites.html">Prerequisites</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/install-openshift-virtualization.html">Install OpenShift Virtualization</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/default-storage-class.html">Storage Setup</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/create-vm-web-console.html">Create VM from Web Console</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/vm-lifecycle-states.html">VM Lifecycle States</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/virtctl-basics.html">Virtctl Basics</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../storage/index.html">Storage Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/lvm-operator.html">LVM Operator Installation</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/lvm-troubleshooting.html">LVM Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/hostpath-provisioner.html">HostPath Provisioner</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/creating-managing-storage-class.html">Creating and Managing Storage Classes</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../networking/index.html">Networking Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/udn-primary-networks.html">UDN Primary Networks</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/localnet-secondary.html">Localnet Secondary Networks with CUDN</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/localnet-vlan.html">Localnet Secondary Networks with VLAN using NAD</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/cudn-localnet-vlan.html">Localnet VLAN with CUDN</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/layer2-secondary.html">Layer 2 Secondary Networks</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/linux-bridges.html">Linux Bridges</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/ovs-bridge-troubleshooting.html">Troubleshooting Localnet Networks</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="index.html">Virtual Machine Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="cloud-init-ip-configuration.html">Cloud-init IP Configuration</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="cloud-init-troubleshooting.html">Cloud-init Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="internal-dns-for-vms.html">Internal DNS for VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="remote-access-linux-vms.html">Remote Access to Linux VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="remote-access-linux-troubleshooting.html">Remote Access to Linux VMs Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="remote-access-windows-vms.html">Remote Access to Windows VMs via RDP</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="import-qcow2-boot-volume.html">Import qcow2 Boot Volume</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="custom-golden-images.html">Custom Golden Images</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="golden-images-troubleshooting.html">Golden Images Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="cloning-vms.html">Cloning VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="vm-snapshots.html">VM Snapshots</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="boot-order-boot-sources.html">VM Boot Order and Boot Sources</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="infrastructure-node-placement.html">Infrastructure Node Placement</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="node-placement-affinity.html">Node Placement and Affinity</a>
+  </li>
+  <li class="nav-item is-current-page" data-depth="2">
+    <a class="nav-link" href="resource-limits-qos.html">Resource Limits and QoS</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../manifests/index.html">Manifests</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../api/index.html">API Guide</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../api/api_component_overview.html">API Component Overview</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../lab-env/index.html">Lab Environment</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../appendix/glossary.html">Glossary</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">OpenShift Virtualization cookbook</span>
+    <span class="version">1</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <a class="title" href="../index.html">OpenShift Virtualization cookbook</a>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">1</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">OpenShift Virtualization cookbook</a></li>
+    <li><a href="index.html">Virtual Machine Configuration</a></li>
+    <li><a href="resource-limits-qos.html">Resource Limits and QoS</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">Configuring VM Resource Limits and QoS</h1>
+<div class="sect1">
+<h2 id="_overview"><a class="anchor" href="#_overview"></a>Overview</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>This tutorial demonstrates how to configure CPU and memory resource requests, limits, and Quality of Service (QoS) classes for virtual machines in OpenShift Virtualization. Proper resource management prevents resource exhaustion, ensures predictable VM performance, and enables efficient multi-tenant cluster utilization.</p>
+</div>
+<div class="paragraph">
+<p>You will learn how KubeVirt translates VM resource specifications into container-level requests and limits, how Kubernetes QoS classes apply to VMs, and how to use ResourceQuotas and LimitRanges to enforce governance at the namespace level.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_prerequisites"><a class="anchor" href="#_prerequisites"></a>Prerequisites</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p><strong>OpenShift 4.18+</strong> with OpenShift Virtualization operator installed</p>
+</li>
+<li>
+<p><strong>Cluster admin access</strong> (<code>system:admin</code> or equivalent)</p>
+</li>
+<li>
+<p><strong><code>oc</code> CLI</strong> and <strong><code>virtctl</code> CLI</strong> installed</p>
+</li>
+<li>
+<p><strong>Default StorageClass</strong> configured (for VM boot disks)</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Versions tested:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>OpenShift 4.20</pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_understanding_vm_resource_management"><a class="anchor" href="#_understanding_vm_resource_management"></a>Understanding VM Resource Management</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>When you create a VM in OpenShift Virtualization, KubeVirt translates the VM&#8217;s resource specification into requests and limits on the <code>virt-launcher</code> container that hosts the VM. Understanding this mapping is essential for capacity planning.</p>
+</div>
+<div class="sect2">
+<h3 id="_cpu_allocation"><a class="anchor" href="#_cpu_allocation"></a>CPU Allocation</h3>
+<div class="ulist">
+<ul>
+<li>
+<p>By default, the container requests <code>1/cpuAllocationRatio</code> CPU per vCPU, where <code>cpuAllocationRatio</code> defaults to 10. A VM with 1 vCPU requests 100m CPU.</p>
+</li>
+<li>
+<p>No CPU limit is set by default, allowing VMs to burst beyond their request when capacity is available.</p>
+</li>
+<li>
+<p>If you manually set CPU limits on the VM, no CPU request is automatically derived&#8201;&#8212;&#8201;requests match limits.</p>
+</li>
+<li>
+<p>The number of vCPUs is calculated as <code>sockets * cores * threads</code>, defaulting to 1.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_memory_allocation"><a class="anchor" href="#_memory_allocation"></a>Memory Allocation</h3>
+<div class="ulist">
+<ul>
+<li>
+<p>VMs specify desired memory via <code>spec.domain.memory.guest</code> or <code>spec.domain.resources.requests.memory</code>.</p>
+</li>
+<li>
+<p>KubeVirt adds a calculated overhead (for QEMU, firmware, and other hypervisor components) to the guest memory, forming the container memory request.</p>
+</li>
+<li>
+<p>No memory limit is set by default.</p>
+</li>
+<li>
+<p>If you set memory limits, they must be at least 500 MiB or 2% larger than the guest memory value to account for overhead.</p>
+</li>
+</ul>
+</div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+Setting memory limits on VMs can cause VM crashes if the guest OS or hypervisor temporarily exceeds the limit. Use limits cautiously and set them higher than the guest memory plus overhead.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_1_create_a_namespace_for_testing"><a class="anchor" href="#_step_1_create_a_namespace_for_testing"></a>Step 1: Create a Namespace for Testing</h2>
+<div class="sectionbody">
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc create namespace resource-qos-demo</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_2_deploy_vms_with_different_qos_classes"><a class="anchor" href="#_step_2_deploy_vms_with_different_qos_classes"></a>Step 2: Deploy VMs with Different QoS Classes</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Kubernetes assigns one of three QoS classes to every pod based on its resource configuration. Since VMs run inside pods, the same rules apply.</p>
+</div>
+<div class="sect2">
+<h3 id="_burstable_qos_default"><a class="anchor" href="#_burstable_qos_default"></a>Burstable QoS (Default)</h3>
+<div class="paragraph">
+<p>A VM with only resource requests (no limits) gets Burstable QoS. This is the default behavior for OpenShift Virtualization VMs.</p>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/resource-limits-qos/vm-burstable.yaml" class="xref attachment">Download vm-burstable.yaml</a></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">oc apply -f - &lt;&lt;EOF
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: vm-burstable
+  namespace: resource-qos-demo
+spec:
+  runStrategy: Always
+  template:
+    metadata:
+      labels:
+        kubevirt.io/domain: vm-burstable
+    spec:
+      domain:
+        memory:
+          guest: 512Mi
+        resources:
+          requests:
+            memory: 512Mi
+        devices:
+          disks:
+          - name: rootdisk
+            disk:
+              bus: virtio
+          - name: cloudinitdisk
+            disk:
+              bus: virtio
+          interfaces:
+          - name: default
+            masquerade: {}
+      networks:
+      - name: default
+        pod: {}
+      volumes:
+      - name: rootdisk
+        containerDisk:
+          image: quay.io/containerdisks/fedora:latest
+      - name: cloudinitdisk
+        cloudInitNoCloud:
+          userData: |
+            #cloud-config
+            password: redhat
+            chpasswd:
+              expire: false
+EOF</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_guaranteed_qos"><a class="anchor" href="#_guaranteed_qos"></a>Guaranteed QoS</h3>
+<div class="paragraph">
+<p>A VM with equal requests and limits for both CPU and memory gets Guaranteed QoS. These VMs have the highest scheduling priority and are the last to be evicted under memory pressure.</p>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/resource-limits-qos/vm-guaranteed.yaml" class="xref attachment">Download vm-guaranteed.yaml</a></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">oc apply -f - &lt;&lt;EOF
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: vm-guaranteed
+  namespace: resource-qos-demo
+spec:
+  runStrategy: Always
+  template:
+    metadata:
+      labels:
+        kubevirt.io/domain: vm-guaranteed
+    spec:
+      domain:
+        memory:
+          guest: 512Mi
+        resources:
+          requests:
+            memory: 1Gi
+            cpu: "1"
+          limits:
+            memory: 1Gi
+            cpu: "1"
+        devices:
+          disks:
+          - name: rootdisk
+            disk:
+              bus: virtio
+          - name: cloudinitdisk
+            disk:
+              bus: virtio
+          interfaces:
+          - name: default
+            masquerade: {}
+      networks:
+      - name: default
+        pod: {}
+      volumes:
+      - name: rootdisk
+        containerDisk:
+          image: quay.io/containerdisks/fedora:latest
+      - name: cloudinitdisk
+        cloudInitNoCloud:
+          userData: |
+            #cloud-config
+            password: redhat
+            chpasswd:
+              expire: false
+EOF</code></pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+The memory limit (1Gi) must be significantly larger than the guest memory (512Mi) to account for hypervisor overhead. If the limit is too close to the guest memory, the pod will be rejected.
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_besteffort_qos"><a class="anchor" href="#_besteffort_qos"></a>BestEffort QoS</h3>
+<div class="paragraph">
+<p>A VM with no resource requests or limits gets BestEffort QoS. These VMs are the first to be evicted under resource pressure. This configuration is generally not recommended for production.</p>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/resource-limits-qos/vm-besteffort.yaml" class="xref attachment">Download vm-besteffort.yaml</a></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">oc apply -f - &lt;&lt;EOF
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: vm-besteffort
+  namespace: resource-qos-demo
+spec:
+  runStrategy: Always
+  template:
+    metadata:
+      labels:
+        kubevirt.io/domain: vm-besteffort
+    spec:
+      domain:
+        memory:
+          guest: 512Mi
+        devices:
+          disks:
+          - name: rootdisk
+            disk:
+              bus: virtio
+          - name: cloudinitdisk
+            disk:
+              bus: virtio
+          interfaces:
+          - name: default
+            masquerade: {}
+      networks:
+      - name: default
+        pod: {}
+      volumes:
+      - name: rootdisk
+        containerDisk:
+          image: quay.io/containerdisks/fedora:latest
+      - name: cloudinitdisk
+        cloudInitNoCloud:
+          userData: |
+            #cloud-config
+            password: redhat
+            chpasswd:
+              expire: false
+EOF</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_3_verify_qos_classes"><a class="anchor" href="#_step_3_verify_qos_classes"></a>Step 3: Verify QoS Classes</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Wait for the VMs to start:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vm -n resource-qos-demo</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Expected output:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>NAME             AGE   STATUS    READY
+vm-besteffort    30s   Running   True
+vm-burstable     60s   Running   True
+vm-guaranteed    45s   Running   True</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Check the QoS class assigned to each VM&#8217;s pod.</p>
+</div>
+<div class="paragraph">
+<p>For the burstable VM:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get pod -n resource-qos-demo -l kubevirt.io/domain=vm-burstable -o jsonpath='{.items[0].status.qosClass}{"\n"}'</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Expected output:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>Burstable</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>For the guaranteed VM:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get pod -n resource-qos-demo -l kubevirt.io/domain=vm-guaranteed -o jsonpath='{.items[0].status.qosClass}{"\n"}'</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Expected output:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>Guaranteed</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>For the best-effort VM:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get pod -n resource-qos-demo -l kubevirt.io/domain=vm-besteffort -o jsonpath='{.items[0].status.qosClass}{"\n"}'</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Expected output:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>Burstable</pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+Even vm-besteffort shows Burstable rather than BestEffort because KubeVirt always adds some base resource requests for the virt-launcher container overhead.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Inspect the actual resource values on the virt-launcher pods.</p>
+</div>
+<div class="paragraph">
+<p>For the burstable VM:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get pod -n resource-qos-demo -l kubevirt.io/domain=vm-burstable -o yaml</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>For the guaranteed VM:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get pod -n resource-qos-demo -l kubevirt.io/domain=vm-guaranteed -o yaml</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>For the best-effort VM:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get pod -n resource-qos-demo -l kubevirt.io/domain=vm-besteffort -o yaml</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_4_apply_resourcequotas"><a class="anchor" href="#_step_4_apply_resourcequotas"></a>Step 4: Apply ResourceQuotas</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>ResourceQuotas enforce aggregate resource limits across all VMs and pods in a namespace. When a ResourceQuota with limits is applied, KubeVirt automatically sets resource limits on VMs.</p>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/resource-limits-qos/resource-quota.yaml" class="xref attachment">Download resource-quota.yaml</a></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">oc apply -f - &lt;&lt;EOF
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: vm-resource-quota
+  namespace: resource-qos-demo
+spec:
+  hard:
+    requests.cpu: "4"
+    requests.memory: 8Gi
+    limits.cpu: "8"
+    limits.memory: 16Gi
+    pods: "10"
+EOF</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Verify the quota:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc describe resourcequota vm-resource-quota -n resource-qos-demo</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The output shows current usage versus hard limits for the namespace. New VMs created in this namespace will automatically receive CPU limits (1 per vCPU) and memory limits (2x requests) because the quota contains limits fields.</p>
+</div>
+<div class="sect2">
+<h3 id="_customizing_auto_memory_limits_ratio"><a class="anchor" href="#_customizing_auto_memory_limits_ratio"></a>Customizing Auto Memory Limits Ratio</h3>
+<div class="paragraph">
+<p>By default, auto memory limits are set to 2x the requested memory. You can customize this per namespace:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc label namespace resource-qos-demo alpha.kubevirt.io/auto-memory-limits-ratio=1.5</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This sets the auto memory limit ratio to 1.5x for all new VMs in the namespace.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_5_apply_limitranges"><a class="anchor" href="#_step_5_apply_limitranges"></a>Step 5: Apply LimitRanges</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>LimitRanges set per-pod default and maximum resource values within a namespace, ensuring every VM has a minimum resource allocation.</p>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/resource-limits-qos/limit-range.yaml" class="xref attachment">Download limit-range.yaml</a></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">oc apply -f - &lt;&lt;EOF
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: vm-limit-range
+  namespace: resource-qos-demo
+spec:
+  limits:
+  - type: Pod
+    max:
+      cpu: "4"
+      memory: 8Gi
+    min:
+      cpu: 100m
+      memory: 256Mi
+  - type: Container
+    default:
+      cpu: 500m
+      memory: 1Gi
+    defaultRequest:
+      cpu: 100m
+      memory: 512Mi
+    max:
+      cpu: "4"
+      memory: 8Gi
+    min:
+      cpu: 50m
+      memory: 128Mi
+EOF</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Verify:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc describe limitrange vm-limit-range -n resource-qos-demo</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>With this LimitRange in place, any new pod (including virt-launcher pods for VMs) that does not specify resource requests or limits will receive the defaults.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_6_monitor_resource_usage"><a class="anchor" href="#_step_6_monitor_resource_usage"></a>Step 6: Monitor Resource Usage</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Check actual resource consumption for VM pods:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc adm top pods -n resource-qos-demo</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This shows current CPU and memory usage for each virt-launcher pod. Compare these values against the requests and limits to identify right-sizing opportunities.</p>
+</div>
+<div class="paragraph">
+<p>Check namespace-level resource consumption against quotas:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc describe resourcequota vm-resource-quota -n resource-qos-demo</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_qos_classes_summary"><a class="anchor" href="#_qos_classes_summary"></a>QoS Classes Summary</h2>
+<div class="sectionbody">
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 25%;">
+<col style="width: 25%;">
+<col style="width: 25%;">
+<col style="width: 25%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">QoS Class</th>
+<th class="tableblock halign-left valign-top">Configuration</th>
+<th class="tableblock halign-left valign-top">Eviction Priority</th>
+<th class="tableblock halign-left valign-top">Use Case</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Guaranteed</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">requests == limits for CPU and memory</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Last to be evicted</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Production databases, critical applications</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Burstable</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">requests set, limits unset or different</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Evicted after BestEffort</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">General workloads, development VMs</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">BestEffort</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">No requests or limits set</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">First to be evicted</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Temporary, expendable workloads</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_right_sizing_recommendations"><a class="anchor" href="#_right_sizing_recommendations"></a>Right-Sizing Recommendations</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Start with Burstable</strong> for new workloads: set memory requests to the expected usage and let VMs burst when needed.</p>
+</li>
+<li>
+<p><strong>Use Guaranteed</strong> for production VMs that need predictable performance and should not be evicted.</p>
+</li>
+<li>
+<p><strong>Set memory limits conservatively</strong>: at least 2x the guest memory to account for hypervisor overhead and memory spikes.</p>
+</li>
+<li>
+<p><strong>Monitor before constraining</strong>: use <code>oc adm top pods</code> to observe actual usage before setting tight limits.</p>
+</li>
+<li>
+<p><strong>Use ResourceQuotas</strong> at the namespace level to prevent any single team from consuming all cluster resources.</p>
+</li>
+<li>
+<p><strong>Use LimitRanges</strong> to ensure every VM has minimum resource allocation and sensible defaults.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_cleanup"><a class="anchor" href="#_cleanup"></a>Cleanup</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Remove all resources created in this tutorial:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc delete namespace resource-qos-demo</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_summary"><a class="anchor" href="#_summary"></a>Summary</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>In this tutorial you learned how to:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Configure CPU and memory requests and limits for VMs</p>
+</li>
+<li>
+<p>Understand how KubeVirt maps VM resources to container resources</p>
+</li>
+<li>
+<p>Deploy VMs with Guaranteed, Burstable, and BestEffort QoS classes</p>
+</li>
+<li>
+<p>Apply ResourceQuotas to enforce namespace-level resource governance</p>
+</li>
+<li>
+<p>Apply LimitRanges to set per-pod defaults and boundaries</p>
+</li>
+<li>
+<p>Monitor VM resource usage and right-size allocations</p>
+</li>
+<li>
+<p>Customize the auto memory limits ratio per namespace</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_references"><a class="anchor" href="#_references"></a>References</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p><a href="https://kubevirt.io/user-guide/compute/resources_requests_and_limits/" target="_blank" rel="noopener">KubeVirt Resource Requests and Limits</a></p>
+</li>
+<li>
+<p><a href="https://docs.openshift.com/container-platform/4.18/virt/managing_vms/advanced_vm_management/virt-working-with-resource-quotas-for-vms.html" target="_blank" rel="noopener">Working with Resource Quotas for VMs - OpenShift Documentation</a></p>
+</li>
+<li>
+<p><a href="https://kubernetes.io/docs/tasks/configure-pod-container/quality-service-pod/" target="_blank" rel="noopener">Configure QoS for Pods - Kubernetes Documentation</a></p>
+</li>
+<li>
+<p><a href="https://docs.openshift.com/container-platform/4.18/applications/quotas/quotas-setting-per-project.html" target="_blank" rel="noopener">Resource Quotas Per Project - OpenShift Documentation</a></p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<nav class="pagination">
+  <span class="prev"><a href="node-placement-affinity.html">Node Placement and Affinity</a></span>
+  <span class="next"><a href="../manifests/index.html">Manifests</a></span>
+</nav>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <img src="../../../_/img/rhl-logo-red.png" height="40px" alt="Red Hat"  href="https://redhat.com" >
+</footer><script id="site-script" src="../../../_/js/site.js" data-ui-root-path="../../../_"></script>
+<script async src="../../../_/js/vendor/highlight.js"></script>
+  </body>
+</html>
