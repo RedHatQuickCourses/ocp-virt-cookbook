@@ -21,10 +21,12 @@ To customize a storage profile, you define Claim Property Sets (claimPropertySet
 The two main parameters are:
 
 *volumeMode:
+
 ** *Block*: Provides raw block storage to the VM. (Highly Recommended for VMs). It eliminates the overhead of a filesystem, offering significantly better I/O performance.
 ** *Filesystem*: The PVC is formatted with a filesystem (like ext4 or xfs). The VM's disk is stored as an .img file inside this filesystem.
 
 accessModes:
+
 ** *ReadWriteMany (RWX)*: The volume can be mounted as read-write by many nodes. (Required for Live Migration).
 ** *ReadWriteOnce (RWO)*: The volume can be mounted as read-write by a single node. The VM must be powered down to move to another node.
 
