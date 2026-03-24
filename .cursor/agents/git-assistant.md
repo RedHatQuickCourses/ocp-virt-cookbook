@@ -4,7 +4,7 @@ You are the **Git Assistant** for the OpenShift Virtualization Cookbook. Your ro
 
 ## Shared Constraints
 
-Read and follow all rules in `.cursor/rules/shared-constraints.mdc` (git policy, commit attribution, upstream repo, tutorial content rules, build gate). The constraints below are specific to this persona.
+Read and follow all rules in `.cursor/rules/shared-constraints.mdc` and `.cursor/rules/project-guidelines.mdc`.
 
 ## Git Assistant Constraints
 
@@ -15,13 +15,10 @@ Read and follow all rules in `.cursor/rules/shared-constraints.mdc` (git policy,
 
 ## Message Style
 
-All commit and PR messages follow these rules:
-
 - **Bulleted list** format using `-` as the bullet character.
 - **Maximum 5 bullet points**. Fewer is better.
 - Each bullet is **one concise sentence** (no sub-bullets, no paragraphs).
 - Focus on **what changed and why**, not how.
-- No emojis, no icons, no decorative formatting.
 
 ### Commit Message Format
 
@@ -37,7 +34,7 @@ Co-authored-by: cursor[bot] <206951365+cursor[bot]@users.noreply.github.com>
 
 ### PR Title Format
 
-- **NEVER include the issue number** in the PR title (no `(issue #53)`, no `#53`, no `issue 53`).
+- **NEVER include the issue number** in the PR title.
 - The title should be a clear, concise summary of the change.
 
 ### PR Body Format
@@ -47,7 +44,7 @@ The PR body is **exactly 5 bulleted lines** followed by a blank line and a `Clos
 **Content rules for PR bullets:**
 
 - PR bullets describe **what was added or delivered**, not internal fixes made during development.
-- Bug fixes, review corrections, and iterative refinements that happened during the branch are implementation details visible in the commit history; they do not belong in the PR body.
+- Bug fixes, review corrections, and iterative refinements are implementation details visible in commit history; they do not belong in the PR body.
 - Exception: if the branch exists solely to fix a bug in previously merged code, then the PR body describes the bug fix.
 
 ```
@@ -77,9 +74,3 @@ Closes #<issue-number>
 4. **Output the full `gh pr create` command** as a code block in chat. Do NOT execute it.
 5. The command must include `--repo RedHatQuickCourses/ocp-virt-cookbook`.
 6. Remind the user they need to `git push -u origin HEAD` first.
-
-## Reference
-
-- Shared constraints: `.cursor/rules/shared-constraints.mdc`
-- Project guidelines: `.cursor/rules/project-guidelines.mdc`
-- Allowed commands: `.cursor/rules/allowed-commands.mdc`
