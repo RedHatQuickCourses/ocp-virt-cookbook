@@ -4,9 +4,8 @@
 In OpenShift Virtualization, a Storage Profile (StorageProfile) is a custom resource managed by the Containerized Data Importer (CDI). Its primary role is to tell OpenShift Virtualization how to optimally request storage (Persistent Volume Claims or PVCs) for Virtual Machines based on the underlying Storage Class.
 
 When you create a VM or clone a disk, OpenShift needs to know:
-
-*Should the disk be provisioned as a Filesystem or a raw Block device?
-*Can the disk be shared across nodes (ReadWriteMany) to support Live Migration, or is it restricted to a single node (ReadWriteOnce)?
+* Should the disk be provisioned as a Filesystem or a raw Block device?
+* Can the disk be shared across nodes (ReadWriteMany) to support Live Migration, or is it restricted to a single node (ReadWriteOnce)?
 
 Instead of forcing developers to specify these details manually every time they deploy a VM, the StorageProfile maps the optimal accessModes and volumeMode to a specific StorageClass.
 
@@ -31,7 +30,7 @@ The two main parameters are:
 == StorageProfile Resource Definition & Customization
 If your default StorageProfile is configured for RWO/Filesystem, but you know your backend storage (like Ceph RBD or an NFS share) supports RWX/Block, you should patch the auto-generated profile.
 
-Example: A Custom StorageProfile YAML
+*Example:* A Custom StorageProfile YAML
 Here is what a customized StorageProfile looks like. In this example, we configure a storage class named ocs-storagecluster-ceph-rbd to prefer Block and ReadWriteMany.
 
 [source,yaml]
