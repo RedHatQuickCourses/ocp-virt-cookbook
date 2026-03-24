@@ -5,9 +5,8 @@ In OpenShift Virtualization, a Storage Profile (StorageProfile) is a custom reso
 
 When you create a VM or clone a disk, OpenShift needs to know:
 
-Should the disk be provisioned as a Filesystem or a raw Block device?
-
-Can the disk be shared across nodes (ReadWriteMany) to support Live Migration, or is it restricted to a single node (ReadWriteOnce)?
+*Should the disk be provisioned as a Filesystem or a raw Block device?
+*Can the disk be shared across nodes (ReadWriteMany) to support Live Migration, or is it restricted to a single node (ReadWriteOnce)?
 
 Instead of forcing developers to specify these details manually every time they deploy a VM, the StorageProfile maps the optimal accessModes and volumeMode to a specific StorageClass.
 
@@ -21,17 +20,13 @@ To customize a storage profile, you define Claim Property Sets (claimPropertySet
 
 The two main parameters are:
 
-volumeMode:
-
-Block: Provides raw block storage to the VM. (Highly Recommended for VMs). It eliminates the overhead of a filesystem, offering significantly better I/O performance.
-
-Filesystem: The PVC is formatted with a filesystem (like ext4 or xfs). The VM's disk is stored as an .img file inside this filesystem.
+*volumeMode:
+** *Block*: Provides raw block storage to the VM. (Highly Recommended for VMs). It eliminates the overhead of a filesystem, offering significantly better I/O performance.
+** *Filesystem*: The PVC is formatted with a filesystem (like ext4 or xfs). The VM's disk is stored as an .img file inside this filesystem.
 
 accessModes:
-
-ReadWriteMany (RWX): The volume can be mounted as read-write by many nodes. (Required for Live Migration).
-
-ReadWriteOnce (RWO): The volume can be mounted as read-write by a single node. The VM must be powered down to move to another node.
+** *ReadWriteMany (RWX)*: The volume can be mounted as read-write by many nodes. (Required for Live Migration).
+** *ReadWriteOnce (RWO)*: The volume can be mounted as read-write by a single node. The VM must be powered down to move to another node.
 
 == StorageProfile Resource Definition & Customization
 If your default StorageProfile is configured for RWO/Filesystem, but you know your backend storage (like Ceph RBD or an NFS share) supports RWX/Block, you should patch the auto-generated profile.
@@ -69,9 +64,6 @@ List all storage profiles in the cluster:
 [source,bash,role=execute]
 ----
 oc get storageprofile
-Expected Output:
-
-Plaintext
 
 NAME                          AGE
 hostpath-provisioner          10d
@@ -82,10 +74,7 @@ Check the configured properties of a specific profile:
 [source,bash,role=execute]
 ----
 oc get storageprofile ocs-storagecluster-ceph-rbd -o yaml
-Expected Output (Truncated):
-----
-[source,yaml]
-----
+
 status:
   claimPropertySets:
   - accessModes:
@@ -96,25 +85,12 @@ status:
 ----
 
 == Common Troubleshooting Scenarios
-Scenario A: Virtual Machine Live Migration Fails
+=== Scenario A: Virtual Machine Live Migration Fails
+* Symptom: You attempt to live-migrate a VM, but it is rejected with a "Not migratable" condition or gets stuck in a Paused state.
+* Cause: The VM's disk was provisioned as ReadWriteOnce. Live migration requires the destination node to mount the disk before the source node detaches it, which requires ReadWriteMany.
+* Fix: Check oc get storageprofile <storage_class> -o yaml. Ensure that ReadWriteMany is the default in the claimPropertySets. Patch it if necessary, then recreate the VM's disk so it inherits the new RWX profile.
 
-Symptom: You attempt to live-migrate a VM, but it is rejected with a "Not migratable" condition or gets stuck in a Paused state.
-
-Cause: The VM's disk was provisioned as ReadWriteOnce. Live migration requires the destination node to mount the disk before the source node detaches it, which requires ReadWriteMany.
-
-Fix: Check oc get storageprofile <storage_class> -o yaml. Ensure that ReadWriteMany is the default in the claimPropertySets. Patch it if necessary, then recreate the VM's disk so it inherits the new RWX profile.
-
-Scenario B: Cloning a VM Fails or Hangs
-
-Symptom: When cloning a VM from a template, the DataVolume gets stuck, and events show "DataVolume.storage spec is missing accessMode and volumeMode, cannot get access mode from StorageProfile".
-
-Cause: The StorageProfile for your destination StorageClass has empty or misconfigured claimPropertySets. The cloner doesn't know what access mode or volume mode to use.
-
-Fix: Explicitly define the claimPropertySets in the StorageProfile using the oc patch command shown in Section 4.
-
-Official Red Hat Documentation Links
-For further reading, deep dives, and version-specific release notes, please refer to the official documentation:
-
-OpenShift Virtualization Storage Overview
-
-OpenShift Virtualization Release Notes (Known Storage Issues)
+=== Scenario B: Cloning a VM Fails or Hangs
+* Symptom: When cloning a VM from a template, the DataVolume gets stuck, and events show "DataVolume.storage spec is missing accessMode and volumeMode, cannot get access mode from StorageProfile".
+* Cause: The StorageProfile for your destination StorageClass has empty or misconfigured claimPropertySets. The cloner doesn't know what access mode or volume mode to use.
+* Fix: Explicitly define the claimPropertySets in the StorageProfile using the oc patch command shown in Section 4.
