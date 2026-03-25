@@ -1,0 +1,570 @@
+= Create Custom Virtual Machine Templates
+:navtitle: Virtual Machine Templates
+
+Similar to the concept of golden images, where a disk image is prepared specifically for use as a source to create fresh `VirtualMachines`,
+templates take this a step further by templatizing a `VirtualMachine` manifest to be used in a similar pattern.
+This allows for quick, easy and repeatable deployments of existing golden images from the OpenShift Virtualization console as well as from the command line.
+
+Any `VirtualMachine` created from the OpenShift Virtualization console was typically done by selecting from a list of existing templates (such as `rhel9-server-large`, `fedora-desktop-medium`, etc),
+unless a custom yaml definition or boot source was used instead.
+
+This tutorial shows "how the food is made", or rather, how to create a variant of an existing (or an entirely new) `VirtualMachine` template.
+
+Creating a `VirtualMachine` template can be broken down into a two-step process:
+
+* <<step_1_viewing_selecting,Step 1: Viewing and Selecting Templates>>
+* <<step_2_customizing_deploying,Step 2: Customizing and Deploying Templates>>
+
+Versions tested:
+
+----
+OpenShift 4.21
+----
+
+== Step 1: Viewing and Selecting Templates [[step_1_viewing_selecting]]
+
+In this step, we'll take a quick look at the default selection of templates, select one for viewing and later modification (in the next section) to suit our hypothetical needs.
+
+To start, fetch the list of `templates` available in the `openshift` project:
+
+[source,bash]
+----
+oc get templates -n openshift
+----
+
+You'll see a slew of existing templates, some of which are quick-start examples used to populate the OpenShift Developer Console, while others (notable by the OS and t-shirt size delegation) are specific to OpenShift Virtualization.
+
+Scroll down to the `rhel` section, of templates:
+
+[source,bash]
+----
+...
+rhel8-desktop-tiny                            Template for Red Hat Enterprise Linux 8 VM or newer. A PVC with the RHEL disk...   4 (2 generated)   1
+rhel8-highperformance-large                   Template for Red Hat Enterprise Linux 8 VM or newer. A PVC with the RHEL disk...   4 (2 generated)   1
+rhel8-highperformance-medium                  Template for Red Hat Enterprise Linux 8 VM or newer. A PVC with the RHEL disk...   4 (2 generated)   1
+rhel8-highperformance-small                   Template for Red Hat Enterprise Linux 8 VM or newer. A PVC with the RHEL disk...   4 (2 generated)   1
+rhel8-highperformance-tiny                    Template for Red Hat Enterprise Linux 8 VM or newer. A PVC with the RHEL disk...   4 (2 generated)   1
+rhel8-server-large                            Template for Red Hat Enterprise Linux 8 VM or newer. A PVC with the RHEL disk...   4 (2 generated)   1
+rhel8-server-medium                           Template for Red Hat Enterprise Linux 8 VM or newer. A PVC with the RHEL disk...   4 (2 generated)   1
+rhel8-server-small                            Template for Red Hat Enterprise Linux 8 VM or newer. A PVC with the RHEL disk...   4 (2 generated)   1
+rhel8-server-tiny                             Template for Red Hat Enterprise Linux 8 VM or newer. A PVC with the RHEL disk...   4 (2 generated)   1
+rhel9-desktop-large                           Template for Red Hat Enterprise Linux 9 VM or newer. A PVC with the RHEL disk...   4 (2 generated)   1
+rhel9-desktop-medium                          Template for Red Hat Enterprise Linux 9 VM or newer. A PVC with the RHEL disk...   4 (2 generated)   1
+rhel9-desktop-small                           Template for Red Hat Enterprise Linux 9 VM or newer. A PVC with the RHEL disk...   4 (2 generated)   1
+rhel9-desktop-tiny                            Template for Red Hat Enterprise Linux 9 VM or newer. A PVC with the RHEL disk...   4 (2 generated)   1
+rhel9-highperformance-large                   Template for Red Hat Enterprise Linux 9 VM or newer. A PVC with the RHEL disk...   4 (2 generated)   1
+rhel9-highperformance-medium                  Template for Red Hat Enterprise Linux 9 VM or newer. A PVC with the RHEL disk...   4 (2 generated)   1
+rhel9-highperformance-small                   Template for Red Hat Enterprise Linux 9 VM or newer. A PVC with the RHEL disk...   4 (2 generated)   1
+rhel9-highperformance-tiny                    Template for Red Hat Enterprise Linux 9 VM or newer. A PVC with the RHEL disk...   4 (2 generated)   1
+rhel9-server-large                            Template for Red Hat Enterprise Linux 9 VM or newer. A PVC with the RHEL disk...   4 (2 generated)   1
+rhel9-server-medium                           Template for Red Hat Enterprise Linux 9 VM or newer. A PVC with the RHEL disk...   4 (2 generated)   1   <--- here it is in the list
+rhel9-server-small                            Template for Red Hat Enterprise Linux 9 VM or newer. A PVC with the RHEL disk...   4 (2 generated)   1
+rhel9-server-tiny                             Template for Red Hat Enterprise Linux 9 VM or newer. A PVC with the RHEL disk...   4 (2 generated)   1
+...
+----
+
+
+
+Fetch the source of the `rhel9-server-medium` template from the `openshift` project (using `-o yaml` output format):
+
+[source,bash]
+----
+oc get template rhel9-server-medium -n openshift -o yaml > rhel9-server.template.yaml
+----
+
+Using either the `cat` command or your favorite pager or editor, take a look at the template source by viewing the `rhel9-server.template.yaml` file:
+
+[source,yaml]
+----
+apiVersion: template.openshift.io/v1
+kind: Template
+metadata:
+  annotations:
+    defaults.template.kubevirt.io/disk: rootdisk
+    description: Template for Red Hat Enterprise Linux 9 VM or newer. A PVC with the
+      RHEL disk image must be available.
+    iconClass: icon-rhel
+    name.os.template.kubevirt.io/rhel9.0: Red Hat Enterprise Linux 9.0 or higher
+    name.os.template.kubevirt.io/rhel9.1: Red Hat Enterprise Linux 9.0 or higher
+    name.os.template.kubevirt.io/rhel9.2: Red Hat Enterprise Linux 9.0 or higher
+    name.os.template.kubevirt.io/rhel9.3: Red Hat Enterprise Linux 9.0 or higher
+    name.os.template.kubevirt.io/rhel9.4: Red Hat Enterprise Linux 9.0 or higher
+    name.os.template.kubevirt.io/rhel9.5: Red Hat Enterprise Linux 9.0 or higher
+    name.os.template.kubevirt.io/rhel9.6: Red Hat Enterprise Linux 9.0 or higher
+    name.os.template.kubevirt.io/rhel9.7: Red Hat Enterprise Linux 9.0 or higher
+    openshift.io/display-name: Red Hat Enterprise Linux 9 VM
+    openshift.io/documentation-url: https://github.com/kubevirt/common-templates
+    openshift.io/provider-display-name: Red Hat
+    openshift.io/support-url: https://github.com/kubevirt/common-templates/issues
+    openshift.kubevirt.io/pronounceable-suffix-for-name-expression: "true"
+    operator-sdk/primary-resource: openshift-cnv/ssp-kubevirt-hyperconverged
+    operator-sdk/primary-resource-type: SSP.ssp.kubevirt.io
+    tags: hidden,kubevirt,virtualmachine,linux,rhel
+    template.kubevirt.io/containerdisks: |
+      registry.redhat.io/rhel9/rhel-guest-image
+    template.kubevirt.io/editable: |
+      /objects[0].spec.template.spec.domain.cpu.sockets
+      /objects[0].spec.template.spec.domain.cpu.cores
+      /objects[0].spec.template.spec.domain.cpu.threads
+      /objects[0].spec.template.spec.domain.memory.guest
+      /objects[0].spec.template.spec.domain.devices.disks
+      /objects[0].spec.template.spec.volumes
+      /objects[0].spec.template.spec.networks
+    template.kubevirt.io/images: |
+      https://access.redhat.com/downloads/content/479/ver=/rhel---9/9.0/x86_64/product-software
+    template.kubevirt.io/provider: Red Hat
+    template.kubevirt.io/provider-support-level: Full
+    template.kubevirt.io/provider-url: https://www.redhat.com
+    template.kubevirt.io/version: v1alpha1
+    template.openshift.io/bindable: "false"
+  creationTimestamp: "2026-02-11T21:31:29Z"
+  labels:
+    app.kubernetes.io/component: templating
+    app.kubernetes.io/managed-by: ssp-operator
+    app.kubernetes.io/name: common-templates
+    app.kubernetes.io/part-of: hyperconverged-cluster
+    app.kubernetes.io/version: 4.21.1
+    flavor.template.kubevirt.io/medium: "true"
+    os.template.kubevirt.io/rhel9.0: "true"
+    os.template.kubevirt.io/rhel9.1: "true"
+    os.template.kubevirt.io/rhel9.2: "true"
+    os.template.kubevirt.io/rhel9.3: "true"
+    os.template.kubevirt.io/rhel9.4: "true"
+    os.template.kubevirt.io/rhel9.5: "true"
+    os.template.kubevirt.io/rhel9.6: "true"
+    os.template.kubevirt.io/rhel9.7: "true"
+    template.kubevirt.io/architecture: amd64
+    template.kubevirt.io/type: base
+    template.kubevirt.io/version: v0.34.1
+    workload.template.kubevirt.io/server: "true"
+  name: rhel9-server-medium
+  namespace: openshift
+  resourceVersion: "4263679"
+  uid: f64784df-c4e2-45b9-a56e-2f51fd56060f
+objects:
+- apiVersion: kubevirt.io/v1
+  kind: VirtualMachine
+  metadata:
+    annotations:
+      vm.kubevirt.io/validations: |
+        [
+          {
+            "name": "minimal-required-memory",
+            "path": "jsonpath::.spec.domain.memory.guest",
+            "rule": "integer",
+            "message": "This VM requires more memory.",
+            "min": 1610612736
+          }
+        ]
+    labels:
+      app: ${NAME}
+      kubevirt.io/dynamic-credentials-support: "true"
+      vm.kubevirt.io/template: rhel9-server-medium
+      vm.kubevirt.io/template.revision: "1"
+      vm.kubevirt.io/template.version: v0.34.1
+    name: ${NAME}
+  spec:
+    dataVolumeTemplates:
+    - apiVersion: cdi.kubevirt.io/v1beta1
+      kind: DataVolume
+      metadata:
+        name: ${NAME}
+      spec:
+        sourceRef:
+          kind: DataSource
+          name: ${DATA_SOURCE_NAME}
+          namespace: ${DATA_SOURCE_NAMESPACE}
+        storage:
+          resources:
+            requests:
+              storage: 30Gi
+    runStrategy: Halted
+    template:
+      metadata:
+        annotations:
+          vm.kubevirt.io/flavor: medium
+          vm.kubevirt.io/os: rhel9
+          vm.kubevirt.io/workload: server
+        labels:
+          kubevirt.io/domain: ${NAME}
+          kubevirt.io/size: medium
+      spec:
+        architecture: amd64
+        domain:
+          cpu:
+            cores: 1
+            sockets: 1
+            threads: 1
+          devices:
+            disks:
+            - disk:
+                bus: virtio
+              name: rootdisk
+            - disk:
+                bus: virtio
+              name: cloudinitdisk
+            interfaces:
+            - masquerade: {}
+              model: virtio
+              name: default
+            rng: {}
+          features:
+            smm:
+              enabled: true
+          firmware:
+            bootloader:
+              efi: {}
+          memory:
+            guest: 4Gi
+        networks:
+        - name: default
+          pod: {}
+        terminationGracePeriodSeconds: 180
+        volumes:
+        - dataVolume:
+            name: ${NAME}
+          name: rootdisk
+        - cloudInitNoCloud:
+            userData: |-
+              #cloud-config
+              user: cloud-user
+              password: ${CLOUD_USER_PASSWORD}
+              chpasswd: { expire: False }
+          name: cloudinitdisk
+parameters:
+- description: VM name
+  from: rhel9-[a-z0-9]{16}
+  generate: expression
+  name: NAME
+- description: Name of the DataSource to clone
+  name: DATA_SOURCE_NAME
+  value: rhel9
+- description: Namespace of the DataSource
+  name: DATA_SOURCE_NAMESPACE
+  value: openshift-virtualization-os-images
+- description: Randomized password for the cloud-init user cloud-user
+  from: '[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}'
+  generate: expression
+  name: CLOUD_USER_PASSWORD
+----
+
+Looking at our above example, scroll down to the end and inspect the `parameters` section.
+Here are the list of templatized parameter names, field values and descriptions.
+
+Each parameter is further explained below:
+
+* *NAME* - This is where the unique name generation occurs for VMs created from the console.
+Notice the character class (`[a-z0-9]` which matches shell or regex style) and count (`\{16\}`) used to populate the latter part of the VM name.
+* *DATA_SOURCE_NAME* - Name of a `DataSource` (or golden image) to clone the VM from.
+* *DATA_SOURCE_NAMESPACE* - This is the namespace where the `DataSource` exists.
+All default images live in the `openshift-virtualization-os-images` project.
+* *CLOUD_USER_PASSWORD* - This is where the password for the default cloud-user gets generated.
+As with the `NAME` parameter, notice the character classes and count (3 dash-separated groups of 4 random alpha-numeric characters).
+
+The parameters are used in the templated manifest by referencing the name of each parameter.
+This follows the exact same style and syntax for variable names and references (respectively) as the bash shell.
+
+With the `rhel9-server.template.yaml` file saved locally, you can test the template and see how it renders using the `oc process` command:
+
+[source,bash]
+----
+oc process -f rhel9-server.template.yaml -o yaml
+----
+
+You should see the yaml output of the rendered template.
+The output produced is a `List` object, which has the rendered `VirtualMachine` template embedded as a list item.
+In OpenShift templates, there could be more than one Kubernetes object comprising the template, however with OCP-V we only need a `VirtualMachine`.
+
+If you would rather skip deploying the template, then proceed with <<step_2_customizing_deploying,Step 2>>.
+
+=== Optional: Deploy a Template using the CLI
+
+If desired, you could easily deploy the template on a cluster simply by piping the output of the `oc process` command above to either `oc create` or `oc apply`.
+
+First, create a project (namespace) to house the RHEL 9 `VirtualMachine`:
+
+[source,bash]
+----
+oc new-project template-example
+----
+
+Next, process the `rhel9-server.template.yaml` file and pipe the output to `oc apply` (`oc create` also works since this is a new `VirtualMachine`):
+
+[source,bash]
+----
+oc process -f rhel9-server.template.yaml | oc create -f -
+----
+
+Take a quick glance at the resources in the current namespace, which were created by the RHEL 9 template:
+
+[source,bash]
+----
+oc get all
+----
+
+The `DataVolume` should show as `PendingPopulation` and the `VirtualMachine` should be in the `Stopped` state.
+
+NOTE: Record the name of the `VirtualMachine` from the previous command output, as it is necessary if you wish to start it.
+
+You could issue a start command against the VM using `virtctl` (replace the VM name below):
+
+[source,bash]
+----
+virtctl start rhel9-1234567890abcdef 
+----
+
+Run `oc get vm` a few times (or once with the `-w` flag) to observe the VM run state change from `Stopped` to `Provisioning` and finally `Running`.
+
+To connect to the VM, continue with <<step_2_customizing_deploying,Step 2>> which covers console access at the end of the exercise.
+
+
+== Step 2: Customizing and Deploying Templates [[step_2_customizing_deploying]]
+
+The simplest way to create a custom VM template is to modify an existing one, so we will use the template selected from the first step.
+
+In this step we will convert the rhel9-server template to fedora.
+This is a redundant exercise (as there is already a fedora-server-medium template), but for the sake of learning, lets proceed with this example.
+
+Lets start by creating a copy of the `rhel9-server.template.yaml` file named `fedora-server.template.yaml`:
+
+[source,bash]
+----
+cp {rhel9,fedora}-server.template.yaml
+----
+
+Next, lets do some pre-processing of the template by replacing occurrences of the string `rhel9` with `fedora` :
+
+[source,bash]
+----
+sed -i fedora-server.template.yaml -e 's/rhel9/fedora'
+----
+
+NOTE: `sed -i` does not work on macOS due to the BSD version of `sed`. As a workaround, try `sed 's/rhel9/fedora/' fedora-server.template.yaml` instead.
+
+There are still several changes we need to make to customize our template.
+Below is a full example (comments are used carefully) which you could paste over the contents of your original `fedora-server.template.yaml` file:
+
+[source,yaml]
+----
+apiVersion: template.openshift.io/v1
+kind: Template
+metadata:
+  annotations:
+    defaults.template.kubevirt.io/disk: rootdisk
+    description: Template for Fedora. # <---------------------------------------------------- Update the description
+    iconClass: icon-fedora # <--------------------------------------------------------------- Optionally, change the icon used for the console
+    #name.os.template.kubevirt.io/fedora.0: Red Hat Enterprise Linux 9.0 or higher
+    #name.os.template.kubevirt.io/fedora.1: Red Hat Enterprise Linux 9.0 or higher
+    #name.os.template.kubevirt.io/fedora.2: Red Hat Enterprise Linux 9.0 or higher
+    #name.os.template.kubevirt.io/fedora.3: Red Hat Enterprise Linux 9.0 or higher <--------- Comment out unnecessary labels like these
+    #name.os.template.kubevirt.io/fedora.4: Red Hat Enterprise Linux 9.0 or higher
+    #name.os.template.kubevirt.io/fedora.5: Red Hat Enterprise Linux 9.0 or higher
+    #name.os.template.kubevirt.io/fedora.6: Red Hat Enterprise Linux 9.0 or higher
+    #name.os.template.kubevirt.io/fedora.7: Red Hat Enterprise Linux 9.0 or higher
+    openshift.io/display-name: Fedora VM # <------------------------------------------------- DO change the display name
+    openshift.io/documentation-url: https://github.com/kubevirt/common-templates
+    openshift.io/provider-display-name: Red Hat
+    openshift.io/support-url: https://github.com/kubevirt/common-templates/issues
+    openshift.kubevirt.io/pronounceable-suffix-for-name-expression: "true"
+    operator-sdk/primary-resource: openshift-cnv/ssp-kubevirt-hyperconverged
+    operator-sdk/primary-resource-type: SSP.ssp.kubevirt.io
+    tags: hidden,kubevirt,virtualmachine,linux,rhel
+    #template.kubevirt.io/containerdisks: |
+    #  registry.redhat.io/fedora/rhel-guest-image <------------------------------------------ Fedora uses a different image
+    template.kubevirt.io/editable: |
+      /objects[0].spec.template.spec.domain.cpu.sockets
+      /objects[0].spec.template.spec.domain.cpu.cores
+      /objects[0].spec.template.spec.domain.cpu.threads
+      /objects[0].spec.template.spec.domain.memory.guest
+      /objects[0].spec.template.spec.domain.devices.disks
+      /objects[0].spec.template.spec.volumes
+      /objects[0].spec.template.spec.networks
+    #template.kubevirt.io/images: |                                                              
+    #  https://access.redhat.com/downloads/content/479/ver=/rhel---9/9.0/x86_64/product-software <-------- However, it's only descriptive
+    template.kubevirt.io/provider: Red Hat
+    template.kubevirt.io/provider-support-level: Full
+    template.kubevirt.io/provider-url: https://www.redhat.com
+    template.kubevirt.io/version: v1alpha1
+    template.openshift.io/bindable: "false"
+  creationTimestamp: "2026-02-11T21:31:29Z"
+  labels:
+    app.kubernetes.io/component: templating
+    app.kubernetes.io/managed-by: ssp-operator
+    app.kubernetes.io/name: common-templates
+    app.kubernetes.io/part-of: hyperconverged-cluster
+    app.kubernetes.io/version: 4.21.1
+    flavor.template.kubevirt.io/medium: "true"
+    #os.template.kubevirt.io/fedora.0: "true"   
+    #os.template.kubevirt.io/fedora.1: "true"
+    #os.template.kubevirt.io/fedora.2: "true"
+    #os.template.kubevirt.io/fedora.3: "true" <---------------------------------------------- These are also unnecessary for this example
+    #os.template.kubevirt.io/fedora.4: "true"
+    #os.template.kubevirt.io/fedora.5: "true"
+    #os.template.kubevirt.io/fedora.6: "true"
+    #os.template.kubevirt.io/fedora.7: "true"
+    template.kubevirt.io/architecture: amd64
+    template.kubevirt.io/type: base
+    template.kubevirt.io/version: v0.34.1
+    workload.template.kubevirt.io/server: "true"
+  name: fedora-server-medium
+  namespace: openshift
+  resourceVersion: "4263679"
+  uid: f64784df-c4e2-45b9-a56e-2f51fd56060f
+objects:
+- apiVersion: kubevirt.io/v1
+  kind: VirtualMachine
+  metadata:
+    annotations:
+      vm.kubevirt.io/validations: |
+        [
+          {
+            "name": "minimal-required-memory",
+            "path": "jsonpath::.spec.domain.memory.guest",
+            "rule": "integer",
+            "message": "This VM requires more memory.",
+            "min": 1610612736
+          }
+        ]
+    labels:
+      app: ${NAME}
+      kubevirt.io/dynamic-credentials-support: "true"
+      vm.kubevirt.io/template: fedora-server-medium
+      vm.kubevirt.io/template.revision: "1"
+      vm.kubevirt.io/template.version: v0.34.1
+    name: ${NAME}
+  spec:
+    dataVolumeTemplates:
+    - apiVersion: cdi.kubevirt.io/v1beta1
+      kind: DataVolume
+      metadata:
+        name: ${NAME}
+      spec:
+        sourceRef:
+          kind: DataSource
+          name: ${DATA_SOURCE_NAME}
+          namespace: ${DATA_SOURCE_NAMESPACE}
+        storage:
+          resources:
+            requests:
+              storage: 30Gi
+    runStrategy: Always  # <--------------------------------------------------------- Change the run strategy to Always
+    template:
+      metadata:
+        annotations:
+          vm.kubevirt.io/flavor: medium
+          vm.kubevirt.io/os: fedora
+          vm.kubevirt.io/workload: server
+        labels:
+          kubevirt.io/domain: ${NAME}
+          kubevirt.io/size: medium
+      spec:
+        architecture: amd64
+        domain:
+          cpu:
+            cores: 1
+            sockets: 1
+            threads: 1
+          devices:
+            disks:
+            - disk:
+                bus: virtio
+              name: rootdisk
+            - disk:
+                bus: virtio
+              name: cloudinitdisk
+            interfaces:
+            - masquerade: {}
+              model: virtio
+              name: default
+            rng: {}
+          features:
+            smm:
+              enabled: true
+          firmware:
+            bootloader:
+              efi: {}
+          memory:
+            guest: 4Gi
+        networks:
+        - name: default
+          pod: {}
+        terminationGracePeriodSeconds: 180
+        volumes:
+        - dataVolume:
+            name: ${NAME}
+          name: rootdisk
+        - cloudInitNoCloud:
+            userData: |-
+              #cloud-config
+              user: ${CLOUD_INIT_USERNAME} # <--------------------------------------- Templatize the guest OS username
+              password: ${CLOUD_INIT_PASSWORD} # <----------------------------------- Change USER to INIT for clarity
+              chpasswd: { expire: False }
+          name: cloudinitdisk
+parameters:
+- description: VM name
+  from: fedora-[a-z0-9]{16} # <------------------------------------------------------ Notice how sed took care of this
+  generate: expression
+  name: NAME
+- description: Name of the DataSource to clone
+  name: DATA_SOURCE_NAME
+  value: fedora # <------------------------------------------------------------------ The data source name was also changed already
+- description: Namespace of the DataSource
+  name: DATA_SOURCE_NAMESPACE
+  value: openshift-virtualization-os-images
+- description: Username created by cloud-init             # <------------------------ Create a new parameter description
+  name: CLOUD_INIT_USERNAME                               # <------------------------ Name the parameter as shown
+  value: fedora-user                                      # <------------------------ Let's name it `fedora-user`
+- description: Randomized password for the cloud-init user # <----------------------- `cloud-user` is no longer hard-coded
+  from: '[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}'
+  generate: expression
+  name: CLOUD_INIT_PASSWORD                               # <------------------------ Change USER to INIT here, also
+----
+
+With all of the customizations in place for our new fedora template, go ahead and see how it renders using `oc process`:
+
+[source,bash]
+----
+oc process -f fedora-server.template.yaml -o yaml
+----
+
+If everything looks good (never mind the comments within cloud-init user data, as these will filter out), you can launch the custom template as a new `VirtualMachine`:
+
+[source,bash]
+----
+oc new-project template-example
+oc process -f fedora-server.template.yaml | oc apply -f -
+----
+
+You should see the new fedora `VirtualMachine` running (after cloning the source volume) in the `template-example` project, which should now also be the namespace of your current Kubernetes context:
+
+[source,bash]
+----
+oc get vm -n template-example
+----
+
+Fetch the cloud-init credentials by viewing the yaml output of the VM:
+
+[source,bash]
+----
+oc get vm -o yaml
+----
+
+You should be able to login to the console using `virtctl` (replace the VM name below):
+
+[source,bash]
+----
+virtctl console fedora-abcdef0123456789
+----
+
+Hit `ENTER` to see the login prompt. Hit `CTRL+]` to exit the console view.
+
+NOTE: To make a template available cluster-wide, and selectable from the OpenShift Virtualization console, create the template in the `openshift` project as a cluster-admin.
+
+To cleanup everything, switch to another project and delete the `template-example` namespace:
+
+[source,bash]
+----
+oc project default
+oc delete namespace template-example
+----
+
