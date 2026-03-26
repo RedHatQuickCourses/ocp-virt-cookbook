@@ -385,7 +385,7 @@ ip-10-0-82-27.ec2.internal    Ready    worker                 22d   v1.31.14   b
 <div class="paragraph">
 <p>Label nodes based on their characteristics (hardware, location, workload type):</p>
 </div>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Get worker node names
 WORKER1=$(oc get nodes -l node-role.kubernetes.io/worker -o jsonpath='{.items[0].metadata.name}')
@@ -411,7 +411,7 @@ oc label node $WORKER1 workload=database</code></pre>
 <div class="paragraph">
 <p>Verify labels:</p>
 </div>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">WORKER1=$(oc get nodes -l node-role.kubernetes.io/worker -o jsonpath='{.items[0].metadata.name}')
 oc get node $WORKER1 -o jsonpath='{.metadata.labels}' | jq</code></pre>
@@ -439,7 +439,7 @@ oc get node $WORKER1 -o jsonpath='{.metadata.labels}' | jq</code></pre>
 </div>
 <div class="sect2">
 <h3 id="_remove_labels"><a class="anchor" href="#_remove_labels"></a>Remove Labels</h3>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">WORKER1=$(oc get nodes -l node-role.kubernetes.io/worker -o jsonpath='{.items[0].metadata.name}')
 oc label node $WORKER1 gpu-</code></pre>
@@ -559,7 +559,7 @@ database-vm   45s   Running   10.128.0.200   ocplab02   True</code></pre>
 <div class="paragraph">
 <p>Verify the node has the required label:</p>
 </div>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vmi database-vm -n vm-placement -o jsonpath='{.status.nodeName}' | xargs oc get node -L storage</code></pre>
 </div>

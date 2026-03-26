@@ -355,7 +355,7 @@ as well as the <code>VirtualMachines</code> you wish to attach to the network. I
 <div class="paragraph">
 <p>You can easily create a new namespace using the <code>oc</code> binary, without the need to define any yaml:</p>
 </div>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc create namespace example-l2-secondary</code></pre>
 </div>
@@ -363,7 +363,7 @@ as well as the <code>VirtualMachines</code> you wish to attach to the network. I
 <div class="paragraph">
 <p>Now that the new namespace is created, it&#8217;s best to switch your current kube context (cluster and namespace that you&#8217;re currently working in) to the new namespace or project (in OpenShift terms).</p>
 </div>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc project example-l2-secondary</code></pre>
 </div>
@@ -404,7 +404,7 @@ spec:
 <div class="paragraph">
 <p>Apply the <code>NetworkAttachmentDefinition</code> into the pre-defined namespace <code>example-l2-secondary</code> on the OpenShift cluster using <code>oc apply</code>:</p>
 </div>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f l2-network.nad.yaml</code></pre>
 </div>
@@ -412,7 +412,7 @@ spec:
 <div class="paragraph">
 <p>Check to make sure that the <code>NetworkAttachmentDefinition</code> creation was successful. The <code>l2-network</code> must exist in the <code>example-l2-secondary</code> namespace before proceeding:</p>
 </div>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get net-attach-def l2-network -n example-l2-secondary</code></pre>
 </div>
@@ -570,7 +570,7 @@ spec:
 <div class="paragraph">
 <p>You can create a new VirtualMachine on the OpenShift cluster (in the current namespace, <code>example-l2-secondary</code>) using <code>oc create</code>:</p>
 </div>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc create -f fedora-l2-secondary.vm.yaml</code></pre>
 </div>
@@ -578,7 +578,7 @@ spec:
 <div class="paragraph">
 <p>Check that the <code>fedora-l2-secondary</code> VM is up and running in the <code>example-l2-secondary</code> namespace before proceeding. You may have to run the command a few times while in the <code>Provisioning</code> state:</p>
 </div>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vm fedora-l2-secondary -n example-l2-secondary</code></pre>
 </div>
@@ -695,7 +695,7 @@ spec:
 <div class="paragraph">
 <p>Apply the <code>VirtualMachine</code> to the current namespace on the OpenShift cluster:</p>
 </div>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f fedora-l2-secondary2.vm.yaml</code></pre>
 </div>
@@ -703,7 +703,7 @@ spec:
 <div class="paragraph">
 <p>Check that the second VM named <code>fedora-l2-secondary2</code> is up and running in the <code>example-l2-secondary</code> namespace. Both <code>VirtualMachines</code> should be running prior to <a href="#testing_secondary_network">testing</a>:</p>
 </div>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vm fedora-l2-secondary2 -n example-l2-secondary</code></pre>
 </div>
@@ -739,7 +739,7 @@ spec:
 <div class="paragraph">
 <p>Access the console of the first <code>VirtualMachine</code> using the <code>virtctl</code> command and login as <strong>user</strong>:`fedora` with <strong>password</strong>:`fedora` (hit <code>ENTER</code> if no login prompt appears):</p>
 </div>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">virtctl console fedora-l2-secondary</code></pre>
 </div>
@@ -766,7 +766,7 @@ spec:
 <div class="paragraph">
 <p>To cleanup all of the resources from this exercise, simply switch to a different namespace and delete the <code>example-l2-secondary</code> namespace:</p>
 </div>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc project default
 oc delete namespace example-l2-secondary</code></pre>

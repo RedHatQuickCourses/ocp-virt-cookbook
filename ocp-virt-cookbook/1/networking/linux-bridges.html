@@ -454,7 +454,7 @@ See the <a href="https://nmstate.io/devel/yaml_api.html" target="_blank" rel="no
 <div class="paragraph">
 <p>Once you&#8217;ve saved the file as <code>lnbr0-bridge.nncp.yaml</code>, go ahead and apply the <code>nncp</code> manifest to the OpenShift cluster:</p>
 </div>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc create -f lnbr0-bridge.nncp.yaml</code></pre>
 </div>
@@ -465,7 +465,7 @@ See the <a href="https://nmstate.io/devel/yaml_api.html" target="_blank" rel="no
 <div class="paragraph">
 <p>To view this progress in action, you can view the <code>NodeNetworkConfigurationEnactment</code> (<code>nnce</code>) object which executes actions pertaining to the <code>NodeNetworkConfigurationPolicy</code>:</p>
 </div>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get nnce</code></pre>
 </div>
@@ -479,7 +479,7 @@ See the <a href="https://nmstate.io/devel/yaml_api.html" target="_blank" rel="no
 <div class="paragraph">
 <p>To view the <code>NodeNetworkState</code> for all nodes in the cluster, fetch the <code>nns</code> resource, and optionally <code>grep</code> for the bridge interface:</p>
 </div>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc describe nns | grep lnbr0</code></pre>
 </div>
@@ -524,7 +524,7 @@ Neglecting to do so will prevent any VM with a bridge-based NIC from booting.
 <div class="paragraph">
 <p>First, create the namespace for your VMs if it doesn&#8217;t already exist:</p>
 </div>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc create namespace bridge-demo</code></pre>
 </div>
@@ -532,7 +532,7 @@ Neglecting to do so will prevent any VM with a bridge-based NIC from booting.
 <div class="paragraph">
 <p>Then switch to that namespace:</p>
 </div>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc project bridge-demo</code></pre>
 </div>
@@ -653,7 +653,7 @@ spec:
 <div class="paragraph">
 <p>Once the file is saved as <code>lnbr0-bridge.net-attach-def.yaml</code> (where <code>net-attach-def</code> is the valid k8s short-name), go ahead and apply the <code>network-attachment-definition</code> to the OpenShift cluster:</p>
 </div>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc create -f lnbr0-bridge.net-attach-def.yaml</code></pre>
 </div>
@@ -661,7 +661,7 @@ spec:
 <div class="paragraph">
 <p>Verify that the <code>network-attachment-definition</code> was successfully created:</p>
 </div>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get net-attach-def lnbr0-bridge</code></pre>
 </div>
@@ -866,7 +866,7 @@ The primary interface (<code>enp1s0</code>) uses masquerade and gets its IP from
 <div class="paragraph">
 <p>With the <code>VirtualMachine</code> manifest saved as a file named <code>fedora-bridge-demo.vm.yaml</code>, go ahead and apply it to the OpenShift cluster:</p>
 </div>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f fedora-bridge-demo.vm.yaml</code></pre>
 </div>
@@ -875,7 +875,7 @@ The primary interface (<code>enp1s0</code>) uses masquerade and gets its IP from
 <p>Check the state of the <code>VirtualMachine</code>. It will take some time to clone the underlying <code>DataVolume</code> before the VM can be launched.
 You can proceed with creating the second VM rather than wait until the VM reaches the <code>Running</code> state.</p>
 </div>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vm fedora-bridge-demo</code></pre>
 </div>
@@ -964,7 +964,7 @@ spec:
 <div class="paragraph">
 <p>With the file saved as <code>fedora-bridge-demo2.vm.yaml</code>, apply this second <code>VirtualMachine</code> to the OpenShift cluster:</p>
 </div>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc create -f fedora-bridge-demo2.vm.yaml</code></pre>
 </div>
@@ -972,7 +972,7 @@ spec:
 <div class="paragraph">
 <p>Verify that both VMs are running, and check the <code>status</code> of the network <code>interfaces</code> by inspecting each <code>VirtualMachineInstance</code> (<code>vmi</code>) directly:</p>
 </div>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vm -n bridge-demo
 oc get vmi fedora-bridge-demo -n bridge-demo -o jsonpath='{.status.interfaces}' | jq .
@@ -1015,7 +1015,7 @@ oc get vmi fedora-bridge-demo2 -n bridge-demo -o jsonpath='{.status.interfaces}'
 <div class="paragraph">
 <p>Access the console of the first VirtualMachine using the <code>virtctl</code> command and login as <strong>user</strong>:`fedora` with <strong>password</strong>:`fedora` (hit <code>ENTER</code> if no login prompt appears):</p>
 </div>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">virtctl console fedora-bridge-demo</code></pre>
 </div>
@@ -1042,7 +1042,7 @@ oc get vmi fedora-bridge-demo2 -n bridge-demo -o jsonpath='{.status.interfaces}'
 <div class="paragraph">
 <p>To cleanup all of the resources from this exercise, simply switch to a different namespace and delete the <code>bridge-demo</code> namespace:</p>
 </div>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc project default
 oc delete namespace bridge-demo</code></pre>

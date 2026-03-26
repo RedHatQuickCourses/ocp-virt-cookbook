@@ -279,7 +279,7 @@
 <div class="sectionbody">
 <div class="sect2">
 <h3 id="_check_namespace"><a class="anchor" href="#_check_namespace"></a>Check Namespace</h3>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get namespace golden-images</code></pre>
 </div>
@@ -296,7 +296,7 @@ golden-images    Active   5m</code></pre>
 </div>
 <div class="sect2">
 <h3 id="_check_all_resources"><a class="anchor" href="#_check_all_resources"></a>Check All Resources</h3>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get all -n golden-images</code></pre>
 </div>
@@ -304,7 +304,7 @@ golden-images    Active   5m</code></pre>
 </div>
 <div class="sect2">
 <h3 id="_check_vms_and_vmis"><a class="anchor" href="#_check_vms_and_vmis"></a>Check VMs and VMIs</h3>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vm,vmi -n golden-images</code></pre>
 </div>
@@ -312,7 +312,7 @@ golden-images    Active   5m</code></pre>
 </div>
 <div class="sect2">
 <h3 id="_check_datavolumes_and_pvcs"><a class="anchor" href="#_check_datavolumes_and_pvcs"></a>Check DataVolumes and PVCs</h3>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get dv,pvc -n golden-images</code></pre>
 </div>
@@ -320,7 +320,7 @@ golden-images    Active   5m</code></pre>
 </div>
 <div class="sect2">
 <h3 id="_check_datasources"><a class="anchor" href="#_check_datasources"></a>Check DataSources</h3>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get datasource -n golden-images</code></pre>
 </div>
@@ -335,7 +335,7 @@ golden-images    Active   5m</code></pre>
 <h3 id="_step_1_verify_base_vm_creation"><a class="anchor" href="#_step_1_verify_base_vm_creation"></a>Step 1: Verify Base VM Creation</h3>
 <div class="sect3">
 <h4 id="_check_vm_status"><a class="anchor" href="#_check_vm_status"></a>Check VM Status</h4>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vm base-fedora-vm -n golden-images</code></pre>
 </div>
@@ -352,7 +352,7 @@ base-fedora-vm   2m    Running   True</code></pre>
 </div>
 <div class="sect3">
 <h4 id="_check_vmi_details"><a class="anchor" href="#_check_vmi_details"></a>Check VMI Details</h4>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vmi base-fedora-vm -n golden-images -o yaml</code></pre>
 </div>
@@ -393,7 +393,7 @@ base-fedora-vm   2m    Running   True</code></pre>
 </div>
 <div class="sect3">
 <h4 id="_check_base_vm_datavolume"><a class="anchor" href="#_check_base_vm_datavolume"></a>Check Base VM DataVolume</h4>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get dv base-fedora-vm-disk -n golden-images</code></pre>
 </div>
@@ -410,7 +410,7 @@ base-fedora-vm-disk   Succeeded   100.0%                5m</code></pre>
 </div>
 <div class="sect3">
 <h4 id="_check_pvc_for_base_vm"><a class="anchor" href="#_check_pvc_for_base_vm"></a>Check PVC for Base VM</h4>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get pvc base-fedora-vm-disk -n golden-images</code></pre>
 </div>
@@ -430,7 +430,7 @@ base-fedora-vm-disk   Bound    pvc-abc123...                              30Gi  
 <h3 id="_step_2_verify_vm_customization"><a class="anchor" href="#_step_2_verify_vm_customization"></a>Step 2: Verify VM Customization</h3>
 <div class="sect3">
 <h4 id="_access_vm_console"><a class="anchor" href="#_access_vm_console"></a>Access VM Console</h4>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">virtctl console base-fedora-vm -n golden-images</code></pre>
 </div>
@@ -467,7 +467,7 @@ cat /var/log/cloud-init-output.log</code></pre>
 <h3 id="_step_3_verify_vm_shutdown"><a class="anchor" href="#_step_3_verify_vm_shutdown"></a>Step 3: Verify VM Shutdown</h3>
 <div class="sect3">
 <h4 id="_check_vm_is_stopped"><a class="anchor" href="#_check_vm_is_stopped"></a>Check VM is Stopped</h4>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vm base-fedora-vm -n golden-images</code></pre>
 </div>
@@ -484,7 +484,7 @@ base-fedora-vm   10m   Stopped   False</code></pre>
 </div>
 <div class="sect3">
 <h4 id="_verify_no_vmi_exists"><a class="anchor" href="#_verify_no_vmi_exists"></a>Verify No VMI Exists</h4>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vmi base-fedora-vm -n golden-images 2&gt;&amp;1</code></pre>
 </div>
@@ -503,7 +503,7 @@ base-fedora-vm   10m   Stopped   False</code></pre>
 <h3 id="_step_4_verify_datasource_creation"><a class="anchor" href="#_step_4_verify_datasource_creation"></a>Step 4: Verify DataSource Creation</h3>
 <div class="sect3">
 <h4 id="_check_datasource"><a class="anchor" href="#_check_datasource"></a>Check DataSource</h4>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get datasource fedora-nginx-golden -n golden-images</code></pre>
 </div>
@@ -520,7 +520,7 @@ fedora-nginx-golden    1m</code></pre>
 </div>
 <div class="sect3">
 <h4 id="_check_datasource_details"><a class="anchor" href="#_check_datasource_details"></a>Check DataSource Details</h4>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get datasource fedora-nginx-golden -n golden-images -o yaml</code></pre>
 </div>
@@ -543,7 +543,7 @@ fedora-nginx-golden    1m</code></pre>
 <h3 id="_step_5_verify_vms_deployed_from_golden_image"><a class="anchor" href="#_step_5_verify_vms_deployed_from_golden_image"></a>Step 5: Verify VMs Deployed from Golden Image</h3>
 <div class="sect3">
 <h4 id="_check_deployed_vms"><a class="anchor" href="#_check_deployed_vms"></a>Check Deployed VMs</h4>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vm webserver-vm-1 webserver-vm-2 -n golden-images</code></pre>
 </div>
@@ -561,7 +561,7 @@ webserver-vm-2    2m    Running   True</code></pre>
 </div>
 <div class="sect3">
 <h4 id="_check_datavolumes_for_deployed_vms"><a class="anchor" href="#_check_datavolumes_for_deployed_vms"></a>Check DataVolumes for Deployed VMs</h4>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get dv webserver-vm-1-disk webserver-vm-2-disk -n golden-images</code></pre>
 </div>
@@ -579,7 +579,7 @@ webserver-vm-2-disk    Succeeded   100.0%                2m</code></pre>
 </div>
 <div class="sect3">
 <h4 id="_verify_vms_are_clones"><a class="anchor" href="#_verify_vms_are_clones"></a>Verify VMs are Clones</h4>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get dv webserver-vm-1-disk -n golden-images -o jsonpath='{.spec.sourceRef}'</code></pre>
 </div>
@@ -598,7 +598,7 @@ webserver-vm-2-disk    Succeeded   100.0%                2m</code></pre>
 <div class="paragraph">
 <p>Get VM IPs:</p>
 </div>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vmi webserver-vm-1 webserver-vm-2 -n golden-images -o jsonpath='{range .items[*]}{.metadata.name}: {.status.interfaces[0].ipAddress}{"\n"}{end}'</code></pre>
 </div>
@@ -615,7 +615,7 @@ webserver-vm-2: 10.128.0.170</code></pre>
 <div class="paragraph">
 <p>Test nginx from another pod:</p>
 </div>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc run test-curl --image=curlimages/curl:latest --rm -it --restart=Never -- curl http://10.128.0.169</code></pre>
 </div>
@@ -626,7 +626,7 @@ webserver-vm-2: 10.128.0.170</code></pre>
 <h3 id="_step_6_verify_resource_efficiency"><a class="anchor" href="#_step_6_verify_resource_efficiency"></a>Step 6: Verify Resource Efficiency</h3>
 <div class="sect3">
 <h4 id="_check_pvc_usage"><a class="anchor" href="#_check_pvc_usage"></a>Check PVC Usage</h4>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get pvc -n golden-images</code></pre>
 </div>
@@ -645,7 +645,7 @@ webserver-vm-2-disk    Bound    pvc-ghi789...    30Gi       RWO            lvms-
 </div>
 <div class="sect3">
 <h4 id="_check_actual_storage_usage_if_using_lvm"><a class="anchor" href="#_check_actual_storage_usage_if_using_lvm"></a>Check Actual Storage Usage (if using LVM)</h4>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Get the LVM thin pool usage
 oc get lvmvolumegroup -n openshift-storage -o yaml | grep -A 10 status</code></pre>
@@ -663,7 +663,7 @@ oc get lvmvolumegroup -n openshift-storage -o yaml | grep -A 10 status</code></p
 <div class="paragraph">
 <p><strong>Symptoms</strong>:</p>
 </div>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get dv base-fedora-vm-disk -n golden-images
 NAME                  PHASE              PROGRESS   AGE
@@ -673,7 +673,7 @@ base-fedora-vm-disk   ImportInProgress   10%        10m</code></pre>
 <div class="paragraph">
 <p><strong>Diagnosis</strong>:</p>
 </div>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Check CDI importer pod
 oc get pods -n golden-images | grep importer
@@ -696,7 +696,7 @@ oc logs -n golden-images &lt;importer-pod-name&gt;</code></pre>
 <ol class="arabic">
 <li>
 <p>Verify source DataSource exists:</p>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get datasource fedora -n openshift-virtualization-os-images</code></pre>
 </div>
@@ -704,7 +704,7 @@ oc logs -n golden-images &lt;importer-pod-name&gt;</code></pre>
 </li>
 <li>
 <p>Check CDI operator is healthy:</p>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get pods -n openshift-cnv | grep cdi</code></pre>
 </div>
@@ -712,7 +712,7 @@ oc logs -n golden-images &lt;importer-pod-name&gt;</code></pre>
 </li>
 <li>
 <p>Check storage capacity:</p>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get pvc -n golden-images
 oc get lvmvolumegroup -n openshift-storage</code></pre>
@@ -727,7 +727,7 @@ oc get lvmvolumegroup -n openshift-storage</code></pre>
 <div class="paragraph">
 <p><strong>Symptoms</strong>:</p>
 </div>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vm base-fedora-vm -n golden-images
 NAME             AGE   STATUS                                    READY
@@ -737,7 +737,7 @@ base-fedora-vm   5m    WaitingForVolumeBinding                   False</code></p
 <div class="paragraph">
 <p><strong>Diagnosis</strong>:</p>
 </div>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Check DataVolume status
 oc get dv base-fedora-vm-disk -n golden-images
@@ -762,7 +762,7 @@ oc get events -n golden-images --sort-by='.lastTimestamp' | grep -i error</code>
 </li>
 <li>
 <p>Check storage class exists and is properly configured:</p>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get storageclass</code></pre>
 </div>
@@ -770,7 +770,7 @@ oc get events -n golden-images --sort-by='.lastTimestamp' | grep -i error</code>
 </li>
 <li>
 <p>Verify default storage class if not specified:</p>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get storageclass -o jsonpath='{.items[?(@.metadata.annotations.storageclass\.kubernetes\.io/is-default-class=="true")].metadata.name}'</code></pre>
 </div>
@@ -784,7 +784,7 @@ oc get events -n golden-images --sort-by='.lastTimestamp' | grep -i error</code>
 <div class="paragraph">
 <p><strong>Symptoms</strong>:</p>
 </div>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vmi base-fedora-vm -n golden-images -o jsonpath='{.status.guestOSInfo}'
 # Returns empty</code></pre>
@@ -793,7 +793,7 @@ oc get events -n golden-images --sort-by='.lastTimestamp' | grep -i error</code>
 <div class="paragraph">
 <p><strong>Diagnosis</strong>:</p>
 </div>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Access VM console
 virtctl console base-fedora-vm -n golden-images
@@ -834,7 +834,7 @@ VM deployed from golden image does not have nginx or custom configuration.</p>
 <div class="paragraph">
 <p><strong>Diagnosis</strong>:</p>
 </div>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Access the VM
 virtctl console webserver-vm-1 -n golden-images
@@ -857,7 +857,7 @@ systemctl status nginx</code></pre>
 <ol class="arabic">
 <li>
 <p>Verify base VM has customizations:</p>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">virtctl console base-fedora-vm -n golden-images
 # Check manually for installed software</code></pre>
@@ -866,7 +866,7 @@ systemctl status nginx</code></pre>
 </li>
 <li>
 <p>Verify DataSource references correct PVC:</p>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get datasource fedora-nginx-golden -n golden-images -o jsonpath='{.spec.source}'</code></pre>
 </div>
@@ -890,7 +890,7 @@ VMs deployed from DataSource do not have expected customizations from base VM.</
 <div class="paragraph">
 <p><strong>Diagnosis</strong>:</p>
 </div>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get datasource fedora-nginx-golden -n golden-images -o yaml</code></pre>
 </div>
@@ -905,7 +905,7 @@ VMs deployed from DataSource do not have expected customizations from base VM.</
 <ol class="arabic">
 <li>
 <p>Delete and recreate DataSource with correct PVC reference:</p>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc delete datasource fedora-nginx-golden -n golden-images
 oc create -f fedora-golden-datasource.yaml</code></pre>
@@ -928,7 +928,7 @@ oc create -f fedora-golden-datasource.yaml</code></pre>
 <div class="paragraph">
 <p><strong>Diagnosis</strong>:</p>
 </div>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Check LVM volume group usage
 oc get lvmvolumegroup -n openshift-storage -o yaml
@@ -944,7 +944,7 @@ oc get pvc -n golden-images</code></pre>
 <ol class="arabic">
 <li>
 <p>Clean up unused PVCs:</p>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc delete pvc &lt;unused-pvc&gt; -n golden-images</code></pre>
 </div>
@@ -968,7 +968,7 @@ DataVolume for deployed VM takes a long time to reach <code>Succeeded</code> pha
 <div class="paragraph">
 <p><strong>Diagnosis</strong>:</p>
 </div>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Check DataVolume progress
 oc get dv webserver-vm-1-disk -n golden-images -w
@@ -1015,7 +1015,7 @@ oc logs -n golden-images -l app=containerized-data-importer --tail=100</code></p
 <div class="sectionbody">
 <div class="sect2">
 <h3 id="_full_resource_check"><a class="anchor" href="#_full_resource_check"></a>Full Resource Check</h3>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Everything in namespace
 oc get all,dv,pvc,datasource -n golden-images
@@ -1030,7 +1030,7 @@ oc get vm,vmi,dv -n golden-images -w</code></pre>
 </div>
 <div class="sect2">
 <h3 id="_logs_and_events"><a class="anchor" href="#_logs_and_events"></a>Logs and Events</h3>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Recent events
 oc get events -n golden-images --sort-by='.lastTimestamp' | tail -20
@@ -1045,7 +1045,7 @@ oc logs -n openshift-cnv -l app=cdi-operator --tail=50</code></pre>
 </div>
 <div class="sect2">
 <h3 id="_storage_details"><a class="anchor" href="#_storage_details"></a>Storage Details</h3>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># PVC details
 oc describe pvc &lt;pvc-name&gt; -n golden-images

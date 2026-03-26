@@ -400,7 +400,7 @@ disk size: 420 MiB</code></pre>
 <div class="paragraph">
 <p>Create a namespace for your imported VM:</p>
 </div>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc create namespace imported-vms</code></pre>
 </div>
@@ -413,7 +413,7 @@ disk size: 420 MiB</code></pre>
 <div class="paragraph">
 <p>Upload your qcow2 image directly using virtctl. The PVC will be created automatically:</p>
 </div>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">virtctl image-upload pvc fedora-imported-disk \
   --image-path=./Fedora-Cloud-Base-Generic-43-1.6.x86_64.qcow2 \
@@ -491,7 +491,7 @@ Upload time depends on your image size and network speed. A 1GB image typically 
 <div class="paragraph">
 <p>In another terminal, you can monitor the upload process by checking the PVC status:</p>
 </div>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get pvc fedora-imported-disk -n imported-vms --watch</code></pre>
 </div>
@@ -509,7 +509,7 @@ fedora-imported-disk   Bound     pvc-xxxxx                                  10Gi
 <div class="paragraph">
 <p>Check the cdi-upload pod logs if needed:</p>
 </div>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get pods -n imported-vms
 oc logs -n imported-vms cdi-upload-fedora-imported-disk -f</code></pre>
@@ -594,7 +594,7 @@ spec:
 <div class="paragraph">
 <p>Apply the VM manifest:</p>
 </div>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f vm-from-imported-qcow2.yaml</code></pre>
 </div>
@@ -602,7 +602,7 @@ spec:
 <div class="paragraph">
 <p>Start the VM:</p>
 </div>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">virtctl start fedora-imported-vm -n imported-vms</code></pre>
 </div>
@@ -615,7 +615,7 @@ spec:
 <div class="paragraph">
 <p>Monitor the VM startup:</p>
 </div>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vmi -n imported-vms --watch</code></pre>
 </div>
@@ -634,7 +634,7 @@ fedora-imported-vm   45s   Running     10.128.2.54    worker-01   True</code></p
 <div class="paragraph">
 <p>Access the VM console:</p>
 </div>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">virtctl console fedora-imported-vm -n imported-vms</code></pre>
 </div>
@@ -710,7 +710,7 @@ The annotation <code>cdi.kubevirt.io/storage.bind.immediate.requested: "true"</c
 <div class="paragraph">
 <p>Apply the DataVolume and CDI will automatically download and import the image:</p>
 </div>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f datavolume-http-import.yaml
 oc get dv -n imported-vms --watch</code></pre>
@@ -867,7 +867,7 @@ spec:
 <div class="paragraph">
 <p>Create the VM (this creates both the VM and DataVolume):</p>
 </div>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f vm-with-upload-datavolume.yaml</code></pre>
 </div>
@@ -875,7 +875,7 @@ spec:
 <div class="paragraph">
 <p>The DataVolume is created but the VM won&#8217;t start yet because the disk has no data. Now upload your image:</p>
 </div>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">virtctl image-upload dv vm-with-upload-disk \
   --image-path=./Fedora-Cloud-Base-Generic-43-1.6.x86_64.qcow2 \
@@ -888,7 +888,7 @@ spec:
 <div class="paragraph">
 <p>Once the upload completes, start the VM:</p>
 </div>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">virtctl start vm-with-upload -n imported-vms</code></pre>
 </div>
@@ -994,7 +994,7 @@ spec:
 <div class="paragraph">
 <p>Check the PVC status:</p>
 </div>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get pvc -n imported-vms
 oc describe pvc fedora-imported-disk -n imported-vms</code></pre>
@@ -1006,7 +1006,7 @@ oc describe pvc fedora-imported-disk -n imported-vms</code></pre>
 <div class="paragraph">
 <p><strong>Solution</strong>: Add the <code>--force-bind</code> flag to your virtctl command:</p>
 </div>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">virtctl image-upload pvc fedora-imported-disk \
   --image-path=./image.qcow2 \
@@ -1019,7 +1019,7 @@ oc describe pvc fedora-imported-disk -n imported-vms</code></pre>
 <div class="paragraph">
 <p>Delete the stuck PVC first:</p>
 </div>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc delete pvc fedora-imported-disk -n imported-vms</code></pre>
 </div>
@@ -1033,7 +1033,7 @@ oc describe pvc fedora-imported-disk -n imported-vms</code></pre>
 <div class="paragraph">
 <p>This error can occur with certain CDI versions when using DataVolume-based uploads. The solution is to use the PVC method instead (which this tutorial now uses):</p>
 </div>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Use PVC upload (not DataVolume)
 virtctl image-upload pvc &lt;pvc-name&gt; \
@@ -1051,7 +1051,7 @@ virtctl image-upload pvc &lt;pvc-name&gt; \
 <div class="paragraph">
 <p>Check CDI pod status:</p>
 </div>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get pods -n openshift-cnv | grep cdi</code></pre>
 </div>
@@ -1062,7 +1062,7 @@ virtctl image-upload pvc &lt;pvc-name&gt; \
 <div class="paragraph">
 <p>Check CDI upload proxy pod status:</p>
 </div>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get pods -n openshift-cnv | grep cdi-uploadproxy
 oc logs -n openshift-cnv &lt;cdi-uploadproxy-pod&gt;</code></pre>
@@ -1085,7 +1085,7 @@ oc logs -n openshift-cnv &lt;cdi-uploadproxy-pod&gt;</code></pre>
 <div class="paragraph">
 <p>If the upload fails due to insufficient size, delete the PVC and retry with a larger size:</p>
 </div>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc delete pvc fedora-imported-disk -n imported-vms
 
@@ -1103,7 +1103,7 @@ virtctl image-upload pvc fedora-imported-disk \
 <div class="paragraph">
 <p>Check VM events and logs:</p>
 </div>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc describe vm fedora-imported-vm -n imported-vms
 oc get events -n imported-vms --field-selector involvedObject.name=fedora-imported-vm</code></pre>
@@ -1112,7 +1112,7 @@ oc get events -n imported-vms --field-selector involvedObject.name=fedora-import
 <div class="paragraph">
 <p>Access the console to see boot messages:</p>
 </div>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">virtctl console fedora-imported-vm -n imported-vms</code></pre>
 </div>
@@ -1132,7 +1132,7 @@ oc get events -n imported-vms --field-selector involvedObject.name=fedora-import
 <div class="paragraph">
 <p>To remove the resources created in this tutorial:</p>
 </div>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Delete the VM
 oc delete vm fedora-imported-vm -n imported-vms

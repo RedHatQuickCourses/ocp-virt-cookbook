@@ -301,7 +301,7 @@
 <div class="paragraph">
 <p>Create a dedicated namespace for this tutorial:</p>
 </div>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc new-project myapp</code></pre>
 </div>
@@ -327,7 +327,7 @@ The cloud-init password in this example is for demo purposes only. Always use a 
 <div class="paragraph">
 <p><a href="_attachments/internal-dns-for-vms/fedora-app-vm.yaml" class="xref attachment">Download fedora-app-vm.yaml</a></p>
 </div>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f - &lt;&lt;EOF
 apiVersion: kubevirt.io/v1
@@ -410,7 +410,7 @@ EOF</code></pre>
 <div class="paragraph">
 <p><a href="_attachments/internal-dns-for-vms/headless-service.yaml" class="xref attachment">Download headless-service.yaml</a></p>
 </div>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f - &lt;&lt;EOF
 apiVersion: v1
@@ -433,7 +433,7 @@ EOF</code></pre>
 <div class="paragraph">
 <p>Verify the Service and its EndpointSlice:</p>
 </div>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get svc myapp-service -n myapp
 oc get endpointslice -n myapp -l kubernetes.io/service-name=myapp-service</code></pre>
@@ -454,7 +454,7 @@ oc get endpointslice -n myapp -l kubernetes.io/service-name=myapp-service</code>
 <div class="paragraph">
 <p>Create a debug pod to test DNS resolution and connectivity:</p>
 </div>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f - &lt;&lt;EOF
 apiVersion: v1
@@ -625,7 +625,7 @@ oc delete pod debug-dns -n myapp</code></pre>
 <div class="paragraph">
 <p><strong>Check Service and EndpointSlice:</strong></p>
 </div>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># View Service details
 oc get svc myapp-service -n myapp
@@ -640,7 +640,7 @@ oc describe svc myapp-service -n myapp</code></pre>
 <div class="paragraph">
 <p><strong>Test DNS Resolution and Connectivity:</strong></p>
 </div>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Create debug pod (if not already exists)
 oc apply -f - &lt;&lt;EOF
@@ -679,7 +679,7 @@ oc delete pod debug-dns -n myapp</code></pre>
 <div class="paragraph">
 <p><strong>Check VM Labels:</strong></p>
 </div>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Verify VM labels match Service selector
 oc get vm fedora-app-vm -n myapp -o jsonpath='{.metadata.labels}'
@@ -695,7 +695,7 @@ oc get svc myapp-service -n myapp -o jsonpath='{.spec.selector}'</code></pre>
 <div class="paragraph">
 <p><strong>Diagnosis:</strong></p>
 </div>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get svc myapp-service -n myapp
 oc get endpointslice -n myapp -l kubernetes.io/service-name=myapp-service</code></pre>
@@ -739,7 +739,7 @@ oc get endpointslice -n myapp -l kubernetes.io/service-name=myapp-service</code>
 <div class="paragraph">
 <p><strong>Diagnosis:</strong></p>
 </div>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Create debug pod in different namespace
 oc new-project test-namespace 2&gt;/dev/null || true

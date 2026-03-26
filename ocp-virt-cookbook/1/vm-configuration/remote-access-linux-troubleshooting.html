@@ -297,7 +297,7 @@
 <div class="sectionbody">
 <div class="sect2">
 <h3 id="_check_vm_status"><a class="anchor" href="#_check_vm_status"></a>Check VM Status</h3>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vm &lt;vm-name&gt; -n &lt;namespace&gt;
 oc get vmi &lt;vm-name&gt; -n &lt;namespace&gt;</code></pre>
@@ -315,7 +315,7 @@ my-vm       5m    Running   True</code></pre>
 </div>
 <div class="sect2">
 <h3 id="_check_vm_has_ip_address"><a class="anchor" href="#_check_vm_has_ip_address"></a>Check VM Has IP Address</h3>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vmi &lt;vm-name&gt; -n &lt;namespace&gt; -o jsonpath='{.status.interfaces[*].ipAddress}'</code></pre>
 </div>
@@ -326,7 +326,7 @@ my-vm       5m    Running   True</code></pre>
 </div>
 <div class="sect2">
 <h3 id="_check_vm_pod_is_running"><a class="anchor" href="#_check_vm_pod_is_running"></a>Check VM Pod is Running</h3>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get pods -n &lt;namespace&gt; -l kubevirt.io/domain=&lt;vm-name&gt;</code></pre>
 </div>
@@ -343,7 +343,7 @@ virt-launcher-&lt;vm&gt;-xxxxx   3/3     Running   0          5m</code></pre>
 </div>
 <div class="sect2">
 <h3 id="_check_guest_agent_status"><a class="anchor" href="#_check_guest_agent_status"></a>Check Guest Agent Status</h3>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vmi &lt;vm-name&gt; -n &lt;namespace&gt; -o jsonpath='{.status.guestOSInfo.id}'</code></pre>
 </div>
@@ -371,7 +371,7 @@ Error: unable to connect to console</code></pre>
 <div class="paragraph">
 <p><strong>Diagnosis</strong>:</p>
 </div>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Check VM is running
 oc get vm my-vm -n my-namespace
@@ -397,7 +397,7 @@ oc get pods -n my-namespace -l kubevirt.io/domain=my-vm</code></pre>
 <ol class="arabic">
 <li>
 <p>Start VM if stopped:</p>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">virtctl start my-vm -n my-namespace</code></pre>
 </div>
@@ -405,7 +405,7 @@ oc get pods -n my-namespace -l kubevirt.io/domain=my-vm</code></pre>
 </li>
 <li>
 <p>Wait for VMI to be ready:</p>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc wait --for=condition=Ready vmi/my-vm -n my-namespace --timeout=60s</code></pre>
 </div>
@@ -413,7 +413,7 @@ oc get pods -n my-namespace -l kubevirt.io/domain=my-vm</code></pre>
 </li>
 <li>
 <p>Check virt-launcher pod logs:</p>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc logs -n my-namespace -l kubevirt.io/domain=my-vm</code></pre>
 </div>
@@ -421,7 +421,7 @@ oc get pods -n my-namespace -l kubevirt.io/domain=my-vm</code></pre>
 </li>
 <li>
 <p>Verify virtctl version matches cluster:</p>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">virtctl version
 oc get kubevirt -n openshift-cnv -o jsonpath='{.items[0].status.observedKubeVirtVersion}'</code></pre>
@@ -459,7 +459,7 @@ Console connects but shows blank screen or no prompt.</p>
 <ol class="arabic">
 <li>
 <p>Wait for VM to fully boot (check VMI phase):</p>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vmi my-vm -n my-namespace -o jsonpath='{.status.phase}'</code></pre>
 </div>
@@ -480,7 +480,7 @@ Console connects but shows blank screen or no prompt.</p>
 </li>
 <li>
 <p>Try disconnect and reconnect:</p>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Press Ctrl+] to disconnect
 virtctl console my-vm -n my-namespace</code></pre>
@@ -561,7 +561,7 @@ Error: VNC is not configured for this VM</code></pre>
 <div class="paragraph">
 <p><strong>Diagnosis</strong>:</p>
 </div>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Check if graphics is enabled
 oc get vm my-vm -n my-namespace -o jsonpath='{.spec.template.spec.domain.devices.autoattachGraphicsDevice}'
@@ -589,7 +589,7 @@ virtctl vnc command starts but VNC viewer cannot connect.</p>
 <div class="paragraph">
 <p><strong>Diagnosis</strong>:</p>
 </div>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Check virtctl output for port number
 virtctl vnc my-vm -n my-namespace
@@ -686,7 +686,7 @@ Error: SSH is not available for this VM</code></pre>
 <div class="paragraph">
 <p><strong>Diagnosis</strong>:</p>
 </div>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Check VM has IP address
 oc get vmi my-vm -n my-namespace -o jsonpath='{.status.interfaces}'
@@ -720,7 +720,7 @@ sudo systemctl enable --now sshd</code></pre>
 </li>
 <li>
 <p>Verify VM has IP address:</p>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vmi my-vm -n my-namespace -o jsonpath='{.status.interfaces[0].ipAddress}'</code></pre>
 </div>
@@ -728,7 +728,7 @@ sudo systemctl enable --now sshd</code></pre>
 </li>
 <li>
 <p>Test SSH connectivity:</p>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Try port-forward method first
 oc port-forward vmi/my-vm -n my-namespace 2222:22 &amp;
@@ -753,7 +753,7 @@ fedora@my-vm: Permission denied (publickey,gssapi-keyex,gssapi-with-mic).</code>
 <div class="paragraph">
 <p><strong>Diagnosis</strong>:</p>
 </div>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Check SSH keys
 ls -la ~/.ssh/
@@ -816,7 +816,7 @@ Connection takes 30+ seconds to establish.</p>
 <p><strong>Solutions</strong>:
 Add SSH options to skip slow authentication methods:</p>
 </div>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">virtctl ssh --local-ssh-opts="-o GSSAPIAuthentication=no -o UseDNS=no" fedora@my-vm -n my-namespace</code></pre>
 </div>
@@ -841,7 +841,7 @@ ssh: connect to host &lt;node-ip&gt; port 30022: Connection refused</code></pre>
 <div class="paragraph">
 <p><strong>Diagnosis</strong>:</p>
 </div>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Check service exists
 oc get svc -n my-namespace
@@ -888,7 +888,7 @@ spec:
 </li>
 <li>
 <p>Check selector matches VM:</p>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vm my-vm -n my-namespace -o jsonpath='{.spec.template.metadata.labels}'</code></pre>
 </div>
@@ -896,7 +896,7 @@ spec:
 </li>
 <li>
 <p>Verify SSH is running in VM:</p>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">virtctl console my-vm -n my-namespace
 # Inside VM:
@@ -916,7 +916,7 @@ SSH connects but to wrong VM or gets connection refused.</p>
 <div class="paragraph">
 <p><strong>Diagnosis</strong>:</p>
 </div>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Check service endpoints
 oc describe svc my-vm-ssh -n my-namespace
@@ -947,7 +947,7 @@ oc describe svc my-vm-ssh -n my-namespace
 </li>
 <li>
 <p>Verify only one endpoint:</p>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get endpoints my-vm-ssh -n my-namespace -o yaml</code></pre>
 </div>
@@ -965,7 +965,7 @@ Unable to determine which node IP to use for NodePort access.</p>
 <div class="paragraph">
 <p><strong>Solutions</strong>:</p>
 </div>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Get node IPs
 oc get nodes -o wide
@@ -998,7 +998,7 @@ my-vm-ssh    LoadBalancer   172.30.x.x      &lt;pending&gt;     22:30022/TCP</co
 <div class="paragraph">
 <p><strong>Diagnosis</strong>:</p>
 </div>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Check if LoadBalancer provider is available
 oc get svc -A | grep LoadBalancer
@@ -1026,7 +1026,7 @@ oc describe svc my-vm-ssh -n my-namespace</code></pre>
 </li>
 <li>
 <p>Check LoadBalancer events:</p>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc describe svc my-vm-ssh -n my-namespace</code></pre>
 </div>
@@ -1047,7 +1047,7 @@ External IP assigned but SSH connection times out.</p>
 <div class="paragraph">
 <p><strong>Diagnosis</strong>:</p>
 </div>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Check LoadBalancer IP
 LB_IP=$(oc get svc my-vm-ssh -n my-namespace -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
@@ -1102,7 +1102,7 @@ Error: unable to forward port</code></pre>
 <div class="paragraph">
 <p><strong>Diagnosis</strong>:</p>
 </div>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Check VMI exists
 oc get vmi my-vm -n my-namespace
@@ -1125,7 +1125,7 @@ lsof -i :2222</code></pre>
 <ol class="arabic">
 <li>
 <p>Use different local port:</p>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc port-forward vmi/my-vm -n my-namespace 12345:22</code></pre>
 </div>
@@ -1142,7 +1142,7 @@ lsof -ti :2222 | xargs kill -9</code></pre>
 </li>
 <li>
 <p>Wait for VMI to be ready:</p>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc wait --for=condition=Ready vmi/my-vm -n my-namespace</code></pre>
 </div>
@@ -1168,7 +1168,7 @@ ssh: connect to host localhost port 2222: Connection refused</code></pre>
 <div class="paragraph">
 <p><strong>Diagnosis</strong>:</p>
 </div>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Check SSH is listening in VM
 virtctl console my-vm -n my-namespace
@@ -1245,7 +1245,7 @@ Port forward works but drops connection after few minutes.</p>
 </li>
 <li>
 <p>Run port-forward in background with restart:</p>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">while true; do
   oc port-forward vmi/my-vm -n my-namespace 2222:22
@@ -1276,7 +1276,7 @@ Request timeout</code></pre>
 <div class="paragraph">
 <p><strong>Diagnosis</strong>:</p>
 </div>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Check VM has secondary interface configured
 oc get vmi my-vm -n my-namespace -o jsonpath='{.status.interfaces}' | jq
@@ -1303,7 +1303,7 @@ oc get vm my-vm -n my-namespace -o jsonpath='{.spec.template.spec.networks}' | j
 <ol class="arabic">
 <li>
 <p>Verify NAD is correctly configured:</p>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc describe network-attachment-definition my-nad -n my-namespace</code></pre>
 </div>
@@ -1334,7 +1334,7 @@ oc get vm my-vm -n my-namespace -o jsonpath='{.spec.template.spec.networks}' | j
 </li>
 <li>
 <p>Check IP configuration in VM:</p>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">virtctl console my-vm -n my-namespace
 # Inside VM:
@@ -1360,7 +1360,7 @@ Only primary interface (enp1s0) visible, no enp2s0.</p>
 <div class="paragraph">
 <p><strong>Diagnosis</strong>:</p>
 </div>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Inside VM
 ip link show
@@ -1382,7 +1382,7 @@ oc get vmi my-vm -n my-namespace -o jsonpath='{.status.interfaces}' | jq</code><
 <ol class="arabic">
 <li>
 <p>Check NAD in correct namespace:</p>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get network-attachment-definition -n my-namespace</code></pre>
 </div>
@@ -1393,7 +1393,7 @@ oc get vmi my-vm -n my-namespace -o jsonpath='{.status.interfaces}' | jq</code><
 </li>
 <li>
 <p>Check multus logs:</p>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc logs -n openshift-multus -l app=multus</code></pre>
 </div>
@@ -1401,7 +1401,7 @@ oc get vmi my-vm -n my-namespace -o jsonpath='{.status.interfaces}' | jq</code><
 </li>
 <li>
 <p>Check virt-launcher pod events:</p>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">POD=$(oc get pods -n my-namespace -l kubevirt.io/domain=my-vm -o name)
 oc describe $POD -n my-namespace</code></pre>
@@ -1418,7 +1418,7 @@ oc describe $POD -n my-namespace</code></pre>
 <div class="sectionbody">
 <div class="sect2">
 <h3 id="_complete_vm_access_health_check_script"><a class="anchor" href="#_complete_vm_access_health_check_script"></a>Complete VM Access Health Check Script</h3>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">#!/bin/bash
 NAMESPACE="my-namespace"

@@ -317,7 +317,7 @@
 </li>
 <li>
 <p>After downloading, make the binary executable and move it to your PATH:</p>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Linux/Mac
 chmod +x virtctl
@@ -343,7 +343,7 @@ virtctl version</code></pre>
 <div class="paragraph">
 <p>Before managing VMs, list what&#8217;s available in your cluster using the <code>oc</code> command:</p>
 </div>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># List all VMs in a specific namespace
 oc get vm -n myapp
@@ -364,7 +364,7 @@ myapp       fedora-app-vm   13d   Running   True</code></pre>
 <div class="paragraph">
 <p>To see running VM instances (VMIs) with additional details like IP address and node placement:</p>
 </div>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vmi -A</code></pre>
 </div>
@@ -396,7 +396,7 @@ Use <code>oc</code> for listing and querying VMs. Use <code>virtctl</code> for V
 <div class="paragraph">
 <p>Start, stop, and restart VMs:</p>
 </div>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Start a VM
 virtctl start fedora-app-vm -n myapp
@@ -414,7 +414,7 @@ virtctl restart fedora-app-vm -n myapp</code></pre>
 <div class="paragraph">
 <p>Connect to your VM:</p>
 </div>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Console access (press Ctrl+] to exit)
 virtctl console fedora-app-vm -n myapp
@@ -432,7 +432,7 @@ virtctl vnc fedora-app-vm -n myapp</code></pre>
 <div class="paragraph">
 <p>Get VM details (requires QEMU guest agent installed in the VM):</p>
 </div>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Guest OS information
 virtctl guestosinfo fedora-app-vm -n myapp</code></pre>
@@ -459,7 +459,7 @@ virtctl guestosinfo fedora-app-vm -n myapp</code></pre>
 }</code></pre>
 </div>
 </div>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># List filesystems
 virtctl fslist fedora-app-vm -n myapp</code></pre>
@@ -497,7 +497,7 @@ virtctl fslist fedora-app-vm -n myapp</code></pre>
 }</code></pre>
 </div>
 </div>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># List logged-in users
 virtctl userlist fedora-app-vm -n myapp</code></pre>
@@ -519,7 +519,7 @@ virtctl userlist fedora-app-vm -n myapp</code></pre>
 </li>
 </ul>
 </div>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Copy to VM (uses default SSH key)
 virtctl scp local-file.txt fedora@fedora-app-vm:/tmp/remote.txt -n myapp
@@ -566,7 +566,7 @@ ssh_authorized_keys:
 <div class="paragraph">
 <p>After starting or stopping a VM, verify the operation:</p>
 </div>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Check VM status
 oc get vm fedora-app-vm -n myapp</code></pre>
@@ -581,7 +581,7 @@ oc get vm fedora-app-vm -n myapp</code></pre>
 fedora-app-vm   7d3h   Running   True</code></pre>
 </div>
 </div>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Check VMI (running instance)
 oc get vmi fedora-app-vm -n myapp</code></pre>
@@ -638,7 +638,7 @@ oc get vmi fedora-app-vm -n myapp</code></pre>
 <div class="paragraph">
 <p>Solution: Verify cluster access:</p>
 </div>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc whoami
 oc get nodes</code></pre>
@@ -656,7 +656,7 @@ oc get nodes</code></pre>
 <div class="paragraph">
 <p>Solution: Verify SSH is configured in the VM. Use console to check:</p>
 </div>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Access via console first
 virtctl console fedora-app-vm -n myapp
@@ -671,7 +671,7 @@ systemctl status sshd</code></pre>
 <div class="paragraph">
 <p>Solution: Exit with <code>Ctrl+]</code> and verify VM status:</p>
 </div>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vmi fedora-app-vm -n myapp</code></pre>
 </div>

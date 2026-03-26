@@ -322,7 +322,7 @@
 <div class="paragraph">
 <p>Create a namespace for the golden image workflow:</p>
 </div>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc create namespace golden-images</code></pre>
 </div>
@@ -412,7 +412,7 @@ spec:
 <div class="paragraph">
 <p>Save this as <code>base-fedora-vm.yaml</code> and deploy:</p>
 </div>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f base-fedora-vm.yaml</code></pre>
 </div>
@@ -420,7 +420,7 @@ spec:
 <div class="paragraph">
 <p>Wait for the VM to be ready. This may take several minutes as the DataVolume clones from the source image:</p>
 </div>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get dv -n golden-images</code></pre>
 </div>
@@ -437,7 +437,7 @@ base-fedora-vm-disk   CloneInProgress   45.2%                 2m</code></pre>
 <div class="paragraph">
 <p>Once the DataVolume shows <code>Succeeded</code>, check the VM status:</p>
 </div>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vmi -n golden-images</code></pre>
 </div>
@@ -462,7 +462,7 @@ base-fedora-vm   4m    Running   10.128.1.151   ocplab01   True</code></pre>
 <div class="paragraph">
 <p>Access the VM console:</p>
 </div>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">virtctl console base-fedora-vm -n golden-images</code></pre>
 </div>
@@ -547,7 +547,7 @@ exit</code></pre>
 <div class="paragraph">
 <p>Stop the VM to capture its disk:</p>
 </div>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">virtctl stop base-fedora-vm -n golden-images</code></pre>
 </div>
@@ -555,7 +555,7 @@ exit</code></pre>
 <div class="paragraph">
 <p>Verify it&#8217;s stopped:</p>
 </div>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vm -n golden-images</code></pre>
 </div>
@@ -600,7 +600,7 @@ spec:
 <div class="paragraph">
 <p>Save as <code>fedora-golden-datasource.yaml</code> and apply:</p>
 </div>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f fedora-golden-datasource.yaml</code></pre>
 </div>
@@ -608,7 +608,7 @@ spec:
 <div class="paragraph">
 <p>Verify the DataSource:</p>
 </div>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get datasource -n golden-images</code></pre>
 </div>
@@ -769,7 +769,7 @@ spec:
 <div class="paragraph">
 <p>Deploy both VMs:</p>
 </div>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f webserver-vm-1.yaml
 oc apply -f webserver-vm-2.yaml</code></pre>
@@ -778,7 +778,7 @@ oc apply -f webserver-vm-2.yaml</code></pre>
 <div class="paragraph">
 <p>Monitor the cloning process:</p>
 </div>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get dv -n golden-images</code></pre>
 </div>
@@ -805,7 +805,7 @@ webserver-vm-2-disk   CloneInProgress   71.8%                 3m</code></pre>
 <div class="paragraph">
 <p>Check that both VMs are running:</p>
 </div>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vmi -n golden-images</code></pre>
 </div>
@@ -823,7 +823,7 @@ webserver-vm-2   5m    Running   10.128.1.153   ocplab01   True</code></pre>
 <div class="paragraph">
 <p>Access one of the VMs and verify nginx is pre-installed:</p>
 </div>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">virtctl console webserver-vm-1 -n golden-images</code></pre>
 </div>
@@ -989,7 +989,7 @@ webserver-vm-2   5m    Running   10.128.1.153   ocplab01   True</code></pre>
 <div class="paragraph">
 <p>To clean up the resources created in this tutorial:</p>
 </div>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Delete VMs
 oc delete vm webserver-vm-1 webserver-vm-2 base-fedora-vm -n golden-images
