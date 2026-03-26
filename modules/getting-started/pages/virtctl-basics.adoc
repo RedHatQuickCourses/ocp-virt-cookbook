@@ -36,7 +36,7 @@ image::virtctl-versions.png[List of virtctl binaries for different platforms]
 
 . After downloading, make the binary executable and move it to your PATH:
 +
-[source,bash]
+[source,bash,role=execute]
 ----
 # Linux/Mac
 chmod +x virtctl
@@ -54,7 +54,7 @@ For Windows, extract the executable and add its location to your system PATH.
 
 Before managing VMs, list what's available in your cluster using the `oc` command:
 
-[source,bash]
+[source,bash,role=execute]
 ----
 # List all VMs in a specific namespace
 oc get vm -n myapp
@@ -73,7 +73,7 @@ myapp       fedora-app-vm   13d   Running   True
 
 To see running VM instances (VMIs) with additional details like IP address and node placement:
 
-[source,bash]
+[source,bash,role=execute]
 ----
 oc get vmi -A
 ----
@@ -92,7 +92,7 @@ NOTE: Use `oc` for listing and querying VMs. Use `virtctl` for VM operations lik
 
 Start, stop, and restart VMs:
 
-[source,bash]
+[source,bash,role=execute]
 ----
 # Start a VM
 virtctl start fedora-app-vm -n myapp
@@ -108,7 +108,7 @@ virtctl restart fedora-app-vm -n myapp
 
 Connect to your VM:
 
-[source,bash]
+[source,bash,role=execute]
 ----
 # Console access (press Ctrl+] to exit)
 virtctl console fedora-app-vm -n myapp
@@ -124,7 +124,7 @@ virtctl vnc fedora-app-vm -n myapp
 
 Get VM details (requires QEMU guest agent installed in the VM):
 
-[source,bash]
+[source,bash,role=execute]
 ----
 # Guest OS information
 virtctl guestosinfo fedora-app-vm -n myapp
@@ -150,7 +150,7 @@ Example output:
 }
 ----
 
-[source,bash]
+[source,bash,role=execute]
 ----
 # List filesystems
 virtctl fslist fedora-app-vm -n myapp
@@ -187,7 +187,7 @@ Example output shows mounted filesystems with usage:
 }
 ----
 
-[source,bash]
+[source,bash,role=execute]
 ----
 # List logged-in users
 virtctl userlist fedora-app-vm -n myapp
@@ -200,7 +200,7 @@ Copy files to and from VMs using `virtctl scp`. This requires SSH to be running 
 * **SSH key** (recommended): Your public key must be in the VM's `~/.ssh/authorized_keys`
 * **Password**: The VM must have password authentication enabled in SSH
 
-[source,bash]
+[source,bash,role=execute]
 ----
 # Copy to VM (uses default SSH key)
 virtctl scp local-file.txt fedora@fedora-app-vm:/tmp/remote.txt -n myapp
@@ -230,7 +230,7 @@ For detailed SSH configuration options, see xref:vm-configuration:remote-access-
 
 After starting or stopping a VM, verify the operation:
 
-[source,bash]
+[source,bash,role=execute]
 ----
 # Check VM status
 oc get vm fedora-app-vm -n myapp
@@ -244,7 +244,7 @@ NAME            AGE    STATUS    READY
 fedora-app-vm   7d3h   Running   True
 ----
 
-[source,bash]
+[source,bash,role=execute]
 ----
 # Check VMI (running instance)
 oc get vmi fedora-app-vm -n myapp
@@ -272,7 +272,7 @@ Expected: VMI listed when running, no VMI after stop.
 
 Solution: Verify cluster access:
 
-[source,bash]
+[source,bash,role=execute]
 ----
 oc whoami
 oc get nodes
@@ -286,7 +286,7 @@ Solution: Install the QEMU guest agent in your VM. See link:https://docs.redhat.
 
 Solution: Verify SSH is configured in the VM. Use console to check:
 
-[source,bash]
+[source,bash,role=execute]
 ----
 # Access via console first
 virtctl console fedora-app-vm -n myapp
@@ -299,7 +299,7 @@ systemctl status sshd
 
 Solution: Exit with `Ctrl+]` and verify VM status:
 
-[source,bash]
+[source,bash,role=execute]
 ----
 oc get vmi fedora-app-vm -n myapp
 ----

@@ -30,7 +30,7 @@ The physical switch ports connected to OpenShift worker nodes **must be configur
 
 Create namespaces for VMs that will use the localnet secondary network with VLAN configuration. CUDN allows the same network to be available across multiple namespaces.
 
-[source,bash]
+[source,bash,role=execute]
 ----
 # Create first namespace
 oc apply -f - <<EOF
@@ -53,7 +53,7 @@ EOF
 
 First, create a custom OVS bridge on an additional physical network interface (NIC) to isolate VLAN traffic from the primary cluster network.
 
-[source,yaml]
+[source,bash,role=execute]
 ----
 oc apply -f - <<EOF
 apiVersion: nmstate.io/v1
@@ -85,14 +85,14 @@ EOF
 
 NOTE: Replace `enp11s0f0np0` with the name of your extra physical interface. You can find available interfaces by running:
 
-[source,bash]
+[source,bash,role=execute]
 ----
 oc debug node/<node-name> -- ip link show
 ----
 
 Verify the bridge creation:
 
-[source,bash]
+[source,bash,role=execute]
 ----
 oc get nncp br-vlan-creation
 # Expected output: STATUS: Available
@@ -102,7 +102,7 @@ oc get nncp br-vlan-creation
 
 Configure the bridge mapping that connects the logical network interface name `localnet-vlan` to the `br-vlan` OVS bridge on worker nodes. This mapping tells OVN-Kubernetes which physical bridge interface handles localnet traffic with VLAN support.
 
-[source,yaml]
+[source,bash,role=execute]
 ----
 oc apply -f - <<EOF
 apiVersion: nmstate.io/v1
@@ -125,7 +125,7 @@ EOF
 
 Create a ClusterUserDefinedNetwork that configures localnet topology with VLAN tagging for secondary network connectivity across multiple namespaces.
 
-[source,yaml]
+[source,bash,role=execute]
 ----
 oc apply -f - <<EOF
 apiVersion: k8s.ovn.org/v1
@@ -164,6 +164,7 @@ Create a VM in one of the configured namespaces that connects to both the pod ne
 WARNING: The cloud-init password in this example is for demo purposes only. Always use a strong, unique password or SSH key authentication in production environments.
 
 [source,yaml]
+[source,bash,role=execute]
 ----
 oc apply -f - <<EOF
 apiVersion: kubevirt.io/v1
@@ -256,7 +257,7 @@ EOF
 
 Demonstrate cross-namespace network availability by creating a VM in the second namespace using the same CUDN with a different static IP.
 
-[source,yaml]
+[source,bash,role=execute]
 ----
 oc apply -f - <<EOF
 apiVersion: kubevirt.io/v1
@@ -349,7 +350,7 @@ EOF
 
 Access the VM consoles to verify dual network connectivity with VLAN configuration across namespaces.
 
-[source,bash]
+[source,bash,role=execute]
 ----
 # Check VMs in production namespace
 oc get vm -n vm-guests-vlan-prod
@@ -455,7 +456,7 @@ For OVS bridge and bridge mapping troubleshooting, including CUDN-specific verif
 
 === Verification Commands
 
-[source,bash]
+[source,bash,role=execute]
 ----
 # Check ClusterUserDefinedNetwork status
 oc get clusteruserdefinednetwork

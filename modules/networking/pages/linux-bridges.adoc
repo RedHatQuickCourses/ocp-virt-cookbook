@@ -93,7 +93,7 @@ NOTE: See the https://nmstate.io/devel/yaml_api.html[NMState API Guide,window=_b
 
 Once you've saved the file as `lnbr0-bridge.nncp.yaml`, go ahead and apply the `nncp` manifest to the OpenShift cluster:
 
-[source,bash]
+[source,bash,role=execute]
 ----
 oc create -f lnbr0-bridge.nncp.yaml
 ----
@@ -102,7 +102,7 @@ After a few moments, each applicable node in the cluster will have a new bridge 
 
 To view this progress in action, you can view the `NodeNetworkConfigurationEnactment` (`nnce`) object which executes actions pertaining to the `NodeNetworkConfigurationPolicy`:
 
-[source,bash]
+[source,bash,role=execute]
 ----
 oc get nnce
 ----
@@ -113,7 +113,7 @@ To confirm that the `lnbr0` interface exists on the node(s), you can either view
 
 To view the `NodeNetworkState` for all nodes in the cluster, fetch the `nns` resource, and optionally `grep` for the bridge interface:
 
-[source,bash]
+[source,bash,role=execute]
 ----
 oc describe nns | grep lnbr0
 ----
@@ -132,14 +132,14 @@ Neglecting to do so will prevent any VM with a bridge-based NIC from booting.
 
 First, create the namespace for your VMs if it doesn't already exist:
 
-[source,bash]
+[source,bash,role=execute]
 ----
 oc create namespace bridge-demo
 ----
 
 Then switch to that namespace:
 
-[source,bash]
+[source,bash,role=execute]
 ----
 oc project bridge-demo
 ----
@@ -198,14 +198,14 @@ More example configurations of the Linux bridge CNI plugin (including several ex
 
 Once the file is saved as `lnbr0-bridge.net-attach-def.yaml` (where `net-attach-def` is the valid k8s short-name), go ahead and apply the `network-attachment-definition` to the OpenShift cluster:
 
-[source,bash]
+[source,bash,role=execute]
 ----
 oc create -f lnbr0-bridge.net-attach-def.yaml
 ----
 
 Verify that the `network-attachment-definition` was successfully created:
 
-[source,bash]
+[source,bash,role=execute]
 ----
 oc get net-attach-def lnbr0-bridge
 ----
@@ -323,7 +323,7 @@ NOTE: The primary interface (`enp1s0`) uses masquerade and gets its IP from the 
 
 With the `VirtualMachine` manifest saved as a file named `fedora-bridge-demo.vm.yaml`, go ahead and apply it to the OpenShift cluster:
 
-[source,bash]
+[source,bash,role=execute]
 ----
 oc apply -f fedora-bridge-demo.vm.yaml
 ----
@@ -331,7 +331,7 @@ oc apply -f fedora-bridge-demo.vm.yaml
 Check the state of the `VirtualMachine`. It will take some time to clone the underlying `DataVolume` before the VM can be launched.
 You can proceed with creating the second VM rather than wait until the VM reaches the `Running` state.
 
-[source,bash]
+[source,bash,role=execute]
 ----
 oc get vm fedora-bridge-demo
 ----
@@ -414,14 +414,14 @@ spec:
 
 With the file saved as `fedora-bridge-demo2.vm.yaml`, apply this second `VirtualMachine` to the OpenShift cluster:
 
-[source,bash]
+[source,bash,role=execute]
 ----
 oc create -f fedora-bridge-demo2.vm.yaml
 ----
 
 Verify that both VMs are running, and check the `status` of the network `interfaces` by inspecting each `VirtualMachineInstance` (`vmi`) directly:
 
-[source,bash]
+[source,bash,role=execute]
 ----
 oc get vm -n bridge-demo
 oc get vmi fedora-bridge-demo -n bridge-demo -o jsonpath='{.status.interfaces}' | jq .
@@ -447,7 +447,7 @@ The simplest way to test is by connecting to the console on one VM (or optionall
 
 Access the console of the first VirtualMachine using the `virtctl` command and login as **user**:`fedora` with **password**:`fedora` (hit `ENTER` if no login prompt appears):
 
-[source,bash]
+[source,bash,role=execute]
 ----
 virtctl console fedora-bridge-demo
 ----
@@ -470,7 +470,7 @@ To exit the VM console, hit `CTRL+]`.
 
 To cleanup all of the resources from this exercise, simply switch to a different namespace and delete the `bridge-demo` namespace:
 
-[source,bash]
+[source,bash,role=execute]
 ----
 oc project default
 oc delete namespace bridge-demo 

@@ -86,7 +86,7 @@ Note the virtual size - you'll need to specify at least this much storage when c
 
 Create a namespace for your imported VM:
 
-[source,bash]
+[source,bash,role=execute]
 ----
 oc create namespace imported-vms
 ----
@@ -95,7 +95,7 @@ oc create namespace imported-vms
 
 Upload your qcow2 image directly using virtctl. The PVC will be created automatically:
 
-[source,bash]
+[source,bash,role=execute]
 ----
 virtctl image-upload pvc fedora-imported-disk \
   --image-path=./Fedora-Cloud-Base-Generic-43-1.6.x86_64.qcow2 \
@@ -134,7 +134,7 @@ NOTE: Upload time depends on your image size and network speed. A 1GB image typi
 
 In another terminal, you can monitor the upload process by checking the PVC status:
 
-[source,bash]
+[source,bash,role=execute]
 ----
 oc get pvc fedora-imported-disk -n imported-vms --watch
 ----
@@ -149,7 +149,7 @@ fedora-imported-disk   Bound     pvc-xxxxx                                  10Gi
 
 Check the cdi-upload pod logs if needed:
 
-[source,bash]
+[source,bash,role=execute]
 ----
 oc get pods -n imported-vms
 oc logs -n imported-vms cdi-upload-fedora-imported-disk -f
@@ -217,14 +217,14 @@ spec:
 
 Apply the VM manifest:
 
-[source,bash]
+[source,bash,role=execute]
 ----
 oc apply -f vm-from-imported-qcow2.yaml
 ----
 
 Start the VM:
 
-[source,bash]
+[source,bash,role=execute]
 ----
 virtctl start fedora-imported-vm -n imported-vms
 ----
@@ -233,7 +233,7 @@ virtctl start fedora-imported-vm -n imported-vms
 
 Monitor the VM startup:
 
-[source,bash]
+[source,bash,role=execute]
 ----
 oc get vmi -n imported-vms --watch
 ----
@@ -249,7 +249,7 @@ fedora-imported-vm   45s   Running     10.128.2.54    worker-01   True
 
 Access the VM console:
 
-[source,bash]
+[source,bash,role=execute]
 ----
 virtctl console fedora-imported-vm -n imported-vms
 ----
@@ -304,7 +304,7 @@ NOTE: The annotation `cdi.kubevirt.io/storage.bind.immediate.requested: "true"` 
 
 Apply the DataVolume and CDI will automatically download and import the image:
 
-[source,bash]
+[source,bash,role=execute]
 ----
 oc apply -f datavolume-http-import.yaml
 oc get dv -n imported-vms --watch
@@ -428,14 +428,14 @@ spec:
 
 Create the VM (this creates both the VM and DataVolume):
 
-[source,bash]
+[source,bash,role=execute]
 ----
 oc apply -f vm-with-upload-datavolume.yaml
 ----
 
 The DataVolume is created but the VM won't start yet because the disk has no data. Now upload your image:
 
-[source,bash]
+[source,bash,role=execute]
 ----
 virtctl image-upload dv vm-with-upload-disk \
   --image-path=./Fedora-Cloud-Base-Generic-43-1.6.x86_64.qcow2 \
@@ -447,7 +447,7 @@ virtctl image-upload dv vm-with-upload-disk \
 
 Once the upload completes, start the VM:
 
-[source,bash]
+[source,bash,role=execute]
 ----
 virtctl start vm-with-upload -n imported-vms
 ----
@@ -494,7 +494,7 @@ If the upload hangs waiting for the pod and the PVC shows "WaitForFirstConsumer"
 
 Check the PVC status:
 
-[source,bash]
+[source,bash,role=execute]
 ----
 oc get pvc -n imported-vms
 oc describe pvc fedora-imported-disk -n imported-vms
@@ -504,7 +504,7 @@ If you see "waiting for first consumer to be created before binding" in the even
 
 **Solution**: Add the `--force-bind` flag to your virtctl command:
 
-[source,bash]
+[source,bash,role=execute]
 ----
 virtctl image-upload pvc fedora-imported-disk \
   --image-path=./image.qcow2 \
@@ -516,7 +516,7 @@ virtctl image-upload pvc fedora-imported-disk \
 
 Delete the stuck PVC first:
 
-[source,bash]
+[source,bash,role=execute]
 ----
 oc delete pvc fedora-imported-disk -n imported-vms
 ----
@@ -527,7 +527,7 @@ Then retry with `--force-bind`.
 
 This error can occur with certain CDI versions when using DataVolume-based uploads. The solution is to use the PVC method instead (which this tutorial now uses):
 
-[source,bash]
+[source,bash,role=execute]
 ----
 # Use PVC upload (not DataVolume)
 virtctl image-upload pvc <pvc-name> \
@@ -543,7 +543,7 @@ Common causes:
 
 Check CDI pod status:
 
-[source,bash]
+[source,bash,role=execute]
 ----
 oc get pods -n openshift-cnv | grep cdi
 ----
@@ -552,7 +552,7 @@ oc get pods -n openshift-cnv | grep cdi
 
 Check CDI upload proxy pod status:
 
-[source,bash]
+[source,bash,role=execute]
 ----
 oc get pods -n openshift-cnv | grep cdi-uploadproxy
 oc logs -n openshift-cnv <cdi-uploadproxy-pod>
@@ -571,7 +571,7 @@ qemu-img info image.qcow2 | grep "virtual size"
 
 If the upload fails due to insufficient size, delete the PVC and retry with a larger size:
 
-[source,bash]
+[source,bash,role=execute]
 ----
 oc delete pvc fedora-imported-disk -n imported-vms
 
@@ -587,7 +587,7 @@ virtctl image-upload pvc fedora-imported-disk \
 
 Check VM events and logs:
 
-[source,bash]
+[source,bash,role=execute]
 ----
 oc describe vm fedora-imported-vm -n imported-vms
 oc get events -n imported-vms --field-selector involvedObject.name=fedora-imported-vm
@@ -595,7 +595,7 @@ oc get events -n imported-vms --field-selector involvedObject.name=fedora-import
 
 Access the console to see boot messages:
 
-[source,bash]
+[source,bash,role=execute]
 ----
 virtctl console fedora-imported-vm -n imported-vms
 ----
@@ -609,7 +609,7 @@ Common issues:
 
 To remove the resources created in this tutorial:
 
-[source,bash]
+[source,bash,role=execute]
 ----
 # Delete the VM
 oc delete vm fedora-imported-vm -n imported-vms

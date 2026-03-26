@@ -17,7 +17,7 @@ This guide provides troubleshooting steps, verification commands, and solutions 
 == Quick Health Checks
 
 === Check VM Status
-[source,bash]
+[source,bash,role=execute]
 ----
 oc get vm <vm-name> -n <namespace>
 oc get vmi <vm-name> -n <namespace>
@@ -31,7 +31,7 @@ my-vm       5m    Running   True
 ----
 
 === Check VM Has IP Address
-[source,bash]
+[source,bash,role=execute]
 ----
 oc get vmi <vm-name> -n <namespace> -o jsonpath='{.status.interfaces[*].ipAddress}'
 ----
@@ -39,7 +39,7 @@ oc get vmi <vm-name> -n <namespace> -o jsonpath='{.status.interfaces[*].ipAddres
 Should return at least one IP address.
 
 === Check VM Pod is Running
-[source,bash]
+[source,bash,role=execute]
 ----
 oc get pods -n <namespace> -l kubevirt.io/domain=<vm-name>
 ----
@@ -52,7 +52,7 @@ virt-launcher-<vm>-xxxxx   3/3     Running   0          5m
 ----
 
 === Check Guest Agent Status
-[source,bash]
+[source,bash,role=execute]
 ----
 oc get vmi <vm-name> -n <namespace> -o jsonpath='{.status.guestOSInfo.id}'
 ----
@@ -71,7 +71,7 @@ Error: unable to connect to console
 ----
 
 **Diagnosis**:
-[source,bash]
+[source,bash,role=execute]
 ----
 # Check VM is running
 oc get vm my-vm -n my-namespace
@@ -93,28 +93,28 @@ oc get pods -n my-namespace -l kubevirt.io/domain=my-vm
 
 . Start VM if stopped:
 +
-[source,bash]
+[source,bash,role=execute]
 ----
 virtctl start my-vm -n my-namespace
 ----
 
 . Wait for VMI to be ready:
 +
-[source,bash]
+[source,bash,role=execute]
 ----
 oc wait --for=condition=Ready vmi/my-vm -n my-namespace --timeout=60s
 ----
 
 . Check virt-launcher pod logs:
 +
-[source,bash]
+[source,bash,role=execute]
 ----
 oc logs -n my-namespace -l kubevirt.io/domain=my-vm
 ----
 
 . Verify virtctl version matches cluster:
 +
-[source,bash]
+[source,bash,role=execute]
 ----
 virtctl version
 oc get kubevirt -n openshift-cnv -o jsonpath='{.items[0].status.observedKubeVirtVersion}'
@@ -141,7 +141,7 @@ Console connects but shows blank screen or no prompt.
 
 . Wait for VM to fully boot (check VMI phase):
 +
-[source,bash]
+[source,bash,role=execute]
 ----
 oc get vmi my-vm -n my-namespace -o jsonpath='{.status.phase}'
 ----
@@ -150,7 +150,7 @@ oc get vmi my-vm -n my-namespace -o jsonpath='{.status.phase}'
    - Cloud images typically have this enabled by default
 . Try disconnect and reconnect:
 +
-[source,bash]
+[source,bash,role=execute]
 ----
 # Press Ctrl+] to disconnect
 virtctl console my-vm -n my-namespace
@@ -197,7 +197,7 @@ Error: VNC is not configured for this VM
 ----
 
 **Diagnosis**:
-[source,bash]
+[source,bash,role=execute]
 ----
 # Check if graphics is enabled
 oc get vm my-vm -n my-namespace -o jsonpath='{.spec.template.spec.domain.devices.autoattachGraphicsDevice}'
@@ -219,7 +219,7 @@ oc get vm my-vm -n my-namespace -o yaml | grep -A 10 "devices:"
 virtctl vnc command starts but VNC viewer cannot connect.
 
 **Diagnosis**:
-[source,bash]
+[source,bash,role=execute]
 ----
 # Check virtctl output for port number
 virtctl vnc my-vm -n my-namespace
@@ -284,7 +284,7 @@ Error: SSH is not available for this VM
 ----
 
 **Diagnosis**:
-[source,bash]
+[source,bash,role=execute]
 ----
 # Check VM has IP address
 oc get vmi my-vm -n my-namespace -o jsonpath='{.status.interfaces}'
@@ -312,13 +312,13 @@ sudo systemctl enable --now sshd
 ----
 . Verify VM has IP address:
 +
-[source,bash]
+[source,bash,role=execute]
 ----
 oc get vmi my-vm -n my-namespace -o jsonpath='{.status.interfaces[0].ipAddress}'
 ----
 . Test SSH connectivity:
 +
-[source,bash]
+[source,bash,role=execute]
 ----
 # Try port-forward method first
 oc port-forward vmi/my-vm -n my-namespace 2222:22 &
@@ -335,7 +335,7 @@ fedora@my-vm: Permission denied (publickey,gssapi-keyex,gssapi-with-mic).
 ----
 
 **Diagnosis**:
-[source,bash]
+[source,bash,role=execute]
 ----
 # Check SSH keys
 ls -la ~/.ssh/
@@ -382,7 +382,7 @@ Connection takes 30+ seconds to establish.
 
 **Solutions**:
 Add SSH options to skip slow authentication methods:
-[source,bash]
+[source,bash,role=execute]
 ----
 virtctl ssh --local-ssh-opts="-o GSSAPIAuthentication=no -o UseDNS=no" fedora@my-vm -n my-namespace
 ----
@@ -399,7 +399,7 @@ ssh: connect to host <node-ip> port 30022: Connection refused
 ----
 
 **Diagnosis**:
-[source,bash]
+[source,bash,role=execute]
 ----
 # Check service exists
 oc get svc -n my-namespace
@@ -440,13 +440,13 @@ spec:
 ----
 . Check selector matches VM:
 +
-[source,bash]
+[source,bash,role=execute]
 ----
 oc get vm my-vm -n my-namespace -o jsonpath='{.spec.template.metadata.labels}'
 ----
 . Verify SSH is running in VM:
 +
-[source,bash]
+[source,bash,role=execute]
 ----
 virtctl console my-vm -n my-namespace
 # Inside VM:
@@ -459,7 +459,7 @@ systemctl status sshd
 SSH connects but to wrong VM or gets connection refused.
 
 **Diagnosis**:
-[source,bash]
+[source,bash,role=execute]
 ----
 # Check service endpoints
 oc describe svc my-vm-ssh -n my-namespace
@@ -484,7 +484,7 @@ selector:
 ----
 . Verify only one endpoint:
 +
-[source,bash]
+[source,bash,role=execute]
 ----
 oc get endpoints my-vm-ssh -n my-namespace -o yaml
 ----
@@ -495,7 +495,7 @@ oc get endpoints my-vm-ssh -n my-namespace -o yaml
 Unable to determine which node IP to use for NodePort access.
 
 **Solutions**:
-[source,bash]
+[source,bash,role=execute]
 ----
 # Get node IPs
 oc get nodes -o wide
@@ -520,7 +520,7 @@ my-vm-ssh    LoadBalancer   172.30.x.x      <pending>     22:30022/TCP
 ----
 
 **Diagnosis**:
-[source,bash]
+[source,bash,role=execute]
 ----
 # Check if LoadBalancer provider is available
 oc get svc -A | grep LoadBalancer
@@ -540,7 +540,7 @@ oc describe svc my-vm-ssh -n my-namespace
 . For cloud deployments, ensure cloud provider integration is configured
 . Check LoadBalancer events:
 +
-[source,bash]
+[source,bash,role=execute]
 ----
 oc describe svc my-vm-ssh -n my-namespace
 ----
@@ -552,7 +552,7 @@ oc describe svc my-vm-ssh -n my-namespace
 External IP assigned but SSH connection times out.
 
 **Diagnosis**:
-[source,bash]
+[source,bash,role=execute]
 ----
 # Check LoadBalancer IP
 LB_IP=$(oc get svc my-vm-ssh -n my-namespace -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
@@ -588,7 +588,7 @@ Error: unable to forward port
 ----
 
 **Diagnosis**:
-[source,bash]
+[source,bash,role=execute]
 ----
 # Check VMI exists
 oc get vmi my-vm -n my-namespace
@@ -607,7 +607,7 @@ lsof -i :2222
 
 . Use different local port:
 +
-[source,bash]
+[source,bash,role=execute]
 ----
 oc port-forward vmi/my-vm -n my-namespace 12345:22
 ----
@@ -620,7 +620,7 @@ lsof -ti :2222 | xargs kill -9
 ----
 . Wait for VMI to be ready:
 +
-[source,bash]
+[source,bash,role=execute]
 ----
 oc wait --for=condition=Ready vmi/my-vm -n my-namespace
 ----
@@ -638,7 +638,7 @@ ssh: connect to host localhost port 2222: Connection refused
 ----
 
 **Diagnosis**:
-[source,bash]
+[source,bash,role=execute]
 ----
 # Check SSH is listening in VM
 virtctl console my-vm -n my-namespace
@@ -696,7 +696,7 @@ ssh -o ServerAliveInterval=60 -p 2222 fedora@localhost
 ----
 . Run port-forward in background with restart:
 +
-[source,bash]
+[source,bash,role=execute]
 ----
 while true; do
   oc port-forward vmi/my-vm -n my-namespace 2222:22
@@ -716,7 +716,7 @@ Request timeout
 ----
 
 **Diagnosis**:
-[source,bash]
+[source,bash,role=execute]
 ----
 # Check VM has secondary interface configured
 oc get vmi my-vm -n my-namespace -o jsonpath='{.status.interfaces}' | jq
@@ -739,7 +739,7 @@ oc get vm my-vm -n my-namespace -o jsonpath='{.spec.template.spec.networks}' | j
 
 . Verify NAD is correctly configured:
 +
-[source,bash]
+[source,bash,role=execute]
 ----
 oc describe network-attachment-definition my-nad -n my-namespace
 ----
@@ -766,7 +766,7 @@ spec:
 ----
 . Check IP configuration in VM:
 +
-[source,bash]
+[source,bash,role=execute]
 ----
 virtctl console my-vm -n my-namespace
 # Inside VM:
@@ -781,7 +781,7 @@ ip addr show enp2s0  # Secondary interface
 Only primary interface (enp1s0) visible, no enp2s0.
 
 **Diagnosis**:
-[source,bash]
+[source,bash,role=execute]
 ----
 # Inside VM
 ip link show
@@ -799,20 +799,20 @@ oc get vmi my-vm -n my-namespace -o jsonpath='{.status.interfaces}' | jq
 
 . Check NAD in correct namespace:
 +
-[source,bash]
+[source,bash,role=execute]
 ----
 oc get network-attachment-definition -n my-namespace
 ----
 . Verify VM spec has both network and interface defined
 . Check multus logs:
 +
-[source,bash]
+[source,bash,role=execute]
 ----
 oc logs -n openshift-multus -l app=multus
 ----
 . Check virt-launcher pod events:
 +
-[source,bash]
+[source,bash,role=execute]
 ----
 POD=$(oc get pods -n my-namespace -l kubevirt.io/domain=my-vm -o name)
 oc describe $POD -n my-namespace
@@ -822,7 +822,7 @@ oc describe $POD -n my-namespace
 
 === Complete VM Access Health Check Script
 
-[source,bash]
+[source,bash,role=execute]
 ----
 #!/bin/bash
 NAMESPACE="my-namespace"
