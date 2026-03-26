@@ -488,7 +488,7 @@ Ensure the bridge name in the mapping NNCP matches the actual OVS bridge name ex
 # Check logical name in bridge mapping
 oc get nncp localnet-vlan-bridge-mapping -o jsonpath='{.spec.desiredState.ovn.bridge-mappings[0].localnet}'
 
-# Check NetworkAttachmentDefinition or CUDN references the same name
+# Check NetworkAttachmentDefinition or ClusterUserDefinedNetwork (CUDN) references the same name
 oc get network-attachment-definitions <nad-name> -n <namespace> -o yaml
 ----
 
@@ -540,7 +540,7 @@ Use this checklist to verify your OVS bridge and bridge mappings are correctly c
 * [ ] Bridge mapping NNCP shows `Available: True`
 * [ ] `ovs-vsctl get Open_vSwitch . external_ids:ovn-bridge-mappings` includes your mapping
 * [ ] Mapping format is correct: `logical-name:bridge-name`
-* [ ] Logical network name matches what you'll use in NAD/CUDN
+* [ ] Logical network name matches what you'll use in NetworkAttachmentDefinition (NAD) / CUDN
 * [ ] Bridge name in mapping matches actual OVS bridge
 * [ ] Physical interface is attached to the bridge (`ovs-vsctl list-ports`)
 * [ ] No conflicts with other bridge mappings
