@@ -11,9 +11,9 @@ When you create a VM or clone a disk, OpenShift needs to know:
 Instead of forcing developers to specify these details manually every time they deploy a VM, the StorageProfile maps the optimal accessModes and volumeMode to a specific StorageClass.
 
 == Default Storage Profile Configuration
-You rarely need to create a StorageProfile from scratch. The CDI controller actively monitors your cluster. Whenever a new StorageClass is created (e.g., by your CSI driver like OpenShift Data Foundation/Ceph or a SAN plugin), CDI automatically generates a matching StorageProfile with the exact same name.
+In general, the CDI controller actively monitors your cluster. Whenever a new StorageClass is created (e.g., by your CSI driver like OpenShift Data Foundation/Ceph or a SAN plugin), CDI automatically generates a matching StorageProfile with the exact same name.
 
-CDI attempts to auto-detect the optimal parameters by querying the CSI driver's capabilities. If it cannot determine the optimal settings, it falls back to empty defaults, which typically resolve to ReadWriteOnce and Filesystem.
+However, if the CDI does not configure a storage profile automatically, you will have to create your own.
 
 == Storage Profile Parameters
 To customize a storage profile, you define Claim Property Sets (claimPropertySets). These sets represent the preferred configurations when provisioning a PVC for a VM.
@@ -94,3 +94,6 @@ status:
 * Symptom: When cloning a VM from a template, the DataVolume gets stuck, and events show "DataVolume.storage spec is missing accessMode and volumeMode, cannot get access mode from StorageProfile".
 * Cause: The StorageProfile for your destination StorageClass has empty or misconfigured claimPropertySets. The cloner doesn't know what access mode or volume mode to use.
 * Fix: Explicitly define the claimPropertySets in the StorageProfile using the oc patch command shown in Section 4.
+
+
+For more information on storage profiles, see https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/virtualization/storage#virt-configuring-storage-profile[the official documentation].
