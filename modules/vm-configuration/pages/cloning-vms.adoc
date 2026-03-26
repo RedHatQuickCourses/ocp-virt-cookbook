@@ -103,7 +103,7 @@ Deploy a source VM with nginx pre-installed:
 
 WARNING: The cloud-init password in this example is for demo purposes only. Always use a strong, unique password or SSH key authentication in production environments.
 
-xref:attachment$source-webserver-vm.yaml[Download source-webserver-vm.yaml]
+xref:attachment$cloning-vms/source-webserver-vm.yaml[Download source-webserver-vm.yaml]
 
 [source,yaml]
 ----
@@ -263,7 +263,7 @@ source-webserver-disk   Bound    pvc-1234abcd-5678-efgh-9012-ijklmnop3456   30Gi
 
 Create a standalone DataVolume that clones the source PVC:
 
-xref:attachment$clone-datavolume.yaml[Download clone-datavolume.yaml]
+xref:attachment$cloning-vms/clone-datavolume.yaml[Download clone-datavolume.yaml]
 
 [source,yaml]
 ----
@@ -319,7 +319,7 @@ webserver-clone-2-disk   Succeeded                           100.0%             
 
 Once the DataVolume shows `Succeeded`, create a VM that uses the cloned disk:
 
-xref:attachment$vm-from-cloned-pvc.yaml[Download vm-from-cloned-pvc.yaml]
+xref:attachment$cloning-vms/vm-from-cloned-pvc.yaml[Download vm-from-cloned-pvc.yaml]
 
 [source,yaml]
 ----
@@ -528,7 +528,7 @@ oc get dv webserver-custom-disk -n vm-cloning-demo -w
 
 Create a VM with cloud-init customization:
 
-xref:attachment$cloned-vm-with-cloudinit.yaml[Download cloned-vm-with-cloudinit.yaml]
+xref:attachment$cloning-vms/cloned-vm-with-cloudinit.yaml[Download cloned-vm-with-cloudinit.yaml]
 
 [source,yaml]
 ----
@@ -637,7 +637,7 @@ oc create namespace vm-cloning-production
 
 The service account in the target namespace needs permission to access PVCs in the source namespace:
 
-xref:attachment$cross-namespace-clone-rbac.yaml[Download cross-namespace-clone-rbac.yaml]
+xref:attachment$cloning-vms/cross-namespace-clone-rbac.yaml[Download cross-namespace-clone-rbac.yaml]
 
 [source,yaml]
 ----
@@ -680,7 +680,7 @@ oc apply -f cross-namespace-clone-rbac.yaml
 
 Create a DataVolume in the production namespace that clones from the demo namespace:
 
-xref:attachment$cross-namespace-clone-datavolume.yaml[Download cross-namespace-clone-datavolume.yaml]
+xref:attachment$cloning-vms/cross-namespace-clone-datavolume.yaml[Download cross-namespace-clone-datavolume.yaml]
 
 [source,yaml]
 ----
@@ -720,7 +720,7 @@ oc get dv -n vm-cloning-production -w
 
 Create production VM:
 
-xref:attachment$cloned-webserver-production.yaml[Download cloned-webserver-production.yaml]
+xref:attachment$cloning-vms/cloned-webserver-production.yaml[Download cloned-webserver-production.yaml]
 
 [source,yaml]
 ----

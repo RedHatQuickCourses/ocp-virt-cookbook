@@ -89,7 +89,7 @@ HPP requires a directory on each node where volumes will be stored. This directo
 
 Create a MachineConfig to ensure the directory exists on all worker nodes and persists across reboots:
 
-xref:attachment$hpp-machineconfig.yaml[Download hpp-machineconfig.yaml]
+xref:attachment$hostpath-provisioner/hpp-machineconfig.yaml[Download hpp-machineconfig.yaml]
 
 [source,bash,role=execute]
 ----
@@ -186,7 +186,7 @@ The `container_file_t` SELinux context allows containers to read and write to th
 
 Create the HostPathProvisioner custom resource to configure the CSI driver:
 
-xref:attachment$hpp-hostpathprovisioner.yaml[Download hpp-hostpathprovisioner.yaml]
+xref:attachment$hostpath-provisioner/hpp-hostpathprovisioner.yaml[Download hpp-hostpathprovisioner.yaml]
 
 [source,bash,role=execute]
 ----
@@ -248,7 +248,7 @@ hostpath-provisioner-csi-zzzzz                 4/4     Running   0          2m
 
 Create a StorageClass that uses the HostPath Provisioner:
 
-xref:attachment$hpp-storageclass.yaml[Download hpp-storageclass.yaml]
+xref:attachment$hostpath-provisioner/hpp-storageclass.yaml[Download hpp-storageclass.yaml]
 
 [source,bash,role=execute]
 ----
@@ -306,7 +306,7 @@ oc patch storageclass <existing-default> -p '{"metadata": {"annotations":{"stora
 
 Create a test PVC to verify HPP is working:
 
-xref:attachment$hpp-test-pvc.yaml[Download hpp-test-pvc.yaml]
+xref:attachment$hostpath-provisioner/hpp-test-pvc.yaml[Download hpp-test-pvc.yaml]
 
 [source,bash,role=execute]
 ----
@@ -405,7 +405,7 @@ Create a VM that uses HPP-backed storage:
 
 WARNING: The cloud-init password in this example is for demo purposes only. Always use a strong, unique password or SSH key authentication in production environments.
 
-xref:attachment$hpp-test-vm.yaml[Download hpp-test-vm.yaml]
+xref:attachment$hostpath-provisioner/hpp-test-vm.yaml[Download hpp-test-vm.yaml]
 
 [source,bash,role=execute]
 ----

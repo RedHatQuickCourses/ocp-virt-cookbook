@@ -23,7 +23,7 @@ Create a namespace with the UDN primary network label to enable User Defined Net
 
 NOTE: The namespace must be created and labeled before any workload deployment happens and cannot be changed once created.
 
-xref:attachment$udn-primary-namespace.yaml[Download udn-primary-namespace.yaml]
+xref:attachment$udn-primary-networks/udn-primary-namespace.yaml[Download udn-primary-namespace.yaml]
 
 [source,bash,role=execute]
 ----
@@ -41,7 +41,7 @@ EOF
 
 Define the primary UDN with Layer2 topology and custom subnet configuration. This resource specifies the network characteristics including IP range, IPAM lifecycle, and primary role designation to override default cluster networking for pods in the namespace.
 
-xref:attachment$udn-primary.yaml[Download udn-primary.yaml]
+xref:attachment$udn-primary-networks/udn-primary.yaml[Download udn-primary.yaml]
 
 [source,bash,role=execute]
 ----
@@ -68,7 +68,7 @@ Create a virtual machine that utilizes the primary UDN configuration and runs a 
 
 WARNING: The cloud-init password in this example is for demo purposes only. Always use a strong, unique password or SSH key authentication in production environments.
 
-xref:attachment$fedora-vm-with-udn.yaml[Download fedora-vm-with-udn.yaml]
+xref:attachment$udn-primary-networks/fedora-vm-with-udn.yaml[Download fedora-vm-with-udn.yaml]
 
 [source,bash,role=execute]
 ----
@@ -153,7 +153,7 @@ Create a Kubernetes Service to expose the VM's Python HTTP server with a LoadBal
 
 NOTE: Cloud services like AWS automatically deploy a load balancer for this configuration. For bare metal deployments, consider using link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.19/html/ingress_and_load_balancing/load-balancing-with-metallb[MetalLB,window=_blank] as your load balancer.
 
-xref:attachment$fedora-vm-web-service.yaml[Download fedora-vm-web-service.yaml]
+xref:attachment$udn-primary-networks/fedora-vm-web-service.yaml[Download fedora-vm-web-service.yaml]
 
 [source,bash,role=execute]
 ----
