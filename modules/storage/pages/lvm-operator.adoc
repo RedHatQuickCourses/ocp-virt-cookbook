@@ -552,9 +552,17 @@ oc debug node/<node-name> -- chroot /host df -h | grep sda
 oc debug node/<node-name> -- chroot /host lsblk -d -o NAME,SERIAL /dev/sda
 ----
 
-== See Also
+== Summary
 
-=== OpenShift Documentation
+In this tutorial, you learned:
+
+* How to identify available spare disks on cluster nodes for LVM storage
+* How to install the LVM Storage operator by creating the namespace, OperatorGroup, and Subscription
+* How to create and configure an LVMCluster resource, including the `forceWipeDevicesAndDestroyAllData` parameter for disks with existing data
+* How to set the auto-generated `lvms-vg1` StorageClass as the default for OpenShift Virtualization
+* How to test storage provisioning with a PVC and pod, and verify the LVMCluster health
+
+== See Also
 
 * link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/storage/persistent-storage-using-local-storage#persistent-storage-using-lvms[Persistent Storage Using LVM Storage,window=_blank]
 * link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/storage/understanding-persistent-storage#storage-classes_understanding-persistent-storage[Understanding Persistent Storage,window=_blank]

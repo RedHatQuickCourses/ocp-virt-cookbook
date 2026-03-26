@@ -268,9 +268,17 @@ oc get vmi -n vm-guests-vlan -o yaml | grep -A 10 networks
 oc logs -n openshift-ovn-kubernetes -l app=ovnkube-node
 ----
 
-== See Also
+== Summary
 
-=== OpenShift Documentation
+In this tutorial, you learned:
+
+* How to configure a bridge mapping with VLAN support using a `NodeNetworkConfigurationPolicy` on worker nodes
+* How to create a `NetworkAttachmentDefinition` with localnet topology, VLAN tagging, and OVN-Kubernetes IPAM
+* How physical switch ports must be configured in trunk mode to support VLAN-tagged traffic
+* How to deploy a VM with dual network connectivity combining pod network and VLAN-tagged localnet
+* How to verify VLAN network configuration and troubleshoot common VLAN connectivity issues
+
+== See Also
 
 * link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.19/html/multiple_networks/understanding-multiple-networks[OpenShift - Understanding Multiple Networks,window=_blank]
 * link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.19/html/virtualization/networking#virt-creating-secondary-localnet-udn_virt-connecting-vm-to-secondary-udn[Localnet Topology Configuration for OCP Virtualization,window=_blank]

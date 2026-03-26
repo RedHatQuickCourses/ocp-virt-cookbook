@@ -170,7 +170,22 @@ Openshift documentation: https://docs.redhat.com/en/documentation/openshift_cont
   ** Cause: The CSI driver specified in provisioner: is not installed or crashing.
   ** Fix: Check the storage operator pods in the relevant namespace (e.g., openshift-cluster-csi-drivers).
 
-* **Issue 4:** Volume Resize Fails 
+* **Issue 4:** Volume Resize Fails
   ** Cause: allowVolumeExpansion is set to false in the StorageClass.
-  ** Fix: Edit the StorageClass to true 
+  ** Fix: Edit the StorageClass to true
   NOTE: not all provisioners support online expansion.
+
+== Summary
+
+In this tutorial, you learned:
+
+* The role of StorageClasses in OpenShift and how they define different storage tiers for dynamic provisioning
+* Key StorageClass parameters including provisioner, reclaim policy, volume binding mode, and volume expansion
+* The difference between `Immediate` and `WaitForFirstConsumer` volume binding modes and when to use each
+* How to create StorageClass definitions for AWS EBS, local LVM, and NFS storage backends
+* Common troubleshooting scenarios such as PVCs stuck in Pending, topology mismatches, and volume resize failures
+
+== See Also
+
+* link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/storage/configuring-persistent-storage[OpenShift - Configuring Persistent Storage,window=_blank]
+* link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/storage/using-container-storage-interface-csi[OpenShift - Container Storage Interface,window=_blank]
