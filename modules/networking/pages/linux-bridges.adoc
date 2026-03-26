@@ -473,6 +473,21 @@ To cleanup all of the resources from this exercise, simply switch to a different
 [source,bash,role=execute]
 ----
 oc project default
-oc delete namespace bridge-demo 
+oc delete namespace bridge-demo
 ----
+
+== Summary
+
+In this tutorial, you learned:
+
+* How to create a Linux bridge on cluster nodes using a `NodeNetworkConfigurationPolicy` with the NMState Operator
+* How to create a `NetworkAttachmentDefinition` using the bridge CNI plugin to expose the bridge network to VMs
+* How to configure VirtualMachines with both a primary masquerade interface and a secondary bridge interface
+* How to assign static IP addresses on the bridge network using cloud-init `networkData`
+* How to verify Layer 2 connectivity between VMs on the Linux bridge secondary network
+
+== See Also
+
+* link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/virtualization/networking#virt-connecting-vm-to-linux-bridge_virt-connecting-vm-to-linux-bridge[OpenShift Virtualization - Connecting a VM to a Linux bridge,window=_blank]
+* link:https://nmstate.io/devel/yaml_api.html[NMState API Guide,window=_blank]
 
