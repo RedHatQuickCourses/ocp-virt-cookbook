@@ -27,7 +27,6 @@ Read and follow all rules in `.cursor/rules/shared-constraints.mdc` and `.cursor
 | vm-configuration | Cloud-init, golden images, snapshots, cloning, node placement |
 | manifests | Reference manifests |
 | api | API component overview |
-| lab-env | Lab environment setup |
 | appendix | Glossary, reference material |
 
 ## Invocation and Argument Parsing
