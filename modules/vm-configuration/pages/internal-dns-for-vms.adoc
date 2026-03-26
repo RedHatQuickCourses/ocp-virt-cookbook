@@ -23,7 +23,7 @@ This tutorial demonstrates how to make virtual machines discoverable via stable 
 
 Create a dedicated namespace for this tutorial:
 
-[source,bash]
+[source,bash,role=execute]
 ----
 oc new-project myapp
 ----
@@ -36,7 +36,7 @@ WARNING: The cloud-init password in this example is for demo purposes only. Alwa
 
 xref:attachment$internal-dns-for-vms/fedora-app-vm.yaml[Download fedora-app-vm.yaml]
 
-[source,bash]
+[source,bash,role=execute]
 ----
 oc apply -f - <<EOF
 apiVersion: kubevirt.io/v1
@@ -114,7 +114,7 @@ Create a headless Service that targets the VM:
 
 xref:attachment$internal-dns-for-vms/headless-service.yaml[Download headless-service.yaml]
 
-[source,bash]
+[source,bash,role=execute]
 ----
 oc apply -f - <<EOF
 apiVersion: v1
@@ -136,7 +136,7 @@ EOF
 
 Verify the Service and its EndpointSlice:
 
-[source,bash]
+[source,bash,role=execute]
 ----
 oc get svc myapp-service -n myapp
 oc get endpointslice -n myapp -l kubernetes.io/service-name=myapp-service
@@ -152,7 +152,7 @@ The EndpointSlice should show the VM's pod IP address in the ENDPOINTS column.
 
 Create a debug pod to test DNS resolution and connectivity:
 
-[source,bash]
+[source,bash,role=execute]
 ----
 oc apply -f - <<EOF
 apiVersion: v1
@@ -284,7 +284,7 @@ The client receives the IP address and establishes a direct connection to the VM
 
 **Check Service and EndpointSlice:**
 
-[source,bash]
+[source,bash,role=execute]
 ----
 # View Service details
 oc get svc myapp-service -n myapp
@@ -298,7 +298,7 @@ oc describe svc myapp-service -n myapp
 
 **Test DNS Resolution and Connectivity:**
 
-[source,bash]
+[source,bash,role=execute]
 ----
 # Create debug pod (if not already exists)
 oc apply -f - <<EOF
@@ -336,7 +336,7 @@ oc delete pod debug-dns -n myapp
 
 **Check VM Labels:**
 
-[source,bash]
+[source,bash,role=execute]
 ----
 # Verify VM labels match Service selector
 oc get vm fedora-app-vm -n myapp -o jsonpath='{.metadata.labels}'
@@ -349,7 +349,7 @@ oc get svc myapp-service -n myapp -o jsonpath='{.spec.selector}'
 
 **Diagnosis:**
 
-[source,bash]
+[source,bash,role=execute]
 ----
 oc get svc myapp-service -n myapp
 oc get endpointslice -n myapp -l kubernetes.io/service-name=myapp-service
@@ -371,7 +371,7 @@ oc get endpointslice -n myapp -l kubernetes.io/service-name=myapp-service
 
 **Diagnosis:**
 
-[source,bash]
+[source,bash,role=execute]
 ----
 # Create debug pod in different namespace
 oc new-project test-namespace 2>/dev/null || true

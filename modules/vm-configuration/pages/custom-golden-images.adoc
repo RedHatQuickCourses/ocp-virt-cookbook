@@ -43,7 +43,7 @@ The process involves these steps:
 
 Create a namespace for the golden image workflow:
 
-[source,bash]
+[source,bash,role=execute]
 ----
 oc create namespace golden-images
 ----
@@ -120,14 +120,14 @@ spec:
 
 Save this as `base-fedora-vm.yaml` and deploy:
 
-[source,bash]
+[source,bash,role=execute]
 ----
 oc apply -f base-fedora-vm.yaml
 ----
 
 Wait for the VM to be ready. This may take several minutes as the DataVolume clones from the source image:
 
-[source,bash]
+[source,bash,role=execute]
 ----
 oc get dv -n golden-images
 ----
@@ -141,7 +141,7 @@ base-fedora-vm-disk   CloneInProgress   45.2%                 2m
 
 Once the DataVolume shows `Succeeded`, check the VM status:
 
-[source,bash]
+[source,bash,role=execute]
 ----
 oc get vmi -n golden-images
 ----
@@ -159,7 +159,7 @@ Note: Initial disk cloning typically takes 3-5 minutes depending on your storage
 
 Access the VM console:
 
-[source,bash]
+[source,bash,role=execute]
 ----
 virtctl console base-fedora-vm -n golden-images
 ----
@@ -233,14 +233,14 @@ Exit the console by pressing `Ctrl+]`.
 
 Stop the VM to capture its disk:
 
-[source,bash]
+[source,bash,role=execute]
 ----
 virtctl stop base-fedora-vm -n golden-images
 ----
 
 Verify it's stopped:
 
-[source,bash]
+[source,bash,role=execute]
 ----
 oc get vm -n golden-images
 ----
@@ -276,14 +276,14 @@ spec:
 
 Save as `fedora-golden-datasource.yaml` and apply:
 
-[source,bash]
+[source,bash,role=execute]
 ----
 oc apply -f fedora-golden-datasource.yaml
 ----
 
 Verify the DataSource:
 
-[source,bash]
+[source,bash,role=execute]
 ----
 oc get datasource -n golden-images
 ----
@@ -433,7 +433,7 @@ spec:
 
 Deploy both VMs:
 
-[source,bash]
+[source,bash,role=execute]
 ----
 oc apply -f webserver-vm-1.yaml
 oc apply -f webserver-vm-2.yaml
@@ -441,7 +441,7 @@ oc apply -f webserver-vm-2.yaml
 
 Monitor the cloning process:
 
-[source,bash]
+[source,bash,role=execute]
 ----
 oc get dv -n golden-images
 ----
@@ -461,7 +461,7 @@ The DataVolumes will clone from the golden image. This typically takes 3-5 minut
 
 Check that both VMs are running:
 
-[source,bash]
+[source,bash,role=execute]
 ----
 oc get vmi -n golden-images
 ----
@@ -476,7 +476,7 @@ webserver-vm-2   5m    Running   10.128.1.153   ocplab01   True
 
 Access one of the VMs and verify nginx is pre-installed:
 
-[source,bash]
+[source,bash,role=execute]
 ----
 virtctl console webserver-vm-1 -n golden-images
 ----
@@ -552,7 +552,7 @@ If you encounter issues during any step of this tutorial, refer to the xref:gold
 
 To clean up the resources created in this tutorial:
 
-[source,bash]
+[source,bash,role=execute]
 ----
 # Delete VMs
 oc delete vm webserver-vm-1 webserver-vm-2 base-fedora-vm -n golden-images

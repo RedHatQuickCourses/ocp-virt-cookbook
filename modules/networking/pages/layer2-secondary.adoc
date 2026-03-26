@@ -46,14 +46,14 @@ as well as the `VirtualMachines` you wish to attach to the network. It does not 
 
 You can easily create a new namespace using the `oc` binary, without the need to define any yaml:
 
-[source,bash]
+[source,bash,role=execute]
 ----
 oc create namespace example-l2-secondary
 ----
 
 Now that the new namespace is created, it's best to switch your current kube context (cluster and namespace that you're currently working in) to the new namespace or project (in OpenShift terms).
 
-[source,bash]
+[source,bash,role=execute]
 ----
 oc project example-l2-secondary
 ----
@@ -87,14 +87,14 @@ spec:
 
 Apply the `NetworkAttachmentDefinition` into the pre-defined namespace `example-l2-secondary` on the OpenShift cluster using `oc apply`:
 
-[source,bash]
+[source,bash,role=execute]
 ----
 oc apply -f l2-network.nad.yaml
 ----
 
 Check to make sure that the `NetworkAttachmentDefinition` creation was successful. The `l2-network` must exist in the `example-l2-secondary` namespace before proceeding:
 
-[source,bash]
+[source,bash,role=execute]
 ----
 oc get net-attach-def l2-network -n example-l2-secondary
 ----
@@ -203,14 +203,14 @@ Regarding the fields in the above example (relative to `spec.template.spec`):
 
 You can create a new VirtualMachine on the OpenShift cluster (in the current namespace, `example-l2-secondary`) using `oc create`:
 
-[source,bash]
+[source,bash,role=execute]
 ----
 oc create -f fedora-l2-secondary.vm.yaml
 ----
 
 Check that the `fedora-l2-secondary` VM is up and running in the `example-l2-secondary` namespace before proceeding. You may have to run the command a few times while in the `Provisioning` state:
 
-[source,bash]
+[source,bash,role=execute]
 ----
 oc get vm fedora-l2-secondary -n example-l2-secondary
 ----
@@ -304,14 +304,14 @@ spec:
 
 Apply the `VirtualMachine` to the current namespace on the OpenShift cluster:
 
-[source,bash]
+[source,bash,role=execute]
 ----
 oc apply -f fedora-l2-secondary2.vm.yaml
 ----
 
 Check that the second VM named `fedora-l2-secondary2` is up and running in the `example-l2-secondary` namespace. Both `VirtualMachines` should be running prior to <<testing_secondary_network,testing>>:
 
-[source,bash]
+[source,bash,role=execute]
 ----
 oc get vm fedora-l2-secondary2 -n example-l2-secondary
 ----
@@ -331,7 +331,7 @@ The simplest way to test is by connecting to the console on one VM (or optionall
 
 Access the console of the first `VirtualMachine` using the `virtctl` command and login as **user**:`fedora` with **password**:`fedora` (hit `ENTER` if no login prompt appears):
 
-[source,bash]
+[source,bash,role=execute]
 ----
 virtctl console fedora-l2-secondary
 ----
@@ -354,7 +354,7 @@ To exit the VM console, hit `CTRL+]`.
 
 To cleanup all of the resources from this exercise, simply switch to a different namespace and delete the `example-l2-secondary` namespace:
 
-[source,bash]
+[source,bash,role=execute]
 ----
 oc project default
 oc delete namespace example-l2-secondary

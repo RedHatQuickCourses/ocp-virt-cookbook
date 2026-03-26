@@ -70,7 +70,7 @@ ip-10-0-82-27.ec2.internal    Ready    worker                 22d   v1.31.14   b
 
 Label nodes based on their characteristics (hardware, location, workload type):
 
-[source,bash]
+[source,bash,role=execute]
 ----
 # Get worker node names
 WORKER1=$(oc get nodes -l node-role.kubernetes.io/worker -o jsonpath='{.items[0].metadata.name}')
@@ -95,7 +95,7 @@ oc label node $WORKER1 workload=database
 
 Verify labels:
 
-[source,bash]
+[source,bash,role=execute]
 ----
 WORKER1=$(oc get nodes -l node-role.kubernetes.io/worker -o jsonpath='{.items[0].metadata.name}')
 oc get node $WORKER1 -o jsonpath='{.metadata.labels}' | jq
@@ -120,7 +120,7 @@ Example output:
 
 === Remove Labels
 
-[source,bash]
+[source,bash,role=execute]
 ----
 WORKER1=$(oc get nodes -l node-role.kubernetes.io/worker -o jsonpath='{.items[0].metadata.name}')
 oc label node $WORKER1 gpu-
@@ -215,7 +215,7 @@ database-vm   45s   Running   10.128.0.200   ocplab02   True
 
 Verify the node has the required label:
 
-[source,bash]
+[source,bash,role=execute]
 ----
 oc get vmi database-vm -n vm-placement -o jsonpath='{.status.nodeName}' | xargs oc get node -L storage
 ----
