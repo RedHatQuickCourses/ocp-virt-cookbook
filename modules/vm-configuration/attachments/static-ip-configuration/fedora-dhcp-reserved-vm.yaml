@@ -1,14 +1,14 @@
 apiVersion: kubevirt.io/v1
 kind: VirtualMachine
 metadata:
-  name: fedora-static-vm
-  namespace: cloud-init-demo
+  name: fedora-dhcp-reserved-vm
+  namespace: static-ip-demo
 spec:
   dataVolumeTemplates:
     - apiVersion: cdi.kubevirt.io/v1beta1
       kind: DataVolume
       metadata:
-        name: fedora-static-vm-disk
+        name: fedora-dhcp-reserved-vm-disk
       spec:
         sourceRef:
           kind: DataSource
@@ -22,7 +22,7 @@ spec:
   template:
     metadata:
       labels:
-        kubevirt.io/domain: fedora-static-vm
+        kubevirt.io/domain: fedora-dhcp-reserved-vm
     spec:
       domain:
         cpu:
@@ -38,6 +38,9 @@ spec:
           interfaces:
             - masquerade: {}
               name: default
+            - bridge: {}
+              name: vlan-network
+              macAddress: "02:00:00:01:00:01"
           rng: {}
         machine:
           type: pc-q35-rhel9.4.0
@@ -46,9 +49,12 @@ spec:
       networks:
         - name: default
           pod: {}
+        - name: vlan-network
+          multus:
+            networkName: localnet-vlan-100
       volumes:
         - dataVolume:
-            name: fedora-static-vm-disk
+            name: fedora-dhcp-reserved-vm-disk
           name: rootdisk
         - cloudInitNoCloud:
             userData: |-
@@ -57,19 +63,4 @@ spec:
               password: fedora123
               chpasswd: { expire: False }
               ssh_pwauth: True
-            networkData: |-
-              version: 2
-              ethernets:
-                enp1s0:
-                  dhcp4: false
-                  dhcp6: false
-                  addresses:
-                    - 10.128.1.100/23
-                  routes:
-                    - to: default
-                      via: 10.128.1.1
-                  nameservers:
-                    addresses:
-                      - 8.8.8.8
-                      - 8.8.4.4
           name: cloudinitdisk
