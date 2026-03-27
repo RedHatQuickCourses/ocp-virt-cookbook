@@ -70,7 +70,9 @@ This is the most common method for Linux VMs in OpenShift Virtualization.
 
 === Configuration Format
 
-Cloud-init network configuration uses version 2 (netplan) format:
+Cloud-init network configuration uses version 2 (netplan) format. The version 2 format supports `ethernets`, `bonds`, `bridges`, and `vlans` as device types. Each device can include `addresses`, `dhcp4`/`dhcp6`, `routes`, `nameservers` (with `addresses` and `search`), `mtu`, and `match` (by `macaddress`, `name`, or `driver`) options.
+
+The basic format is:
 
 [source,yaml]
 ----
@@ -91,6 +93,31 @@ networkData: |
 
 In this example, `enp1s0` (the primary pod network interface) uses DHCP, while `enp2s0` (the secondary interface) receives a static IP.
 
+=== Default Gateway Configuration
+
+Do not use the `gateway4` or `gateway6` fields -- they are deprecated since netplan 0.103 and cloud-init 23.1. Use `routes` instead:
+
+[source,yaml]
+----
+networkData: |
+  version: 2
+  ethernets:
+    enp2s0:
+      dhcp4: false
+      addresses:
+        - 192.168.100.50/24
+      routes:
+        - to: 192.168.100.0/24
+          via: 192.168.100.1
+      nameservers:
+        addresses:
+          - 192.168.100.1
+        search:
+          - example.com
+----
+
+This example also shows how to add DNS search domains with the `search` field and specific routes with the `routes` list. Use `to: default` for a default gateway route (only on secondary interfaces when no default route exists on the primary).
+
 === Precedence Order
 
 . `networkData` configuration (highest priority)
@@ -106,6 +133,19 @@ KubeVirt uses predictable network interface naming inside guest VMs. Interfaces 
 * `enp3s0` -- third interface (second secondary network)
 
 IMPORTANT: Do not use legacy names like `eth0`. Use the predictable names (`enpXs0`) that match the order of interfaces defined in the VM spec.
+
+=== Important Formatting Rules
+
+When providing `networkData` in a `cloudInitNoCloud` volume, keep these rules in mind:
+
+Do not wrap with a `network:` key::
+KubeVirt's `networkData` field expects the configuration to start directly with `version: 2`. Do not add a top-level `network:` wrapper -- that format is used in standalone config files but not in the NoCloud datasource `networkData` field.
+
+Always include `userData`::
+Cloud-init will not parse `networkData` unless `userData` is also set. Even a minimal `userData` header (`#cloud-config`) is sufficient. All examples in this tutorial include `userData`.
+
+Prefer inline `networkData` over Secret references::
+There is a known issue where `networkDataSecretRef` may not be applied by cloud-init in some configurations. Use the inline `networkData` field or `networkDataBase64` for reliable behavior.
 
 === Where Static IPs Apply
 
@@ -240,7 +280,16 @@ NOTE: The first interface (`enp1s0`) uses DHCP and receives the default route au
 
 === Cloud-init Verification
 
-After deploying a VM with cloud-init, verify that the configuration was applied:
+After deploying a VM with cloud-init, you can verify the IP configuration from outside the VM using the VirtualMachineInstance status. The QEMU guest agent reports interface details back to the cluster:
+
+[source,bash,role=execute]
+----
+oc get vmi <vm-name> -n static-ip-demo -o jsonpath='{.status.interfaces}' | python3 -m json.tool
+----
+
+This command shows all interfaces with their names, MAC addresses, and IP addresses as reported by the guest agent. If the output is empty, the guest agent may not be running yet.
+
+To verify from inside the VM, connect to the console:
 
 [source,bash,role=execute]
 ----
@@ -417,6 +466,15 @@ The interface should have the IP `192.168.100.60` assigned by the DHCP server.
 
 NOTE: MAC addresses starting with `02:` are in the locally administered range and will not conflict with hardware vendor-assigned MACs.
 
+=== Live Migration Considerations
+
+When a VM with a static IP is live-migrated to another node, the behavior depends on the network type:
+
+* **Bridge-based secondary networks (localnet, Linux bridge)**: The VM retains its MAC address and IP during migration. The network fabric must support MAC mobility (for example, the switch must update its MAC address table). Static IPs assigned via cloud-init, DHCP reservations, or `nmcli` persist across migrations.
+* **SR-IOV networks**: Live migration with SR-IOV requires additional configuration and may not preserve the same network path. Consult the link:https://docs.openshift.com/container-platform/latest/virt/live_migration/virt-about-live-migration.html[OpenShift Virtualization live migration documentation,window=_blank] for details.
+
+The primary pod network interface receives a new pod IP after migration, but this is transparent to the guest OS when using masquerade mode.
+
 == Method 3: QEMU Guest Agent with nmcli
 
 The QEMU guest agent allows the host (KubeVirt) to communicate with a running VM. You can use this channel to configure networking after the VM has booted, using standard tools like `nmcli` inside the guest.
@@ -486,11 +544,18 @@ Activate the updated configuration:
 sudo nmcli connection up "Wired connection 2"
 ----
 
-Verify the result:
+Verify the result inside the VM:
 
 [source,bash]
 ----
 ip addr show enp2s0
+----
+
+You can also verify from outside the VM using the VirtualMachineInstance status:
+
+[source,bash,role=execute]
+----
+oc get vmi <vm-name> -n static-ip-demo -o jsonpath='{.status.interfaces[*].ipAddress}'
 ----
 
 The configuration is saved by NetworkManager and persists across VM reboots.
@@ -665,6 +730,12 @@ The following table summarizes when to use each method:
 
 == Common Issues and Solutions
 
+=== networkData wrapped with `network:` key
+
+**Problem**: Cloud-init silently ignores `networkData` because it was wrapped in a `network:` key.
+
+**Solution**: In KubeVirt's `cloudInitNoCloud` volume, the `networkData` field must start directly with `version: 2`. Do not add a top-level `network:` wrapper. The correct format is `version: 2\nethernets:\n  ...`, not `network:\n  version: 2\n  ethernets:\n  ...`.
+
 === Interface names do not match
 
 **Problem**: Used `eth0` instead of `enp1s0` in `networkData`.
@@ -694,6 +765,12 @@ The following table summarizes when to use each method:
 **Problem**: Nameservers not configured or incorrect on the secondary interface.
 
 **Solution**: Add appropriate nameservers in the `networkData` for the interface. If the secondary interface is on an isolated network, external DNS may not be needed.
+
+=== Deprecated `gateway4` field generates warnings or fails
+
+**Problem**: Using `gateway4: 192.168.100.1` in `networkData` generates deprecation warnings or fails on newer cloud-init versions (23.1+).
+
+**Solution**: Replace `gateway4` with a `routes` entry. Use `routes: [{to: default, via: 192.168.100.1}]` instead. The `gateway4` and `gateway6` fields were deprecated in netplan 0.103.
 
 === DHCP reservation not working
 
@@ -739,9 +816,15 @@ In this tutorial, you learned:
 == References
 
 * link:https://cloudinit.readthedocs.io/en/latest/reference/network-config.html[Cloud-init Network Configuration,window=_blank]
+* link:https://cloudinit.readthedocs.io/en/latest/reference/network-config-format-v2.html[Cloud-init Network Config Version 2 (Netplan Format),window=_blank]
+* link:https://cloudinit.readthedocs.io/en/latest/reference/datasources/nocloud.html[Cloud-init NoCloud Datasource,window=_blank]
+* link:https://kubevirt.io/user-guide/user_workloads/startup_scripts/[KubeVirt Startup Scripts (Cloud-init),window=_blank]
+* link:https://kubevirt.io/user-guide/network/interfaces_and_networks/[KubeVirt Network Interfaces and Networks,window=_blank]
+* link:https://docs.openshift.com/container-platform/latest/virt/vm_networking/virt-connecting-vm-to-default-pod-network.html[Connecting a VM to the Default Pod Network,window=_blank]
 * link:https://docs.openshift.com/container-platform/latest/virt/virtual_machines/creating_vms_custom/virt-creating-vms-by-using-the-cli.html[Creating VMs by Using the CLI,window=_blank]
 * link:https://docs.openshift.com/container-platform/latest/virt/about_virt/about-virt.html[OpenShift Virtualization Documentation,window=_blank]
-* link:https://kubevirt.io/user-guide/network/interfaces_and_networks/[KubeVirt Network Interfaces and Networks,window=_blank]
+* link:https://docs.openshift.com/container-platform/latest/virt/live_migration/virt-about-live-migration.html[OpenShift Virtualization Live Migration,window=_blank]
 * link:https://learn.microsoft.com/en-us/windows-hardware/manufacture/desktop/automate-windows-setup[Microsoft Sysprep and Unattend Reference,window=_blank]
+* link:https://netplan.readthedocs.io/en/stable/netplan-yaml/[Netplan YAML Configuration Reference,window=_blank]
 * xref:cloud-init-troubleshooting.adoc[Cloud-init Troubleshooting Guide]
 * xref:networking:localnet-vlan.adoc[Localnet VLAN Tutorial]
