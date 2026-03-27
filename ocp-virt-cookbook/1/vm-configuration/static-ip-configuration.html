@@ -1,0 +1,1700 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Configuring Static IPs for VMs :: OpenShift Virtualization cookbook</title>
+    <link rel="prev" href="index.html">
+    <link rel="next" href="cloud-init-troubleshooting.html">
+    <meta name="generator" content="Antora 3.1.3">
+    <link rel="stylesheet" href="../../../_/css/site.css">
+    <script>var uiRootPath = '../../../_'</script>
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://www.redhat.com" target="_blank"><img src="../../../_/img/redhat-logo.png" height="40px" alt="Red Hat"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="../../..">OpenShift Virtualization cookbook</a>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues" target="_blank">Report Issues</a>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="ocp-virt-cookbook" data-version="1">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="../index.html">OpenShift Virtualization cookbook</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../index.html">Introduction</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../getting-started/index.html">Getting Started</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/prerequisites.html">Prerequisites</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/install-openshift-virtualization.html">Install OpenShift Virtualization</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/default-storage-class.html">Storage Setup</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/create-vm-web-console.html">Create VM from Web Console</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/vm-lifecycle-states.html">VM Lifecycle States</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/virtctl-basics.html">Virtctl Basics</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../storage/index.html">Storage Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/lvm-operator.html">LVM Operator Installation</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/lvm-troubleshooting.html">LVM Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/hostpath-provisioner.html">HostPath Provisioner</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/creating-managing-storage-class.html">Creating and Managing Storage Classes</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/multi-disk-configuration.html">Multi-Disk VMs</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../networking/index.html">Networking Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/udn-primary-networks.html">UDN Primary Networks</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/localnet-secondary.html">Localnet Secondary Networks with CUDN</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/localnet-vlan.html">Localnet Secondary Networks with VLAN using NAD</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/cudn-localnet-vlan.html">Localnet VLAN with CUDN</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/layer2-secondary.html">Layer 2 Secondary Networks</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/linux-bridges.html">Linux Bridges</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/vm-ingress-routes.html">VM Ingress and Routes</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/ovs-bridge-troubleshooting.html">Troubleshooting Localnet Networks</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="index.html">Virtual Machine Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item is-current-page" data-depth="2">
+    <a class="nav-link" href="static-ip-configuration.html">Static IP Configuration</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="cloud-init-troubleshooting.html">Cloud-init Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="internal-dns-for-vms.html">Internal DNS for VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="remote-access-linux-vms.html">Remote Access to Linux VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="remote-access-linux-troubleshooting.html">Remote Access to Linux VMs Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="remote-access-windows-vms.html">Remote Access to Windows VMs via RDP</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="import-qcow2-boot-volume.html">Import qcow2 Boot Volume</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="custom-golden-images.html">Custom Golden Images</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="golden-images-troubleshooting.html">Golden Images Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="cloning-vms.html">Cloning VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="vm-snapshots.html">VM Snapshots</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="boot-order-boot-sources.html">VM Boot Order and Boot Sources</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="infrastructure-node-placement.html">Infrastructure Node Placement</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="node-placement-affinity.html">Node Placement and Affinity</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="resource-limits-qos.html">Resource Limits and QoS</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="hotplug-volumes-interfaces.html">Hotplug Volumes and Interfaces</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../manifests/index.html">Manifests</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../api/index.html">API Guide</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../api/api-component-overview.html">API Component Overview</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../appendix/glossary.html">Glossary</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">OpenShift Virtualization cookbook</span>
+    <span class="version">1</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <a class="title" href="../index.html">OpenShift Virtualization cookbook</a>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">1</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">OpenShift Virtualization cookbook</a></li>
+    <li><a href="index.html">Virtual Machine Configuration</a></li>
+    <li><a href="static-ip-configuration.html">Static IP Configuration</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">Configuring Static IPs for VMs</h1>
+<div class="sect1">
+<h2 id="_overview"><a class="anchor" href="#_overview"></a>Overview</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>This tutorial covers the methods available for assigning static IP addresses to virtual machines in OpenShift Virtualization. While DHCP is the default and simplest approach, many workloads require predictable, fixed IP addresses for integration with external systems, compliance, or legacy application requirements.</p>
+</div>
+<div class="paragraph">
+<p>You will learn how to configure static IPs using five distinct methods:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Cloud-init <code>networkData</code></strong>&#8201;&#8212;&#8201;configure networking at first boot (Linux VMs)</p>
+</li>
+<li>
+<p><strong>UDN primary network with persistent IPs</strong>&#8201;&#8212;&#8201;cluster-managed IP assignment via OVN-Kubernetes</p>
+</li>
+<li>
+<p><strong>DHCP reservations</strong>&#8201;&#8212;&#8201;bind a fixed IP to a MAC address on an external DHCP server</p>
+</li>
+<li>
+<p><strong>QEMU guest agent with <code>nmcli</code></strong>&#8201;&#8212;&#8201;apply static IPs post-boot via the guest agent</p>
+</li>
+<li>
+<p><strong>Sysprep (Windows VMs)</strong>&#8201;&#8212;&#8201;configure networking through <code>unattend.xml</code></p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Each method has different trade-offs in terms of automation, flexibility, and operational overhead. Choose the one that best fits your environment.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_what_you_will_learn"><a class="anchor" href="#_what_you_will_learn"></a>What You Will Learn</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p>The trade-offs of assigning static IPs in OpenShift Virtualization</p>
+</li>
+<li>
+<p>How to configure static IPs at first boot using cloud-init <code>networkData</code></p>
+</li>
+<li>
+<p>How to use UDN primary networks with persistent IPs for cluster-managed addressing</p>
+</li>
+<li>
+<p>How to use DHCP reservations with fixed MAC addresses</p>
+</li>
+<li>
+<p>How to apply static IPs post-boot using the QEMU guest agent and <code>nmcli</code></p>
+</li>
+<li>
+<p>How to configure static IPs for Windows VMs using Sysprep</p>
+</li>
+<li>
+<p>How to choose the right method for your environment</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_trade_offs_and_considerations"><a class="anchor" href="#_trade_offs_and_considerations"></a>Trade-offs and Considerations</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Before assigning static IPs, understand the implications:</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">Loss of cluster-managed networking</dt>
+<dd>
+<p>When you assign a static IP on a secondary network, the VM may lose access to OpenShift <code>Services</code> and <code>Routes</code> that rely on the default pod network. The primary interface (connected to the pod network) should retain its DHCP-assigned address to preserve cluster connectivity.</p>
+</dd>
+<dt class="hdlist1">No cluster awareness of assigned addresses</dt>
+<dd>
+<p>Static IPs bypass OVN-Kubernetes IPAM. The cluster does not track these addresses, which can lead to IP conflicts if assignments are not managed externally. Maintain an IP address inventory or use an external IPAM solution.</p>
+</dd>
+<dt class="hdlist1">Maintenance overhead</dt>
+<dd>
+<p>Static IP assignments must be tracked and updated manually (or via external IPAM) as VMs are created, moved, or removed. DHCP with reservations can reduce this burden.</p>
+</dd>
+<dt class="hdlist1">When static IPs are appropriate</dt>
+<dd>
+<div class="ulist">
+<ul>
+<li>
+<p>Legacy workloads that require fixed addresses</p>
+</li>
+<li>
+<p>Integration with external systems (firewalls, load balancers, monitoring) that reference IPs directly</p>
+</li>
+<li>
+<p>Environments without a DHCP server on the target network</p>
+</li>
+<li>
+<p>Regulatory or compliance requirements for address traceability</p>
+</li>
+</ul>
+</div>
+</dd>
+<dt class="hdlist1">When to prefer DHCP or OVN-Kubernetes IPAM</dt>
+<dd>
+<div class="ulist">
+<ul>
+<li>
+<p>Ephemeral or frequently recreated VMs</p>
+</li>
+<li>
+<p>Environments with reliable DHCP infrastructure</p>
+</li>
+<li>
+<p>Workloads that communicate exclusively through Kubernetes Services and DNS</p>
+</li>
+</ul>
+</div>
+</dd>
+</dl>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_prerequisites"><a class="anchor" href="#_prerequisites"></a>Prerequisites</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p>OpenShift 4.18+ with OpenShift Virtualization operator installed</p>
+</li>
+<li>
+<p>CLI tools: <code>oc</code>, <code>virtctl</code></p>
+</li>
+<li>
+<p>At least one configured network (primary pod network)</p>
+</li>
+<li>
+<p>For secondary network scenarios: a NetworkAttachmentDefinition (NAD) configured (see <a href="../networking/localnet-vlan.html" class="xref page">Localnet VLAN Tutorial</a>)</p>
+</li>
+<li>
+<p>For DHCP reservation scenarios: administrative access to an external DHCP server</p>
+</li>
+<li>
+<p>Basic understanding of networking (IP addressing, subnets, gateways, DNS)</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_method_1_cloud_init_networkdata"><a class="anchor" href="#_method_1_cloud_init_networkdata"></a>Method 1: Cloud-init networkData</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Cloud-init is an industry-standard initialization tool that runs during VM boot. The <code>networkData</code> field in the <code>cloudInitNoCloud</code> volume provides dedicated network configuration using netplan-compatible version 2 format.</p>
+</div>
+<div class="paragraph">
+<p>This is the most common method for Linux VMs in OpenShift Virtualization.</p>
+</div>
+<div class="sect2">
+<h3 id="_how_it_works"><a class="anchor" href="#_how_it_works"></a>How It Works</h3>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>The VM boots and cloud-init reads the <code>networkData</code> from the NoCloud datasource.</p>
+</li>
+<li>
+<p>Cloud-init applies the network configuration before user-space services start.</p>
+</li>
+<li>
+<p>The configuration persists across reboots.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_configuration_format"><a class="anchor" href="#_configuration_format"></a>Configuration Format</h3>
+<div class="paragraph">
+<p>Cloud-init network configuration uses version 2 (netplan) format. The version 2 format supports <code>ethernets</code>, <code>bonds</code>, <code>bridges</code>, and <code>vlans</code> as device types. Each device can include <code>addresses</code>, <code>dhcp4</code>/<code>dhcp6</code>, <code>routes</code>, <code>nameservers</code> (with <code>addresses</code> and <code>search</code>), <code>mtu</code>, and <code>match</code> (by <code>macaddress</code>, <code>name</code>, or <code>driver</code>) options.</p>
+</div>
+<div class="paragraph">
+<p>The basic format is:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">networkData: |
+  version: 2
+  ethernets:
+    enp1s0:
+      dhcp4: true
+    enp2s0:
+      dhcp4: false
+      dhcp6: false
+      addresses:
+        - 192.168.100.50/24
+      nameservers:
+        addresses:
+          - 192.168.100.1</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>In this example, <code>enp1s0</code> (the primary pod network interface) uses DHCP, while <code>enp2s0</code> (the secondary interface) receives a static IP.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_default_gateway_configuration"><a class="anchor" href="#_default_gateway_configuration"></a>Default Gateway Configuration</h3>
+<div class="paragraph">
+<p>Do not use the <code>gateway4</code> or <code>gateway6</code> fields&#8201;&#8212;&#8201;they are deprecated since netplan 0.103 and cloud-init 23.1. Use <code>routes</code> instead:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">networkData: |
+  version: 2
+  ethernets:
+    enp2s0:
+      dhcp4: false
+      addresses:
+        - 192.168.100.50/24
+      routes:
+        - to: 192.168.100.0/24
+          via: 192.168.100.1
+      nameservers:
+        addresses:
+          - 192.168.100.1
+        search:
+          - example.com</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This example also shows how to add DNS search domains with the <code>search</code> field and specific routes with the <code>routes</code> list. Use <code>to: default</code> for a default gateway route (only on secondary interfaces when no default route exists on the primary).</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_precedence_order"><a class="anchor" href="#_precedence_order"></a>Precedence Order</h3>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p><code>networkData</code> configuration (highest priority)</p>
+</li>
+<li>
+<p>Datasource network configuration</p>
+</li>
+<li>
+<p>Fallback to DHCP (default)</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_interface_naming_in_kubevirt"><a class="anchor" href="#_interface_naming_in_kubevirt"></a>Interface Naming in KubeVirt</h3>
+<div class="paragraph">
+<p>KubeVirt uses predictable network interface naming inside guest VMs. Interfaces are named sequentially based on their PCI slot:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>enp1s0</code>&#8201;&#8212;&#8201;first interface (typically the pod network)</p>
+</li>
+<li>
+<p><code>enp2s0</code>&#8201;&#8212;&#8201;second interface (first secondary network)</p>
+</li>
+<li>
+<p><code>enp3s0</code>&#8201;&#8212;&#8201;third interface (second secondary network)</p>
+</li>
+</ul>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-important" title="Important"></i>
+</td>
+<td class="content">
+Do not use legacy names like <code>eth0</code>. Use the predictable names (<code>enpXs0</code>) that match the order of interfaces defined in the VM spec.
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_important_formatting_rules"><a class="anchor" href="#_important_formatting_rules"></a>Important Formatting Rules</h3>
+<div class="paragraph">
+<p>When providing <code>networkData</code> in a <code>cloudInitNoCloud</code> volume, keep these rules in mind:</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">Do not wrap with a <code>network:</code> key</dt>
+<dd>
+<p>KubeVirt&#8217;s <code>networkData</code> field expects the configuration to start directly with <code>version: 2</code>. Do not add a top-level <code>network:</code> wrapper&#8201;&#8212;&#8201;that format is used in standalone config files but not in the NoCloud datasource <code>networkData</code> field.</p>
+</dd>
+<dt class="hdlist1">Always include <code>userData</code></dt>
+<dd>
+<p>Cloud-init will not parse <code>networkData</code> unless <code>userData</code> is also set. Even a minimal <code>userData</code> header (<code>#cloud-config</code>) is sufficient. All examples in this tutorial include <code>userData</code>.</p>
+</dd>
+<dt class="hdlist1">Prefer inline <code>networkData</code> over Secret references</dt>
+<dd>
+<p>There is a known issue where <code>networkDataSecretRef</code> may not be applied by cloud-init in some configurations. Use the inline <code>networkData</code> field or <code>networkDataBase64</code> for reliable behavior.</p>
+</dd>
+</dl>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_where_static_ips_apply"><a class="anchor" href="#_where_static_ips_apply"></a>Where Static IPs Apply</h3>
+<div class="paragraph">
+<p>Static IP configuration applies to <strong>secondary network interfaces only</strong>. The primary interface connects to the pod network via masquerade and receives its IP automatically from the cluster&#8201;&#8212;&#8201;do not assign a static IP to it. The masquerade bridge operates on an internal subnet (<code>10.0.2.0/24</code>) that is translated by NAT to the pod IP. Overriding this with a static address on a different subnet will break connectivity.</p>
+</div>
+<div class="paragraph">
+<p>All examples in this tutorial configure static IPs on secondary interfaces (<code>enp2s0</code> and above) while leaving the primary interface (<code>enp1s0</code>) on DHCP.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_scenario_primary_dhcp_secondary_static_ip"><a class="anchor" href="#_scenario_primary_dhcp_secondary_static_ip"></a>Scenario: Primary DHCP + Secondary Static IP</h3>
+<div class="paragraph">
+<p>This is the standard approach. The primary interface uses DHCP on the pod network, while a secondary interface on a VLAN or bridge network gets a static IP.</p>
+</div>
+<div class="paragraph">
+<p>Prerequisites: Ensure you have a secondary network configured (for example, a localnet VLAN 100 NetworkAttachmentDefinition (NAD)). See <a href="../networking/localnet-vlan.html" class="xref page">Localnet VLAN Tutorial</a> for setup instructions.</p>
+</div>
+<div class="paragraph">
+<p>Create a namespace for this tutorial:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc create namespace static-ip-demo</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/static-ip-configuration/fedora-multi-network-vm.yaml" class="xref attachment">Download fedora-multi-network-vm.yaml</a></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: fedora-multi-vm
+  namespace: static-ip-demo
+spec:
+  dataVolumeTemplates:
+    - apiVersion: cdi.kubevirt.io/v1beta1
+      kind: DataVolume
+      metadata:
+        name: fedora-multi-vm-disk
+      spec:
+        sourceRef:
+          kind: DataSource
+          name: fedora
+          namespace: openshift-virtualization-os-images
+        storage:
+          resources:
+            requests:
+              storage: 30Gi
+  runStrategy: RerunOnFailure
+  template:
+    metadata:
+      labels:
+        kubevirt.io/domain: fedora-multi-vm
+    spec:
+      domain:
+        cpu:
+          cores: 2
+        devices:
+          disks:
+            - disk:
+                bus: virtio
+              name: rootdisk
+            - disk:
+                bus: virtio
+              name: cloudinitdisk
+          interfaces:
+            - masquerade: {}
+              name: default
+            - bridge: {}
+              name: vlan-network
+          rng: {}
+        machine:
+          type: pc-q35-rhel9.4.0
+        memory:
+          guest: 4Gi
+      networks:
+        - name: default
+          pod: {}
+        - name: vlan-network
+          multus:
+            networkName: localnet-vlan-100
+      volumes:
+        - dataVolume:
+            name: fedora-multi-vm-disk
+          name: rootdisk
+        - cloudInitNoCloud:
+            userData: |-
+              #cloud-config
+              user: fedora
+              password: fedora123
+              chpasswd: { expire: False }
+              ssh_pwauth: True
+            networkData: |-
+              version: 2
+              ethernets:
+                enp1s0:
+                  dhcp4: true
+                enp2s0:
+                  dhcp4: false
+                  dhcp6: false
+                  addresses:
+                    - 192.168.100.50/24
+                  nameservers:
+                    addresses:
+                      - 192.168.100.1
+          name: cloudinitdisk</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Deploy and verify:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f fedora-multi-network-vm.yaml</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Access the VM console to confirm both interfaces:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">virtctl console fedora-multi-vm -n static-ip-demo</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Inside the VM, verify the configuration:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">ip addr show</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Expected output</div>
+<div class="content">
+<pre>1: lo: &lt;LOOPBACK,UP,LOWER_UP&gt; mtu 65536 qdisc noqueue state UNKNOWN group default qlen 1000
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+    inet 127.0.0.1/8 scope host lo
+       valid_lft forever preferred_lft forever
+    inet6 ::1/128 scope host noprefixroute
+       valid_lft forever preferred_lft forever
+2: enp1s0: &lt;BROADCAST,MULTICAST,UP,LOWER_UP&gt; mtu 1400 qdisc fq_codel state UP group default qlen 1000
+    link/ether 02:7e:e2:23:d7:da brd ff:ff:ff:ff:ff:ff
+    inet 10.0.2.2/24 brd 10.0.2.255 scope global dynamic noprefixroute enp1s0
+       valid_lft 86313438sec preferred_lft 86313438sec
+    inet6 fe80::7e:e2ff:fe23:d7da/64 scope link noprefixroute
+       valid_lft forever preferred_lft forever
+3: enp2s0: &lt;BROADCAST,MULTICAST,UP,LOWER_UP&gt; mtu 1400 qdisc fq_codel state UP group default qlen 1000
+    link/ether 02:7e:e2:23:d7:db brd ff:ff:ff:ff:ff:ff
+    inet 192.168.100.50/24 brd 192.168.100.255 scope global noprefixroute enp2s0
+       valid_lft forever preferred_lft forever
+    inet6 fe80::7e:e2ff:fe23:d7db/64 scope link noprefixroute
+       valid_lft forever preferred_lft forever</pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">ip route show</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Expected output</div>
+<div class="content">
+<pre>default via 10.0.2.1 dev enp1s0 proto dhcp src 10.0.2.2 metric 100
+10.0.2.0/24 dev enp1s0 proto kernel scope link src 10.0.2.2 metric 100
+192.168.100.0/24 dev enp2s0 proto kernel scope link src 192.168.100.50 metric 101</pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+The first interface (<code>enp1s0</code>) uses DHCP and receives the default route automatically. The second interface (<code>enp2s0</code>) has the static IP <code>192.168.100.50</code> without a default route. Do not set a default route on the secondary interface to avoid routing conflicts.
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_cloud_init_verification"><a class="anchor" href="#_cloud_init_verification"></a>Cloud-init Verification</h3>
+<div class="paragraph">
+<p>After deploying a VM with cloud-init, you can verify the IP configuration from outside the VM using the VirtualMachineInstance status. The QEMU guest agent reports interface details back to the cluster:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vmi fedora-multi-vm -n static-ip-demo -o jsonpath='{.status.interfaces}' | python3 -m json.tool</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Expected output</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-json hljs" data-lang="json">[
+    {
+        "infoSource": "domain, guest-agent",
+        "interfaceName": "enp1s0",
+        "ipAddress": "10.128.1.106",
+        "ipAddresses": [
+            "10.128.1.106"
+        ],
+        "mac": "02:7e:e2:23:d7:da",
+        "name": "default"
+    },
+    {
+        "infoSource": "domain, guest-agent, multus-status",
+        "interfaceName": "enp2s0",
+        "ipAddress": "192.168.100.50",
+        "ipAddresses": [
+            "192.168.100.50",
+            "fe80::7e:e2ff:fe23:d7db"
+        ],
+        "mac": "02:7e:e2:23:d7:db",
+        "name": "vlan-network"
+    }
+]</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This output confirms that <code>enp2s0</code> has the static IP <code>192.168.100.50</code> as configured in the <code>networkData</code>. If the output is empty, the guest agent may not be running yet.</p>
+</div>
+<div class="paragraph">
+<p>To verify from inside the VM, connect to the console:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">virtctl console fedora-multi-vm -n static-ip-demo</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Inside the VM:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">cloud-init status</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Expected output</div>
+<div class="content">
+<pre>status: done</pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">nmcli connection show</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Expected output</div>
+<div class="content">
+<pre>NAME               UUID                                  TYPE      DEVICE
+cloud-init enp1s0  a41601f3-3acc-5f60-ac5f-9d9011ab7c25  ethernet  enp1s0
+cloud-init enp2s0  90ff9077-4cf0-55d5-904d-6cdc4f01d148  ethernet  enp2s0
+lo                 29567487-41a5-4ac6-a312-f00ed799a660  loopback  lo</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Exit the console with <code>Ctrl+]</code>.</p>
+</div>
+<div class="paragraph">
+<p>If cloud-init reports errors, check the logs:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">sudo cat /var/log/cloud-init.log</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>For detailed troubleshooting, see the <a href="cloud-init-troubleshooting.html" class="xref page">Cloud-init Troubleshooting Guide</a>.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_method_2_udn_primary_network_with_persistent_ips"><a class="anchor" href="#_method_2_udn_primary_network_with_persistent_ips"></a>Method 2: UDN Primary Network with Persistent IPs</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>User Defined Networks (UDNs) with Layer 2 topology offer a cluster-managed alternative for stable IP addressing. When a UDN is configured as the primary network for a namespace with <code>ipam.lifecycle: Persistent</code>, OVN-Kubernetes allocates IPs from a defined subnet and persists them across VM restarts, stop/start cycles, and live migrations using <code>IPAMClaim</code> custom resources.</p>
+</div>
+<div class="paragraph">
+<p>This approach eliminates the need for manual static IP configuration or external DHCP servers. The cluster handles IP allocation and guarantees that each VM retains its assigned address.</p>
+</div>
+<div class="sect2">
+<h3 id="_how_it_works_2"><a class="anchor" href="#_how_it_works_2"></a>How It Works</h3>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>You create a namespace with the <code>k8s.ovn.org/primary-user-defined-network</code> label.</p>
+</li>
+<li>
+<p>You define a <code>UserDefinedNetwork</code> resource with Layer 2 topology, a subnet, and <code>ipam.lifecycle: Persistent</code>.</p>
+</li>
+<li>
+<p>VMs deployed in that namespace automatically receive a persistent IP from the subnet&#8201;&#8212;&#8201;no cloud-init <code>networkData</code> or DHCP reservation is needed.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_when_to_use_this_method"><a class="anchor" href="#_when_to_use_this_method"></a>When to Use This Method</h3>
+<div class="ulist">
+<ul>
+<li>
+<p>You want cluster-managed IP assignment without manual configuration</p>
+</li>
+<li>
+<p>VMs must retain the same IP across restarts and live migrations</p>
+</li>
+<li>
+<p>You prefer not to maintain external DHCP servers or embed IPs in manifests</p>
+</li>
+<li>
+<p>You need namespace-scoped network isolation with custom subnets</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>For a complete walkthrough including namespace setup, UDN creation, VM deployment, and connectivity verification, see <a href="../networking/udn-primary-networks.html" class="xref page">Configuring Layer 2 Primary Networks with UDNs</a>.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_method_3_dhcp_reservations"><a class="anchor" href="#_method_3_dhcp_reservations"></a>Method 3: DHCP Reservations</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>DHCP reservations (also called static DHCP or fixed-address DHCP) combine the automation of DHCP with the predictability of static IP assignment. The DHCP server maps a specific MAC address to a fixed IP, so the VM always receives the same address.</p>
+</div>
+<div class="sect2">
+<h3 id="_how_it_works_3"><a class="anchor" href="#_how_it_works_3"></a>How It Works</h3>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>You assign a fixed MAC address to the VM&#8217;s network interface in the VM spec.</p>
+</li>
+<li>
+<p>On your external DHCP server, you create a reservation that maps that MAC to a specific IP.</p>
+</li>
+<li>
+<p>The VM boots, sends a DHCP request, and receives its reserved address.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_when_to_use_this_method_2"><a class="anchor" href="#_when_to_use_this_method_2"></a>When to Use This Method</h3>
+<div class="ulist">
+<ul>
+<li>
+<p>You have an existing DHCP infrastructure and want centralized IP management</p>
+</li>
+<li>
+<p>You prefer not to embed network configuration in VM manifests</p>
+</li>
+<li>
+<p>You need the VM to be portable (the IP follows the MAC, not the manifest)</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_assigning_a_static_mac_address"><a class="anchor" href="#_assigning_a_static_mac_address"></a>Assigning a Static MAC Address</h3>
+<div class="paragraph">
+<p>To use DHCP reservations, you must set a fixed MAC address on the VM interface. Without this, KubeVirt assigns a random MAC at each boot, breaking the reservation.</p>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/static-ip-configuration/fedora-dhcp-reserved-vm.yaml" class="xref attachment">Download fedora-dhcp-reserved-vm.yaml</a></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: fedora-dhcp-reserved-vm
+  namespace: static-ip-demo
+spec:
+  dataVolumeTemplates:
+    - apiVersion: cdi.kubevirt.io/v1beta1
+      kind: DataVolume
+      metadata:
+        name: fedora-dhcp-reserved-vm-disk
+      spec:
+        sourceRef:
+          kind: DataSource
+          name: fedora
+          namespace: openshift-virtualization-os-images
+        storage:
+          resources:
+            requests:
+              storage: 30Gi
+  runStrategy: RerunOnFailure
+  template:
+    metadata:
+      labels:
+        kubevirt.io/domain: fedora-dhcp-reserved-vm
+    spec:
+      domain:
+        cpu:
+          cores: 2
+        devices:
+          disks:
+            - disk:
+                bus: virtio
+              name: rootdisk
+            - disk:
+                bus: virtio
+              name: cloudinitdisk
+          interfaces:
+            - masquerade: {}
+              name: default
+            - bridge: {}
+              name: vlan-network
+              macAddress: "02:00:00:01:00:01"
+          rng: {}
+        machine:
+          type: pc-q35-rhel9.4.0
+        memory:
+          guest: 4Gi
+      networks:
+        - name: default
+          pod: {}
+        - name: vlan-network
+          multus:
+            networkName: localnet-vlan-100
+      volumes:
+        - dataVolume:
+            name: fedora-dhcp-reserved-vm-disk
+          name: rootdisk
+        - cloudInitNoCloud:
+            userData: |-
+              #cloud-config
+              user: fedora
+              password: fedora123
+              chpasswd: { expire: False }
+              ssh_pwauth: True
+          name: cloudinitdisk</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The key difference from the cloud-init method is the <code>macAddress</code> field on the secondary interface. No <code>networkData</code> is needed because the DHCP server handles IP assignment.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_configuring_the_dhcp_server"><a class="anchor" href="#_configuring_the_dhcp_server"></a>Configuring the DHCP Server</h3>
+<div class="paragraph">
+<p>On your external DHCP server, create a reservation for the MAC address. The exact configuration depends on your DHCP software.</p>
+</div>
+<div class="paragraph">
+<p>Example for ISC DHCP (<code>dhcpd.conf</code>):</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">host fedora-dhcp-reserved-vm {
+  hardware ethernet 02:00:00:01:00:01;
+  fixed-address 192.168.100.60;
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Example for dnsmasq:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">dhcp-host=02:00:00:01:00:01,192.168.100.60,fedora-dhcp-reserved-vm</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>After configuring the reservation, deploy the VM:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f fedora-dhcp-reserved-vm.yaml</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_verification"><a class="anchor" href="#_verification"></a>Verification</h3>
+<div class="paragraph">
+<p>Access the VM and confirm the IP matches the reservation:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">virtctl console fedora-dhcp-reserved-vm -n static-ip-demo</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Inside the VM:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">ip addr show enp2s0</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>With a DHCP reservation in place, the output shows the reserved IP on the fixed MAC:</p>
+</div>
+<div class="listingblock">
+<div class="title">Expected output</div>
+<div class="content">
+<pre>3: enp2s0: &lt;BROADCAST,MULTICAST,UP,LOWER_UP&gt; mtu 1400 qdisc fq_codel state UP group default qlen 1000
+    link/ether 02:00:00:01:00:01 brd ff:ff:ff:ff:ff:ff
+    inet 192.168.100.60/24 brd 192.168.100.255 scope global dynamic enp2s0
+       valid_lft 3600sec preferred_lft 3600sec</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Without a DHCP server responding, the interface will only have a link-local IPv6 address. The fixed MAC <code>02:00:00:01:00:01</code> confirms the <code>macAddress</code> field is applied correctly.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+MAC addresses starting with <code>02:</code> are in the locally administered range and will not conflict with hardware vendor-assigned MACs.
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_live_migration_considerations"><a class="anchor" href="#_live_migration_considerations"></a>Live Migration Considerations</h3>
+<div class="paragraph">
+<p>When a VM with a static IP is live-migrated to another node, the behavior depends on the network type:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Bridge-based secondary networks (localnet, Linux bridge)</strong>: The VM retains its MAC address and IP during migration. The network fabric must support MAC mobility (for example, the switch must update its MAC address table). Static IPs assigned via cloud-init, DHCP reservations, or <code>nmcli</code> persist across migrations.</p>
+</li>
+<li>
+<p><strong>SR-IOV networks</strong>: Live migration with SR-IOV requires additional configuration and may not preserve the same network path. Consult the <a href="https://docs.openshift.com/container-platform/latest/virt/live_migration/virt-about-live-migration.html" target="_blank" rel="noopener">OpenShift Virtualization live migration documentation</a> for details.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>The primary pod network interface receives a new pod IP after migration, but this is transparent to the guest OS when using masquerade mode.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_method_4_qemu_guest_agent_with_nmcli"><a class="anchor" href="#_method_4_qemu_guest_agent_with_nmcli"></a>Method 4: QEMU Guest Agent with nmcli</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The QEMU guest agent allows the host (KubeVirt) to communicate with a running VM. You can use this channel to configure networking after the VM has booted, using standard tools like <code>nmcli</code> inside the guest.</p>
+</div>
+<div class="paragraph">
+<p>This method is useful when you need to change network configuration on an already-running VM, or when cloud-init is not available or practical.</p>
+</div>
+<div class="sect2">
+<h3 id="_how_it_works_4"><a class="anchor" href="#_how_it_works_4"></a>How It Works</h3>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>The VM boots with DHCP or no IP on the target interface.</p>
+</li>
+<li>
+<p>The QEMU guest agent starts inside the VM.</p>
+</li>
+<li>
+<p>You connect to the VM console (or SSH) and use <code>nmcli</code> to apply a static IP.</p>
+</li>
+<li>
+<p>The configuration persists across reboots because NetworkManager saves it.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_prerequisites_2"><a class="anchor" href="#_prerequisites_2"></a>Prerequisites</h3>
+<div class="ulist">
+<ul>
+<li>
+<p>The VM image must include the <code>qemu-guest-agent</code> package (most Red Hat and Fedora images include it by default)</p>
+</li>
+<li>
+<p>The guest agent must be running inside the VM</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_applying_a_static_ip"><a class="anchor" href="#_applying_a_static_ip"></a>Applying a Static IP</h3>
+<div class="paragraph">
+<p>First, deploy a VM with DHCP on the secondary interface (or no <code>networkData</code> for that interface).</p>
+</div>
+<div class="paragraph">
+<p>Connect to the VM (for example, the DHCP-reserved VM deployed in Method 2):</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">virtctl console fedora-dhcp-reserved-vm -n static-ip-demo</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Verify the guest agent is running:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">systemctl status qemu-guest-agent</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If the guest agent is not running, start and enable it:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">sudo systemctl enable --now qemu-guest-agent</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>List the current network connections:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">nmcli connection show</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Identify the connection name for the target interface (for example, <code>enp2s0</code> or <code>Wired connection 2</code>).</p>
+</div>
+<div class="paragraph">
+<p>Apply the static IP configuration:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">sudo nmcli connection modify "Wired connection 2" \
+  ipv4.method manual \
+  ipv4.addresses 192.168.100.70/24 \
+  ipv4.dns 192.168.100.1</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Activate the updated configuration:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">sudo nmcli connection up "Wired connection 2"</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Verify the result inside the VM:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">ip addr show enp2s0</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>You can also verify from outside the VM using the VirtualMachineInstance status:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vmi fedora-dhcp-reserved-vm -n static-ip-demo -o jsonpath='{.status.interfaces[*].ipAddress}'</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The configuration is saved by NetworkManager and persists across VM reboots.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_when_to_use_this_method_3"><a class="anchor" href="#_when_to_use_this_method_3"></a>When to Use This Method</h3>
+<div class="ulist">
+<ul>
+<li>
+<p>Post-deployment network changes on running VMs</p>
+</li>
+<li>
+<p>VMs migrated from other platforms where cloud-init was not used</p>
+</li>
+<li>
+<p>Temporary or dynamic network reconfiguration</p>
+</li>
+<li>
+<p>Troubleshooting scenarios where you need to override cloud-init settings</p>
+</li>
+</ul>
+</div>
+<div class="admonitionblock caution">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-caution" title="Caution"></i>
+</td>
+<td class="content">
+If the VM was originally configured with cloud-init <code>networkData</code>, cloud-init may overwrite <code>nmcli</code> changes on reboot (depending on the cloud-init configuration). To prevent this, either remove the <code>networkData</code> from the VM spec or configure cloud-init to not manage the target interface.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_method_5_sysprep_for_windows_vms"><a class="anchor" href="#_method_5_sysprep_for_windows_vms"></a>Method 5: Sysprep for Windows VMs</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>For Windows virtual machines, Microsoft Sysprep with an <code>unattend.xml</code> answer file provides static IP configuration during the Windows Out-of-Box Experience (OOBE) or specialize pass.</p>
+</div>
+<div class="sect2">
+<h3 id="_how_it_works_5"><a class="anchor" href="#_how_it_works_5"></a>How It Works</h3>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>You create an <code>unattend.xml</code> file with network settings.</p>
+</li>
+<li>
+<p>The file is injected into the VM via a <code>sysprep</code> volume.</p>
+</li>
+<li>
+<p>Windows reads the answer file during setup and applies the network configuration.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_example_unattend_xml_network_section"><a class="anchor" href="#_example_unattend_xml_network_section"></a>Example unattend.xml Network Section</h3>
+<div class="paragraph">
+<p>The following snippet configures a static IP on a secondary network interface identified as <code>Ethernet</code> during the specialize pass. In a multi-NIC Windows VM, verify the interface <code>Identifier</code> matches the adapter connected to your target network&#8201;&#8212;&#8201;use Device Manager or <code>Get-NetAdapter</code> in PowerShell to confirm the name:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-xml hljs" data-lang="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;unattend xmlns="urn:schemas-microsoft-com:unattend"&gt;
+  &lt;settings pass="specialize"&gt;
+    &lt;component name="Microsoft-Windows-TCPIP"
+               processorArchitecture="amd64"
+               publicKeyToken="31bf3856ad364e35"
+               language="neutral"
+               versionScope="nonSxS"
+               xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State"&gt;
+      &lt;Interfaces&gt;
+        &lt;Interface wcm:action="add"&gt;
+          &lt;Identifier&gt;Ethernet&lt;/Identifier&gt;
+          &lt;Ipv4Settings&gt;
+            &lt;DhcpEnabled&gt;false&lt;/DhcpEnabled&gt;
+          &lt;/Ipv4Settings&gt;
+          &lt;UnicastIpAddresses&gt;
+            &lt;IpAddress wcm:action="add" wcm:keyValue="1"&gt;192.168.100.80/24&lt;/IpAddress&gt;
+          &lt;/UnicastIpAddresses&gt;
+          &lt;Routes&gt;
+            &lt;Route wcm:action="add"&gt;
+              &lt;Identifier&gt;0&lt;/Identifier&gt;
+              &lt;NextHopAddress&gt;192.168.100.1&lt;/NextHopAddress&gt;
+              &lt;Prefix&gt;0.0.0.0/0&lt;/Prefix&gt;
+            &lt;/Route&gt;
+          &lt;/Routes&gt;
+        &lt;/Interface&gt;
+      &lt;/Interfaces&gt;
+    &lt;/component&gt;
+    &lt;component name="Microsoft-Windows-DNS-Client"
+               processorArchitecture="amd64"
+               publicKeyToken="31bf3856ad364e35"
+               language="neutral"
+               versionScope="nonSxS"
+               xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State"&gt;
+      &lt;Interfaces&gt;
+        &lt;Interface wcm:action="add"&gt;
+          &lt;Identifier&gt;Ethernet&lt;/Identifier&gt;
+          &lt;DNSServerSearchOrder&gt;
+            &lt;IpAddress wcm:action="add" wcm:keyValue="1"&gt;8.8.8.8&lt;/IpAddress&gt;
+          &lt;/DNSServerSearchOrder&gt;
+        &lt;/Interface&gt;
+      &lt;/Interfaces&gt;
+    &lt;/component&gt;
+  &lt;/settings&gt;
+&lt;/unattend&gt;</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_injecting_the_answer_file"><a class="anchor" href="#_injecting_the_answer_file"></a>Injecting the Answer File</h3>
+<div class="paragraph">
+<p>Store the <code>unattend.xml</code> in a ConfigMap and reference it in the VM spec as a <code>sysprep</code> volume. For a complete walkthrough of Windows VM deployment with Sysprep, see the <a href="https://docs.redhat.com/en/documentation/openshift_container_platform/4.18/html/virtualization/creating-a-virtual-machine" target="_blank" rel="noopener">OpenShift documentation on creating Windows VMs with Sysprep</a>.</p>
+</div>
+<div class="paragraph">
+<p>Create a ConfigMap with the answer file:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc create configmap windows-sysprep --from-file=unattend.xml -n static-ip-demo</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Reference it in the VM spec:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">volumes:
+  - name: sysprep
+    sysprep:
+      configMap:
+        name: windows-sysprep</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>And add the corresponding disk:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">devices:
+  disks:
+    - cdrom:
+        bus: sata
+      name: sysprep</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_when_to_use_this_method_4"><a class="anchor" href="#_when_to_use_this_method_4"></a>When to Use This Method</h3>
+<div class="ulist">
+<ul>
+<li>
+<p>Windows Server VMs that require static IPs</p>
+</li>
+<li>
+<p>Automated Windows deployments with answer files</p>
+</li>
+<li>
+<p>Environments migrating Windows workloads from VMware or Hyper-V</p>
+</li>
+</ul>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+Sysprep runs only during initial Windows setup. For post-deployment IP changes on Windows VMs, use PowerShell remoting or RDP to configure networking manually.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_choosing_the_right_method"><a class="anchor" href="#_choosing_the_right_method"></a>Choosing the Right Method</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The following table summarizes when to use each method:</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 16.6666%;">
+<col style="width: 16.6666%;">
+<col style="width: 16.6666%;">
+<col style="width: 16.6666%;">
+<col style="width: 16.6666%;">
+<col style="width: 16.667%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Criteria</th>
+<th class="tableblock halign-left valign-top">Cloud-init networkData</th>
+<th class="tableblock halign-left valign-top">UDN Persistent IPs</th>
+<th class="tableblock halign-left valign-top">DHCP Reservations</th>
+<th class="tableblock halign-left valign-top">Guest Agent / nmcli</th>
+<th class="tableblock halign-left valign-top">Sysprep</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Guest OS</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Linux</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Linux / Windows</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Linux / Windows</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Linux</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Windows</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Configuration timing</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">First boot</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Automatic (cluster-managed)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Every boot (DHCP)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Post-boot</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">First boot (OOBE)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Requires external server</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">No</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">No</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Yes (DHCP server)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">No</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">No</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Persists across reboots</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Yes</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Yes (IPAMClaim)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Yes (via DHCP)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Yes (NetworkManager)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Yes</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Survives live migration</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Yes (bridge)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Yes (built-in)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Yes (bridge)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Yes (bridge)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Yes (bridge)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Supports multi-interface</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Yes</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Primary only</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Yes</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Yes</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Limited</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Declarative / in manifest</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Yes</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Yes (UDN resource)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Partially (MAC only)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">No</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Yes (ConfigMap)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Post-deployment changes</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Requires VM recreate</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Managed by cluster</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Update DHCP server</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Direct on running VM</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Manual via RDP/PowerShell</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_common_issues_and_solutions"><a class="anchor" href="#_common_issues_and_solutions"></a>Common Issues and Solutions</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_networkdata_wrapped_with_network_key"><a class="anchor" href="#_networkdata_wrapped_with_network_key"></a>networkData wrapped with <code>network:</code> key</h3>
+<div class="paragraph">
+<p><strong>Problem</strong>: Cloud-init silently ignores <code>networkData</code> because it was wrapped in a <code>network:</code> key.</p>
+</div>
+<div class="paragraph">
+<p><strong>Solution</strong>: In KubeVirt&#8217;s <code>cloudInitNoCloud</code> volume, the <code>networkData</code> field must start directly with <code>version: 2</code>. Do not add a top-level <code>network:</code> wrapper. The correct format is <code>version: 2\nethernets:\n  &#8230;&#8203;</code>, not <code>network:\n  version: 2\n  ethernets:\n  &#8230;&#8203;</code>.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_interface_names_do_not_match"><a class="anchor" href="#_interface_names_do_not_match"></a>Interface names do not match</h3>
+<div class="paragraph">
+<p><strong>Problem</strong>: Used <code>eth0</code> instead of <code>enp1s0</code> in <code>networkData</code>.</p>
+</div>
+<div class="paragraph">
+<p><strong>Solution</strong>: Use predictable interface names as they appear inside the guest OS. Modern Linux distributions (RHEL 8+, Fedora, Ubuntu 16.04+) use <code>enp1s0</code>, <code>enp2s0</code>, and so on. The order matches the interface order in the VM spec.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_no_connectivity_on_secondary_interface"><a class="anchor" href="#_no_connectivity_on_secondary_interface"></a>No connectivity on secondary interface</h3>
+<div class="paragraph">
+<p><strong>Problem</strong>: Forgot to disable DHCP on the static interface.</p>
+</div>
+<div class="paragraph">
+<p><strong>Solution</strong>: Always set <code>dhcp4: false</code> and <code>dhcp6: false</code> when using static IPs in cloud-init <code>networkData</code>.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_multiple_default_routes_cause_connectivity_issues"><a class="anchor" href="#_multiple_default_routes_cause_connectivity_issues"></a>Multiple default routes cause connectivity issues</h3>
+<div class="paragraph">
+<p><strong>Problem</strong>: Default route set on both primary and secondary interfaces.</p>
+</div>
+<div class="paragraph">
+<p><strong>Solution</strong>: Only set a default route on the primary interface (usually <code>enp1s0</code>). Secondary interfaces should not have a default route.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_cloud_init_configuration_not_applied"><a class="anchor" href="#_cloud_init_configuration_not_applied"></a>Cloud-init configuration not applied</h3>
+<div class="paragraph">
+<p><strong>Problem</strong>: Syntax error in YAML or cloud-init configuration.</p>
+</div>
+<div class="paragraph">
+<p><strong>Solution</strong>: Check cloud-init logs inside the VM at <code>/var/log/cloud-init.log</code>. Verify YAML indentation and use <code>cloud-init status</code> to check for errors.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_dns_not_resolving_on_secondary_network"><a class="anchor" href="#_dns_not_resolving_on_secondary_network"></a>DNS not resolving on secondary network</h3>
+<div class="paragraph">
+<p><strong>Problem</strong>: Nameservers not configured or incorrect on the secondary interface.</p>
+</div>
+<div class="paragraph">
+<p><strong>Solution</strong>: Add appropriate nameservers in the <code>networkData</code> for the interface. If the secondary interface is on an isolated network, external DNS may not be needed.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_deprecated_gateway4_field_generates_warnings_or_fails"><a class="anchor" href="#_deprecated_gateway4_field_generates_warnings_or_fails"></a>Deprecated <code>gateway4</code> field generates warnings or fails</h3>
+<div class="paragraph">
+<p><strong>Problem</strong>: Using <code>gateway4: 192.168.100.1</code> in <code>networkData</code> generates deprecation warnings or fails on newer cloud-init versions (23.1+).</p>
+</div>
+<div class="paragraph">
+<p><strong>Solution</strong>: Replace <code>gateway4</code> with a <code>routes</code> entry. Use <code>routes: [{to: default, via: 192.168.100.1}]</code> instead. The <code>gateway4</code> and <code>gateway6</code> fields were deprecated in netplan 0.103.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_dhcp_reservation_not_working"><a class="anchor" href="#_dhcp_reservation_not_working"></a>DHCP reservation not working</h3>
+<div class="paragraph">
+<p><strong>Problem</strong>: VM receives a different IP each boot despite DHCP reservation.</p>
+</div>
+<div class="paragraph">
+<p><strong>Solution</strong>: Verify the <code>macAddress</code> field is set in the VM interface spec. Without a fixed MAC, KubeVirt assigns a random one at each boot. Also confirm the DHCP server reservation matches the MAC address exactly.</p>
+</div>
+<div class="paragraph">
+<p>For detailed cloud-init troubleshooting, see the <a href="cloud-init-troubleshooting.html" class="xref page">Cloud-init Troubleshooting Guide</a>.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_cleanup"><a class="anchor" href="#_cleanup"></a>Cleanup</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>To remove all resources created in this tutorial, delete any VMs you deployed:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc delete vm fedora-multi-vm -n static-ip-demo --ignore-not-found</code></pre>
+</div>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc delete vm fedora-dhcp-reserved-vm -n static-ip-demo --ignore-not-found</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Then delete the namespace:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc delete namespace static-ip-demo</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_summary"><a class="anchor" href="#_summary"></a>Summary</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>In this tutorial, you learned:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>The trade-offs of using static IPs in OpenShift Virtualization</p>
+</li>
+<li>
+<p>How to configure static IPs with cloud-init <code>networkData</code> for Linux VMs</p>
+</li>
+<li>
+<p>How to use UDN primary networks with persistent IPs for cluster-managed addressing</p>
+</li>
+<li>
+<p>How to use DHCP reservations with fixed MAC addresses for predictable addressing</p>
+</li>
+<li>
+<p>How to apply static IPs post-boot using the QEMU guest agent and <code>nmcli</code></p>
+</li>
+<li>
+<p>How to configure static IPs for Windows VMs using Sysprep and <code>unattend.xml</code></p>
+</li>
+<li>
+<p>How to choose the right method based on your environment and requirements</p>
+</li>
+<li>
+<p>Common issues and their solutions</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_see_also"><a class="anchor" href="#_see_also"></a>See Also</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p><a href="https://cloudinit.readthedocs.io/en/latest/reference/network-config.html" target="_blank" rel="noopener">Cloud-init Network Configuration</a></p>
+</li>
+<li>
+<p><a href="https://cloudinit.readthedocs.io/en/latest/reference/network-config-format-v2.html" target="_blank" rel="noopener">Cloud-init Network Config Version 2 (Netplan Format)</a></p>
+</li>
+<li>
+<p><a href="https://cloudinit.readthedocs.io/en/latest/reference/datasources/nocloud.html" target="_blank" rel="noopener">Cloud-init NoCloud Datasource</a></p>
+</li>
+<li>
+<p><a href="https://kubevirt.io/user-guide/user_workloads/startup_scripts/" target="_blank" rel="noopener">KubeVirt Startup Scripts (Cloud-init)</a></p>
+</li>
+<li>
+<p><a href="https://kubevirt.io/user-guide/network/interfaces_and_networks/" target="_blank" rel="noopener">KubeVirt Network Interfaces and Networks</a></p>
+</li>
+<li>
+<p><a href="https://docs.openshift.com/container-platform/latest/virt/vm_networking/virt-connecting-vm-to-default-pod-network.html" target="_blank" rel="noopener">Connecting a VM to the Default Pod Network</a></p>
+</li>
+<li>
+<p><a href="https://docs.openshift.com/container-platform/latest/virt/about_virt/about-virt.html" target="_blank" rel="noopener">OpenShift Virtualization Documentation</a></p>
+</li>
+<li>
+<p><a href="https://docs.openshift.com/container-platform/latest/virt/live_migration/virt-about-live-migration.html" target="_blank" rel="noopener">OpenShift Virtualization Live Migration</a></p>
+</li>
+<li>
+<p><a href="https://learn.microsoft.com/en-us/windows-hardware/manufacture/desktop/automate-windows-setup" target="_blank" rel="noopener">Microsoft Sysprep and Unattend Reference</a></p>
+</li>
+<li>
+<p><a href="https://netplan.readthedocs.io/en/stable/netplan-yaml/" target="_blank" rel="noopener">Netplan YAML Configuration Reference</a></p>
+</li>
+<li>
+<p><a href="cloud-init-troubleshooting.html" class="xref page">Cloud-init Troubleshooting Guide</a></p>
+</li>
+<li>
+<p><a href="../networking/localnet-vlan.html" class="xref page">Localnet VLAN Tutorial</a></p>
+</li>
+<li>
+<p><a href="../networking/udn-primary-networks.html" class="xref page">Configuring Layer 2 Primary Networks with UDNs</a></p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<nav class="pagination">
+  <span class="prev"><a href="index.html">Virtual Machine Configuration</a></span>
+  <span class="next"><a href="cloud-init-troubleshooting.html">Cloud-init Troubleshooting</a></span>
+</nav>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <img src="../../../_/img/rhl-logo-red.png" height="40px" alt="Red Hat"  href="https://redhat.com" >
+</footer><script id="site-script" src="../../../_/js/site.js" data-ui-root-path="../../../_"></script>
+<script async src="../../../_/js/vendor/highlight.js"></script>
+  </body>
+</html>
