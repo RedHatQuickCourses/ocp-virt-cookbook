@@ -2,6 +2,24 @@
 
 This cookbook provides bite-sized, practical tutorials for deploying and managing virtualization workloads on Red Hat OpenShift Virtualization. It serves as a complement to official OpenShift Virtualization training and documentation, offering hands-on guides with tested workflows, YAML manifests, and troubleshooting tips specifically designed for partner and customer engineers getting started with OpenShift Virtualization.
 
+## Quick Start (Contributors)
+
+Get started contributing in minutes:
+
+```bash
+make setup         # Install all dependencies
+make dev           # Start local preview
+```
+
+Make your changes, then:
+
+```bash
+make validate      # Run all checks
+make pr            # Push and create PR
+```
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the full contributor guide.
+
 ## Creating Course Content
 
 We use a system called Antora (https://antora.org) to publish courses. Antora expects the files and folders in a source repository to be arranged in a certain opinionated way to simplify the process of writing course content using asciidoc, and then converting the asciidoc source to HTML.
