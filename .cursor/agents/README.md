@@ -26,20 +26,22 @@ Skills (skills/*/SKILL.md)     thin slash-command wrappers that delegate to a pe
 | `/pr-message` | git-assistant | `/pr-message` |
 | `/pr-review` | pr-reviewer | `/pr-review 42` or `/pr-review 91 92 93` |
 | `/pr-review-cleanup` | pr-reviewer | `/pr-review-cleanup 42` |
+| `/qe-validate` | qe | `/qe-validate` or `/qe-validate networking --dry-run` |
 
 ## Workflow
 
 1. **Write tutorials:** `/tutorial 45 12 25` -- each issue runs the full pipeline (research, write, test, review, commit) sequentially, one branch at a time. Batch multiple issues to set up a window of work.
-2. **Final review:** `/master-review` -- unbiased review of all ready branches before the human.
-3. **PR message:** `/pr-message` -- generates `gh pr create` commands for ready branches.
-4. **PR review:** `/pr-review 42` -- reviews incoming upstream PRs (separate workflow).
+2. **QE validation:** `/qe-validate` -- regression-test all tutorials against a live cluster, commit version-tested updates, generate issue commands for failures.
+3. **Final review:** `/master-review` -- unbiased review of all ready branches before the human.
+4. **PR message:** `/pr-message` -- generates `gh pr create` commands for ready branches.
+5. **PR review:** `/pr-review 42` -- reviews incoming upstream PRs (separate workflow).
 
 ## MCP Servers
 
 | Server | Used by | Required |
 |--------|---------|----------|
-| user-kubernetes | /tutorial, /pr-review, /pr-review-cleanup | Only with cluster |
-| plugin-openshift-virtualization | /tutorial, /pr-review | Only with cluster |
+| user-kubernetes | /tutorial, /pr-review, /pr-review-cleanup, /qe-validate | Only with cluster |
+| plugin-openshift-virtualization | /tutorial, /pr-review, /qe-validate | Only with cluster |
 
 ## Output Artifacts
 
@@ -50,6 +52,8 @@ Runtime output goes to `.cursor/output/` (gitignored):
 | `pr-<N>.log` | `/pr-review` -- review findings with `gh api` command |
 | `pr-<N>-cluster.log` | `/pr-review` -- timestamped `oc` command output |
 | `pr-<N>-previous.log` | `/pr-review` (follow-up) -- previous review log |
+| `qe-validate-<ver>-<date>.log` | `/qe-validate` -- per-tutorial PASS/FAIL/SKIP report |
+| `qe-issues-<ver>-<date>.sh` | `/qe-validate` -- `gh issue create` commands for failures |
 
 ## Configuration Files
 
