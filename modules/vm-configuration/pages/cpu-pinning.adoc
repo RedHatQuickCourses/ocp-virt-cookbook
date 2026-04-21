@@ -1,0 +1,435 @@
+= Dedicated CPU Placement for Virtual Machines
+:navtitle: Dedicated CPU Placement
+
+== Overview
+
+This tutorial demonstrates how to configure dedicated CPU placement for virtual machines in OpenShift Virtualization. By default, virtual machine vCPUs share physical CPU time with other workloads on the host. Dedicated CPU placement pins each vCPU to a specific physical CPU, eliminating CPU steal and reducing scheduling jitter.
+
+This configuration is essential for workloads that require predictable latency: NFV/telco applications, real-time processing, HPC, and latency-sensitive databases.
+
+== Prerequisites
+
+* OpenShift 4.18+ with OpenShift Virtualization operator installed (tested on 4.21)
+* Cluster admin access (`system:admin` or equivalent)
+* `oc` and `virtctl` CLIs installed
+* Worker nodes with sufficient physical CPU cores (at least 4 recommended)
+* Familiarity with Kubernetes QoS classes (see xref:resource-limits-qos.adoc[])
+
+== Understanding Dedicated CPU Placement
+
+OpenShift uses the Kubernetes CPU Manager to assign exclusive physical CPUs to pods. When the CPU Manager runs with the `static` policy, it can pin a pod's containers to dedicated host CPUs, preventing any other workload from using those CPUs.
+
+KubeVirt's `dedicatedCpuPlacement` field instructs the CPU Manager to pin the `virt-launcher` pod's vCPUs to physical CPUs. Once the pod is running, each guest vCPU maps directly to a reserved physical CPU.
+
+Two requirements must be met before dedicated placement works:
+
+* The node must have the CPU Manager running with the `static` policy.
+* The VM must have *Guaranteed* QoS: CPU and memory requests must equal their limits, and CPU counts must be whole integers.
+
+[cols="1,2,2",options="header"]
+|===
+|Mode |vCPU behavior |Use case
+
+|Default (shared)
+|vCPUs compete for host CPU time with all other workloads
+|General-purpose VMs, development, non-latency-sensitive workloads
+
+|Dedicated (`dedicatedCpuPlacement: true`)
+|vCPUs pinned to reserved physical CPUs, no CPU steal
+|NFV/telco, real-time, HPC, latency-sensitive databases
+|===
+
+== Step 1: Enable the CPU Manager Static Policy
+
+The CPU Manager policy is configured per MachineConfigPool using a `KubeletConfig` resource.
+
+First, add a label to the worker MachineConfigPool to identify it as a target for this configuration:
+
+[source,bash,role=execute]
+----
+oc label machineconfigpool worker custom-kubelet=cpumanager-enabled
+----
+
+NOTE: On single-node OpenShift (SNO) clusters, the node belongs to the `master` MachineConfigPool, not `worker`. Replace `worker` with `master` in this command and in the `machineConfigPoolSelector` of the `KubeletConfig` that follows.
+
+xref:attachment$cpu-pinning/kubeletconfig-static-policy.yaml[Download kubeletconfig-static-policy.yaml]
+
+Apply the `KubeletConfig` to enable the static CPU Manager policy:
+
+[source,bash,role=execute]
+----
+oc apply -f - <<EOF
+apiVersion: machineconfiguration.openshift.io/v1
+kind: KubeletConfig
+metadata:
+  name: cpumanager-enabled
+spec:
+  machineConfigPoolSelector:
+    matchLabels:
+      custom-kubelet: cpumanager-enabled
+  kubeletConfig:
+    cpuManagerPolicy: static
+    cpuManagerReconcilePeriod: 5s
+EOF
+----
+
+The Machine Config Operator applies the new kubelet configuration to all nodes in the targeted pool. Monitor the rollout:
+
+[source,bash,role=execute]
+----
+oc get mcp worker -w
+----
+
+Wait until the `UPDATING` column returns to `False` and `READYMACHINECOUNT` matches `MACHINECOUNT`:
+
+----
+NAME     CONFIG                                             UPDATED   UPDATING   DEGRADED
+worker   rendered-worker-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx   True      False      False
+----
+
+=== Verify the CPU Manager Policy
+
+Confirm that the kubelet on each worker node is now running with the `static` policy:
+
+[source,bash,role=execute]
+----
+oc debug node/<node-name> -- chroot /host cat /etc/kubernetes/kubelet.conf
+----
+
+The output should include:
+
+----
+cpuManagerPolicy: static
+cpuManagerReconcilePeriod: 5s
+----
+
+== Step 2: Label Nodes for Dedicated CPU Workloads
+
+VMs that request dedicated CPU placement need a node selector to target only nodes where the CPU Manager is running. Apply the `cpumanager=true` label to each worker node that has the static policy enabled:
+
+[source,bash,role=execute]
+----
+oc label node <node-name> cpumanager=true
+----
+
+Verify the label is present:
+
+[source,bash,role=execute]
+----
+oc get nodes -L cpumanager
+----
+
+Expected output:
+
+----
+NAME         STATUS   ROLES    AGE   VERSION   CPUMANAGER
+worker-01    Ready    worker   10d   v1.34.5   true
+worker-02    Ready    worker   10d   v1.34.5   true
+----
+
+NOTE: KubeVirt can automatically manage the `cpumanager=true` label when the `CPUManager` feature gate is enabled on the KubeVirt CR. When enabled, KubeVirt detects which nodes have the static CPU Manager policy running and applies or removes the label automatically. Without the feature gate, manage this label manually whenever nodes are added or reconfigured.
+
+== Step 3: Create a Namespace
+
+[source,bash,role=execute]
+----
+oc create namespace cpu-pinning-demo
+----
+
+== Step 4: Deploy a VM with Dedicated CPU Placement
+
+The following VM specification requests 2 dedicated vCPUs using `dedicatedCpuPlacement: true`. The `nodeSelector` ensures the VM schedules only on nodes labeled `cpumanager=true`. Memory requests and limits are equal, satisfying the Guaranteed QoS requirement.
+
+WARNING: The cloud-init password in this example is for demonstration purposes only. Use SSH key authentication or a strong, unique password in production environments.
+
+xref:attachment$cpu-pinning/vm-dedicated-cpu.yaml[Download vm-dedicated-cpu.yaml]
+
+[source,bash,role=execute]
+----
+oc apply -f - <<EOF
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: vm-dedicated-cpu
+  namespace: cpu-pinning-demo
+spec:
+  runStrategy: Always
+  template:
+    metadata:
+      labels:
+        kubevirt.io/domain: vm-dedicated-cpu
+    spec:
+      nodeSelector:
+        cpumanager: "true"
+      domain:
+        cpu:
+          sockets: 2
+          cores: 1
+          threads: 1
+          dedicatedCpuPlacement: true
+        memory:
+          guest: 1Gi
+        resources:
+          requests:
+            memory: 2Gi
+          limits:
+            memory: 2Gi
+        devices:
+          disks:
+          - name: rootdisk
+            disk:
+              bus: virtio
+          - name: cloudinitdisk
+            disk:
+              bus: virtio
+          interfaces:
+          - name: default
+            masquerade: {}
+      networks:
+      - name: default
+        pod: {}
+      volumes:
+      - name: rootdisk
+        containerDisk:
+          image: quay.io/containerdisks/fedora:latest
+      - name: cloudinitdisk
+        cloudInitNoCloud:
+          userData: |
+            #cloud-config
+            password: redhat
+            chpasswd:
+              expire: false
+EOF
+----
+
+NOTE: The memory limit (2Gi) is set higher than the guest memory (1Gi) to account for QEMU and hypervisor overhead. See xref:resource-limits-qos.adoc[] for a detailed explanation of how KubeVirt translates VM memory specifications into container resource values.
+
+Wait for the VM to reach Running status:
+
+[source,bash,role=execute]
+----
+oc get vm vm-dedicated-cpu -n cpu-pinning-demo -w
+----
+
+Expected output:
+
+----
+NAME              AGE   STATUS    READY
+vm-dedicated-cpu  30s   Running   True
+----
+
+== Step 5: Verify CPU Pinning
+
+=== Host-Side Verification
+
+Find the node where the VM is running:
+
+[source,bash,role=execute]
+----
+oc get vmi vm-dedicated-cpu -n cpu-pinning-demo -o wide
+----
+
+Example output:
+
+----
+NAME              AGE   PHASE     IP            NODENAME    READY
+vm-dedicated-cpu  60s   Running   10.128.0.45   worker-01   True
+----
+
+Open a debug session on that node:
+
+[source,bash,role=execute]
+----
+oc debug node/<node-name>
+----
+
+Inside the debug shell, read the CPU Manager state file. This file records which physical CPUs are assigned to each container:
+
+[source,bash,role=execute]
+----
+chroot /host cat /var/lib/kubelet/cpu_manager_state
+----
+
+The output is a JSON object. The `entries` map is keyed by the `virt-launcher` pod UID, with each entry listing the physical CPU IDs exclusively assigned to the `compute` container inside that pod:
+
+----
+{"policyName":"static","defaultCpuSet":"0-1,3-41,43-79","entries":{"<pod-uid>":{"compute":"2,42"}},"checksum":...}
+----
+
+CPUs `2` and `42` in this example are reserved exclusively for the VM's 2 vCPUs. They are removed from the `defaultCpuSet`, so no other workload can use them while the VM is running.
+
+Exit the debug shell:
+
+[source,bash,role=execute]
+----
+exit
+----
+
+=== Guest-Side Verification
+
+Connect to the VM console:
+
+[source,bash,role=execute]
+----
+virtctl console vm-dedicated-cpu -n cpu-pinning-demo
+----
+
+Log in as `fedora` with password `redhat`. Inside the guest, check the number of vCPUs visible to the operating system:
+
+[source,bash,role=execute]
+----
+lscpu | grep -E "^CPU\(s\)|^Socket|^Core|^Thread"
+----
+
+Expected output:
+
+----
+CPU(s):                  2
+Thread(s) per core:      1
+Core(s) per socket:      1
+Socket(s):               2
+----
+
+The guest sees 2 vCPUs (2 sockets, 1 core, 1 thread each), matching the requested topology.
+
+Disconnect from the console by pressing `Ctrl+]`.
+
+== Isolating the Emulator Thread
+
+QEMU runs an emulator thread that handles I/O, timers, and other hypervisor tasks. By default, this thread shares physical CPU time with the VM's vCPUs, which can introduce latency spikes. The `isolateEmulatorThread` option reserves an additional dedicated CPU exclusively for this thread.
+
+To enable emulator thread isolation, add `isolateEmulatorThread: true` to the CPU section of the VM spec alongside `dedicatedCpuPlacement: true`:
+
+[source,yaml]
+----
+domain:
+  cpu:
+    sockets: 2
+    cores: 1
+    threads: 1
+    dedicatedCpuPlacement: true
+    isolateEmulatorThread: true
+----
+
+With this configuration, KubeVirt requests 3 physical CPUs total: 2 for vCPUs and 1 exclusively for the emulator thread. Use this option when the workload is sensitive to even small amounts of emulator-induced jitter.
+
+NOTE: On nodes with Simultaneous Multithreading (SMT) enabled and the `full-pcpus-only` CPU Manager option, using `isolateEmulatorThread` with an even number of vCPUs may cause a scheduling error. Enable the `AlignCPUs` feature gate in the KubeVirt CR to resolve this.
+
+== Troubleshooting
+
+=== VM stuck in Pending state
+
+Check the VMI events for a scheduling failure:
+
+[source,bash,role=execute]
+----
+oc describe vmi vm-dedicated-cpu -n cpu-pinning-demo
+----
+
+Look for events like:
+
+----
+Warning  FailedScheduling  0/3 nodes are available: 3 node(s) didn't match Pod's node affinity/selector
+----
+
+*Possible causes and resolutions:*
+
+* *No nodes labeled `cpumanager=true`*: Run `oc get nodes -L cpumanager` and apply the label to nodes that have the static CPU Manager policy.
+* *Not enough free pinnable CPUs*: The CPU Manager reserves CPUs from the allocatable pool. Check node capacity with `oc describe node <node-name>` and verify there are enough free CPUs to satisfy the request.
+
+=== CPU pinning not active after VM starts
+
+Verify that the KubeletConfig was applied correctly:
+
+[source,bash,role=execute]
+----
+oc get kubeletconfig cpumanager-enabled
+----
+
+Check the MachineConfigPool status:
+
+[source,bash,role=execute]
+----
+oc get mcp worker
+----
+
+If `UPDATED` is `False` or `DEGRADED` is `True`, the configuration has not been fully applied. Inspect the MCO logs:
+
+[source,bash,role=execute]
+----
+oc logs -n openshift-machine-config-operator -l k8s-app=machine-config-operator --tail=50
+----
+
+=== VM fails admission with "insufficient dedicated CPU resources"
+
+This error means `dedicatedCpuPlacement: true` is set but the QoS class is not Guaranteed. Verify that CPU requests equal CPU limits and that both are whole integer values.
+
+Check the actual QoS class assigned to the virt-launcher pod:
+
+[source,bash,role=execute]
+----
+oc get pod -n cpu-pinning-demo -l kubevirt.io/domain=vm-dedicated-cpu -o jsonpath='{.items[0].status.qosClass}{"\n"}'
+----
+
+The value must be `Guaranteed`. If it is `Burstable`, review the VM's resource specification and ensure memory requests equal memory limits.
+
+=== `cpu_manager_state` shows no entry for the VM
+
+If the CPU Manager state file does not list the virt-launcher pod's CPU assignment, the node's kubelet may still be running with the `none` policy. Confirm the policy:
+
+[source,bash,role=execute]
+----
+oc debug node/<node-name> -- chroot /host cat /etc/kubernetes/kubelet.conf
+----
+
+If `cpuManagerPolicy` is missing or set to `none`, the KubeletConfig has not yet been applied to this node. Wait for the MachineConfigPool rollout to complete.
+
+== Cleanup
+
+Remove all resources created in this tutorial:
+
+[source,bash,role=execute]
+----
+oc delete namespace cpu-pinning-demo
+----
+
+Remove the `cpumanager=true` label from nodes if you no longer need it:
+
+[source,bash,role=execute]
+----
+oc label node <node-name> cpumanager-
+----
+
+To revert the CPU Manager policy, delete the `KubeletConfig` and remove the label from the MachineConfigPool:
+
+[source,bash,role=execute]
+----
+oc delete kubeletconfig cpumanager-enabled
+----
+
+[source,bash,role=execute]
+----
+oc label machineconfigpool worker custom-kubelet-
+----
+
+WARNING: Deleting the `KubeletConfig` triggers another MCO rollout to revert the kubelet configuration. Monitor the MachineConfigPool until the rollout completes before scheduling further workloads that depend on CPU Manager behavior.
+
+== Summary
+
+In this tutorial you learned how to:
+
+* Configure the Kubernetes CPU Manager with the `static` policy using a `KubeletConfig` resource
+* Label nodes to indicate that dedicated CPU placement is available
+* Deploy a virtual machine with `dedicatedCpuPlacement: true` and Guaranteed QoS
+* Verify CPU pinning from the host using the CPU Manager state file
+* Verify the vCPU topology from inside the guest
+* Optionally isolate the QEMU emulator thread with `isolateEmulatorThread: true`
+
+== See Also
+
+* xref:resource-limits-qos.adoc[VM Resource Limits and QoS] -- Guaranteed QoS requirements and memory overhead
+* xref:node-placement-affinity.adoc[Node Placement and Affinity] -- targeting specific nodes for VM scheduling
+* xref:infrastructure-node-placement.adoc[Infrastructure Node Placement] -- dedicated node pools for virtualization workloads
+* link:https://kubevirt.io/user-guide/compute/dedicated_cpu_resources/[KubeVirt Dedicated CPU Resources,window=_blank]
+* link:https://docs.openshift.com/container-platform/4.18/scalability_and_performance/using-cpu-manager.html[Using CPU Manager and Topology Manager - OpenShift Documentation,window=_blank]
+* link:https://kubernetes.io/docs/tasks/administer-cluster/cpu-management-policies/[CPU Management Policies - Kubernetes Documentation,window=_blank]
