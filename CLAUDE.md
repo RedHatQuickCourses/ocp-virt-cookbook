@@ -31,6 +31,7 @@ Slash-command skills are in `.claude/skills/`. Each references an agent persona 
 | `/pr-message` | Generate `gh pr create` command |
 | `/pr-review` | Review incoming upstream PRs |
 | `/pr-review-cleanup` | Clean up cluster resources from PR review |
+| `/qe-validate` | Validate tutorials against live cluster, update version annotations, generate issue commands |
 
 ## Build
 
