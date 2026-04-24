@@ -47,7 +47,7 @@ Hugepages bypass this overhead by using larger page sizes:
 
 When a VM spec includes `memory.hugepages.pageSize`, KubeVirt configures QEMU to allocate all guest memory from the host's pre-allocated hugepage pool. The memory is pinned and never swapped.
 
-IMPORTANT: Hugepages cannot be overcommitted. The host must have enough free hugepages on the NUMA node(s) where the VM is scheduled. If not, the VM fails to start.
+IMPORTANT: Hugepages cannot be overcommitted. The host must have enough free hugepages on the NUMA node(s) where the VM is scheduled. If not, the VM fails to start. When using NUMA passthrough, hugepages must be available on the specific NUMA node(s) assigned to the VM's CPUs. Reserve more hugepages than the sum of all VM memory requests to account for per-NUMA-node distribution and QEMU overhead.
 
 == Understanding NUMA Topology
 
@@ -98,12 +98,14 @@ spec:
   recommend:
   - machineConfigLabels:
       machineconfiguration.openshift.io/role: "worker"
-    priority: 30
+    priority: 20
     profile: openshift-node-hugepages
 EOF
 ----
 
 NOTE: On single-node OpenShift (SNO), replace `worker` with `master` in the `machineConfigLabels` role.
+
+TIP: The `priority` value must be unique among Tuned profiles that match the same node. The default `openshift-control-plane` and `openshift-node` profiles use priority 30. Use a lower number (higher priority) such as 20 to ensure your hugepages profile takes effect.
 
 The Node Tuning Operator generates a `MachineConfig` that adds `hugepagesz=2M hugepages=1024` to the kernel command line. The Machine Config Operator then reboots each worker node to apply the change. Monitor the rollout:
 
@@ -396,7 +398,7 @@ spec:
       domain:
         cpu:
           sockets: 1
-          cores: 4
+          cores: 2
           threads: 1
           dedicatedCpuPlacement: true
           isolateEmulatorThread: true
@@ -407,9 +409,9 @@ spec:
             pageSize: 2Mi
         resources:
           requests:
-            memory: 2Gi
+            memory: 1Gi
           limits:
-            memory: 2Gi
+            memory: 1Gi
         devices:
           autoattachMemBalloon: false
           disks:
@@ -539,7 +541,7 @@ oc debug node/<node-name>
 chroot /host cat /var/lib/kubelet/cpu_manager_state
 ----
 
-The `entries` map should show the `compute` container with dedicated CPU IDs. With `isolateEmulatorThread: true`, an additional CPU is reserved (5 total: 4 vCPUs + 1 emulator thread).
+The `entries` map should show the `compute` container with dedicated CPU IDs. With `isolateEmulatorThread: true`, an additional CPU is reserved (3 total: 2 vCPUs + 1 emulator thread).
 
 Exit the debug shell:
 
