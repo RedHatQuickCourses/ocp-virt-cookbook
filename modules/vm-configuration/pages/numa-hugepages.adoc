@@ -1,0 +1,696 @@
+= NUMA Topology and Hugepages for Virtual Machines
+:navtitle: NUMA and Hugepages
+
+== Overview
+
+This tutorial demonstrates how to configure hugepage-backed memory and NUMA topology passthrough for virtual machines in OpenShift Virtualization. By default, VM memory uses standard 4Ki pages and the guest has no visibility into the host's NUMA layout. For performance-critical workloads -- NFV/telco, HPC, real-time processing, and large-memory databases -- this default introduces two measurable bottlenecks:
+
+* *TLB pressure*: A VM with 16Gi of memory backed by 4Ki pages requires over 4 million page table entries. The CPU's translation lookaside buffer (TLB) is limited in size, so frequent TLB misses force expensive page-table walks.
+* *Cross-NUMA memory latency*: On multi-socket or multi-chiplet hosts, accessing memory on a remote NUMA node can be 1.5-3x slower than local memory. Without NUMA awareness, the guest OS cannot place memory and threads on the same physical NUMA node.
+
+Hugepages reduce TLB pressure by using 2Mi or 1Gi pages instead of 4Ki. NUMA passthrough (`guestMappingPassthrough`) exposes the host's physical NUMA topology to the guest, enabling NUMA-aware scheduling inside the VM. Together with dedicated CPU placement, these features form the foundation for deterministic, low-latency VM performance.
+
+== Prerequisites
+
+* OpenShift 4.18+ with OpenShift Virtualization operator installed (tested on 4.21)
+* Cluster admin access (`system:admin` or equivalent)
+* `oc` and `virtctl` CLIs installed
+* Worker nodes with multiple physical CPU cores (at least 8 recommended) and sufficient RAM for hugepage reservations
+* CPU Manager static policy already enabled (see the Dedicated CPU Placement tutorial)
+* Familiarity with Kubernetes QoS classes (see xref:resource-limits-qos.adoc[])
+
+== Understanding Hugepages
+
+Standard Linux memory management uses 4Ki pages. A VM with 2Gi of memory requires 524,288 individual page mappings. Each TLB miss triggers a multi-level page-table walk that can stall the CPU for hundreds of nanoseconds.
+
+Hugepages bypass this overhead by using larger page sizes:
+
+[cols="1,1,2,2",options="header"]
+|===
+|Page size |Pages per 2Gi |TLB entries needed |Best for
+
+|4Ki (default)
+|524,288
+|524,288
+|General-purpose workloads
+
+|2Mi
+|1,024
+|1,024
+|Most performance-sensitive VMs
+
+|1Gi
+|2
+|2
+|Very large memory VMs, databases
+|===
+
+When a VM spec includes `memory.hugepages.pageSize`, KubeVirt configures QEMU to allocate all guest memory from the host's pre-allocated hugepage pool. The memory is pinned and never swapped.
+
+IMPORTANT: Hugepages cannot be overcommitted. The host must have enough free hugepages on the NUMA node(s) where the VM is scheduled. If not, the VM fails to start.
+
+== Understanding NUMA Topology
+
+Non-Uniform Memory Access (NUMA) is a hardware architecture where each CPU socket (or chiplet) has its own local memory. Access to local memory is fast; access to remote memory crosses an interconnect and is slower.
+
+On a typical two-socket server:
+
+----
+NUMA Node 0: CPUs 0-19, 40-59   Local Memory: 128Gi
+NUMA Node 1: CPUs 20-39, 60-79  Local Memory: 128Gi
+----
+
+Without NUMA awareness, the guest OS may schedule threads on vCPUs that map to NUMA node 0 while the backing memory is allocated on NUMA node 1. This cross-node access adds latency to every memory operation.
+
+KubeVirt's `guestMappingPassthrough` strategy resolves this by passing the host NUMA topology through to the guest. The guest sees the same NUMA structure as the physical host (based on the dedicated CPUs it received), and can make its own NUMA-aware scheduling decisions.
+
+Three preconditions must be met for NUMA passthrough:
+
+. Dedicated CPU placement (`dedicatedCpuPlacement: true`)
+. Hugepages allocated on target nodes
+. The NUMA feature gate enabled on the KubeVirt CR (enabled by default in OpenShift Virtualization 4.18+)
+
+== Step 1: Reserve Hugepages on Nodes
+
+Hugepages must be pre-allocated at boot time to guarantee contiguous physical memory. On OpenShift, the Node Tuning Operator handles kernel boot parameter injection through a `Tuned` resource.
+
+The following `Tuned` profile reserves 1024 pages of 2Mi size (2Gi total) on each worker node at boot time.
+
+xref:attachment$numa-hugepages/hugepages-tuned-boottime.yaml[Download hugepages-tuned-boottime.yaml]
+
+[source,bash,role=execute]
+----
+oc apply -f - <<EOF
+apiVersion: tuned.openshift.io/v1
+kind: Tuned
+metadata:
+  name: hugepages
+  namespace: openshift-cluster-node-tuning-operator
+spec:
+  profile:
+  - data: |
+      [main]
+      summary=Boot time configuration for hugepages
+      include=openshift-node
+      [bootloader]
+      cmdline_openshift_node_hugepages=hugepagesz=2M hugepages=1024
+    name: openshift-node-hugepages
+  recommend:
+  - machineConfigLabels:
+      machineconfiguration.openshift.io/role: "worker"
+    priority: 30
+    profile: openshift-node-hugepages
+EOF
+----
+
+NOTE: On single-node OpenShift (SNO), replace `worker` with `master` in the `machineConfigLabels` role.
+
+The Node Tuning Operator generates a `MachineConfig` that adds `hugepagesz=2M hugepages=1024` to the kernel command line. The Machine Config Operator then reboots each worker node to apply the change. Monitor the rollout:
+
+[source,bash,role=execute]
+----
+oc get mcp worker -w
+----
+
+Wait until `UPDATED` returns to `True` and `MACHINECOUNT` equals `READYMACHINECOUNT`:
+
+----
+NAME     CONFIG                                             UPDATED   UPDATING   DEGRADED
+worker   rendered-worker-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx   True      False      False
+----
+
+WARNING: This triggers a rolling reboot of all nodes in the targeted MachineConfigPool. Plan accordingly for production clusters.
+
+=== Verify Hugepage Allocation
+
+After the rollout completes, confirm that each node reports the expected hugepage capacity:
+
+[source,bash,role=execute]
+----
+oc get node <node-name> -o jsonpath='{.status.allocatable.hugepages-2Mi}{"\n"}'
+----
+
+Expected output:
+
+----
+2Gi
+----
+
+For a more detailed view, open a debug session on the node and inspect `/proc/meminfo`:
+
+[source,bash,role=execute]
+----
+oc debug node/<node-name>
+----
+
+Inside the debug shell:
+
+[source,bash,role=execute]
+----
+chroot /host grep -i hugepages /proc/meminfo
+----
+
+Expected output:
+
+----
+AnonHugePages:         0 kB
+ShmemHugePages:        0 kB
+FileHugePages:         0 kB
+HugePages_Total:    1024
+HugePages_Free:     1024
+HugePages_Rsvd:        0
+HugePages_Surp:        0
+Hugepagesize:       2048 kB
+----
+
+`HugePages_Total` should match the number configured (1024). `HugePages_Free` shows how many are currently available for allocation.
+
+Exit the debug shell:
+
+[source,bash,role=execute]
+----
+exit
+----
+
+== Step 2: Verify NUMA Topology on Nodes
+
+Before deploying NUMA-aware VMs, inspect the physical NUMA layout of your worker nodes.
+
+Open a debug session:
+
+[source,bash,role=execute]
+----
+oc debug node/<node-name>
+----
+
+Inside the debug shell, run `numactl` to display the hardware topology:
+
+[source,bash,role=execute]
+----
+chroot /host numactl --hardware
+----
+
+Example output on a two-socket server:
+
+----
+available: 2 nodes (0-1)
+node 0 cpus: 0 1 2 3 4 5 6 7 8 9 40 41 42 43 44 45 46 47 48 49
+node 0 size: 131072 MB
+node 0 free: 125000 MB
+node 1 cpus: 20 21 22 23 24 25 26 27 28 29 60 61 62 63 64 65 66 67 68 69
+node 1 size: 131072 MB
+node 1 free: 125000 MB
+node distances:
+node   0   1
+  0:  10  21
+  1:  21  10
+----
+
+The `node distances` table shows relative latency: local access costs 10 (normalized), while cross-node access costs 21 -- over twice as slow.
+
+NOTE: On single-socket systems or single-node OpenShift, you may see only one NUMA node. NUMA passthrough still works but provides no cross-node optimization since all CPUs and memory are local.
+
+Exit the debug shell:
+
+[source,bash,role=execute]
+----
+exit
+----
+
+== Step 3: Create a Namespace
+
+[source,bash,role=execute]
+----
+oc create namespace numa-hugepages-demo
+----
+
+== Step 4: Deploy a VM with Hugepages
+
+This first VM uses hugepage-backed memory with dedicated CPU placement but without NUMA passthrough. This configuration eliminates TLB overhead while keeping the VM manifest simpler.
+
+The key fields:
+
+* `dedicatedCpuPlacement: true` -- pins vCPUs to physical CPUs (prerequisite for hugepages in KubeVirt)
+* `memory.hugepages.pageSize: 2Mi` -- allocates guest memory from the 2Mi hugepage pool
+* Memory `requests` and `limits` must be equal (Guaranteed QoS)
+
+WARNING: The cloud-init password in this example is for demonstration purposes only. Use SSH key authentication or a strong, unique password in production environments.
+
+xref:attachment$numa-hugepages/vm-hugepages.yaml[Download vm-hugepages.yaml]
+
+[source,bash,role=execute]
+----
+oc apply -f - <<EOF
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: vm-hugepages
+  namespace: numa-hugepages-demo
+spec:
+  runStrategy: Always
+  template:
+    metadata:
+      labels:
+        kubevirt.io/domain: vm-hugepages
+    spec:
+      nodeSelector:
+        cpumanager: "true"
+      domain:
+        cpu:
+          sockets: 2
+          cores: 1
+          threads: 1
+          dedicatedCpuPlacement: true
+        memory:
+          hugepages:
+            pageSize: 2Mi
+        resources:
+          requests:
+            memory: 2Gi
+          limits:
+            memory: 2Gi
+        devices:
+          disks:
+          - name: rootdisk
+            disk:
+              bus: virtio
+          - name: cloudinitdisk
+            disk:
+              bus: virtio
+          interfaces:
+          - name: default
+            masquerade: {}
+      networks:
+      - name: default
+        pod: {}
+      volumes:
+      - name: rootdisk
+        containerDisk:
+          image: quay.io/containerdisks/fedora:latest
+      - name: cloudinitdisk
+        cloudInitNoCloud:
+          userData: |
+            #cloud-config
+            password: redhat
+            chpasswd:
+              expire: false
+EOF
+----
+
+Wait for the VM to reach Running status:
+
+[source,bash,role=execute]
+----
+oc get vm vm-hugepages -n numa-hugepages-demo -w
+----
+
+Expected output:
+
+----
+NAME           AGE   STATUS    READY
+vm-hugepages   45s   Running   True
+----
+
+== Step 5: Verify Hugepage Backing
+
+=== Host-Side Verification
+
+Find the node where the VM is running:
+
+[source,bash,role=execute]
+----
+oc get vmi vm-hugepages -n numa-hugepages-demo -o wide
+----
+
+Open a debug session on that node:
+
+[source,bash,role=execute]
+----
+oc debug node/<node-name>
+----
+
+Check hugepage consumption. The `HugePages_Free` count should be lower than `HugePages_Total` by the amount consumed by the VM:
+
+[source,bash,role=execute]
+----
+chroot /host grep -i hugepages /proc/meminfo
+----
+
+With a 2Gi VM using 2Mi pages, 1024 pages are consumed, so `HugePages_Free` should drop by approximately 1024 from the original value.
+
+Exit the debug shell:
+
+[source,bash,role=execute]
+----
+exit
+----
+
+=== Guest-Side Verification
+
+Connect to the VM console:
+
+[source,bash,role=execute]
+----
+virtctl console vm-hugepages -n numa-hugepages-demo
+----
+
+Log in as `fedora` with password `redhat`. Check the total memory available to the guest:
+
+[source,bash,role=execute]
+----
+free -h
+----
+
+The guest sees the memory as standard RAM. Hugepages are transparent to the guest at the QEMU level -- the guest OS itself can independently configure its own hugepages from the memory it receives.
+
+Disconnect from the console by pressing `Ctrl+]`.
+
+== Step 6: Deploy a VM with NUMA Passthrough
+
+This VM combines all three performance features: dedicated CPUs, hugepages, and NUMA topology passthrough. The key addition is `numa.guestMappingPassthrough: {}`, which instructs KubeVirt to map the host NUMA topology into the guest.
+
+Additional configuration for NUMA passthrough:
+
+* `isolateEmulatorThread: true` -- prevents the QEMU emulator thread from competing with vCPUs
+* `autoattachMemBalloon: false` -- disables the memory balloon device, which is incompatible with deterministic memory allocation
+
+xref:attachment$numa-hugepages/vm-numa-hugepages.yaml[Download vm-numa-hugepages.yaml]
+
+[source,bash,role=execute]
+----
+oc apply -f - <<EOF
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: vm-numa-hugepages
+  namespace: numa-hugepages-demo
+spec:
+  runStrategy: Always
+  template:
+    metadata:
+      labels:
+        kubevirt.io/domain: vm-numa-hugepages
+    spec:
+      nodeSelector:
+        cpumanager: "true"
+      domain:
+        cpu:
+          sockets: 1
+          cores: 4
+          threads: 1
+          dedicatedCpuPlacement: true
+          isolateEmulatorThread: true
+          numa:
+            guestMappingPassthrough: {}
+        memory:
+          hugepages:
+            pageSize: 2Mi
+        resources:
+          requests:
+            memory: 2Gi
+          limits:
+            memory: 2Gi
+        devices:
+          autoattachMemBalloon: false
+          disks:
+          - name: rootdisk
+            disk:
+              bus: virtio
+          - name: cloudinitdisk
+            disk:
+              bus: virtio
+          interfaces:
+          - name: default
+            masquerade: {}
+      networks:
+      - name: default
+        pod: {}
+      volumes:
+      - name: rootdisk
+        containerDisk:
+          image: quay.io/containerdisks/fedora:latest
+      - name: cloudinitdisk
+        cloudInitNoCloud:
+          userData: |
+            #cloud-config
+            password: redhat
+            chpasswd:
+              expire: false
+EOF
+----
+
+Wait for the VM to reach Running status:
+
+[source,bash,role=execute]
+----
+oc get vm vm-numa-hugepages -n numa-hugepages-demo -w
+----
+
+Expected output:
+
+----
+NAME                AGE   STATUS    READY
+vm-numa-hugepages   60s   Running   True
+----
+
+== Step 7: Verify NUMA Topology Inside the VM
+
+=== Verify NUMA Configuration on the VMI
+
+First, confirm that the VMI has NUMA passthrough configured:
+
+[source,bash,role=execute]
+----
+oc get vmi vm-numa-hugepages -n numa-hugepages-demo -o jsonpath='{.spec.domain.cpu.numa}{"\n"}'
+----
+
+Expected output:
+
+----
+{"guestMappingPassthrough":{}}
+----
+
+=== Guest-Side NUMA Verification
+
+Connect to the VM console:
+
+[source,bash,role=execute]
+----
+virtctl console vm-numa-hugepages -n numa-hugepages-demo
+----
+
+Log in as `fedora` with password `redhat`. Check the NUMA topology visible to the guest:
+
+[source,bash,role=execute]
+----
+lscpu | grep -i numa
+----
+
+On a host with multiple NUMA nodes, the guest may report multiple NUMA nodes matching the topology of the physical CPUs it received. On a single-NUMA-node host, the guest reports one NUMA node.
+
+Check detailed CPU topology:
+
+[source,bash,role=execute]
+----
+lscpu
+----
+
+Verify memory allocation per NUMA node (if `numactl` is available):
+
+[source,bash,role=execute]
+----
+numactl --hardware
+----
+
+If `numactl` is not installed, install it first:
+
+[source,bash,role=execute]
+----
+sudo dnf install -y numactl
+----
+
+Then run:
+
+[source,bash,role=execute]
+----
+numactl --hardware
+----
+
+The output shows how memory and CPUs are distributed across the guest's NUMA nodes, reflecting the host's physical topology.
+
+Disconnect from the console by pressing `Ctrl+]`.
+
+=== Host-Side NUMA Verification
+
+Find the node and verify CPU pinning through the CPU Manager state:
+
+[source,bash,role=execute]
+----
+oc get vmi vm-numa-hugepages -n numa-hugepages-demo -o wide
+----
+
+[source,bash,role=execute]
+----
+oc debug node/<node-name>
+----
+
+[source,bash,role=execute]
+----
+chroot /host cat /var/lib/kubelet/cpu_manager_state
+----
+
+The `entries` map should show the `compute` container with dedicated CPU IDs. With `isolateEmulatorThread: true`, an additional CPU is reserved (5 total: 4 vCPUs + 1 emulator thread).
+
+Exit the debug shell:
+
+[source,bash,role=execute]
+----
+exit
+----
+
+== Choosing Between 2Mi and 1Gi Hugepages
+
+[cols="1,2,2",options="header"]
+|===
+|Consideration |2Mi pages |1Gi pages
+
+|TLB coverage per entry
+|2Mi
+|1Gi (512x more)
+
+|Pre-allocation granularity
+|Fine-grained (e.g., 100Mi increments)
+|Coarse (1Gi minimum)
+
+|Memory waste
+|Minimal
+|Up to 1Gi unused per VM if memory is not a multiple of 1Gi
+
+|Boot-time reservation
+|Can reserve hundreds of pages without exhausting memory
+|Reserves large chunks; fewer pages available for non-hugepage workloads
+
+|Typical use case
+|Most VMs, moderate TLB improvement
+|Very large memory VMs (64Gi+), databases, maximum TLB efficiency
+|===
+
+To use 1Gi pages, modify the `Tuned` profile:
+
+[source,yaml]
+----
+[bootloader]
+cmdline_openshift_node_hugepages=hugepagesz=1G hugepages=16
+----
+
+And update the VM spec:
+
+[source,yaml]
+----
+memory:
+  hugepages:
+    pageSize: 1Gi
+resources:
+  requests:
+    memory: 16Gi
+  limits:
+    memory: 16Gi
+----
+
+IMPORTANT: The memory request must be evenly divisible by the hugepage size. You cannot request 1.5Gi of memory with 1Gi hugepages.
+
+== Troubleshooting
+
+=== VM fails to start: insufficient hugepages
+
+If the VM stays in `Scheduling` or `Pending` state, check the VMI events:
+
+[source,bash,role=execute]
+----
+oc describe vmi vm-hugepages -n numa-hugepages-demo
+----
+
+Look for events mentioning insufficient hugepages or scheduling failures. Verify available hugepages on the target node:
+
+[source,bash,role=execute]
+----
+oc get node <node-name> -o jsonpath='{.status.allocatable.hugepages-2Mi}{"\n"}'
+----
+
+If the allocatable value is less than the VM's memory request, either reduce the VM's memory or increase the hugepage reservation on the node.
+
+=== NUMA passthrough VM fails: "cannot bind memory to host NUMA nodes"
+
+This error occurs when the `virt-launcher` pod cannot bind memory to specific NUMA nodes. Possible causes:
+
+* *Insufficient hugepages on the target NUMA node*: Hugepages may be available on the host overall but not on the specific NUMA node where the VM's CPUs are assigned. Rebalance hugepage allocation or increase the total reservation.
+* *Topology Manager not aligned*: If the kubelet's Topology Manager policy is set to `none`, CPU and memory assignments may span NUMA nodes. Consider setting the Topology Manager policy to `single-numa-node` or `restricted` for workloads that require strict NUMA alignment.
+
+=== Guest does not see multiple NUMA nodes
+
+If the guest reports only one NUMA node despite the host having multiple:
+
+* Verify that `guestMappingPassthrough` is set in the VMI spec.
+* Check that the VM's dedicated CPUs span multiple physical NUMA nodes. If all assigned CPUs are on a single NUMA node, the guest correctly sees only one node.
+* Increase the VM's vCPU count to span more physical CPUs across NUMA boundaries.
+
+=== MachineConfigPool stuck in Updating
+
+If the MachineConfigPool does not complete the rollout after applying the `Tuned` profile:
+
+[source,bash,role=execute]
+----
+oc get mcp worker
+----
+
+[source,bash,role=execute]
+----
+oc describe mcp worker
+----
+
+Check for degraded nodes and inspect the machine-config-daemon logs on the affected node:
+
+[source,bash,role=execute]
+----
+oc logs -n openshift-machine-config-operator -l k8s-app=machine-config-daemon --tail=50
+----
+
+== Cleanup
+
+Remove the VMs and namespace:
+
+[source,bash,role=execute]
+----
+oc delete namespace numa-hugepages-demo
+----
+
+Remove the hugepages Tuned profile to revert the kernel boot parameters:
+
+[source,bash,role=execute]
+----
+oc delete tuned hugepages -n openshift-cluster-node-tuning-operator
+----
+
+WARNING: Deleting the `Tuned` profile triggers a MachineConfig update and a rolling reboot of the affected nodes to remove the hugepage kernel parameters. Monitor the MachineConfigPool until the rollout completes.
+
+== Summary
+
+In this tutorial you learned how to:
+
+* Reserve hugepages on OpenShift nodes at boot time using the Node Tuning Operator
+* Verify hugepage allocation from both the Kubernetes API and the node's `/proc/meminfo`
+* Inspect the host NUMA topology using `numactl`
+* Deploy a VM with hugepage-backed memory for reduced TLB overhead
+* Deploy a VM with NUMA passthrough (`guestMappingPassthrough`) for NUMA-aware guest scheduling
+* Verify NUMA topology from inside the guest
+* Choose between 2Mi and 1Gi hugepage sizes based on workload requirements
+
+== See Also
+
+* Dedicated CPU Placement (cpu-pinning.adoc) -- prerequisite: CPU Manager static policy and dedicated vCPUs
+* xref:resource-limits-qos.adoc[VM Resource Limits and QoS] -- Guaranteed QoS requirements
+* xref:node-placement-affinity.adoc[Node Placement and Affinity] -- targeting specific nodes for VM scheduling
+* link:https://kubevirt.io/user-guide/compute/numa/[KubeVirt NUMA Documentation,window=_blank]
+* link:https://kubevirt.io/user-guide/compute/hugepages/[KubeVirt Hugepages Documentation,window=_blank]
+* link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.18/html/scalability_and_performance/what-huge-pages-do-and-how-they-are-consumed[Optimizing Memory with Huge Pages - OpenShift Documentation,window=_blank]
+* link:https://docs.okd.io/latest/virt/managing_vms/advanced_vm_management/virt-NUMA-topology.html[Working with NUMA Topology for VMs - OKD Documentation,window=_blank]
