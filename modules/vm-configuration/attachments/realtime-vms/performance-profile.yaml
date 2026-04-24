@@ -1,0 +1,26 @@
+apiVersion: performance.openshift.io/v2
+kind: PerformanceProfile
+metadata:
+  name: realtime-workers
+spec:
+  cpu:
+    isolated: "2-7"
+    reserved: "0-1"
+  hugepages:
+    defaultHugepagesSize: 1Gi
+    pages:
+    - size: 1Gi
+      count: 4
+  realTimeKernel:
+    enabled: true
+  additionalKernelArgs:
+  - nmi_watchdog=0
+  - audit=0
+  - mce=off
+  - processor.max_cstate=1
+  - idle=poll
+  - intel_idle.max_cstate=0
+  nodeSelector:
+    node-role.kubernetes.io/worker-rt: ""
+  machineConfigPoolSelector:
+    machineconfiguration.openshift.io/role: worker-rt

@@ -1,0 +1,656 @@
+= Real-Time Virtual Machines
+:navtitle: Real-Time VMs
+
+== Overview
+
+This tutorial demonstrates how to configure real-time virtual machines in OpenShift Virtualization. Real-time VMs are designed for workloads with strict, bounded latency requirements: 5G RAN (vDU/vCU), industrial control systems, financial tick-to-trade processing, and high-frequency telemetry.
+
+A standard VM on a shared-CPU host can experience scheduling latency spikes of tens of milliseconds. A properly configured real-time VM reduces worst-case latency to the low microsecond range by combining multiple layers of tuning:
+
+[cols="2,3,2",options="header"]
+|===
+|Configuration layer |Jitter source eliminated |Where configured
+
+|Dedicated CPU placement
+|CPU steal from other workloads
+|VM spec (`dedicatedCpuPlacement`)
+
+|Emulator thread isolation
+|QEMU housekeeping on vCPU cores
+|VM spec (`isolateEmulatorThread`)
+
+|NUMA passthrough
+|Cross-NUMA memory access latency
+|VM spec (`guestMappingPassthrough`)
+
+|Hugepages
+|TLB misses and page-table walks
+|VM spec (`memory.hugepages`)
+
+|RT kernel on host
+|Kernel preemption delays, timer jitter
+|PerformanceProfile (`realTimeKernel`)
+
+|CPU isolation on host
+|IRQ and kernel thread interference
+|PerformanceProfile (`cpu.isolated`)
+
+|RT scheduling in guest
+|Guest vCPU scheduling priority
+|VM spec (`cpu.realtime`)
+
+|Balloon/graphics disabled
+|Unnecessary device interrupts
+|VM spec (`autoattachMemBalloon: false`)
+|===
+
+This tutorial is the third in a performance series. It builds directly on the Dedicated CPU Placement and NUMA/Hugepages tutorials.
+
+== Prerequisites
+
+* OpenShift 4.18+ with OpenShift Virtualization operator installed (tested on 4.21)
+* Cluster admin access (`system:admin` or equivalent)
+* `oc` and `virtctl` CLIs installed
+* Worker nodes with at least 8 physical CPU cores and 16Gi RAM
+* CPU Manager static policy enabled (see the Dedicated CPU Placement tutorial)
+* Familiarity with hugepages and NUMA topology (see the NUMA and Hugepages tutorial)
+* The Node Tuning Operator installed (included by default in OpenShift)
+
+== Understanding Real-Time Requirements
+
+Real-time in the context of virtualization means *bounded worst-case latency*, not necessarily the fastest average response. A real-time VM guarantees that a given operation completes within a deterministic time window, even under load.
+
+Achieving this requires eliminating every source of unbounded jitter across the full stack: host kernel, hypervisor, guest kernel, and application. The configuration table in the Overview maps each VM spec field to the specific jitter source it addresses.
+
+IMPORTANT: A real-time VM is only as good as its weakest layer. Omitting any single layer (for example, using an RT kernel but not isolating CPUs) leaves a source of jitter active and defeats the purpose.
+
+== Step 1: Prepare a Real-Time MachineConfigPool
+
+Real-time nodes require a dedicated MachineConfigPool so that the PerformanceProfile can apply the RT kernel, CPU isolation, and hugepage configuration without affecting other nodes.
+
+First, label the target worker node(s) with the `worker-rt` role:
+
+[source,bash,role=execute]
+----
+oc label node <node-name> node-role.kubernetes.io/worker-rt=
+----
+
+Create a MachineConfigPool that selects nodes with both `worker` and `worker-rt` roles:
+
+[source,bash,role=execute]
+----
+oc apply -f - <<EOF
+apiVersion: machineconfiguration.openshift.io/v1
+kind: MachineConfigPool
+metadata:
+  name: worker-rt
+  labels:
+    machineconfiguration.openshift.io/role: worker-rt
+spec:
+  machineConfigSelector:
+    matchExpressions:
+    - key: machineconfiguration.openshift.io/role
+      operator: In
+      values:
+      - worker
+      - worker-rt
+  nodeSelector:
+    matchLabels:
+      node-role.kubernetes.io/worker-rt: ""
+EOF
+----
+
+Verify the pool is created and the node is listed:
+
+[source,bash,role=execute]
+----
+oc get mcp worker-rt
+----
+
+Expected output:
+
+----
+NAME        CONFIG   UPDATED   UPDATING   DEGRADED   MACHINECOUNT   READYMACHINECOUNT
+worker-rt            True      False      False      1              1
+----
+
+== Step 2: Apply the PerformanceProfile
+
+The PerformanceProfile resource configures the Node Tuning Operator to:
+
+* Install the real-time kernel (`kernel-rt`)
+* Isolate CPUs 2-7 for workloads (no kernel threads or IRQs scheduled on them)
+* Reserve CPUs 0-1 for system services
+* Pre-allocate 4 x 1Gi hugepages
+* Apply kernel boot parameters that minimize latency
+
+xref:attachment$realtime-vms/performance-profile.yaml[Download performance-profile.yaml]
+
+[source,bash,role=execute]
+----
+oc apply -f - <<EOF
+apiVersion: performance.openshift.io/v2
+kind: PerformanceProfile
+metadata:
+  name: realtime-workers
+spec:
+  cpu:
+    isolated: "2-7"
+    reserved: "0-1"
+  hugepages:
+    defaultHugepagesSize: 1Gi
+    pages:
+    - size: 1Gi
+      count: 4
+  realTimeKernel:
+    enabled: true
+  additionalKernelArgs:
+  - nmi_watchdog=0
+  - audit=0
+  - mce=off
+  - processor.max_cstate=1
+  - idle=poll
+  - intel_idle.max_cstate=0
+  nodeSelector:
+    node-role.kubernetes.io/worker-rt: ""
+  machineConfigPoolSelector:
+    machineconfiguration.openshift.io/role: worker-rt
+EOF
+----
+
+The PerformanceProfile generates several underlying resources: a `Tuned` profile, a `MachineConfig` for kernel arguments, and a `KubeletConfig` for CPU Manager settings. The Machine Config Operator then reboots the target nodes.
+
+WARNING: Applying a PerformanceProfile reboots the target nodes to install the RT kernel and apply kernel parameters. Plan for downtime on the affected nodes.
+
+Monitor the rollout:
+
+[source,bash,role=execute]
+----
+oc get mcp worker-rt -w
+----
+
+Wait until `UPDATED` is `True` and `READYMACHINECOUNT` matches `MACHINECOUNT`. This may take 10-20 minutes as the node downloads the RT kernel, reboots, and re-joins the cluster.
+
+=== Understanding the Kernel Parameters
+
+[cols="2,3",options="header"]
+|===
+|Parameter |Purpose
+
+|`nmi_watchdog=0`
+|Disables the NMI watchdog timer to reduce periodic interrupts
+
+|`audit=0`
+|Disables kernel auditing to avoid audit-related latency
+
+|`mce=off`
+|Disables machine check exception logging to reduce interrupt handling
+
+|`processor.max_cstate=1`
+|Prevents CPUs from entering deep sleep states (C-states > C1), avoiding wake-up latency
+
+|`idle=poll`
+|Uses polling instead of halt for idle CPUs, trading power for lower wake-up latency
+
+|`intel_idle.max_cstate=0`
+|Disables Intel's C-state driver, complementing `processor.max_cstate`
+|===
+
+NOTE: These parameters are aggressive power/latency trade-offs. CPUs on RT nodes will consume maximum power even when idle. Only apply to nodes dedicated to latency-sensitive workloads.
+
+== Step 3: Verify the RT Node is Ready
+
+After the MachineConfigPool rollout completes, verify the node configuration.
+
+Check the kernel version:
+
+[source,bash,role=execute]
+----
+oc debug node/<node-name>
+----
+
+Inside the debug shell:
+
+[source,bash,role=execute]
+----
+chroot /host uname -r
+----
+
+The kernel version should contain `rt` in its name, for example:
+
+----
+5.14.0-427.55.1.el9_4.x86_64+rt
+----
+
+Verify that isolated CPUs are configured:
+
+[source,bash,role=execute]
+----
+chroot /host cat /sys/devices/system/cpu/isolated
+----
+
+Expected output (matching the PerformanceProfile `cpu.isolated`):
+
+----
+2-7
+----
+
+Verify hugepage allocation:
+
+[source,bash,role=execute]
+----
+chroot /host grep -i hugepages /proc/meminfo
+----
+
+Confirm that `HugePages_Total` matches the requested count (4 for 1Gi pages).
+
+Check that the `kubevirt.io/realtime` label is present:
+
+[source,bash,role=execute]
+----
+exit
+----
+
+[source,bash,role=execute]
+----
+oc get node <node-name> -L kubevirt.io/realtime
+----
+
+KubeVirt automatically labels nodes where `kernel.sched_rt_runtime_us` is set to -1 (unlimited RT scheduling). If the label is missing, verify the setting:
+
+[source,bash,role=execute]
+----
+oc debug node/<node-name> -- chroot /host sysctl kernel.sched_rt_runtime_us
+----
+
+Expected output:
+
+----
+kernel.sched_rt_runtime_us = -1
+----
+
+== Step 4: Create a Namespace
+
+[source,bash,role=execute]
+----
+oc create namespace realtime-demo
+----
+
+== Step 5: Deploy a Real-Time VM
+
+The following VM manifest combines all real-time tuning layers. It uses a standard Fedora container disk. While a purpose-built RT guest image with a real-time kernel provides the best results, the standard image is sufficient to demonstrate and verify the host-side configuration.
+
+Key configuration fields:
+
+* `cpu.model: host-passthrough` -- exposes all host CPU features to the guest without masking
+* `cpu.dedicatedCpuPlacement: true` -- pins vCPUs to isolated physical CPUs
+* `cpu.isolateEmulatorThread: true` -- reserves a dedicated CPU for the QEMU emulator thread
+* `cpu.ioThreadsPolicy: auto` -- co-locates the I/O thread with the emulator thread
+* `cpu.numa.guestMappingPassthrough: {}` -- passes host NUMA topology to guest
+* `cpu.realtime.mask: "0-2"` -- configures vCPUs 0-2 for SCHED_FIFO scheduling; vCPU 3 remains on the default scheduler for housekeeping tasks
+* `memory.hugepages.pageSize: 1Gi` -- allocates memory from the 1Gi hugepage pool
+* `autoattachMemBalloon: false` -- disables the balloon device to avoid memory management interrupts
+* `autoattachGraphicsDevice: false` -- disables the graphics device to reduce interrupt sources
+
+WARNING: The cloud-init password in this example is for demonstration purposes only. Use SSH key authentication or a strong, unique password in production environments.
+
+xref:attachment$realtime-vms/vm-realtime.yaml[Download vm-realtime.yaml]
+
+[source,bash,role=execute]
+----
+oc apply -f - <<EOF
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: vm-realtime
+  namespace: realtime-demo
+spec:
+  runStrategy: Always
+  template:
+    metadata:
+      labels:
+        kubevirt.io/domain: vm-realtime
+    spec:
+      nodeSelector:
+        node-role.kubernetes.io/worker-rt: ""
+      domain:
+        cpu:
+          model: host-passthrough
+          sockets: 1
+          cores: 4
+          threads: 1
+          dedicatedCpuPlacement: true
+          isolateEmulatorThread: true
+          ioThreadsPolicy: auto
+          numa:
+            guestMappingPassthrough: {}
+          realtime:
+            mask: "0-2"
+        memory:
+          hugepages:
+            pageSize: 1Gi
+        resources:
+          requests:
+            memory: 4Gi
+            cpu: 4
+          limits:
+            memory: 4Gi
+            cpu: 4
+        devices:
+          autoattachSerialConsole: true
+          autoattachMemBalloon: false
+          autoattachGraphicsDevice: false
+          disks:
+          - name: rootdisk
+            disk:
+              bus: virtio
+          - name: cloudinitdisk
+            disk:
+              bus: virtio
+          interfaces:
+          - name: default
+            masquerade: {}
+      networks:
+      - name: default
+        pod: {}
+      terminationGracePeriodSeconds: 0
+      volumes:
+      - name: rootdisk
+        containerDisk:
+          image: quay.io/containerdisks/fedora:latest
+      - name: cloudinitdisk
+        cloudInitNoCloud:
+          userData: |
+            #cloud-config
+            password: redhat
+            chpasswd:
+              expire: false
+EOF
+----
+
+Wait for the VM to reach Running status:
+
+[source,bash,role=execute]
+----
+oc get vm vm-realtime -n realtime-demo -w
+----
+
+Expected output:
+
+----
+NAME          AGE   STATUS    READY
+vm-realtime   90s   Running   True
+----
+
+NOTE: The VM is scheduled only on nodes labeled `kubevirt.io/realtime` and `cpumanager=true`. KubeVirt adds these selectors automatically when `realtime` is specified in the VM spec. If the VM stays in `Scheduling` state, verify that the target node has both labels.
+
+== Step 6: Verify Real-Time Tuning on the Host
+
+=== CPU Pinning Verification
+
+Find the node where the VM is running:
+
+[source,bash,role=execute]
+----
+oc get vmi vm-realtime -n realtime-demo -o wide
+----
+
+Open a debug session on that node:
+
+[source,bash,role=execute]
+----
+oc debug node/<node-name>
+----
+
+Check the CPU Manager state to see which physical CPUs are assigned:
+
+[source,bash,role=execute]
+----
+chroot /host cat /var/lib/kubelet/cpu_manager_state
+----
+
+The `entries` map should show the `compute` container with 4 vCPU IDs plus 1 emulator thread CPU (5 total). All assigned CPUs should be within the isolated range (2-7 per the PerformanceProfile).
+
+=== Hugepage Verification
+
+[source,bash,role=execute]
+----
+chroot /host grep HugePages /proc/meminfo
+----
+
+`HugePages_Free` should be lower than `HugePages_Total` by the amount consumed by the VM (4 pages for a 4Gi VM with 1Gi hugepages).
+
+Exit the debug shell:
+
+[source,bash,role=execute]
+----
+exit
+----
+
+== Step 7: Verify Real-Time Configuration Inside the VM
+
+Connect to the VM console:
+
+[source,bash,role=execute]
+----
+virtctl console vm-realtime -n realtime-demo
+----
+
+Log in as `fedora` with password `redhat`.
+
+=== Check Kernel Type
+
+[source,bash,role=execute]
+----
+uname -r
+----
+
+If the guest is running a standard kernel (no `rt` suffix), real-time scheduling is still active at the host level for the vCPUs. A guest RT kernel provides additional in-guest preemption guarantees and is recommended for production workloads.
+
+=== Verify CPU Count
+
+[source,bash,role=execute]
+----
+lscpu | grep -E "^CPU\(s\)|^Socket|^Core|^Thread"
+----
+
+Expected output:
+
+----
+CPU(s):                  4
+Thread(s) per core:      1
+Core(s) per socket:      4
+Socket(s):               1
+----
+
+=== Check Scheduling Policy (from host perspective)
+
+Disconnect from the guest console by pressing `Ctrl+]`.
+
+The host-level real-time scheduling is configured by KubeVirt on the QEMU vCPU threads. You can verify this from the host debug session. Open a debug session on the VM's node:
+
+[source,bash,role=execute]
+----
+oc debug node/<node-name>
+----
+
+Find the QEMU process ID:
+
+[source,bash,role=execute]
+----
+chroot /host pgrep -f "qemu.*vm-realtime"
+----
+
+Use the returned PID to check its scheduling policy:
+
+[source,bash,role=execute]
+----
+chroot /host chrt -p <qemu-pid>
+----
+
+vCPU threads configured for real-time should show `SCHED_FIFO` with priority 1. The emulator thread and I/O threads use the default scheduler.
+
+Exit the debug shell:
+
+[source,bash,role=execute]
+----
+exit
+----
+
+== Step 8: Measure and Baseline Latency
+
+For a proper latency baseline, `cyclictest` is the standard tool. It measures the worst-case wake-up latency of a real-time thread.
+
+Connect to the VM console:
+
+[source,bash,role=execute]
+----
+virtctl console vm-realtime -n realtime-demo
+----
+
+Log in, then install `rt-tests` (which includes `cyclictest`):
+
+[source,bash,role=execute]
+----
+sudo dnf install -y rt-tests
+----
+
+Run a short cyclictest to measure latency on 3 threads for 60 seconds:
+
+[source,bash,role=execute]
+----
+sudo cyclictest --mlockall --smp --priority=80 --interval=200 --distance=0 --duration=60
+----
+
+Example output:
+
+----
+# /dev/cpu_dma_latency set to 0us
+T: 0 ( 1234) P:80 I:200 C: 300000 Min:      1 Act:    2 Avg:    2 Max:      15
+T: 1 ( 1235) P:80 I:200 C: 300000 Min:      1 Act:    3 Avg:    2 Max:      18
+T: 2 ( 1236) P:80 I:200 C: 300000 Min:      1 Act:    2 Avg:    2 Max:      12
+----
+
+The `Max` column shows worst-case latency in microseconds. On a properly tuned RT host with a standard (non-RT) guest kernel, expect max latencies in the low tens of microseconds. With a guest RT kernel, max latencies drop further.
+
+IMPORTANT: Latency results vary significantly based on hardware, BIOS settings, and workload. These numbers are illustrative. Always establish your own baseline and compare against your workload's latency budget.
+
+Disconnect from the console by pressing `Ctrl+]`.
+
+== Troubleshooting
+
+=== VM fails to schedule: no realtime-capable nodes
+
+Check that the target node has the `kubevirt.io/realtime` label:
+
+[source,bash,role=execute]
+----
+oc get nodes -L kubevirt.io/realtime
+----
+
+If the label is missing, verify that the RT kernel was installed and `kernel.sched_rt_runtime_us` is -1. The PerformanceProfile sets this automatically, but if the MachineConfigPool rollout did not complete, the setting may not be applied.
+
+=== PerformanceProfile stuck or node degraded
+
+Check the MachineConfigPool status:
+
+[source,bash,role=execute]
+----
+oc get mcp worker-rt
+----
+
+[source,bash,role=execute]
+----
+oc describe mcp worker-rt
+----
+
+If `DEGRADED` is `True`, inspect the machine-config-daemon logs on the affected node:
+
+[source,bash,role=execute]
+----
+oc logs -n openshift-machine-config-operator -l k8s-app=machine-config-daemon --tail=50
+----
+
+Common causes: insufficient disk space for the RT kernel RPM, or a conflicting MachineConfig.
+
+=== High max latency in cyclictest
+
+If `cyclictest` shows max latencies above 100 microseconds:
+
+* Verify that the QEMU vCPU threads are running with `SCHED_FIFO` (see Step 7).
+* Check that the isolated CPUs are not receiving IRQs. On the RT node, verify:
+
+[source,bash,role=execute]
+----
+oc debug node/<node-name> -- chroot /host cat /proc/interrupts
+----
+
+Isolated CPUs (columns 2-7) should show minimal or zero interrupt counts for most IRQ lines.
+
+* Ensure BIOS settings are optimized: disable Hyper-Threading if not needed, disable C-states deeper than C1, enable performance mode.
+* Use a guest RT kernel for the best results.
+
+=== VM fails with "insufficient hugepages"
+
+The PerformanceProfile allocates hugepages, but existing VMs or pods may have consumed them. Check available hugepages:
+
+[source,bash,role=execute]
+----
+oc get node <node-name> -o jsonpath='{.status.allocatable.hugepages-1Gi}{"\n"}'
+----
+
+If insufficient, either stop other hugepage-consuming workloads or increase the `pages.count` in the PerformanceProfile.
+
+== Cleanup
+
+Remove the VM and namespace:
+
+[source,bash,role=execute]
+----
+oc delete namespace realtime-demo
+----
+
+Remove the PerformanceProfile to revert the RT kernel and CPU isolation:
+
+[source,bash,role=execute]
+----
+oc delete performanceprofile realtime-workers
+----
+
+Remove the MachineConfigPool:
+
+[source,bash,role=execute]
+----
+oc delete mcp worker-rt
+----
+
+Remove the `worker-rt` role label from the node:
+
+[source,bash,role=execute]
+----
+oc label node <node-name> node-role.kubernetes.io/worker-rt-
+----
+
+WARNING: Deleting the PerformanceProfile and MachineConfigPool triggers a reboot to revert the node to the standard kernel. Monitor the `worker` MachineConfigPool until the rollout completes.
+
+== Summary
+
+In this tutorial you learned how to:
+
+* Create a dedicated MachineConfigPool for real-time worker nodes
+* Apply a PerformanceProfile to install the RT kernel, isolate CPUs, and reserve hugepages
+* Verify RT node readiness: kernel version, isolated CPUs, hugepage allocation, and the `kubevirt.io/realtime` label
+* Deploy a real-time VM with the full stack of latency-reduction settings
+* Verify CPU pinning, hugepage backing, and SCHED_FIFO scheduling on the host
+* Measure and baseline latency using `cyclictest`
+* Understand the role of each configuration layer in eliminating specific sources of jitter
+
+== See Also
+
+* Dedicated CPU Placement (cpu-pinning.adoc) -- prerequisite: CPU Manager static policy and dedicated vCPUs
+* NUMA and Hugepages (numa-hugepages.adoc) -- prerequisite: hugepage reservation and NUMA passthrough
+* xref:resource-limits-qos.adoc[VM Resource Limits and QoS] -- Guaranteed QoS requirements
+* link:https://kubevirt.io/user-guide/compute/numa/#running-real-time-workloads[KubeVirt Real-Time Workloads,window=_blank]
+* link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.18/html/scalability_and_performance/cnf-tuning-low-latency-nodes-with-perf-profile[Tuning Nodes for Low Latency - OpenShift Documentation,window=_blank]
+* link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.18/html/scalability_and_performance/cnf-provisioning-low-latency-workloads[Provisioning Real-Time Workloads - OpenShift Documentation,window=_blank]
+* link:https://www.libvirt.org/kbase/kvm-realtime.html[KVM Real-Time Tuning - libvirt,window=_blank]

@@ -1,0 +1,66 @@
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: vm-realtime
+  namespace: realtime-demo
+spec:
+  runStrategy: Always
+  template:
+    metadata:
+      labels:
+        kubevirt.io/domain: vm-realtime
+    spec:
+      nodeSelector:
+        node-role.kubernetes.io/worker-rt: ""
+      domain:
+        cpu:
+          model: host-passthrough
+          sockets: 1
+          cores: 4
+          threads: 1
+          dedicatedCpuPlacement: true
+          isolateEmulatorThread: true
+          ioThreadsPolicy: auto
+          numa:
+            guestMappingPassthrough: {}
+          realtime:
+            mask: "0-2"
+        memory:
+          hugepages:
+            pageSize: 1Gi
+        resources:
+          requests:
+            memory: 4Gi
+            cpu: 4
+          limits:
+            memory: 4Gi
+            cpu: 4
+        devices:
+          autoattachSerialConsole: true
+          autoattachMemBalloon: false
+          autoattachGraphicsDevice: false
+          disks:
+          - name: rootdisk
+            disk:
+              bus: virtio
+          - name: cloudinitdisk
+            disk:
+              bus: virtio
+          interfaces:
+          - name: default
+            masquerade: {}
+      networks:
+      - name: default
+        pod: {}
+      terminationGracePeriodSeconds: 0
+      volumes:
+      - name: rootdisk
+        containerDisk:
+          image: quay.io/containerdisks/fedora:latest
+      - name: cloudinitdisk
+        cloudInitNoCloud:
+          userData: |
+            #cloud-config
+            password: redhat
+            chpasswd:
+              expire: false
