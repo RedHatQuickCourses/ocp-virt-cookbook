@@ -138,9 +138,9 @@ spec:
     isolated: "2-7"
     reserved: "0-1"
   hugepages:
-    defaultHugepagesSize: 1Gi
+    defaultHugepagesSize: 1G
     pages:
-    - size: 1Gi
+    - size: 1G
       count: 4
   realTimeKernel:
     enabled: true
@@ -157,6 +157,10 @@ spec:
     machineconfiguration.openshift.io/role: worker-rt
 EOF
 ----
+
+NOTE: On single-node OpenShift (SNO), skip the MachineConfigPool creation in Step 1. Instead, set `nodeSelector` to `node-role.kubernetes.io/master: ""` and `machineConfigPoolSelector` to `pools.operator.machineconfiguration.openshift.io/master: ""` to target the existing master pool directly. The `machineConfigPoolSelector` must match a label on the MCP's own `metadata.labels`, not the `machineConfigSelector` it uses internally.
+
+IMPORTANT: The PerformanceProfile API uses SI units for hugepage sizes (`1G`, `2M`), not IEC units (`1Gi`, `2Mi`). This differs from the Kubernetes resource syntax used in VM specs, which uses `1Gi` and `2Mi`.
 
 The PerformanceProfile generates several underlying resources: a `Tuned` profile, a `MachineConfig` for kernel arguments, and a `KubeletConfig` for CPU Manager settings. The Machine Config Operator then reboots the target nodes.
 
@@ -287,7 +291,7 @@ Key configuration fields:
 * `cpu.isolateEmulatorThread: true` -- reserves a dedicated CPU for the QEMU emulator thread
 * `cpu.ioThreadsPolicy: auto` -- co-locates the I/O thread with the emulator thread
 * `cpu.numa.guestMappingPassthrough: {}` -- passes host NUMA topology to guest
-* `cpu.realtime.mask: "0-2"` -- configures vCPUs 0-2 for SCHED_FIFO scheduling; vCPU 3 remains on the default scheduler for housekeeping tasks
+* `cpu.realtime.mask: "0"` -- configures vCPU 0 for SCHED_FIFO scheduling; vCPU 1 remains on the default scheduler for housekeeping tasks
 * `memory.hugepages.pageSize: 1Gi` -- allocates memory from the 1Gi hugepage pool
 * `autoattachMemBalloon: false` -- disables the balloon device to avoid memory management interrupts
 * `autoattachGraphicsDevice: false` -- disables the graphics device to reduce interrupt sources
@@ -317,7 +321,7 @@ spec:
         cpu:
           model: host-passthrough
           sockets: 1
-          cores: 4
+          cores: 2
           threads: 1
           dedicatedCpuPlacement: true
           isolateEmulatorThread: true
@@ -325,17 +329,17 @@ spec:
           numa:
             guestMappingPassthrough: {}
           realtime:
-            mask: "0-2"
+            mask: "0"
         memory:
           hugepages:
             pageSize: 1Gi
         resources:
           requests:
-            memory: 4Gi
-            cpu: 4
+            memory: 2Gi
+            cpu: 2
           limits:
-            memory: 4Gi
-            cpu: 4
+            memory: 2Gi
+            cpu: 2
         devices:
           autoattachSerialConsole: true
           autoattachMemBalloon: false
@@ -409,7 +413,7 @@ Check the CPU Manager state to see which physical CPUs are assigned:
 chroot /host cat /var/lib/kubelet/cpu_manager_state
 ----
 
-The `entries` map should show the `compute` container with 4 vCPU IDs plus 1 emulator thread CPU (5 total). All assigned CPUs should be within the isolated range (2-7 per the PerformanceProfile).
+The `entries` map should show the `compute` container with 2 vCPU IDs plus 1 emulator thread CPU (3 total). All assigned CPUs should be within the isolated range (2-7 per the PerformanceProfile).
 
 === Hugepage Verification
 
@@ -418,7 +422,9 @@ The `entries` map should show the `compute` container with 4 vCPU IDs plus 1 emu
 chroot /host grep HugePages /proc/meminfo
 ----
 
-`HugePages_Free` should be lower than `HugePages_Total` by the amount consumed by the VM (4 pages for a 4Gi VM with 1Gi hugepages).
+`HugePages_Free` should be lower than `HugePages_Total` by the amount consumed by the VM (2 pages for a 2Gi VM with 1Gi hugepages).
+
+IMPORTANT: When using `guestMappingPassthrough`, hugepages must be available on each NUMA node where vCPUs are scheduled. If the PerformanceProfile distributes hugepages evenly across NUMA nodes, requesting more memory than a single node's share causes allocation failures. Keep the VM memory request at or below the per-NUMA-node hugepage allocation.
 
 Exit the debug shell:
 
@@ -478,17 +484,17 @@ Find the QEMU process ID:
 
 [source,bash,role=execute]
 ----
-chroot /host pgrep -f "qemu.*vm-realtime"
+chroot /host pgrep qemu-kvm
 ----
 
-Use the returned PID to check its scheduling policy:
+Use the returned PID to list all threads and their scheduling policies:
 
 [source,bash,role=execute]
 ----
-chroot /host chrt -p <qemu-pid>
+chroot /host bash -c 'PID=<qemu-pid>; ls /proc/$PID/task/ | while read TID; do NAME=$(cat /proc/$PID/task/$TID/comm 2>/dev/null); POLICY=$(chrt -p $TID 2>/dev/null | head -2); echo "TID $TID ($NAME): $POLICY"; done'
 ----
 
-vCPU threads configured for real-time should show `SCHED_FIFO` with priority 1. The emulator thread and I/O threads use the default scheduler.
+Replace `<qemu-pid>` with the PID from the previous command. Threads named `CPU <n>/KVM` are the vCPU threads. vCPU threads covered by the `realtime.mask` should show `SCHED_FIFO` with priority 1, while the remaining vCPU threads, emulator thread, and I/O threads use `SCHED_OTHER`.
 
 Exit the debug shell:
 
