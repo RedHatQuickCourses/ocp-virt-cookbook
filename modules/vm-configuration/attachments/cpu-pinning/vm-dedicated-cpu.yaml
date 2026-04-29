@@ -1,0 +1,52 @@
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: vm-dedicated-cpu
+  namespace: cpu-pinning-demo
+spec:
+  runStrategy: Always
+  template:
+    metadata:
+      labels:
+        kubevirt.io/domain: vm-dedicated-cpu
+    spec:
+      nodeSelector:
+        cpumanager: "true"
+      domain:
+        cpu:
+          sockets: 2
+          cores: 1
+          threads: 1
+          dedicatedCpuPlacement: true
+        memory:
+          guest: 1Gi
+        resources:
+          requests:
+            memory: 2Gi
+          limits:
+            memory: 2Gi
+        devices:
+          disks:
+          - name: rootdisk
+            disk:
+              bus: virtio
+          - name: cloudinitdisk
+            disk:
+              bus: virtio
+          interfaces:
+          - name: default
+            masquerade: {}
+      networks:
+      - name: default
+        pod: {}
+      volumes:
+      - name: rootdisk
+        containerDisk:
+          image: quay.io/containerdisks/fedora:latest
+      - name: cloudinitdisk
+        cloudInitNoCloud:
+          userData: |
+            #cloud-config
+            password: redhat
+            chpasswd:
+              expire: false
