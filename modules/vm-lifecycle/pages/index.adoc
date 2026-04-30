@@ -1,0 +1,54 @@
+= VM Lifecycle Management
+:navtitle:
+
+== Overview
+
+This module covers virtual machine lifecycle management in OpenShift Virtualization, including image imports, golden images, cloning, snapshots, and boot configuration. These workflows help you create reusable VM images, rapidly deploy copies, and manage backup and recovery.
+
+== What You'll Learn
+
+* How to import existing qcow2 disk images into OpenShift Virtualization
+* How to create and manage reusable golden images for consistent deployments
+* How to clone VMs within and across namespaces
+* How to create, manage, and restore VM snapshots
+* How to configure boot order, boot sources, and UEFI/Secure Boot modes
+
+== Prerequisites
+
+Before working with VM lifecycle management, ensure you have:
+
+* OpenShift 4.18+ with OpenShift Virtualization operator installed
+* A configured StorageClass with ReadWriteMany access mode support
+* CLI tools installed: `oc`, `virtctl`, `kubectl`
+* Basic understanding of PersistentVolumeClaims and DataVolumes
+
+== Topics
+
+xref:import-qcow2-boot-volume.adoc[]::
+Import existing qcow2 disk images from local KVM platforms to create boot volumes in OpenShift Virtualization for easy VM migration.
+
+xref:custom-golden-images.adoc[]::
+Create reusable golden images with pre-configured software and settings for consistent VM deployments across environments.
+
+xref:golden-images-troubleshooting.adoc[]::
+Troubleshooting guide for creating and using custom golden images, including verification commands and common issue resolutions.
+
+xref:cloning-vms.adoc[]::
+Clone existing VMs for rapid deployment of identical or customized instances, including cloning across namespaces and post-clone customization with cloud-init.
+
+xref:vm-snapshots.adoc[]::
+Create, manage, and restore VM snapshots for quick rollback, safe testing of changes, and pre-maintenance backup points.
+
+xref:boot-order-boot-sources.adoc[]::
+Configure VM boot order, boot sources (PVC, ContainerDisk, HTTP), and boot options including UEFI vs BIOS modes and Secure Boot for different deployment scenarios.
+
+== Related Topics
+
+* xref:vm-configuration:index.adoc[VM Configuration] - General VM setup and access
+* xref:storage:index.adoc[Storage Configuration] - Persistent storage for VMs
+* xref:performance:index.adoc[Performance Tuning] - Resource limits, CPU pinning, NUMA
+
+== Additional Resources
+
+* link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/virtualization/about#about-virt[OpenShift Virtualization Documentation,window=_blank]
+* link:https://kubevirt.io/user-guide/[KubeVirt User Guide,window=_blank]
