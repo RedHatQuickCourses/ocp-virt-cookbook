@@ -1,0 +1,1366 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Real-Time Virtual Machines :: OpenShift Virtualization cookbook</title>
+    <link rel="prev" href="numa-hugepages.html">
+    <link rel="next" href="hotplug-volumes-interfaces.html">
+    <meta name="generator" content="Antora 3.1.3">
+    <link rel="stylesheet" href="../../../_/css/site.css">
+    <script>var uiRootPath = '../../../_'</script>
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://www.redhat.com" target="_blank"><img src="../../../_/img/redhat-logo.png" height="40px" alt="Red Hat"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="../../..">OpenShift Virtualization cookbook</a>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues" target="_blank">Report Issues</a>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="ocp-virt-cookbook" data-version="1">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="../index.html">OpenShift Virtualization cookbook</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../index.html">Introduction</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../getting-started/index.html">Getting Started</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/prerequisites.html">Prerequisites</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/install-openshift-virtualization.html">Install OpenShift Virtualization</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/default-storage-class.html">Storage Setup</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/create-vm-web-console.html">Create VM from Web Console</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/vm-lifecycle-states.html">VM Lifecycle States</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/virtctl-basics.html">Virtctl Basics</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../storage/index.html">Storage Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/lvm-operator.html">LVM Operator Installation</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/lvm-troubleshooting.html">LVM Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/hostpath-provisioner.html">HostPath Provisioner</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/creating-managing-storage-class.html">Creating and Managing Storage Classes</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/multi-disk-configuration.html">Multi-Disk VMs</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../networking/index.html">Networking Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/udn-primary-networks.html">UDN Primary Networks</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/localnet-secondary.html">Localnet Secondary Networks with CUDN</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/localnet-vlan.html">Localnet Secondary Networks with VLAN using NAD</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/cudn-localnet-vlan.html">Localnet VLAN with CUDN</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/layer2-secondary.html">Layer 2 Secondary Networks</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/linux-bridges.html">Linux Bridges</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/vm-ingress-routes.html">VM Ingress and Routes</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/ovs-bridge-troubleshooting.html">Troubleshooting Localnet Networks</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="index.html">Virtual Machine Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="static-ip-configuration.html">Static IP Configuration</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="cloud-init-troubleshooting.html">Cloud-init Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="internal-dns-for-vms.html">Internal DNS for VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="remote-access-linux-vms.html">Remote Access to Linux VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="remote-access-linux-troubleshooting.html">Remote Access to Linux VMs Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="remote-access-windows-vms.html">Remote Access to Windows VMs via RDP</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="import-qcow2-boot-volume.html">Import qcow2 Boot Volume</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="custom-golden-images.html">Custom Golden Images</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="golden-images-troubleshooting.html">Golden Images Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="cloning-vms.html">Cloning VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="vm-snapshots.html">VM Snapshots</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="boot-order-boot-sources.html">VM Boot Order and Boot Sources</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="infrastructure-node-placement.html">Infrastructure Node Placement</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="node-placement-affinity.html">Node Placement and Affinity</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="resource-limits-qos.html">Resource Limits and QoS</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="cpu-pinning.html">Dedicated CPU Placement</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="numa-hugepages.html">NUMA and Hugepages</a>
+  </li>
+  <li class="nav-item is-current-page" data-depth="2">
+    <a class="nav-link" href="realtime-vms.html">Real-Time VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="hotplug-volumes-interfaces.html">Hotplug Volumes and Interfaces</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../manifests/index.html">Manifests</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../api/index.html">API Guide</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../api/api-component-overview.html">API Component Overview</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../appendix/glossary.html">Glossary</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">OpenShift Virtualization cookbook</span>
+    <span class="version">1</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <a class="title" href="../index.html">OpenShift Virtualization cookbook</a>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">1</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">OpenShift Virtualization cookbook</a></li>
+    <li><a href="index.html">Virtual Machine Configuration</a></li>
+    <li><a href="realtime-vms.html">Real-Time VMs</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">Real-Time Virtual Machines</h1>
+<div class="sect1">
+<h2 id="_overview"><a class="anchor" href="#_overview"></a>Overview</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>This tutorial demonstrates how to configure real-time virtual machines in OpenShift Virtualization. Real-time VMs are designed for workloads with strict, bounded latency requirements: 5G RAN (vDU/vCU), industrial control systems, financial tick-to-trade processing, and high-frequency telemetry.</p>
+</div>
+<div class="paragraph">
+<p>A standard VM on a shared-CPU host can experience scheduling latency spikes of tens of milliseconds. A properly configured real-time VM reduces worst-case latency to the low microsecond range by combining multiple layers of tuning:</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 28.5714%;">
+<col style="width: 42.8571%;">
+<col style="width: 28.5715%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Configuration layer</th>
+<th class="tableblock halign-left valign-top">Jitter source eliminated</th>
+<th class="tableblock halign-left valign-top">Where configured</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Dedicated CPU placement</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">CPU steal from other workloads</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">VM spec (<code>dedicatedCpuPlacement</code>)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Emulator thread isolation</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">QEMU housekeeping on vCPU cores</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">VM spec (<code>isolateEmulatorThread</code>)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">NUMA passthrough</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Cross-NUMA memory access latency</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">VM spec (<code>guestMappingPassthrough</code>)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Hugepages</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">TLB misses and page-table walks</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">VM spec (<code>memory.hugepages</code>)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">RT kernel on host</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Kernel preemption delays, timer jitter</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">PerformanceProfile (<code>realTimeKernel</code>)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">CPU isolation on host</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">IRQ and kernel thread interference</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">PerformanceProfile (<code>cpu.isolated</code>)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">RT scheduling in guest</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Guest vCPU scheduling priority</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">VM spec (<code>cpu.realtime</code>)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Balloon/graphics disabled</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Unnecessary device interrupts</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">VM spec (<code>autoattachMemBalloon: false</code>)</p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>This tutorial is the third in a performance series. It builds directly on the <a href="cpu-pinning.html" class="xref page">Dedicated CPU Placement</a> and <a href="numa-hugepages.html" class="xref page">NUMA/Hugepages</a> tutorials.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_prerequisites"><a class="anchor" href="#_prerequisites"></a>Prerequisites</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p>OpenShift 4.18+ with OpenShift Virtualization operator installed (tested on 4.21)</p>
+</li>
+<li>
+<p>Cluster admin access (<code>system:admin</code> or equivalent)</p>
+</li>
+<li>
+<p><code>oc</code> and <code>virtctl</code> CLIs installed</p>
+</li>
+<li>
+<p>Worker nodes with at least 8 physical CPU cores and 16Gi RAM</p>
+</li>
+<li>
+<p>CPU Manager static policy enabled (see the <a href="cpu-pinning.html" class="xref page">Dedicated CPU Placement</a> tutorial)</p>
+</li>
+<li>
+<p>Familiarity with hugepages and NUMA topology (see the <a href="numa-hugepages.html" class="xref page">NUMA and Hugepages</a> tutorial)</p>
+</li>
+<li>
+<p>The Node Tuning Operator installed (included by default in OpenShift)</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_understanding_real_time_requirements"><a class="anchor" href="#_understanding_real_time_requirements"></a>Understanding Real-Time Requirements</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Real-time in the context of virtualization means <strong>bounded worst-case latency</strong>, not necessarily the fastest average response. A real-time VM guarantees that a given operation completes within a deterministic time window, even under load.</p>
+</div>
+<div class="paragraph">
+<p>Achieving this requires eliminating every source of unbounded jitter across the full stack: host kernel, hypervisor, guest kernel, and application. The configuration table in the Overview maps each VM spec field to the specific jitter source it addresses.</p>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-important" title="Important"></i>
+</td>
+<td class="content">
+A real-time VM is only as good as its weakest layer. Omitting any single layer (for example, using an RT kernel but not isolating CPUs) leaves a source of jitter active and defeats the purpose.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_1_prepare_a_real_time_machineconfigpool"><a class="anchor" href="#_step_1_prepare_a_real_time_machineconfigpool"></a>Step 1: Prepare a Real-Time MachineConfigPool</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Real-time nodes require a dedicated MachineConfigPool so that the PerformanceProfile can apply the RT kernel, CPU isolation, and hugepage configuration without affecting other nodes.</p>
+</div>
+<div class="paragraph">
+<p>First, label the target worker node(s) with the <code>worker-rt</code> role:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc label node &lt;node-name&gt; node-role.kubernetes.io/worker-rt=</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Create a MachineConfigPool that selects nodes with both <code>worker</code> and <code>worker-rt</code> roles:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f - &lt;&lt;EOF
+apiVersion: machineconfiguration.openshift.io/v1
+kind: MachineConfigPool
+metadata:
+  name: worker-rt
+  labels:
+    machineconfiguration.openshift.io/role: worker-rt
+spec:
+  machineConfigSelector:
+    matchExpressions:
+    - key: machineconfiguration.openshift.io/role
+      operator: In
+      values:
+      - worker
+      - worker-rt
+  nodeSelector:
+    matchLabels:
+      node-role.kubernetes.io/worker-rt: ""
+EOF</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Verify the pool is created and the node is listed:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get mcp worker-rt</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Expected output:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>NAME        CONFIG   UPDATED   UPDATING   DEGRADED   MACHINECOUNT   READYMACHINECOUNT
+worker-rt            True      False      False      1              1</pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_2_apply_the_performanceprofile"><a class="anchor" href="#_step_2_apply_the_performanceprofile"></a>Step 2: Apply the PerformanceProfile</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The PerformanceProfile resource configures the Node Tuning Operator to:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Install the real-time kernel (<code>kernel-rt</code>)</p>
+</li>
+<li>
+<p>Isolate CPUs 2-7 for workloads (no kernel threads or IRQs scheduled on them)</p>
+</li>
+<li>
+<p>Reserve CPUs 0-1 for system services</p>
+</li>
+<li>
+<p>Pre-allocate 4 x 1Gi hugepages</p>
+</li>
+<li>
+<p>Apply kernel boot parameters that minimize latency</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/realtime-vms/performance-profile.yaml" class="xref attachment">Download performance-profile.yaml</a></p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f - &lt;&lt;EOF
+apiVersion: performance.openshift.io/v2
+kind: PerformanceProfile
+metadata:
+  name: realtime-workers
+spec:
+  cpu:
+    isolated: "2-7"
+    reserved: "0-1"
+  hugepages:
+    defaultHugepagesSize: 1G
+    pages:
+    - size: 1G
+      count: 4
+  realTimeKernel:
+    enabled: true
+  additionalKernelArgs:
+  - nmi_watchdog=0
+  - audit=0
+  - mce=off
+  - processor.max_cstate=1
+  - idle=poll
+  - intel_idle.max_cstate=0
+  nodeSelector:
+    node-role.kubernetes.io/worker-rt: ""
+  machineConfigPoolSelector:
+    machineconfiguration.openshift.io/role: worker-rt
+EOF</code></pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+On single-node OpenShift (SNO), skip the MachineConfigPool creation in Step 1. Instead, set <code>nodeSelector</code> to <code>node-role.kubernetes.io/master: ""</code> and <code>machineConfigPoolSelector</code> to <code>pools.operator.machineconfiguration.openshift.io/master: ""</code> to target the existing master pool directly. The <code>machineConfigPoolSelector</code> must match a label on the MCP&#8217;s own <code>metadata.labels</code>, not the <code>machineConfigSelector</code> it uses internally. You must still apply the <code>worker-rt</code> label from Step 1 (<code>oc label node &lt;node-name&gt; node-role.kubernetes.io/worker-rt=</code>), because the VM manifest uses that label in its <code>nodeSelector</code>.
+</td>
+</tr>
+</table>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-important" title="Important"></i>
+</td>
+<td class="content">
+The PerformanceProfile API uses SI units for hugepage sizes (<code>1G</code>, <code>2M</code>), not IEC units (<code>1Gi</code>, <code>2Mi</code>). This differs from the Kubernetes resource syntax used in VM specs, which uses <code>1Gi</code> and <code>2Mi</code>.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>The PerformanceProfile generates several underlying resources: a <code>Tuned</code> profile, a <code>MachineConfig</code> for kernel arguments, and a <code>KubeletConfig</code> for CPU Manager settings. The Machine Config Operator then reboots the target nodes.</p>
+</div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+Applying a PerformanceProfile reboots the target nodes to install the RT kernel and apply kernel parameters. Plan for downtime on the affected nodes.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Monitor the rollout:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get mcp worker-rt -w</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>On SNO, monitor the <code>master</code> pool instead:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get mcp master -w</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Wait until <code>UPDATED</code> is <code>True</code> and <code>READYMACHINECOUNT</code> matches <code>MACHINECOUNT</code>. This may take 10-20 minutes as the node downloads the RT kernel, reboots, and re-joins the cluster. The MCP remains in <code>UPDATING: True</code> state even after the reboot completes, while the node finishes reconciling its configuration and reporting readiness back to the cluster. Do not proceed until the rollout is fully complete.</p>
+</div>
+<div class="sect2">
+<h3 id="_understanding_the_kernel_parameters"><a class="anchor" href="#_understanding_the_kernel_parameters"></a>Understanding the Kernel Parameters</h3>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 40%;">
+<col style="width: 60%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Parameter</th>
+<th class="tableblock halign-left valign-top">Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>nmi_watchdog=0</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Disables the NMI watchdog timer to reduce periodic interrupts</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>audit=0</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Disables kernel auditing to avoid audit-related latency</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>mce=off</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Disables machine check exception logging to reduce interrupt handling</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>processor.max_cstate=1</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Prevents CPUs from entering deep sleep states (C-states &gt; C1), avoiding wake-up latency</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>idle=poll</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Uses polling instead of halt for idle CPUs, trading power for lower wake-up latency</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>intel_idle.max_cstate=0</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Disables Intel&#8217;s C-state driver, complementing <code>processor.max_cstate</code></p></td>
+</tr>
+</tbody>
+</table>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+These parameters are aggressive power/latency trade-offs. CPUs on RT nodes will consume maximum power even when idle. Only apply to nodes dedicated to latency-sensitive workloads.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_3_verify_the_rt_node_is_ready"><a class="anchor" href="#_step_3_verify_the_rt_node_is_ready"></a>Step 3: Verify the RT Node is Ready</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>After the MachineConfigPool rollout completes, verify the node configuration.</p>
+</div>
+<div class="paragraph">
+<p>Check the kernel version:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc debug node/&lt;node-name&gt;</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Inside the debug shell:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">chroot /host uname -r</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The kernel version should contain <code>rt</code> in its name, for example:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>5.14.0-427.55.1.el9_4.x86_64+rt</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Verify that CPU isolation is configured by checking the kernel boot parameters:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">chroot /host cat /proc/cmdline | grep -o 'isolcpus=managed_irq,[^ ]*'</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Expected output:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>isolcpus=managed_irq,2-7</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Verify that tick-less (nohz) mode is active on the isolated CPUs:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">chroot /host cat /sys/devices/system/cpu/nohz_full</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Expected output (matching the PerformanceProfile <code>cpu.isolated</code>):</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>2-7</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Verify the default IRQ affinity mask:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">chroot /host cat /proc/irq/default_smp_affinity</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>With <code>managed_irq</code> mode, the default affinity mask may show all CPUs. IRQ steering is handled dynamically by the Tuned-generated <code>irqbalance</code> hints, not via a static affinity mask.</p>
+</div>
+<div class="paragraph">
+<p>Verify hugepage allocation:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">chroot /host grep -i hugepages /proc/meminfo</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Confirm that <code>HugePages_Total</code> matches the requested count (4 for 1Gi pages).</p>
+</div>
+<div class="paragraph">
+<p>Check that the <code>kubevirt.io/realtime</code> label is present:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">exit</code></pre>
+</div>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get node &lt;node-name&gt; -L kubevirt.io/realtime</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>KubeVirt automatically labels nodes where <code>kernel.sched_rt_runtime_us</code> is set to -1 (unlimited RT scheduling). If the label is missing, verify the setting:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc debug node/&lt;node-name&gt; -- chroot /host sysctl kernel.sched_rt_runtime_us</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Expected output:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>kernel.sched_rt_runtime_us = -1</pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_4_create_a_namespace"><a class="anchor" href="#_step_4_create_a_namespace"></a>Step 4: Create a Namespace</h2>
+<div class="sectionbody">
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc create namespace realtime-demo</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_5_deploy_a_real_time_vm"><a class="anchor" href="#_step_5_deploy_a_real_time_vm"></a>Step 5: Deploy a Real-Time VM</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The following VM manifest combines all real-time tuning layers. It uses a standard Fedora container disk. While a purpose-built RT guest image with a real-time kernel provides the best results, the standard image is sufficient to demonstrate and verify the host-side configuration.</p>
+</div>
+<div class="paragraph">
+<p>Key configuration fields:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>cpu.model: host-passthrough</code>&#8201;&#8212;&#8201;exposes all host CPU features to the guest without masking</p>
+</li>
+<li>
+<p><code>cpu.dedicatedCpuPlacement: true</code>&#8201;&#8212;&#8201;pins vCPUs to isolated physical CPUs</p>
+</li>
+<li>
+<p><code>cpu.isolateEmulatorThread: true</code>&#8201;&#8212;&#8201;reserves a dedicated CPU for the QEMU emulator thread</p>
+</li>
+<li>
+<p><code>cpu.ioThreadsPolicy: auto</code>&#8201;&#8212;&#8201;co-locates the I/O thread with the emulator thread</p>
+</li>
+<li>
+<p><code>cpu.numa.guestMappingPassthrough: {}</code>&#8201;&#8212;&#8201;passes host NUMA topology to guest</p>
+</li>
+<li>
+<p><code>cpu.realtime.mask: "0"</code>&#8201;&#8212;&#8201;configures vCPU 0 for SCHED_FIFO scheduling; vCPU 1 remains on the default scheduler for housekeeping tasks</p>
+</li>
+<li>
+<p><code>memory.hugepages.pageSize: 1Gi</code>&#8201;&#8212;&#8201;allocates memory from the 1Gi hugepage pool</p>
+</li>
+<li>
+<p><code>autoattachMemBalloon: false</code>&#8201;&#8212;&#8201;disables the balloon device to avoid memory management interrupts</p>
+</li>
+<li>
+<p><code>autoattachGraphicsDevice: false</code>&#8201;&#8212;&#8201;disables the graphics device to reduce interrupt sources</p>
+</li>
+</ul>
+</div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+The cloud-init password in this example is for demonstration purposes only. Use SSH key authentication or a strong, unique password in production environments.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/realtime-vms/vm-realtime.yaml" class="xref attachment">Download vm-realtime.yaml</a></p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f - &lt;&lt;EOF
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: vm-realtime
+  namespace: realtime-demo
+spec:
+  runStrategy: Always
+  template:
+    metadata:
+      labels:
+        kubevirt.io/domain: vm-realtime
+    spec:
+      nodeSelector:
+        node-role.kubernetes.io/worker-rt: ""
+      domain:
+        cpu:
+          model: host-passthrough
+          sockets: 1
+          cores: 2
+          threads: 1
+          dedicatedCpuPlacement: true
+          isolateEmulatorThread: true
+          ioThreadsPolicy: auto
+          numa:
+            guestMappingPassthrough: {}
+          realtime:
+            mask: "0"
+        memory:
+          hugepages:
+            pageSize: 1Gi
+        resources:
+          requests:
+            memory: 2Gi
+            cpu: 2
+          limits:
+            memory: 2Gi
+            cpu: 2
+        devices:
+          autoattachSerialConsole: true
+          autoattachMemBalloon: false
+          autoattachGraphicsDevice: false
+          disks:
+          - name: rootdisk
+            disk:
+              bus: virtio
+          - name: cloudinitdisk
+            disk:
+              bus: virtio
+          interfaces:
+          - name: default
+            masquerade: {}
+      networks:
+      - name: default
+        pod: {}
+      terminationGracePeriodSeconds: 0
+      volumes:
+      - name: rootdisk
+        containerDisk:
+          image: quay.io/containerdisks/fedora:latest
+      - name: cloudinitdisk
+        cloudInitNoCloud:
+          userData: |
+            #cloud-config
+            password: redhat
+            chpasswd:
+              expire: false
+EOF</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Wait for the VM to reach Running status:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vm vm-realtime -n realtime-demo -w</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Expected output:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>NAME          AGE   STATUS    READY
+vm-realtime   90s   Running   True</pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+The VM is scheduled only on nodes labeled <code>kubevirt.io/realtime</code> and <code>cpumanager=true</code>. KubeVirt adds these selectors automatically when <code>realtime</code> is specified in the VM spec. If the VM stays in <code>Scheduling</code> state, verify that the target node has both labels.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_6_verify_real_time_tuning_on_the_host"><a class="anchor" href="#_step_6_verify_real_time_tuning_on_the_host"></a>Step 6: Verify Real-Time Tuning on the Host</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_cpu_pinning_verification"><a class="anchor" href="#_cpu_pinning_verification"></a>CPU Pinning Verification</h3>
+<div class="paragraph">
+<p>Find the node where the VM is running:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vmi vm-realtime -n realtime-demo -o wide</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Open a debug session on that node:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc debug node/&lt;node-name&gt;</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Check the CPU Manager state to see which physical CPUs are assigned:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">chroot /host cat /var/lib/kubelet/cpu_manager_state</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The <code>entries</code> map should show the <code>compute</code> container with 2 vCPU IDs plus 1 emulator thread CPU (3 total). All assigned CPUs should be within the isolated range (2-7 per the PerformanceProfile).</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_hugepage_verification"><a class="anchor" href="#_hugepage_verification"></a>Hugepage Verification</h3>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">chroot /host grep HugePages /proc/meminfo</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><code>HugePages_Free</code> should be lower than <code>HugePages_Total</code> by the amount consumed by the VM (2 pages for a 2Gi VM with 1Gi hugepages).</p>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-important" title="Important"></i>
+</td>
+<td class="content">
+When using <code>guestMappingPassthrough</code>, hugepages must be available on each NUMA node where vCPUs are scheduled. If the PerformanceProfile distributes hugepages evenly across NUMA nodes, requesting more memory than a single node&#8217;s share causes allocation failures. Keep the VM memory request at or below the per-NUMA-node hugepage allocation.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Exit the debug shell:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">exit</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_7_verify_real_time_configuration_inside_the_vm"><a class="anchor" href="#_step_7_verify_real_time_configuration_inside_the_vm"></a>Step 7: Verify Real-Time Configuration Inside the VM</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Connect to the VM console:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">virtctl console vm-realtime -n realtime-demo</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Log in as <code>fedora</code> with password <code>redhat</code>.</p>
+</div>
+<div class="sect2">
+<h3 id="_check_kernel_type"><a class="anchor" href="#_check_kernel_type"></a>Check Kernel Type</h3>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">uname -r</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If the guest is running a standard kernel (no <code>rt</code> suffix), real-time scheduling is still active at the host level for the vCPUs. A guest RT kernel provides additional in-guest preemption guarantees and is recommended for production workloads.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_verify_cpu_count"><a class="anchor" href="#_verify_cpu_count"></a>Verify CPU Count</h3>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">lscpu | grep -E "^CPU\(s\)|^Socket|^Core|^Thread"</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Expected output:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>CPU(s):                  2
+Thread(s) per core:      1
+Core(s) per socket:      2
+Socket(s):               1</pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_check_scheduling_policy_from_host_perspective"><a class="anchor" href="#_check_scheduling_policy_from_host_perspective"></a>Check Scheduling Policy (from host perspective)</h3>
+<div class="paragraph">
+<p>Disconnect from the guest console by pressing <code>Ctrl+]</code>.</p>
+</div>
+<div class="paragraph">
+<p>The host-level real-time scheduling is configured by KubeVirt on the QEMU vCPU threads. You can verify this from the host debug session. Open a debug session on the VM&#8217;s node:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc debug node/&lt;node-name&gt;</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Find the QEMU process ID:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">chroot /host pgrep qemu-kvm</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>List all threads for that process with their scheduling policy and priority, replacing <code>&lt;qemu-pid&gt;</code> with the PID from the previous command:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">chroot /host ps -T -o tid,cls,rtprio,comm -p &lt;qemu-pid&gt;</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Expected output:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>    TID CLS RTPRIO COMMAND
+  70898  TS      - qemu-kvm
+  70900  TS      - call_rcu
+  70901  TS      - TC tc-ram-node0
+  70941  TS      - IO mon_iothread
+  70942  FF      1 CPU 0/KVM
+  70943  TS      - CPU 1/KVM</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The <code>CLS</code> column shows the scheduling class: <code>FF</code> for <code>SCHED_FIFO</code> and <code>TS</code> for <code>SCHED_OTHER</code>. The <code>RTPRIO</code> column shows the real-time priority. Thread <code>CPU 0/KVM</code> shows <code>FF</code> with priority <code>1</code>, confirming it is scheduled with <code>SCHED_FIFO</code> as specified by <code>realtime.mask: "0"</code>. Thread <code>CPU 1/KVM</code> shows <code>TS</code>, confirming it remains on the default scheduler for housekeeping tasks.</p>
+</div>
+<div class="paragraph">
+<p>Exit the debug shell:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">exit</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_8_measure_and_baseline_latency"><a class="anchor" href="#_step_8_measure_and_baseline_latency"></a>Step 8: Measure and Baseline Latency</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>For a proper latency baseline, <code>cyclictest</code> is the standard tool. It measures the worst-case wake-up latency of a real-time thread.</p>
+</div>
+<div class="paragraph">
+<p>Connect to the VM console:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">virtctl console vm-realtime -n realtime-demo</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Log in, then install <code>realtime-tests</code> (which provides <code>cyclictest</code>):</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">sudo dnf install -y realtime-tests</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Run a short cyclictest to measure latency on 3 threads for 60 seconds:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">sudo cyclictest --mlockall --smp --priority=80 --interval=200 --distance=0 --duration=60</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Example output:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre># /dev/cpu_dma_latency set to 0us
+policy: fifo: loadavg: 0.92 0.42 0.18 1/148 1599
+
+T: 0 ( 1597) P:80 I:200 C: 156868 Min:      3 Act:    5 Avg:  191 Max:    9501
+T: 1 ( 1598) P:80 I:200 C: 277750 Min:      3 Act:    7 Avg:   36 Max:    1406</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The <code>Max</code> column shows worst-case latency in microseconds. With a standard (non-RT) guest kernel, max latencies in the hundreds to low thousands of microseconds are expected because guest-internal scheduling is not preemption-free. With a purpose-built guest image running an RT kernel, max latencies drop to the low tens of microseconds.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+A fully tuned OpenShift Virtualization deployment with RT worker nodes and an optimized guest image has achieved max latencies of 54-55 microseconds in Red Hat benchmarks. See <a href="https://www.redhat.com/en/blog/benchmark-latency-openshift" target="_blank" rel="noopener">Benchmarking Red Hat OpenShift Virtualization for latency-sensitive workloads</a> for details.
+</td>
+</tr>
+</table>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-important" title="Important"></i>
+</td>
+<td class="content">
+Latency results vary significantly based on hardware, BIOS settings, and workload. These numbers are illustrative. <strong>Always establish your own baseline and compare against your workload&#8217;s latency budget.</strong>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Disconnect from the console by pressing <code>Ctrl+]</code>.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_troubleshooting"><a class="anchor" href="#_troubleshooting"></a>Troubleshooting</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_vm_fails_to_schedule_no_realtime_capable_nodes"><a class="anchor" href="#_vm_fails_to_schedule_no_realtime_capable_nodes"></a>VM fails to schedule: no realtime-capable nodes</h3>
+<div class="paragraph">
+<p>Check that the target node has the <code>kubevirt.io/realtime</code> label:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get nodes -L kubevirt.io/realtime</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If the label is missing, verify that the RT kernel was installed and <code>kernel.sched_rt_runtime_us</code> is -1. The PerformanceProfile sets this automatically, but if the MachineConfigPool rollout did not complete, the setting may not be applied.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_performanceprofile_stuck_or_node_degraded"><a class="anchor" href="#_performanceprofile_stuck_or_node_degraded"></a>PerformanceProfile stuck or node degraded</h3>
+<div class="paragraph">
+<p>Check the MachineConfigPool status:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get mcp worker-rt</code></pre>
+</div>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc describe mcp worker-rt</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If <code>DEGRADED</code> is <code>True</code>, inspect the machine-config-daemon logs on the affected node:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc logs -n openshift-machine-config-operator -l k8s-app=machine-config-daemon --tail=50</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Common causes: insufficient disk space for the RT kernel RPM, or a conflicting MachineConfig.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_high_max_latency_in_cyclictest"><a class="anchor" href="#_high_max_latency_in_cyclictest"></a>High max latency in cyclictest</h3>
+<div class="paragraph">
+<p>If <code>cyclictest</code> shows max latencies above 100 microseconds:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Verify that the QEMU vCPU threads are running with <code>SCHED_FIFO</code> (see Step 7).</p>
+</li>
+<li>
+<p>Check that the isolated CPUs are not receiving IRQs. On the RT node, verify:</p>
+</li>
+</ul>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc debug node/&lt;node-name&gt; -- chroot /host cat /proc/interrupts</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Isolated CPUs (columns 2-7) should show minimal or zero interrupt counts for most IRQ lines.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Ensure BIOS settings are optimized: disable Hyper-Threading if not needed, disable C-states deeper than C1, enable performance mode.</p>
+</li>
+<li>
+<p>Use a guest RT kernel for the best results.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_vm_fails_with_insufficient_hugepages"><a class="anchor" href="#_vm_fails_with_insufficient_hugepages"></a>VM fails with "insufficient hugepages"</h3>
+<div class="paragraph">
+<p>The PerformanceProfile allocates hugepages, but existing VMs or pods may have consumed them. Check available hugepages:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get node &lt;node-name&gt; -o jsonpath='{.status.allocatable.hugepages-1Gi}{"\n"}'</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If insufficient, either stop other hugepage-consuming workloads or increase the <code>pages.count</code> in the PerformanceProfile.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_cleanup"><a class="anchor" href="#_cleanup"></a>Cleanup</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Remove the VM and namespace:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc delete namespace realtime-demo</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Remove the PerformanceProfile to revert the RT kernel and CPU isolation:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc delete performanceprofile realtime-workers</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Remove the MachineConfigPool:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc delete mcp worker-rt</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Remove the <code>worker-rt</code> role label from the node:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc label node &lt;node-name&gt; node-role.kubernetes.io/worker-rt-</code></pre>
+</div>
+</div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+Deleting the PerformanceProfile and MachineConfigPool triggers a reboot to revert the node to the standard kernel. Monitor the <code>worker</code> MachineConfigPool until the rollout completes.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_summary"><a class="anchor" href="#_summary"></a>Summary</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>In this tutorial you learned how to:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Create a dedicated MachineConfigPool for real-time worker nodes</p>
+</li>
+<li>
+<p>Apply a PerformanceProfile to install the RT kernel, isolate CPUs, and reserve hugepages</p>
+</li>
+<li>
+<p>Verify RT node readiness: kernel version, isolated CPUs, hugepage allocation, and the <code>kubevirt.io/realtime</code> label</p>
+</li>
+<li>
+<p>Deploy a real-time VM with the full stack of latency-reduction settings</p>
+</li>
+<li>
+<p>Verify CPU pinning, hugepage backing, and SCHED_FIFO scheduling on the host</p>
+</li>
+<li>
+<p>Measure and baseline latency using <code>cyclictest</code></p>
+</li>
+<li>
+<p>Understand the role of each configuration layer in eliminating specific sources of jitter</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_see_also"><a class="anchor" href="#_see_also"></a>See Also</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p><a href="cpu-pinning.html" class="xref page">Dedicated CPU Placement</a>&#8201;&#8212;&#8201;prerequisite: CPU Manager static policy and dedicated vCPUs</p>
+</li>
+<li>
+<p><a href="numa-hugepages.html" class="xref page">NUMA and Hugepages</a>&#8201;&#8212;&#8201;prerequisite: hugepage reservation and NUMA passthrough</p>
+</li>
+<li>
+<p><a href="resource-limits-qos.html" class="xref page">VM Resource Limits and QoS</a>&#8201;&#8212;&#8201;Guaranteed QoS requirements</p>
+</li>
+<li>
+<p><a href="https://kubevirt.io/user-guide/compute/numa/#running-real-time-workloads" target="_blank" rel="noopener">KubeVirt Real-Time Workloads</a></p>
+</li>
+<li>
+<p><a href="https://docs.redhat.com/en/documentation/openshift_container_platform/4.18/html/scalability_and_performance/cnf-tuning-low-latency-nodes-with-perf-profile" target="_blank" rel="noopener">Tuning Nodes for Low Latency - OpenShift Documentation</a></p>
+</li>
+<li>
+<p><a href="https://docs.redhat.com/en/documentation/openshift_container_platform/4.18/html/scalability_and_performance/cnf-provisioning-low-latency-workloads" target="_blank" rel="noopener">Provisioning Real-Time Workloads - OpenShift Documentation</a></p>
+</li>
+<li>
+<p><a href="https://www.libvirt.org/kbase/kvm-realtime.html" target="_blank" rel="noopener">KVM Real-Time Tuning - libvirt</a></p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<nav class="pagination">
+  <span class="prev"><a href="numa-hugepages.html">NUMA and Hugepages</a></span>
+  <span class="next"><a href="hotplug-volumes-interfaces.html">Hotplug Volumes and Interfaces</a></span>
+</nav>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <img src="../../../_/img/rhl-logo-red.png" height="40px" alt="Red Hat"  href="https://redhat.com" >
+</footer><script id="site-script" src="../../../_/js/site.js" data-ui-root-path="../../../_"></script>
+<script async src="../../../_/js/vendor/highlight.js"></script>
+  </body>
+</html>
