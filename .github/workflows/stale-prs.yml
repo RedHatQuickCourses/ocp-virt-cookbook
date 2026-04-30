@@ -1,0 +1,74 @@
+name: Close stale PRs
+
+on:
+  schedule:
+    - cron: '0 9 * * *' # Daily at 09:00 UTC
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  stale:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      issues: write
+
+    steps:
+      - name: Process stale PRs
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          now=$(date +%s)
+
+          gh pr list --state open --json number,updatedAt --limit 200 | \
+          jq -c '.[]' | while read -r pr; do
+            number=$(echo "$pr" | jq -r '.number')
+            updated=$(echo "$pr" | jq -r '.updatedAt')
+            updated_epoch=$(date -d "$updated" +%s)
+            inactive_days=$(( (now - updated_epoch) / 86400 ))
+
+            if [ "$inactive_days" -ge 45 ]; then
+              body="This pull request has been automatically closed after 45 days of inactivity."
+              body="${body}"$'\n\n'"If you would like to continue working on this, feel free to reopen the PR and push new changes."
+              gh pr comment "$number" --body "$body"
+              gh pr close "$number"
+
+            elif [ "$inactive_days" -ge 40 ]; then
+              already=$(gh pr view "$number" --json comments --jq \
+                '[.comments[] | select(.body | contains("STALE-CHECK-40"))] | length')
+              if [ "$already" -eq 0 ]; then
+                body="**Final warning** -- This PR will be automatically closed in **5 days** due to inactivity."
+                body="${body}"$'\n\n'"Please push a commit or leave a comment to reset the inactivity timer."
+                body="${body}"$'\n\n'"<!-- STALE-CHECK-40 -->"
+                gh pr comment "$number" --body "$body"
+              fi
+
+            elif [ "$inactive_days" -ge 35 ]; then
+              already=$(gh pr view "$number" --json comments --jq \
+                '[.comments[] | select(.body | contains("STALE-CHECK-35"))] | length')
+              if [ "$already" -eq 0 ]; then
+                body="**Reminder** -- This PR has been inactive for 35 days and will be automatically closed in **10 days** if there is no new activity."
+                body="${body}"$'\n\n'"Push a commit or leave a comment to reset the inactivity timer."
+                body="${body}"$'\n\n'"<!-- STALE-CHECK-35 -->"
+                gh pr comment "$number" --body "$body"
+              fi
+
+            elif [ "$inactive_days" -ge 30 ]; then
+              already=$(gh pr view "$number" --json comments --jq \
+                '[.comments[] | select(.body | contains("STALE-CHECK-30"))] | length')
+              if [ "$already" -eq 0 ]; then
+                body="**Stale PR notice** -- This PR has had no activity for 30 days."
+                body="${body}"$'\n\n'"It will be automatically closed after **45 days** of inactivity. Push a commit or leave a comment to reset the timer."
+                body="${body}"$'\n\n'"<!-- STALE-CHECK-30 -->"
+                gh pr comment "$number" --body "$body"
+                gh pr edit "$number" --add-label "stale"
+              fi
+
+            else
+              has_label=$(gh pr view "$number" --json labels --jq \
+                '[.labels[] | select(.name == "stale")] | length')
+              if [ "$has_label" -gt 0 ]; then
+                gh pr edit "$number" --remove-label "stale"
+              fi
+            fi
+          done
