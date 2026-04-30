@@ -44,7 +44,7 @@ A standard VM on a shared-CPU host can experience scheduling latency spikes of t
 |VM spec (`autoattachMemBalloon: false`)
 |===
 
-This tutorial is the third in a performance series. It builds directly on the Dedicated CPU Placement and NUMA/Hugepages tutorials.
+This tutorial is the third in a performance series. It builds directly on the xref:cpu-pinning.adoc[Dedicated CPU Placement] and xref:numa-hugepages.adoc[NUMA/Hugepages] tutorials.
 
 == Prerequisites
 
@@ -52,8 +52,8 @@ This tutorial is the third in a performance series. It builds directly on the De
 * Cluster admin access (`system:admin` or equivalent)
 * `oc` and `virtctl` CLIs installed
 * Worker nodes with at least 8 physical CPU cores and 16Gi RAM
-* CPU Manager static policy enabled (see the Dedicated CPU Placement tutorial)
-* Familiarity with hugepages and NUMA topology (see the NUMA and Hugepages tutorial)
+* CPU Manager static policy enabled (see the xref:cpu-pinning.adoc[Dedicated CPU Placement] tutorial)
+* Familiarity with hugepages and NUMA topology (see the xref:numa-hugepages.adoc[NUMA and Hugepages] tutorial)
 * The Node Tuning Operator installed (included by default in OpenShift)
 
 == Understanding Real-Time Requirements
@@ -158,7 +158,7 @@ spec:
 EOF
 ----
 
-NOTE: On single-node OpenShift (SNO), skip the MachineConfigPool creation in Step 1. Instead, set `nodeSelector` to `node-role.kubernetes.io/master: ""` and `machineConfigPoolSelector` to `pools.operator.machineconfiguration.openshift.io/master: ""` to target the existing master pool directly. The `machineConfigPoolSelector` must match a label on the MCP's own `metadata.labels`, not the `machineConfigSelector` it uses internally.
+NOTE: On single-node OpenShift (SNO), skip the MachineConfigPool creation in Step 1. Instead, set `nodeSelector` to `node-role.kubernetes.io/master: ""` and `machineConfigPoolSelector` to `pools.operator.machineconfiguration.openshift.io/master: ""` to target the existing master pool directly. The `machineConfigPoolSelector` must match a label on the MCP's own `metadata.labels`, not the `machineConfigSelector` it uses internally. You must still apply the `worker-rt` label from Step 1 (`oc label node <node-name> node-role.kubernetes.io/worker-rt=`), because the VM manifest uses that label in its `nodeSelector`.
 
 IMPORTANT: The PerformanceProfile API uses SI units for hugepage sizes (`1G`, `2M`), not IEC units (`1Gi`, `2Mi`). This differs from the Kubernetes resource syntax used in VM specs, which uses `1Gi` and `2Mi`.
 
@@ -173,7 +173,14 @@ Monitor the rollout:
 oc get mcp worker-rt -w
 ----
 
-Wait until `UPDATED` is `True` and `READYMACHINECOUNT` matches `MACHINECOUNT`. This may take 10-20 minutes as the node downloads the RT kernel, reboots, and re-joins the cluster.
+On SNO, monitor the `master` pool instead:
+
+[source,bash,role=execute]
+----
+oc get mcp master -w
+----
+
+Wait until `UPDATED` is `True` and `READYMACHINECOUNT` matches `MACHINECOUNT`. This may take 10-20 minutes as the node downloads the RT kernel, reboots, and re-joins the cluster. The MCP remains in `UPDATING: True` state even after the reboot completes, while the node finishes reconciling its configuration and reporting readiness back to the cluster. Do not proceed until the rollout is fully complete.
 
 === Understanding the Kernel Parameters
 
@@ -226,11 +233,24 @@ The kernel version should contain `rt` in its name, for example:
 5.14.0-427.55.1.el9_4.x86_64+rt
 ----
 
-Verify that isolated CPUs are configured:
+Verify that CPU isolation is configured by checking the kernel boot parameters:
 
 [source,bash,role=execute]
 ----
-chroot /host cat /sys/devices/system/cpu/isolated
+chroot /host cat /proc/cmdline | grep -o 'isolcpus=managed_irq,[^ ]*'
+----
+
+Expected output:
+
+----
+isolcpus=managed_irq,2-7
+----
+
+Verify that tick-less (nohz) mode is active on the isolated CPUs:
+
+[source,bash,role=execute]
+----
+chroot /host cat /sys/devices/system/cpu/nohz_full
 ----
 
 Expected output (matching the PerformanceProfile `cpu.isolated`):
@@ -238,6 +258,15 @@ Expected output (matching the PerformanceProfile `cpu.isolated`):
 ----
 2-7
 ----
+
+Verify the default IRQ affinity mask:
+
+[source,bash,role=execute]
+----
+chroot /host cat /proc/irq/default_smp_affinity
+----
+
+With `managed_irq` mode, the default affinity mask may show all CPUs. IRQ steering is handled dynamically by the Tuned-generated `irqbalance` hints, not via a static affinity mask.
 
 Verify hugepage allocation:
 
@@ -463,9 +492,9 @@ lscpu | grep -E "^CPU\(s\)|^Socket|^Core|^Thread"
 Expected output:
 
 ----
-CPU(s):                  4
+CPU(s):                  2
 Thread(s) per core:      1
-Core(s) per socket:      4
+Core(s) per socket:      2
 Socket(s):               1
 ----
 
@@ -487,14 +516,26 @@ Find the QEMU process ID:
 chroot /host pgrep qemu-kvm
 ----
 
-Use the returned PID to list all threads and their scheduling policies:
+List all threads for that process with their scheduling policy and priority, replacing `<qemu-pid>` with the PID from the previous command:
 
 [source,bash,role=execute]
 ----
-chroot /host bash -c 'PID=<qemu-pid>; ls /proc/$PID/task/ | while read TID; do NAME=$(cat /proc/$PID/task/$TID/comm 2>/dev/null); POLICY=$(chrt -p $TID 2>/dev/null | head -2); echo "TID $TID ($NAME): $POLICY"; done'
+chroot /host ps -T -o tid,cls,rtprio,comm -p <qemu-pid>
 ----
 
-Replace `<qemu-pid>` with the PID from the previous command. Threads named `CPU <n>/KVM` are the vCPU threads. vCPU threads covered by the `realtime.mask` should show `SCHED_FIFO` with priority 1, while the remaining vCPU threads, emulator thread, and I/O threads use `SCHED_OTHER`.
+Expected output:
+
+----
+    TID CLS RTPRIO COMMAND
+  70898  TS      - qemu-kvm
+  70900  TS      - call_rcu
+  70901  TS      - TC tc-ram-node0
+  70941  TS      - IO mon_iothread
+  70942  FF      1 CPU 0/KVM
+  70943  TS      - CPU 1/KVM
+----
+
+The `CLS` column shows the scheduling class: `FF` for `SCHED_FIFO` and `TS` for `SCHED_OTHER`. The `RTPRIO` column shows the real-time priority. Thread `CPU 0/KVM` shows `FF` with priority `1`, confirming it is scheduled with `SCHED_FIFO` as specified by `realtime.mask: "0"`. Thread `CPU 1/KVM` shows `TS`, confirming it remains on the default scheduler for housekeeping tasks.
 
 Exit the debug shell:
 
@@ -514,11 +555,11 @@ Connect to the VM console:
 virtctl console vm-realtime -n realtime-demo
 ----
 
-Log in, then install `rt-tests` (which includes `cyclictest`):
+Log in, then install `realtime-tests` (which provides `cyclictest`):
 
 [source,bash,role=execute]
 ----
-sudo dnf install -y rt-tests
+sudo dnf install -y realtime-tests
 ----
 
 Run a short cyclictest to measure latency on 3 threads for 60 seconds:
@@ -532,14 +573,17 @@ Example output:
 
 ----
 # /dev/cpu_dma_latency set to 0us
-T: 0 ( 1234) P:80 I:200 C: 300000 Min:      1 Act:    2 Avg:    2 Max:      15
-T: 1 ( 1235) P:80 I:200 C: 300000 Min:      1 Act:    3 Avg:    2 Max:      18
-T: 2 ( 1236) P:80 I:200 C: 300000 Min:      1 Act:    2 Avg:    2 Max:      12
+policy: fifo: loadavg: 0.92 0.42 0.18 1/148 1599
+
+T: 0 ( 1597) P:80 I:200 C: 156868 Min:      3 Act:    5 Avg:  191 Max:    9501
+T: 1 ( 1598) P:80 I:200 C: 277750 Min:      3 Act:    7 Avg:   36 Max:    1406
 ----
 
-The `Max` column shows worst-case latency in microseconds. On a properly tuned RT host with a standard (non-RT) guest kernel, expect max latencies in the low tens of microseconds. With a guest RT kernel, max latencies drop further.
+The `Max` column shows worst-case latency in microseconds. With a standard (non-RT) guest kernel, max latencies in the hundreds to low thousands of microseconds are expected because guest-internal scheduling is not preemption-free. With a purpose-built guest image running an RT kernel, max latencies drop to the low tens of microseconds.
 
-IMPORTANT: Latency results vary significantly based on hardware, BIOS settings, and workload. These numbers are illustrative. Always establish your own baseline and compare against your workload's latency budget.
+NOTE: A fully tuned OpenShift Virtualization deployment with RT worker nodes and an optimized guest image has achieved max latencies of 54-55 microseconds in Red Hat benchmarks. See link:https://www.redhat.com/en/blog/benchmark-latency-openshift[Benchmarking Red Hat OpenShift Virtualization for latency-sensitive workloads,window=_blank] for details.
+
+IMPORTANT: Latency results vary significantly based on hardware, BIOS settings, and workload. These numbers are illustrative. *Always establish your own baseline and compare against your workload's latency budget.*
 
 Disconnect from the console by pressing `Ctrl+]`.
 
@@ -653,8 +697,8 @@ In this tutorial you learned how to:
 
 == See Also
 
-* Dedicated CPU Placement (cpu-pinning.adoc) -- prerequisite: CPU Manager static policy and dedicated vCPUs
-* NUMA and Hugepages (numa-hugepages.adoc) -- prerequisite: hugepage reservation and NUMA passthrough
+* xref:cpu-pinning.adoc[Dedicated CPU Placement] -- prerequisite: CPU Manager static policy and dedicated vCPUs
+* xref:numa-hugepages.adoc[NUMA and Hugepages] -- prerequisite: hugepage reservation and NUMA passthrough
 * xref:resource-limits-qos.adoc[VM Resource Limits and QoS] -- Guaranteed QoS requirements
 * link:https://kubevirt.io/user-guide/compute/numa/#running-real-time-workloads[KubeVirt Real-Time Workloads,window=_blank]
 * link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.18/html/scalability_and_performance/cnf-tuning-low-latency-nodes-with-perf-profile[Tuning Nodes for Low Latency - OpenShift Documentation,window=_blank]
