@@ -1,0 +1,971 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Dedicated CPU Placement for Virtual Machines :: OpenShift Virtualization cookbook</title>
+    <link rel="prev" href="resource-limits-qos.html">
+    <link rel="next" href="numa-hugepages.html">
+    <meta name="generator" content="Antora 3.1.3">
+    <link rel="stylesheet" href="../../../_/css/site.css">
+    <script>var uiRootPath = '../../../_'</script>
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://www.redhat.com" target="_blank"><img src="../../../_/img/redhat-logo.png" height="40px" alt="Red Hat"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="../../..">OpenShift Virtualization cookbook</a>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues" target="_blank">Report Issues</a>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="ocp-virt-cookbook" data-version="1">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="../index.html">OpenShift Virtualization cookbook</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../index.html">Introduction</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../getting-started/index.html">Getting Started</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/prerequisites.html">Prerequisites</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/install-openshift-virtualization.html">Install OpenShift Virtualization</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/default-storage-class.html">Storage Setup</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/create-vm-web-console.html">Create VM from Web Console</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/vm-lifecycle-states.html">VM Lifecycle States</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/virtctl-basics.html">Virtctl Basics</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../storage/index.html">Storage Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/lvm-operator.html">LVM Operator Installation</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/lvm-troubleshooting.html">LVM Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/hostpath-provisioner.html">HostPath Provisioner</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/creating-managing-storage-class.html">Creating and Managing Storage Classes</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/multi-disk-configuration.html">Multi-Disk VMs</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../networking/index.html">Networking Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/static-ip-configuration.html">Static IP Configuration</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/cloud-init-troubleshooting.html">Cloud-init Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/udn-primary-networks.html">UDN Primary Networks</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/localnet-secondary.html">Localnet Secondary Networks with CUDN</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/localnet-vlan.html">Localnet Secondary Networks with VLAN using NAD</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/cudn-localnet-vlan.html">Localnet VLAN with CUDN</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/layer2-secondary.html">Layer 2 Secondary Networks</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/linux-bridges.html">Linux Bridges</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/vm-ingress-routes.html">VM Ingress and Routes</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/ovs-bridge-troubleshooting.html">Troubleshooting Localnet Networks</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../vm-configuration/index.html">Virtual Machine Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/internal-dns-for-vms.html">Internal DNS for VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/remote-access-linux-vms.html">Remote Access to Linux VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/remote-access-linux-troubleshooting.html">Remote Access to Linux VMs Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/remote-access-windows-vms.html">Remote Access to Windows VMs via RDP</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/infrastructure-node-placement.html">Infrastructure Node Placement</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/node-placement-affinity.html">Node Placement and Affinity</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/hotplug-volumes-interfaces.html">Hotplug Volumes and Interfaces</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/vm-templates.html">Virtual Machine Templates</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="index.html">VM Performance Tuning</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="resource-limits-qos.html">Resource Limits and QoS</a>
+  </li>
+  <li class="nav-item is-current-page" data-depth="2">
+    <a class="nav-link" href="cpu-pinning.html">Dedicated CPU Placement</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="numa-hugepages.html">NUMA and Hugepages</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="realtime-vms.html">Real-Time VMs</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../vm-lifecycle/index.html">VM Lifecycle Management</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/import-qcow2-boot-volume.html">Import qcow2 Boot Volume</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/custom-golden-images.html">Custom Golden Images</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/golden-images-troubleshooting.html">Golden Images Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/cloning-vms.html">Cloning VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/vm-snapshots.html">VM Snapshots</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/boot-order-boot-sources.html">VM Boot Order and Boot Sources</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../manifests/index.html">Manifests</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../api/index.html">API Guide</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../api/api-component-overview.html">API Component Overview</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../appendix/glossary.html">Glossary</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">OpenShift Virtualization cookbook</span>
+    <span class="version">1</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <a class="title" href="../index.html">OpenShift Virtualization cookbook</a>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">1</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">OpenShift Virtualization cookbook</a></li>
+    <li><a href="index.html">VM Performance Tuning</a></li>
+    <li><a href="cpu-pinning.html">Dedicated CPU Placement</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">Dedicated CPU Placement for Virtual Machines</h1>
+<div class="sect1">
+<h2 id="_overview"><a class="anchor" href="#_overview"></a>Overview</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>This tutorial demonstrates how to configure dedicated CPU placement for virtual machines in OpenShift Virtualization. By default, virtual machine vCPUs share physical CPU time with other workloads on the host. Dedicated CPU placement pins each vCPU to a specific physical CPU, eliminating CPU steal and reducing scheduling jitter.</p>
+</div>
+<div class="paragraph">
+<p>This configuration is essential for workloads that require predictable latency: NFV/telco applications, real-time processing, HPC, and latency-sensitive databases.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_prerequisites"><a class="anchor" href="#_prerequisites"></a>Prerequisites</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p>OpenShift 4.18+ with OpenShift Virtualization operator installed (tested on 4.21)</p>
+</li>
+<li>
+<p>Cluster admin access (<code>system:admin</code> or equivalent)</p>
+</li>
+<li>
+<p><code>oc</code> and <code>virtctl</code> CLIs installed</p>
+</li>
+<li>
+<p>Worker nodes with sufficient physical CPU cores (at least 4 recommended)</p>
+</li>
+<li>
+<p>Familiarity with Kubernetes QoS classes (see <a href="resource-limits-qos.html" class="xref page">Configuring VM Resource Limits and QoS</a>)</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_understanding_dedicated_cpu_placement"><a class="anchor" href="#_understanding_dedicated_cpu_placement"></a>Understanding Dedicated CPU Placement</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>OpenShift uses the Kubernetes CPU Manager to assign exclusive physical CPUs to pods. When the CPU Manager runs with the <code>static</code> policy, it can pin a pod&#8217;s containers to dedicated host CPUs, preventing any other workload from using those CPUs.</p>
+</div>
+<div class="paragraph">
+<p>KubeVirt&#8217;s <code>dedicatedCpuPlacement</code> field instructs the CPU Manager to pin the <code>virt-launcher</code> pod&#8217;s vCPUs to physical CPUs. Once the pod is running, each guest vCPU maps directly to a reserved physical CPU.</p>
+</div>
+<div class="paragraph">
+<p>Two requirements must be met before dedicated placement works:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>The node must have the CPU Manager running with the <code>static</code> policy.</p>
+</li>
+<li>
+<p>The VM must have <strong>Guaranteed</strong> QoS: CPU and memory requests must equal their limits, and CPU counts must be whole integers.</p>
+</li>
+</ul>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 20%;">
+<col style="width: 40%;">
+<col style="width: 40%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Mode</th>
+<th class="tableblock halign-left valign-top">vCPU behavior</th>
+<th class="tableblock halign-left valign-top">Use case</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Default (shared)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vCPUs compete for host CPU time with all other workloads</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">General-purpose VMs, development, non-latency-sensitive workloads</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Dedicated (<code>dedicatedCpuPlacement: true</code>)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vCPUs pinned to reserved physical CPUs, no CPU steal</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">NFV/telco, real-time, HPC, latency-sensitive databases</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_1_enable_the_cpu_manager_static_policy"><a class="anchor" href="#_step_1_enable_the_cpu_manager_static_policy"></a>Step 1: Enable the CPU Manager Static Policy</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The CPU Manager policy is configured per MachineConfigPool using a <code>KubeletConfig</code> resource.</p>
+</div>
+<div class="paragraph">
+<p>First, add a label to the worker MachineConfigPool to identify it as a target for this configuration:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc label machineconfigpool worker custom-kubelet=cpumanager-enabled</code></pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+On single-node OpenShift (SNO) clusters, the node belongs to the <code>master</code> MachineConfigPool, not <code>worker</code>. Replace <code>worker</code> with <code>master</code> in this command and in the <code>machineConfigPoolSelector</code> of the <code>KubeletConfig</code> that follows.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/cpu-pinning/kubeletconfig-static-policy.yaml" class="xref attachment">Download kubeletconfig-static-policy.yaml</a></p>
+</div>
+<div class="paragraph">
+<p>Apply the <code>KubeletConfig</code> to enable the static CPU Manager policy:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f - &lt;&lt;EOF
+apiVersion: machineconfiguration.openshift.io/v1
+kind: KubeletConfig
+metadata:
+  name: cpumanager-enabled
+spec:
+  machineConfigPoolSelector:
+    matchLabels:
+      custom-kubelet: cpumanager-enabled
+  kubeletConfig:
+    cpuManagerPolicy: static
+    cpuManagerReconcilePeriod: 5s
+EOF</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The Machine Config Operator applies the new kubelet configuration to all nodes in the targeted pool. Monitor the rollout:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get mcp worker -w</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Wait until the <code>UPDATING</code> column returns to <code>False</code> and <code>READYMACHINECOUNT</code> matches <code>MACHINECOUNT</code>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>NAME     CONFIG                                             UPDATED   UPDATING   DEGRADED
+worker   rendered-worker-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx   True      False      False</pre>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_verify_the_cpu_manager_policy"><a class="anchor" href="#_verify_the_cpu_manager_policy"></a>Verify the CPU Manager Policy</h3>
+<div class="paragraph">
+<p>Confirm that the kubelet on each worker node is now running with the <code>static</code> policy:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc debug node/&lt;node-name&gt; -- chroot /host cat /etc/kubernetes/kubelet.conf</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The output should include:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>cpuManagerPolicy: static
+cpuManagerReconcilePeriod: 5s</pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_2_label_nodes_for_dedicated_cpu_workloads"><a class="anchor" href="#_step_2_label_nodes_for_dedicated_cpu_workloads"></a>Step 2: Label Nodes for Dedicated CPU Workloads</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>VMs that request dedicated CPU placement need a node selector to target only nodes where the CPU Manager is running. Apply the <code>cpumanager=true</code> label to each worker node that has the static policy enabled:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc label node &lt;node-name&gt; cpumanager=true</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Verify the label is present:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get nodes -L cpumanager</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Expected output:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>NAME         STATUS   ROLES    AGE   VERSION   CPUMANAGER
+worker-01    Ready    worker   10d   v1.34.5   true
+worker-02    Ready    worker   10d   v1.34.5   true</pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+KubeVirt can automatically manage the <code>cpumanager=true</code> label when the <code>CPUManager</code> feature gate is enabled on the KubeVirt CR. When enabled, KubeVirt detects which nodes have the static CPU Manager policy running and applies or removes the label automatically. Without the feature gate, manage this label manually whenever nodes are added or reconfigured.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_3_create_a_namespace"><a class="anchor" href="#_step_3_create_a_namespace"></a>Step 3: Create a Namespace</h2>
+<div class="sectionbody">
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc create namespace cpu-pinning-demo</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_4_deploy_a_vm_with_dedicated_cpu_placement"><a class="anchor" href="#_step_4_deploy_a_vm_with_dedicated_cpu_placement"></a>Step 4: Deploy a VM with Dedicated CPU Placement</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The following VM specification requests 2 dedicated vCPUs using <code>dedicatedCpuPlacement: true</code>. The <code>nodeSelector</code> ensures the VM schedules only on nodes labeled <code>cpumanager=true</code>. Memory requests and limits are equal, satisfying the Guaranteed QoS requirement.</p>
+</div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+The cloud-init password in this example is for demonstration purposes only. Use SSH key authentication or a strong, unique password in production environments.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/cpu-pinning/vm-dedicated-cpu.yaml" class="xref attachment">Download vm-dedicated-cpu.yaml</a></p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f - &lt;&lt;EOF
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: vm-dedicated-cpu
+  namespace: cpu-pinning-demo
+spec:
+  runStrategy: Always
+  template:
+    metadata:
+      labels:
+        kubevirt.io/domain: vm-dedicated-cpu
+    spec:
+      nodeSelector:
+        cpumanager: "true"
+      domain:
+        cpu:
+          sockets: 2
+          cores: 1
+          threads: 1
+          dedicatedCpuPlacement: true
+        memory:
+          guest: 1Gi
+        resources:
+          requests:
+            memory: 2Gi
+          limits:
+            memory: 2Gi
+        devices:
+          disks:
+          - name: rootdisk
+            disk:
+              bus: virtio
+          - name: cloudinitdisk
+            disk:
+              bus: virtio
+          interfaces:
+          - name: default
+            masquerade: {}
+      networks:
+      - name: default
+        pod: {}
+      volumes:
+      - name: rootdisk
+        containerDisk:
+          image: quay.io/containerdisks/fedora:latest
+      - name: cloudinitdisk
+        cloudInitNoCloud:
+          userData: |
+            #cloud-config
+            password: redhat
+            chpasswd:
+              expire: false
+EOF</code></pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+The memory limit (2Gi) is set higher than the guest memory (1Gi) to account for QEMU and hypervisor overhead. See <a href="resource-limits-qos.html" class="xref page">Configuring VM Resource Limits and QoS</a> for a detailed explanation of how KubeVirt translates VM memory specifications into container resource values.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Wait for the VM to reach Running status:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vm vm-dedicated-cpu -n cpu-pinning-demo -w</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Expected output:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>NAME              AGE   STATUS    READY
+vm-dedicated-cpu  30s   Running   True</pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_5_verify_cpu_pinning"><a class="anchor" href="#_step_5_verify_cpu_pinning"></a>Step 5: Verify CPU Pinning</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_host_side_verification"><a class="anchor" href="#_host_side_verification"></a>Host-Side Verification</h3>
+<div class="paragraph">
+<p>Find the node where the VM is running:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vmi vm-dedicated-cpu -n cpu-pinning-demo -o wide</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Example output:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>NAME              AGE   PHASE     IP            NODENAME    READY
+vm-dedicated-cpu  60s   Running   10.128.0.45   worker-01   True</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Open a debug session on that node:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc debug node/&lt;node-name&gt;</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Inside the debug shell, read the CPU Manager state file. This file records which physical CPUs are assigned to each container:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">chroot /host cat /var/lib/kubelet/cpu_manager_state</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The output is a JSON object. The <code>entries</code> map is keyed by the <code>virt-launcher</code> pod UID, with each entry listing the physical CPU IDs exclusively assigned to the <code>compute</code> container inside that pod:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>{"policyName":"static","defaultCpuSet":"0-1,3-41,43-79","entries":{"&lt;pod-uid&gt;":{"compute":"2,42"}},"checksum":...}</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>CPUs <code>2</code> and <code>42</code> in this example are reserved exclusively for the VM&#8217;s 2 vCPUs. They are removed from the <code>defaultCpuSet</code>, so no other workload can use them while the VM is running.</p>
+</div>
+<div class="paragraph">
+<p>Exit the debug shell:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">exit</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_guest_side_verification"><a class="anchor" href="#_guest_side_verification"></a>Guest-Side Verification</h3>
+<div class="paragraph">
+<p>Connect to the VM console:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">virtctl console vm-dedicated-cpu -n cpu-pinning-demo</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Log in as <code>fedora</code> with password <code>redhat</code>. Inside the guest, check the number of vCPUs visible to the operating system:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">lscpu | grep -E "^CPU\(s\)|^Socket|^Core|^Thread"</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Expected output:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>CPU(s):                  2
+Thread(s) per core:      1
+Core(s) per socket:      1
+Socket(s):               2</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The guest sees 2 vCPUs (2 sockets, 1 core, 1 thread each), matching the requested topology.</p>
+</div>
+<div class="paragraph">
+<p>Disconnect from the console by pressing <code>Ctrl+]</code>.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_isolating_the_emulator_thread"><a class="anchor" href="#_isolating_the_emulator_thread"></a>Isolating the Emulator Thread</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>QEMU runs an emulator thread that handles I/O, timers, and other hypervisor tasks. By default, this thread shares physical CPU time with the VM&#8217;s vCPUs, which can introduce latency spikes. The <code>isolateEmulatorThread</code> option reserves an additional dedicated CPU exclusively for this thread.</p>
+</div>
+<div class="paragraph">
+<p>To enable emulator thread isolation, add <code>isolateEmulatorThread: true</code> to the CPU section of the VM spec alongside <code>dedicatedCpuPlacement: true</code>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">domain:
+  cpu:
+    sockets: 2
+    cores: 1
+    threads: 1
+    dedicatedCpuPlacement: true
+    isolateEmulatorThread: true</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>With this configuration, KubeVirt requests 3 physical CPUs total: 2 for vCPUs and 1 exclusively for the emulator thread. Use this option when the workload is sensitive to even small amounts of emulator-induced jitter.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+On nodes with Simultaneous Multithreading (SMT) enabled and the <code>full-pcpus-only</code> CPU Manager option, using <code>isolateEmulatorThread</code> with an even number of vCPUs may cause a scheduling error. Enable the <code>AlignCPUs</code> feature gate in the KubeVirt CR to resolve this.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_troubleshooting"><a class="anchor" href="#_troubleshooting"></a>Troubleshooting</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_vm_stuck_in_pending_state"><a class="anchor" href="#_vm_stuck_in_pending_state"></a>VM stuck in Pending state</h3>
+<div class="paragraph">
+<p>Check the VMI events for a scheduling failure:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc describe vmi vm-dedicated-cpu -n cpu-pinning-demo</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Look for events like:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>Warning  FailedScheduling  0/3 nodes are available: 3 node(s) didn't match Pod's node affinity/selector</pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Possible causes and resolutions:</strong></p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>No nodes labeled <code>cpumanager=true</code></strong>: Run <code>oc get nodes -L cpumanager</code> and apply the label to nodes that have the static CPU Manager policy.</p>
+</li>
+<li>
+<p><strong>Not enough free pinnable CPUs</strong>: The CPU Manager reserves CPUs from the allocatable pool. Check node capacity with <code>oc describe node &lt;node-name&gt;</code> and verify there are enough free CPUs to satisfy the request.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_cpu_pinning_not_active_after_vm_starts"><a class="anchor" href="#_cpu_pinning_not_active_after_vm_starts"></a>CPU pinning not active after VM starts</h3>
+<div class="paragraph">
+<p>Verify that the KubeletConfig was applied correctly:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get kubeletconfig cpumanager-enabled</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Check the MachineConfigPool status:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get mcp worker</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If <code>UPDATED</code> is <code>False</code> or <code>DEGRADED</code> is <code>True</code>, the configuration has not been fully applied. Inspect the MCO logs:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc logs -n openshift-machine-config-operator -l k8s-app=machine-config-operator --tail=50</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_vm_fails_admission_with_insufficient_dedicated_cpu_resources"><a class="anchor" href="#_vm_fails_admission_with_insufficient_dedicated_cpu_resources"></a>VM fails admission with "insufficient dedicated CPU resources"</h3>
+<div class="paragraph">
+<p>This error means <code>dedicatedCpuPlacement: true</code> is set but the QoS class is not Guaranteed. Verify that CPU requests equal CPU limits and that both are whole integer values.</p>
+</div>
+<div class="paragraph">
+<p>Check the actual QoS class assigned to the virt-launcher pod:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get pod -n cpu-pinning-demo -l kubevirt.io/domain=vm-dedicated-cpu -o jsonpath='{.items[0].status.qosClass}{"\n"}'</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The value must be <code>Guaranteed</code>. If it is <code>Burstable</code>, review the VM&#8217;s resource specification and ensure memory requests equal memory limits.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_cpu_manager_state_shows_no_entry_for_the_vm"><a class="anchor" href="#_cpu_manager_state_shows_no_entry_for_the_vm"></a><code>cpu_manager_state</code> shows no entry for the VM</h3>
+<div class="paragraph">
+<p>If the CPU Manager state file does not list the virt-launcher pod&#8217;s CPU assignment, the node&#8217;s kubelet may still be running with the <code>none</code> policy. Confirm the policy:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc debug node/&lt;node-name&gt; -- chroot /host cat /etc/kubernetes/kubelet.conf</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If <code>cpuManagerPolicy</code> is missing or set to <code>none</code>, the KubeletConfig has not yet been applied to this node. Wait for the MachineConfigPool rollout to complete.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_cleanup"><a class="anchor" href="#_cleanup"></a>Cleanup</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Remove all resources created in this tutorial:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc delete namespace cpu-pinning-demo</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Remove the <code>cpumanager=true</code> label from nodes if you no longer need it:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc label node &lt;node-name&gt; cpumanager-</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>To revert the CPU Manager policy, delete the <code>KubeletConfig</code> and remove the label from the MachineConfigPool:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc delete kubeletconfig cpumanager-enabled</code></pre>
+</div>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc label machineconfigpool worker custom-kubelet-</code></pre>
+</div>
+</div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+Deleting the <code>KubeletConfig</code> triggers another MCO rollout to revert the kubelet configuration. Monitor the MachineConfigPool until the rollout completes before scheduling further workloads that depend on CPU Manager behavior.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_summary"><a class="anchor" href="#_summary"></a>Summary</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>In this tutorial you learned how to:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Configure the Kubernetes CPU Manager with the <code>static</code> policy using a <code>KubeletConfig</code> resource</p>
+</li>
+<li>
+<p>Label nodes to indicate that dedicated CPU placement is available</p>
+</li>
+<li>
+<p>Deploy a virtual machine with <code>dedicatedCpuPlacement: true</code> and Guaranteed QoS</p>
+</li>
+<li>
+<p>Verify CPU pinning from the host using the CPU Manager state file</p>
+</li>
+<li>
+<p>Verify the vCPU topology from inside the guest</p>
+</li>
+<li>
+<p>Optionally isolate the QEMU emulator thread with <code>isolateEmulatorThread: true</code></p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_see_also"><a class="anchor" href="#_see_also"></a>See Also</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p><a href="resource-limits-qos.html" class="xref page">VM Resource Limits and QoS</a>&#8201;&#8212;&#8201;Guaranteed QoS requirements and memory overhead</p>
+</li>
+<li>
+<p><a href="../vm-configuration/node-placement-affinity.html" class="xref page">Node Placement and Affinity</a>&#8201;&#8212;&#8201;targeting specific nodes for VM scheduling</p>
+</li>
+<li>
+<p><a href="../vm-configuration/infrastructure-node-placement.html" class="xref page">Infrastructure Node Placement</a>&#8201;&#8212;&#8201;dedicated node pools for virtualization workloads</p>
+</li>
+<li>
+<p><a href="https://kubevirt.io/user-guide/compute/dedicated_cpu_resources/" target="_blank" rel="noopener">KubeVirt Dedicated CPU Resources</a></p>
+</li>
+<li>
+<p><a href="https://docs.openshift.com/container-platform/4.18/scalability_and_performance/using-cpu-manager.html" target="_blank" rel="noopener">Using CPU Manager and Topology Manager - OpenShift Documentation</a></p>
+</li>
+<li>
+<p><a href="https://kubernetes.io/docs/tasks/administer-cluster/cpu-management-policies/" target="_blank" rel="noopener">CPU Management Policies - Kubernetes Documentation</a></p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<nav class="pagination">
+  <span class="prev"><a href="resource-limits-qos.html">Resource Limits and QoS</a></span>
+  <span class="next"><a href="numa-hugepages.html">NUMA and Hugepages</a></span>
+</nav>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <img src="../../../_/img/rhl-logo-red.png" height="40px" alt="Red Hat"  href="https://redhat.com" >
+</footer><script id="site-script" src="../../../_/js/site.js" data-ui-root-path="../../../_"></script>
+<script async src="../../../_/js/vendor/highlight.js"></script>
+  </body>
+</html>
