@@ -30,20 +30,14 @@ jobs:
           for number in "${pr_numbers[@]}"; do
             echo "--- Processing PR #${number} ---"
 
-            last_human_comment=$(gh pr view "$number" --json comments --jq \
-              '[.comments[]
-                | select(.author.login | endswith("[bot]") | not)
-                | .createdAt
-              ] | sort | last')
+            last_human_comment=$(gh api "repos/${GH_REPO}/issues/${number}/comments" --jq \
+              '[.[] | select(.user.type != "Bot") | .created_at] | sort | last')
 
             last_commit=$(gh pr view "$number" --json commits --jq \
               '[.commits[].committedDate] | sort | last')
 
             last_review=$(gh api "repos/${GH_REPO}/pulls/${number}/reviews" --jq \
-              '[.[]
-                | select(.user.login | endswith("[bot]") | not)
-                | .submitted_at
-              ] | sort | last')
+              '[.[] | select(.user.type != "Bot") | .submitted_at] | sort | last')
 
             echo "  last_human_comment=${last_human_comment:-<none>}"
             echo "  last_commit=${last_commit:-<none>}"
