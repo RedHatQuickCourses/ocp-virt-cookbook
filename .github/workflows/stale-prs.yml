@@ -18,45 +18,58 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
         run: |
+          set +e
           now=$(date +%s)
 
-          gh pr list --state open --json number --limit 200 | \
-          jq -c '.[]' | while read -r pr; do
-            number=$(echo "$pr" | jq -r '.number')
+          mapfile -t pr_numbers < <(
+            gh pr list --state open --json number --jq '.[].number' --limit 200
+          )
+
+          echo "Found ${#pr_numbers[@]} open PR(s)"
+
+          for number in "${pr_numbers[@]}"; do
+            echo "--- Processing PR #${number} ---"
 
             last_human_comment=$(gh pr view "$number" --json comments --jq \
               '[.comments[]
                 | select(.author.login | endswith("[bot]") | not)
                 | .createdAt
-              ] | sort | last // empty')
+              ] | sort | last')
 
             last_commit=$(gh pr view "$number" --json commits --jq \
-              '[.commits[].committedDate] | sort | last // empty')
+              '[.commits[].committedDate] | sort | last')
 
             last_review=$(gh api "repos/${GH_REPO}/pulls/${number}/reviews" --jq \
               '[.[]
                 | select(.user.login | endswith("[bot]") | not)
                 | .submitted_at
-              ] | sort | last // empty')
+              ] | sort | last')
 
-            latest=""
+            echo "  last_human_comment=${last_human_comment:-<none>}"
+            echo "  last_commit=${last_commit:-<none>}"
+            echo "  last_review=${last_review:-<none>}"
+
+            latest=0
             for ts in "$last_human_comment" "$last_commit" "$last_review"; do
-              if [ -n "$ts" ]; then
-                ts_epoch=$(date -d "$ts" +%s)
-                if [ -z "$latest" ] || [ "$ts_epoch" -gt "$latest" ]; then
+              if [ -n "$ts" ] && [ "$ts" != "null" ]; then
+                ts_epoch=$(date -d "$ts" +%s 2>/dev/null) || continue
+                if [ "$ts_epoch" -gt "$latest" ]; then
                   latest="$ts_epoch"
                 fi
               fi
             done
 
-            if [ -z "$latest" ]; then
+            if [ "$latest" -eq 0 ]; then
+              echo "  No human activity found, falling back to updatedAt"
               updated=$(gh pr view "$number" --json updatedAt --jq '.updatedAt')
               latest=$(date -d "$updated" +%s)
             fi
 
             inactive_days=$(( (now - latest) / 86400 ))
+            echo "  inactive_days=${inactive_days}"
 
             if [ "$inactive_days" -ge 45 ]; then
+              echo "  -> Closing (45+ days)"
               body="This pull request has been automatically closed after 45 days of inactivity."
               body="${body}"$'\n\n'"If you would like to continue working on this, feel free to reopen the PR and push new changes."
               gh pr comment "$number" --body "$body"
@@ -66,37 +79,48 @@ jobs:
               already=$(gh pr view "$number" --json comments --jq \
                 '[.comments[] | select(.body | contains("STALE-CHECK-40"))] | length')
               if [ "$already" -eq 0 ]; then
+                echo "  -> Posting 40-day final warning"
                 body="**Final warning** -- This PR will be automatically closed in **5 days** due to inactivity."
                 body="${body}"$'\n\n'"Please push a commit or leave a comment to reset the inactivity timer."
                 body="${body}"$'\n\n'"<!-- STALE-CHECK-40 -->"
                 gh pr comment "$number" --body "$body"
+              else
+                echo "  -> 40-day warning already posted"
               fi
 
             elif [ "$inactive_days" -ge 35 ]; then
               already=$(gh pr view "$number" --json comments --jq \
                 '[.comments[] | select(.body | contains("STALE-CHECK-35"))] | length')
               if [ "$already" -eq 0 ]; then
+                echo "  -> Posting 35-day reminder"
                 body="**Reminder** -- This PR has been inactive for 35 days and will be automatically closed in **10 days** if there is no new activity."
                 body="${body}"$'\n\n'"Push a commit or leave a comment to reset the inactivity timer."
                 body="${body}"$'\n\n'"<!-- STALE-CHECK-35 -->"
                 gh pr comment "$number" --body "$body"
+              else
+                echo "  -> 35-day reminder already posted"
               fi
 
             elif [ "$inactive_days" -ge 30 ]; then
               already=$(gh pr view "$number" --json comments --jq \
                 '[.comments[] | select(.body | contains("STALE-CHECK-30"))] | length')
               if [ "$already" -eq 0 ]; then
+                echo "  -> Posting 30-day stale notice"
                 body="**Stale PR notice** -- This PR has had no activity for 30 days."
                 body="${body}"$'\n\n'"It will be automatically closed after **45 days** of inactivity. Push a commit or leave a comment to reset the timer."
                 body="${body}"$'\n\n'"<!-- STALE-CHECK-30 -->"
                 gh pr comment "$number" --body "$body"
                 gh pr edit "$number" --add-label "stale"
+              else
+                echo "  -> 30-day notice already posted"
               fi
 
             else
+              echo "  -> Not stale yet"
               has_label=$(gh pr view "$number" --json labels --jq \
                 '[.labels[] | select(.name == "stale")] | length')
               if [ "$has_label" -gt 0 ]; then
+                echo "  -> Removing stale label (human activity detected)"
                 gh pr edit "$number" --remove-label "stale"
               fi
             fi
