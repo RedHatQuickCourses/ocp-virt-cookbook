@@ -20,12 +20,41 @@ jobs:
         run: |
           now=$(date +%s)
 
-          gh pr list --state open --json number,updatedAt --limit 200 | \
+          gh pr list --state open --json number --limit 200 | \
           jq -c '.[]' | while read -r pr; do
             number=$(echo "$pr" | jq -r '.number')
-            updated=$(echo "$pr" | jq -r '.updatedAt')
-            updated_epoch=$(date -d "$updated" +%s)
-            inactive_days=$(( (now - updated_epoch) / 86400 ))
+
+            last_human_comment=$(gh pr view "$number" --json comments --jq \
+              '[.comments[]
+                | select(.author.login | endswith("[bot]") | not)
+                | .createdAt
+              ] | sort | last // empty')
+
+            last_commit=$(gh pr view "$number" --json commits --jq \
+              '[.commits[].committedDate] | sort | last // empty')
+
+            last_review=$(gh api "repos/${GH_REPO}/pulls/${number}/reviews" --jq \
+              '[.[]
+                | select(.user.login | endswith("[bot]") | not)
+                | .submitted_at
+              ] | sort | last // empty')
+
+            latest=""
+            for ts in "$last_human_comment" "$last_commit" "$last_review"; do
+              if [ -n "$ts" ]; then
+                ts_epoch=$(date -d "$ts" +%s)
+                if [ -z "$latest" ] || [ "$ts_epoch" -gt "$latest" ]; then
+                  latest="$ts_epoch"
+                fi
+              fi
+            done
+
+            if [ -z "$latest" ]; then
+              updated=$(gh pr view "$number" --json updatedAt --jq '.updatedAt')
+              latest=$(date -d "$updated" +%s)
+            fi
+
+            inactive_days=$(( (now - latest) / 86400 ))
 
             if [ "$inactive_days" -ge 45 ]; then
               body="This pull request has been automatically closed after 45 days of inactivity."
