@@ -33,38 +33,38 @@ Clear the backlog of oldest issues, do the housekeeping that unblocks everything
 
 | # | Title | Rationale |
 |---|---|---|
-| 75 | Update README and add standard project files | Oldest good-first-issue; makes the project welcoming |
-| 83 | Add CI pipeline with GitHub Actions for tutorial tests | Enables automated quality gates for all future work |
-| 146 | Project-wide formatting and style cleanup from CI review linter | Clean slate before adding 90+ new pages |
-| 141 | Real-Time VMs tutorial: add guest RT kernel image variant | Fix to existing content, quick patch |
-| 20 | [Feature]: How to connect to Windows VM via SSH | Old issue, small scope, complements existing Windows tutorial |
+| [75](https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues/75) | Update README and add standard project files | Oldest good-first-issue; makes the project welcoming |
+| [83](https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues/83) | Add CI pipeline with GitHub Actions for tutorial tests | Enables automated quality gates for all future work |
+| [146](https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues/146) | Project-wide formatting and style cleanup from CI review linter | Clean slate before adding 90+ new pages |
+| [141](https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues/141) | Real-Time VMs tutorial: add guest RT kernel image variant | Fix to existing content, quick patch |
+| [20](https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues/20) | [Feature]: How to connect to Windows VM via SSH | Old issue, small scope, complements existing Windows tutorial |
 
 ### Getting Started Improvements (5 issues)
 
 | # | Title |
 |---|---|
-| 210 | Add learning path diagram to Getting Started index |
-| 209 | Add state machine diagram to VM Lifecycle States tutorial |
-| 208 | Add resource flow diagram to Create VM from Web Console tutorial |
-| 207 | Add architecture diagram to Install OpenShift Virtualization tutorial |
-| 206 | Tutorial: OpenShift Virtualization Architecture Overview |
+| [210](https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues/210) | Add learning path diagram to Getting Started index |
+| [209](https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues/209) | Add state machine diagram to VM Lifecycle States tutorial |
+| [208](https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues/208) | Add resource flow diagram to Create VM from Web Console tutorial |
+| [207](https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues/207) | Add architecture diagram to Install OpenShift Virtualization tutorial |
+| [206](https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues/206) | Tutorial: OpenShift Virtualization Architecture Overview |
 
 ### Getting Started Tutorials (4 issues)
 
 | # | Title |
 |---|---|
-| 202 | Quick Start: Your First VM in 5 Minutes |
-| 203 | Creating a VM from CLI Using YAML Manifests |
-| 204 | Installing and Configuring the QEMU Guest Agent |
-| 205 | Cloud-init Fundamentals for OpenShift Virtualization VMs |
+| [202](https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues/202) | Quick Start: Your First VM in 5 Minutes |
+| [203](https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues/203) | Creating a VM from CLI Using YAML Manifests |
+| [204](https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues/204) | Installing and Configuring the QEMU Guest Agent |
+| [205](https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues/205) | Cloud-init Fundamentals for OpenShift Virtualization VMs |
 
 ### Oldest Pending Tutorials (3 issues)
 
 | # | Title |
 |---|---|
-| 11 | Storage Profiles for OpenShift Virtualization |
-| 46 | Deploying Windows VMs with VirtIO Drivers |
-| 86 | Transferring files to and from VMs |
+| [11](https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues/11) | Storage Profiles for OpenShift Virtualization |
+| [46](https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues/46) | Deploying Windows VMs with VirtIO Drivers |
+| [86](https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues/86) | Transferring files to and from VMs |
 
 **Q2 Total: 17 issues**
 
@@ -80,48 +80,48 @@ With the foundation polished in Q2, the project fills out its two most critical 
 
 | # | Title |
 |---|---|
-| 177 | Add master topology decision diagram to networking index |
-| 178 | Add topology diagram to UDN Primary Networks tutorial |
-| 179 | Add topology diagram to Localnet Secondary (CUDN) tutorial |
-| 180 | Add topology diagram to Localnet VLAN (NAD) tutorial |
-| 181 | Add topology diagram to Localnet VLAN (CUDN) tutorial |
-| 182 | Add topology diagram to Layer 2 Secondary Networks tutorial |
-| 183 | Add topology diagram to Linux Bridges tutorial |
-| 184 | Add topology diagram to VM Ingress Routes tutorial |
+| [177](https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues/177) | Add master topology decision diagram to networking index |
+| [178](https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues/178) | Add topology diagram to UDN Primary Networks tutorial |
+| [179](https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues/179) | Add topology diagram to Localnet Secondary (CUDN) tutorial |
+| [180](https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues/180) | Add topology diagram to Localnet VLAN (NAD) tutorial |
+| [181](https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues/181) | Add topology diagram to Localnet VLAN (CUDN) tutorial |
+| [182](https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues/182) | Add topology diagram to Layer 2 Secondary Networks tutorial |
+| [183](https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues/183) | Add topology diagram to Linux Bridges tutorial |
+| [184](https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues/184) | Add topology diagram to VM Ingress Routes tutorial |
 
 ### New Networking Tutorials (7 issues)
 
 | # | Title |
 |---|---|
-| 171 | Network Policies for Virtual Machines |
-| 172 | Dual-Stack IPv4/IPv6 Networking for VMs |
-| 173 | Network Interface Hotplugging for Running VMs |
-| 174 | VM-to-VM and VM-to-Pod Communication Patterns |
-| 175 | Network Mapping for VMware-to-OpenShift Migration |
-| 176 | MetalLB and Load Balancer Services for VM Workloads |
-| 215 | Network Performance Tuning for Virtual Machines |
+| [171](https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues/171) | Network Policies for Virtual Machines |
+| [172](https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues/172) | Dual-Stack IPv4/IPv6 Networking for VMs |
+| [173](https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues/173) | Network Interface Hotplugging for Running VMs |
+| [174](https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues/174) | VM-to-VM and VM-to-Pod Communication Patterns |
+| [175](https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues/175) | Network Mapping for VMware-to-OpenShift Migration |
+| [176](https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues/176) | MetalLB and Load Balancer Services for VM Workloads |
+| [215](https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues/215) | Network Performance Tuning for Virtual Machines |
 
 ### Storage Improvements (5 issues)
 
 | # | Title |
 |---|---|
-| 196 | Add storage decision diagram to storage index page |
-| 197 | Add architecture diagram to LVM Operator tutorial |
-| 198 | Add architecture diagram to HostPath Provisioner tutorial |
-| 199 | Add storage tiering diagram to Multi-Disk VM Configuration tutorial |
-| 200 | Add provisioning flow diagram to Storage Classes tutorial |
+| [196](https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues/196) | Add storage decision diagram to storage index page |
+| [197](https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues/197) | Add architecture diagram to LVM Operator tutorial |
+| [198](https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues/198) | Add architecture diagram to HostPath Provisioner tutorial |
+| [199](https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues/199) | Add storage tiering diagram to Multi-Disk VM Configuration tutorial |
+| [200](https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues/200) | Add provisioning flow diagram to Storage Classes tutorial |
 
 ### New Storage Tutorials (7 issues)
 
 | # | Title |
 |---|---|
-| 190 | ODF/Ceph Storage for Virtual Machines |
-| 191 | NFS Storage for Virtual Machine Workloads |
-| 192 | Expanding VM Disk Size (PVC Volume Expansion) |
-| 193 | VM Disk I/O Performance Tuning |
-| 194 | CDI Operations: DataVolumes, Imports, and Upload |
-| 195 | Storage Requirements for VM Live Migration |
-| 201 | Thin vs Thick Provisioning for VM Disks |
+| [190](https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues/190) | ODF/Ceph Storage for Virtual Machines |
+| [191](https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues/191) | NFS Storage for Virtual Machine Workloads |
+| [192](https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues/192) | Expanding VM Disk Size (PVC Volume Expansion) |
+| [193](https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues/193) | VM Disk I/O Performance Tuning |
+| [194](https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues/194) | CDI Operations: DataVolumes, Imports, and Upload |
+| [195](https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues/195) | Storage Requirements for VM Live Migration |
+| [201](https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues/201) | Thin vs Thick Provisioning for VM Disks |
 
 **Q3 Total: 27 issues**
 
@@ -137,54 +137,54 @@ With networking and storage complete, the focus shifts to operational topics tha
 
 | # | Title |
 |---|---|
-| 216 | Add topology diagram to Internal DNS for VMs tutorial |
-| 217 | Add access method decision diagram to Remote Access Linux VMs tutorial |
-| 218 | Add network topology diagram to Remote Access Windows VMs tutorial |
-| 219 | Add cluster topology diagram to Node Placement and Affinity tutorial |
-| 220 | Add before/after diagram to Hotplug Volumes and Interfaces tutorial |
-| 224 | Add import method flow diagram to Import qcow2 tutorial |
-| 225 | Add pipeline diagram to Custom Golden Images tutorial |
-| 226 | Add cloning method comparison diagram to Cloning VMs tutorial |
-| 227 | Add snapshot timeline diagram to VM Snapshots tutorial |
+| [216](https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues/216) | Add topology diagram to Internal DNS for VMs tutorial |
+| [217](https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues/217) | Add access method decision diagram to Remote Access Linux VMs tutorial |
+| [218](https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues/218) | Add network topology diagram to Remote Access Windows VMs tutorial |
+| [219](https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues/219) | Add cluster topology diagram to Node Placement and Affinity tutorial |
+| [220](https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues/220) | Add before/after diagram to Hotplug Volumes and Interfaces tutorial |
+| [224](https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues/224) | Add import method flow diagram to Import qcow2 tutorial |
+| [225](https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues/225) | Add pipeline diagram to Custom Golden Images tutorial |
+| [226](https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues/226) | Add cloning method comparison diagram to Cloning VMs tutorial |
+| [227](https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues/227) | Add snapshot timeline diagram to VM Snapshots tutorial |
 
 ### Performance Improvements (5 issues)
 
 | # | Title |
 |---|---|
-| 232 | Add QoS tier diagram to Resource Limits and QoS tutorial |
-| 233 | Add core assignment diagram to CPU Pinning tutorial |
-| 234 | Add NUMA topology diagram to NUMA and Hugepages tutorial |
-| 235 | Add latency stack diagram to Real-Time VMs tutorial |
-| 236 | Add progression diagram to Performance module index |
+| [232](https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues/232) | Add QoS tier diagram to Resource Limits and QoS tutorial |
+| [233](https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues/233) | Add core assignment diagram to CPU Pinning tutorial |
+| [234](https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues/234) | Add NUMA topology diagram to NUMA and Hugepages tutorial |
+| [235](https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues/235) | Add latency stack diagram to Real-Time VMs tutorial |
+| [236](https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues/236) | Add progression diagram to Performance module index |
 
 ### Intermediate Tutorials from Original Backlog (5 issues)
 
 | # | Title |
 |---|---|
-| 50 | Live Migration of VMs Between Cluster Nodes |
-| 51 | Migrating VMs from VMware vSphere Using MTV |
-| 56 | VM Monitoring and Metrics |
-| 58 | VM Scheduling with Tolerations and Taints |
-| 14 | GPU Configuration for Virtual Machines |
+| [50](https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues/50) | Live Migration of VMs Between Cluster Nodes |
+| [51](https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues/51) | Migrating VMs from VMware vSphere Using MTV |
+| [56](https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues/56) | VM Monitoring and Metrics |
+| [58](https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues/58) | VM Scheduling with Tolerations and Taints |
+| [14](https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues/14) | GPU Configuration for Virtual Machines |
 
 ### Operations and Automation Tutorials (6 issues)
 
 | # | Title |
 |---|---|
-| 157 | Day-0 IaC: Provisioning OpenShift Virtualization with Ansible |
-| 158 | Automating Post-Migration Validation with Ansible |
-| 159 | Zero-Downtime Cluster Upgrades Using Live Migration |
-| 162 | Multi-Tenancy and RBAC for VM Workloads |
-| 165 | Building a VM Self-Service Portal with Templates |
-| 166 | Resource Quotas and Chargeback for VM Workloads |
+| [157](https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues/157) | Day-0 IaC: Provisioning OpenShift Virtualization with Ansible |
+| [158](https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues/158) | Automating Post-Migration Validation with Ansible |
+| [159](https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues/159) | Zero-Downtime Cluster Upgrades Using Live Migration |
+| [162](https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues/162) | Multi-Tenancy and RBAC for VM Workloads |
+| [165](https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues/165) | Building a VM Self-Service Portal with Templates |
+| [166](https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues/166) | Resource Quotas and Chargeback for VM Workloads |
 
 ### Additional Operations Content (3 issues)
 
 | # | Title |
 |---|---|
-| 10 | SR-IOV Secondary Network Configuration for VMs |
-| 163 | Comparative Benchmarking vs Legacy Hypervisors |
-| 170 | Rolling Hardware Refresh Strategy |
+| [10](https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues/10) | SR-IOV Secondary Network Configuration for VMs |
+| [163](https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues/163) | Comparative Benchmarking vs Legacy Hypervisors |
+| [170](https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues/170) | Rolling Hardware Refresh Strategy |
 
 **Q4 Total: 28 issues**
 
@@ -200,64 +200,63 @@ Deep dives are the most complex content (3000-5000+ words, reference-grade). The
 
 | # | Title |
 |---|---|
-| 211 | Comprehensive virtctl CLI Reference |
-| 212 | OpenShift Virtualization Installation, Configuration, and Day-2 Ops |
-| 213 | VM Lifecycle Management and Automation |
-| 214 | Cloud-init for OpenShift Virtualization |
-| 221 | Secure VM Access Architecture |
+| [211](https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues/211) | Comprehensive virtctl CLI Reference |
+| [212](https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues/212) | OpenShift Virtualization Installation, Configuration, and Day-2 Ops |
+| [213](https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues/213) | VM Lifecycle Management and Automation |
+| [214](https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues/214) | Cloud-init for OpenShift Virtualization |
+| [221](https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues/221) | Secure VM Access Architecture |
 
 ### Deep Dives -- VM Lifecycle and Scheduling (6 issues)
 
 | # | Title |
 |---|---|
-| 222 | Advanced VM Scheduling and Placement |
-| 223 | VM Template Governance and Self-Service Catalog |
-| 228 | Automated Golden Image Pipeline |
-| 229 | VM Snapshot Strategies and Backup Architecture |
-| 230 | Advanced Boot Configuration and PXE Automation |
-| 231 | VM Export, Import, and Cross-Cluster Mobility |
+| [222](https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues/222) | Advanced VM Scheduling and Placement |
+| [223](https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues/223) | VM Template Governance and Self-Service Catalog |
+| [228](https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues/228) | Automated Golden Image Pipeline |
+| [229](https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues/229) | VM Snapshot Strategies and Backup Architecture |
+| [230](https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues/230) | Advanced Boot Configuration and PXE Automation |
+| [231](https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues/231) | VM Export, Import, and Cross-Cluster Mobility |
 
 ### Deep Dives -- Networking (5 issues)
 
 | # | Title |
 |---|---|
-| 185 | User Defined Networks (UDN) for OpenShift Virtualization |
-| 186 | Localnet Networking Architecture |
-| 187 | Linux Bridge Networking |
-| 188 | Exposing VM Services Externally |
-| 189 | IP Address Management for VM Fleets at Scale |
+| [185](https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues/185) | User Defined Networks (UDN) for OpenShift Virtualization |
+| [186](https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues/186) | Localnet Networking Architecture |
+| [187](https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues/187) | Linux Bridge Networking |
+| [188](https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues/188) | Exposing VM Services Externally |
+| [189](https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues/189) | IP Address Management for VM Fleets at Scale |
 
 ### Deep Dives -- Storage and Performance (5 issues)
 
 | # | Title |
 |---|---|
-| 153 | Choosing the Right Storage Class for VM Disks |
-| 154 | Vendor-Specific Storage Optimization (NetApp, Dell, Pure) |
-| 155 | Windows VM Performance Optimization |
-| 164 | Memory Overcommit for VM Density |
-| 151 | Bare Metal Deployment for Maximum VM Performance |
+| [153](https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues/153) | Choosing the Right Storage Class for VM Disks |
+| [154](https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues/154) | Vendor-Specific Storage Optimization (NetApp, Dell, Pure) |
+| [155](https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues/155) | Windows VM Performance Optimization |
+| [164](https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues/164) | Memory Overcommit for VM Density |
+| [151](https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues/151) | Bare Metal Deployment for Maximum VM Performance |
 
 ### Deep Dives -- Platform and Advanced (5 issues)
 
 | # | Title |
 |---|---|
-| 152 | OpenShift Virtualization with Hosted Control Planes (HCP) |
-| 237 | Advanced CPU Topology and Pinning Strategies |
-| 238 | Production Real-Time VM Deployment and Validation |
-| 239 | NUMA Architecture and Memory Performance |
-| 160 | Advanced VM Observability with Prometheus and Grafana |
+| [152](https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues/152) | OpenShift Virtualization with Hosted Control Planes (HCP) |
+| [237](https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues/237) | Advanced CPU Topology and Pinning Strategies |
+| [238](https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues/238) | Production Real-Time VM Deployment and Validation |
+| [239](https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues/239) | NUMA Architecture and Memory Performance |
+| [160](https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues/160) | Advanced VM Observability with Prometheus and Grafana |
 
 ### Advanced Tutorials (7 issues)
 
 | # | Title |
 |---|---|
-| 64 | Custom HyperConverged Configuration Options |
-| 65 | Enabling Nested Virtualization for Development and Testing |
-| 156 | Enabling Virtualization-Based Security (VBS) for Windows VMs |
-| 161 | Applying CIS Benchmarks to the OpenShift Virtualization Stack |
-| 167 | vGPU Sharing for High-Density Graphics Workloads |
-| 168 | Running OpenShift Virtualization on Managed Cloud Services (ROSA/ARO) |
-| 169 | Multicloud VM Management |
+| [64](https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues/64) | Custom HyperConverged Configuration Options |
+| [65](https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues/65) | Enabling Nested Virtualization for Development and Testing |
+| [156](https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues/156) | Enabling Virtualization-Based Security (VBS) for Windows VMs |
+| [161](https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues/161) | Applying CIS Benchmarks to the OpenShift Virtualization Stack |
+| [167](https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues/167) | vGPU Sharing for High-Density Graphics Workloads |
+| [168](https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues/168) | Running OpenShift Virtualization on Managed Cloud Services (ROSA/ARO) |
+| [169](https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues/169) | Multicloud VM Management |
 
 **Q1 2027 Total: 33 issues**
-
