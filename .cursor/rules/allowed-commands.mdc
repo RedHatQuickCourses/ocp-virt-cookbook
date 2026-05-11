@@ -1,0 +1,31 @@
+---
+description: Allowed commands and binaries for terminal and tool use
+alwaysApply: true
+---
+
+# Allowed Commands and Binaries
+
+When running terminal commands or suggesting CLI usage, use only the following:
+
+## Allowed commands
+
+- `oc` (OpenShift CLI) only when the user has chosen to use the cluster at
+  `KUBECONFIG=~/projects/ocp-install/bare-metal/kubeconfig` (see below).
+- `npm` (e.g. npm run build, npm install)
+- `node`
+- `git` (status, diff, add, commit, checkout, branch; no force-push unless explicitly requested)
+- `rg` / ripgrep (prefer over grep for search)
+- Standard shell built-ins and file operations (ls, cd, mkdir, cp, mv, rm with care)
+
+Add or remove entries in this list to match your project's approved tooling.
+
+## OpenShift (oc) and cluster context
+
+- When the user has chosen to use the cluster at
+  `KUBECONFIG=~/projects/ocp-install/bare-metal/kubeconfig`, the agent is allowed to run all `oc` commands (get, apply, create, delete, describe, logs, exec, etc.) against that cluster. Use that KUBECONFIG when running them, e.g. `KUBECONFIG=~/projects/ocp-install/bare-metal/kubeconfig oc get nodes`.
+- When the user has not chosen that cluster, do not run `oc` commands; ask which cluster they mean or wait for them to indicate they are using this one.
+
+## Restrictions
+
+- Do not run or suggest commands not listed above without explicit user request.
+- For package installs or system tools, prefer the allowed set or ask before using others.

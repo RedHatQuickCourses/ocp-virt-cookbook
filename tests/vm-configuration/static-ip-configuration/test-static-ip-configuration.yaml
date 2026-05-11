@@ -1,0 +1,115 @@
+---
+- name: Test Configuring Static IPs for VMs Tutorial
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars_files:
+    - vars.yaml
+
+  vars:
+    attachment_dir: "{{ playbook_dir }}/../../../modules/vm-configuration/attachments/static-ip-configuration"
+
+  tasks:
+    - name: Run tutorial test
+      block:
+        - name: "Apply Namespace static-ip-demo"
+          kubernetes.core.k8s:
+            state: present
+            src: "{{ attachment_dir }}/namespace-static-ip-demo.yaml"
+
+        - name: "Verify Namespace static-ip-demo"
+          kubernetes.core.k8s_info:
+            api_version: v1
+            kind: Namespace
+            name: static-ip-demo
+          register: namespace_static_ip_demo
+          failed_when: namespace_static_ip_demo.resources | length == 0
+
+        - name: "Apply VirtualMachine fedora-multi-vm"
+          kubernetes.core.k8s:
+            state: present
+            src: "{{ attachment_dir }}/fedora-multi-network-vm.yaml"
+
+        - name: "Verify VirtualMachine fedora-multi-vm"
+          kubernetes.core.k8s_info:
+            api_version: kubevirt.io/v1
+            kind: VirtualMachine
+            namespace: static-ip-demo
+            name: fedora-multi-vm
+          register: virtualmachine_fedora_multi_vm
+          failed_when: virtualmachine_fedora_multi_vm.resources | length == 0
+
+        - name: "Wait for VirtualMachine fedora-multi-vm to be ready"
+          kubernetes.core.k8s_info:
+            api_version: kubevirt.io/v1
+            kind: VirtualMachine
+            namespace: static-ip-demo
+            name: fedora-multi-vm
+          register: vm_ready_virtualmachine_fedora_multi_vm
+          until: >
+            vm_ready_virtualmachine_fedora_multi_vm.resources | length > 0 and
+            vm_ready_virtualmachine_fedora_multi_vm.resources[0].status.ready | default(false)
+          retries: "{{ (vm_timeout / 10) | int }}"
+          delay: 10
+
+        - name: "Apply VirtualMachine fedora-dhcp-reserved-vm"
+          kubernetes.core.k8s:
+            state: present
+            src: "{{ attachment_dir }}/fedora-dhcp-reserved-vm.yaml"
+
+        - name: "Verify VirtualMachine fedora-dhcp-reserved-vm"
+          kubernetes.core.k8s_info:
+            api_version: kubevirt.io/v1
+            kind: VirtualMachine
+            namespace: static-ip-demo
+            name: fedora-dhcp-reserved-vm
+          register: virtualmachine_fedora_dhcp_reserved_vm
+          failed_when: virtualmachine_fedora_dhcp_reserved_vm.resources | length == 0
+
+        - name: "Wait for VirtualMachine fedora-dhcp-reserved-vm to be ready"
+          kubernetes.core.k8s_info:
+            api_version: kubevirt.io/v1
+            kind: VirtualMachine
+            namespace: static-ip-demo
+            name: fedora-dhcp-reserved-vm
+          register: vm_ready_virtualmachine_fedora_dhcp_reserved_vm
+          until: >
+            vm_ready_virtualmachine_fedora_dhcp_reserved_vm.resources | length > 0 and
+            vm_ready_virtualmachine_fedora_dhcp_reserved_vm.resources[0].status.ready | default(false)
+          retries: "{{ (vm_timeout / 10) | int }}"
+          delay: 10
+
+        - name: Test completed successfully
+          ansible.builtin.debug:
+            msg: "static-ip-configuration tutorial test passed - all resources created and verified"
+
+      always:
+        - name: Cleanup resources
+          when: cleanup | default(true)
+          block:
+            - name: "Delete VirtualMachine fedora-dhcp-reserved-vm"
+              kubernetes.core.k8s:
+                state: absent
+                api_version: kubevirt.io/v1
+                kind: VirtualMachine
+                namespace: static-ip-demo
+                name: fedora-dhcp-reserved-vm
+              ignore_errors: true
+
+            - name: "Delete VirtualMachine fedora-multi-vm"
+              kubernetes.core.k8s:
+                state: absent
+                api_version: kubevirt.io/v1
+                kind: VirtualMachine
+                namespace: static-ip-demo
+                name: fedora-multi-vm
+              ignore_errors: true
+
+            - name: "Delete Namespace static-ip-demo"
+              kubernetes.core.k8s:
+                state: absent
+                api_version: v1
+                kind: Namespace
+                name: static-ip-demo
+              ignore_errors: true

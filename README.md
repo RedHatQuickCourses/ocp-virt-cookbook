@@ -2,6 +2,24 @@
 
 This cookbook provides bite-sized, practical tutorials for deploying and managing virtualization workloads on Red Hat OpenShift Virtualization. It serves as a complement to official OpenShift Virtualization training and documentation, offering hands-on guides with tested workflows, YAML manifests, and troubleshooting tips specifically designed for partner and customer engineers getting started with OpenShift Virtualization.
 
+## Quick Start (Contributors)
+
+Get started contributing in minutes:
+
+```bash
+make setup         # Install all dependencies
+make dev           # Start local preview
+```
+
+Make your changes, then:
+
+```bash
+make validate      # Run all checks
+make pr            # Push and create PR
+```
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the full contributor guide.
+
 ## Creating Course Content
 
 We use a system called Antora (https://antora.org) to publish courses. Antora expects the files and folders in a source repository to be arranged in a certain opinionated way to simplify the process of writing course content using asciidoc, and then converting the asciidoc source to HTML.
@@ -79,6 +97,27 @@ $ git push -u origin username/add-tutorial-xyz
 10. Once reviewer(s) approve your PR, you should merge it into the **main** branch.
 11. Wait for a few minutes while the automated GitHub action publishes your changes to the production GitHub pages website.
 12. Verify that your changes have been published to the production GitHub pages website at https://redhatquickcourses.github.io/ocp-virt-cookbook
+
+## Current Roadmap
+
+The project roadmap covers 105 open issues organized across four quarters, prioritized by dependency order, module cohesion, and effort level. Contributions are welcome -- feel free to open new issues for topics you'd like to see covered, or comment on any existing open issue to request that it be prioritized.
+
+| Quarter | Theme | Issues | Effort Profile |
+|---|---|---|---|
+| **Q2 2026** | Foundation, Quick Wins, Tech Debt | 17 | Small items, fast turnaround |
+| **Q3 2026** | Core Networking and Storage | 27 | Mix of improvements and standard tutorials |
+| **Q4 2026** | VM Ops, Migration, Monitoring | 28 | Intermediate tutorials and operations |
+| **Q1 2027** | Deep Dives and Advanced | 33 | Large, reference-grade content |
+
+**Q2 2026** clears the oldest backlog items, adds CI infrastructure, polishes the Getting Started module with diagrams and quick-start tutorials, and resolves long-standing housekeeping issues.
+
+**Q3 2026** fills out the two most critical technical modules -- networking and storage -- with 15 topology diagram improvements for existing pages plus 14 new tutorials covering network policies, dual-stack, MetalLB, ODF/Ceph, NFS, CDI operations, and more.
+
+**Q4 2026** delivers the operational layer: VMware migration with MTV, live migration, monitoring and metrics, GPU configuration, Ansible automation, RBAC and multi-tenancy, plus diagram improvements across the VM configuration, lifecycle, and performance modules.
+
+**Q1 2027** caps the roadmap with 33 deep dives and advanced tutorials -- comprehensive reference guides on topics like virtctl CLI, cloud-init, UDN architecture, storage class selection, HCP, CIS benchmarks, and managed cloud services (ROSA/ARO).
+
+See [docs/ROADMAP.md](docs/ROADMAP.md) for the full detailed roadmap with every issue mapped to its quarter.
 
 ## Problems and Feedback
 
