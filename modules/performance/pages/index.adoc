@@ -1,0 +1,55 @@
+= VM Performance Tuning
+:navtitle:
+
+== Overview
+
+This module covers performance tuning for virtual machines in OpenShift Virtualization. The tutorials form a progressive series, starting with resource management fundamentals and advancing through CPU pinning, NUMA topology, and real-time workloads.
+
+== What You'll Learn
+
+* How to configure CPU and memory requests, limits, and QoS classes for VMs
+* How to pin VM vCPUs to dedicated physical CPUs for latency-sensitive workloads
+* How to configure hugepage-backed memory and NUMA topology passthrough
+* How to run real-time virtual machines with bounded worst-case latency
+
+== Prerequisites
+
+Before working with VM performance tuning, ensure you have:
+
+* OpenShift 4.18+ with OpenShift Virtualization operator installed
+* Understanding of Kubernetes resource management concepts
+* CLI tools installed: `oc`, `virtctl`, `kubectl`
+* Cluster admin access for node-level configuration (CPU Manager, hugepages)
+
+== Topics
+
+xref:resource-limits-qos.adoc[]::
+Configure CPU and memory requests, limits, and QoS classes for VMs, including ResourceQuotas and LimitRanges for namespace-level governance.
+
+xref:cpu-pinning.adoc[]::
+Pin VM vCPUs to dedicated physical CPUs using the Kubernetes CPU Manager static policy, eliminating CPU steal for latency-sensitive and performance-critical workloads.
+
+xref:numa-hugepages.adoc[]::
+Configure hugepage-backed memory and NUMA topology passthrough for VMs to reduce TLB overhead and enable NUMA-aware guest scheduling.
+
+xref:realtime-vms.adoc[]::
+Configure real-time virtual machines with dedicated CPUs, NUMA passthrough, hugepages, RT kernel, and SCHED_FIFO scheduling for bounded worst-case latency.
+
+== Recommended Reading Order
+
+The performance tutorials build on each other sequentially:
+
+. **Resource Limits and QoS** -- understand Guaranteed QoS requirements before enabling dedicated CPUs
+. **CPU Pinning** -- enable CPU Manager static policy and dedicate vCPUs
+. **NUMA and Hugepages** -- add hugepage memory and NUMA topology awareness
+. **Real-time VMs** -- combine all of the above with RT kernel and SCHED_FIFO scheduling
+
+== Related Topics
+
+* xref:vm-configuration:index.adoc[VM Configuration] - General VM setup and access
+* xref:storage:index.adoc[Storage Configuration] - Persistent storage for VMs
+
+== Additional Resources
+
+* link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/virtualization/about#about-virt[OpenShift Virtualization Documentation,window=_blank]
+* link:https://kubevirt.io/user-guide/[KubeVirt User Guide,window=_blank]

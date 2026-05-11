@@ -23,7 +23,7 @@ This tutorial demonstrates how to make virtual machines discoverable via stable 
 
 Create a dedicated namespace for this tutorial:
 
-[source,bash]
+[source,bash,role=execute]
 ----
 oc new-project myapp
 ----
@@ -32,9 +32,11 @@ oc new-project myapp
 
 Deploy a Fedora VM:
 
+WARNING: The cloud-init password in this example is for demo purposes only. Always use a strong, unique password or SSH key authentication in production environments.
+
 xref:attachment$internal-dns-for-vms/fedora-app-vm.yaml[Download fedora-app-vm.yaml]
 
-[source,bash]
+[source,bash,role=execute]
 ----
 oc apply -f - <<EOF
 apiVersion: kubevirt.io/v1
@@ -112,7 +114,7 @@ Create a headless Service that targets the VM:
 
 xref:attachment$internal-dns-for-vms/headless-service.yaml[Download headless-service.yaml]
 
-[source,bash]
+[source,bash,role=execute]
 ----
 oc apply -f - <<EOF
 apiVersion: v1
@@ -134,7 +136,7 @@ EOF
 
 Verify the Service and its EndpointSlice:
 
-[source,bash]
+[source,bash,role=execute]
 ----
 oc get svc myapp-service -n myapp
 oc get endpointslice -n myapp -l kubernetes.io/service-name=myapp-service
@@ -150,7 +152,7 @@ The EndpointSlice should show the VM's pod IP address in the ENDPOINTS column.
 
 Create a debug pod to test DNS resolution and connectivity:
 
-[source,bash]
+[source,bash,role=execute]
 ----
 oc apply -f - <<EOF
 apiVersion: v1
@@ -282,7 +284,7 @@ The client receives the IP address and establishes a direct connection to the VM
 
 **Check Service and EndpointSlice:**
 
-[source,bash]
+[source,bash,role=execute]
 ----
 # View Service details
 oc get svc myapp-service -n myapp
@@ -296,7 +298,7 @@ oc describe svc myapp-service -n myapp
 
 **Test DNS Resolution and Connectivity:**
 
-[source,bash]
+[source,bash,role=execute]
 ----
 # Create debug pod (if not already exists)
 oc apply -f - <<EOF
@@ -334,7 +336,7 @@ oc delete pod debug-dns -n myapp
 
 **Check VM Labels:**
 
-[source,bash]
+[source,bash,role=execute]
 ----
 # Verify VM labels match Service selector
 oc get vm fedora-app-vm -n myapp -o jsonpath='{.metadata.labels}'
@@ -347,7 +349,7 @@ oc get svc myapp-service -n myapp -o jsonpath='{.spec.selector}'
 
 **Diagnosis:**
 
-[source,bash]
+[source,bash,role=execute]
 ----
 oc get svc myapp-service -n myapp
 oc get endpointslice -n myapp -l kubernetes.io/service-name=myapp-service
@@ -369,7 +371,7 @@ oc get endpointslice -n myapp -l kubernetes.io/service-name=myapp-service
 
 **Diagnosis:**
 
-[source,bash]
+[source,bash,role=execute]
 ----
 # Create debug pod in different namespace
 oc new-project test-namespace 2>/dev/null || true
@@ -422,7 +424,17 @@ oc delete pod debug-cross-ns -n test-namespace
 * link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/virtualization/networking#virt-accessing-vm-internal-fqdn[Accessing a VM by using the internal FQDN - OpenShift Virtualization,window=_blank]
 * link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/virtualization/networking#virt-accessing-vm-secondary-network-fqdn[Accessing a VM on a secondary network by using the cluster FQDN - OpenShift Virtualization,window=_blank]
 
+== Summary
+
+In this tutorial, you learned:
+
+* How to expose a VM via a headless Kubernetes Service for DNS-based discovery
+* How CoreDNS resolves Service names to VM pod IP addresses within the cluster
+* The difference between headless services (direct VM IP) and ClusterIP services (virtual IP with load balancing)
+* How to test DNS resolution from debug pods using `getent hosts` with the FQDN format
+* Key concepts including why Services are required for DNS and how search domains enable short name resolution
+
 == See Also
 
-* xref:cloud-init-ip-configuration.adoc[Cloud-init IP Configuration]
+* xref:networking:static-ip-configuration.adoc[Static IP Configuration]
 * xref:remote-access-linux-vms.adoc[Remote Access to Linux VMs]

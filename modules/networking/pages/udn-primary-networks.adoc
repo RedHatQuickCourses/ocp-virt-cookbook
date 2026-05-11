@@ -7,8 +7,15 @@ This tutorial shows you how to create a primary network using User Defined Netwo
 
 Versions tested:
 ----
-OpenShift 4.19,4.20
+OpenShift 4.19, 4.20, 4.21
 ----
+
+== Prerequisites
+
+* OpenShift 4.19+ cluster with OpenShift Virtualization operator installed
+* OVN-Kubernetes network plugin (default in OpenShift)
+* Cluster admin access for creating namespaces and UserDefinedNetwork resources
+* CLI tools installed: `oc`, `virtctl`
 
 == Step 1: Create UDN-Enabled Namespace
 
@@ -16,9 +23,9 @@ Create a namespace with the UDN primary network label to enable User Defined Net
 
 NOTE: The namespace must be created and labeled before any workload deployment happens and cannot be changed once created.
 
-xref:attachment$udn-primary-namespace.yaml[Download udn-primary-namespace.yaml]
+xref:attachment$udn-primary-networks/udn-primary-namespace.yaml[Download udn-primary-namespace.yaml]
 
-[source,yaml]
+[source,bash,role=execute]
 ----
 oc apply -f - <<EOF
 apiVersion: v1
@@ -34,9 +41,9 @@ EOF
 
 Define the primary UDN with Layer2 topology and custom subnet configuration. This resource specifies the network characteristics including IP range, IPAM lifecycle, and primary role designation to override default cluster networking for pods in the namespace.
 
-xref:attachment$udn-primary.yaml[Download udn-primary.yaml]
+xref:attachment$udn-primary-networks/udn-primary.yaml[Download udn-primary.yaml]
 
-[source,yaml]
+[source,bash,role=execute]
 ----
 oc apply -f - <<EOF
 apiVersion: k8s.ovn.org/v1
@@ -59,9 +66,11 @@ EOF
 
 Create a virtual machine that utilizes the primary UDN configuration and runs a simple Python HTTP server for testing connectivity. The workload automatically receives an IP address from the 192.168.100.0/24 subnet via the UDN's IPAM and uses the UDN as its primary network interface.
 
-xref:attachment$fedora-vm-with-udn.yaml[Download fedora-vm-with-udn.yaml]
+WARNING: The cloud-init password in this example is for demo purposes only. Always use a strong, unique password or SSH key authentication in production environments.
 
-[source,yaml]
+xref:attachment$udn-primary-networks/fedora-vm-with-udn.yaml[Download fedora-vm-with-udn.yaml]
+
+[source,bash,role=execute]
 ----
 oc apply -f - <<EOF
 apiVersion: kubevirt.io/v1
@@ -73,7 +82,7 @@ metadata:
     app: fedora-web-vm
     network-type: udn-primary
 spec:
-  running: true
+  runStrategy: Always
   dataVolumeTemplates:
   - metadata:
       name: fedora-udn-volume
@@ -144,9 +153,9 @@ Create a Kubernetes Service to expose the VM's Python HTTP server with a LoadBal
 
 NOTE: Cloud services like AWS automatically deploy a load balancer for this configuration. For bare metal deployments, consider using link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.19/html/ingress_and_load_balancing/load-balancing-with-metallb[MetalLB,window=_blank] as your load balancer.
 
-xref:attachment$fedora-vm-web-service.yaml[Download fedora-vm-web-service.yaml]
+xref:attachment$udn-primary-networks/fedora-vm-web-service.yaml[Download fedora-vm-web-service.yaml]
 
-[source,yaml]
+[source,bash,role=execute]
 ----
 oc apply -f - <<EOF
 apiVersion: v1
@@ -195,9 +204,17 @@ Expected output:
 <h1>Welcome to OpenShift Virtualization !!!</h1>
 ----
 
-== References
+== Summary
 
-=== OpenShift Documentation
+In this tutorial, you learned:
+
+* How to create a UDN-enabled namespace with the `k8s.ovn.org/primary-user-defined-network` label
+* How to define a `UserDefinedNetwork` resource with Layer2 topology and custom subnet configuration
+* How to deploy a VM that uses the UDN as its primary network with persistent IPAM
+* How to expose a VM running on a UDN primary network via a LoadBalancer Service
+* How UDN primary networks provide complete network isolation with custom IP addressing
+
+== See Also
 
 * link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.19/html/multiple_networks/understanding-multiple-networks[OpenShift - Understanding Multiple Networks,window=_blank]
 * link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.19/html/multiple_networks/primary-networks[Configuring Primary Networks,window=_blank]

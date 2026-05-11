@@ -1,0 +1,38 @@
+name: Documentation Review
+
+on:
+  pull_request:
+    paths:
+      - '**.adoc'
+      - 'antora.yml'
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get changed .adoc files
+        id: changed
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          FILES=$(git diff --name-only "origin/$BASE_REF" -- '*.adoc' | tr '\n' ' ')
+          echo "files=$FILES" >> $GITHUB_OUTPUT
+          if [ -z "$FILES" ]; then
+            echo "empty=true" >> $GITHUB_OUTPUT
+          else
+            echo "empty=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Run documentation review
+        if: steps.changed.outputs.empty == 'false'
+        env:
+          FILES: ${{ steps.changed.outputs.files }}
+        run: bash scripts/review-docs.sh $FILES

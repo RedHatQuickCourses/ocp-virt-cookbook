@@ -15,7 +15,7 @@ This tutorial demonstrates how to install and configure the OpenShift Virtualiza
 
 Versions tested:
 ----
-OpenShift 4.18, 4.19, 4.20
+OpenShift 4.18, 4.19, 4.20, 4.21
 ----
 
 == Hardware and Software Requirements
@@ -91,7 +91,7 @@ For automated deployments or environments without web console access, use the CL
 
 Create a single manifest file that contains all required resources:
 
-[source,yaml]
+[source,bash,role=execute]
 ----
 oc apply -f - <<EOF
 apiVersion: v1
@@ -145,7 +145,7 @@ Press `Ctrl+C` to stop watching once you see `Succeeded`.
 
 Deploy the HyperConverged custom resource to complete the installation:
 
-[source,yaml]
+[source,bash,role=execute]
 ----
 oc apply -f - <<EOF
 apiVersion: hco.kubevirt.io/v1beta1
@@ -268,7 +268,7 @@ You have successfully installed and configured OpenShift Virtualization. Your cl
 
 * xref:virtctl-basics.adoc[Learn virtctl basics] - Command-line tool for VM management
 * xref:default-storage-class.adoc[Configure default storage] - Set up storage for VMs
-* xref:vm-configuration:cloud-init-ip-configuration.adoc[Configure VM networking with cloud-init] - Static IP and network configuration for VMs
+* xref:networking:static-ip-configuration.adoc[Configure static IPs for VMs] - Static IP configuration using cloud-init, DHCP reservations, guest agent, and Sysprep
 
 == See Also
 

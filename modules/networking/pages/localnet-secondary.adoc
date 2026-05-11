@@ -23,9 +23,9 @@ OpenShift 4.19
 
 Create a namespace for VMs that will use the localnet secondary network.
 
-xref:attachment$localnet-secondary-namespace.yaml[Download localnet-secondary-namespace.yaml]
+xref:attachment$localnet-secondary/localnet-secondary-namespace.yaml[Download localnet-secondary-namespace.yaml]
 
-[source,yaml]
+[source,bash,role=execute]
 ----
 oc apply -f - <<EOF
 apiVersion: v1
@@ -39,9 +39,9 @@ EOF
 
 Configure the bridge mapping that connects the logical physnet name to the `br-ex` bridge interface. This tells OVN-Kubernetes which physical interface handles localnet traffic.
 
-xref:attachment$localnet-bridge-mapping-nncp.yaml[Download localnet-bridge-mapping-nncp.yaml]
+xref:attachment$localnet-secondary/localnet-bridge-mapping-nncp.yaml[Download localnet-bridge-mapping-nncp.yaml]
 
-[source,yaml]
+[source,bash,role=execute]
 ----
 oc apply -f - <<EOF
 apiVersion: nmstate.io/v1
@@ -66,9 +66,9 @@ EOF
 
 Create a ClusterUserDefinedNetwork with localnet topology for secondary network connectivity to external networks.
 
-xref:attachment$cudn-localnet.yaml[Download cudn-localnet.yaml]
+xref:attachment$localnet-secondary/cudn-localnet.yaml[Download cudn-localnet.yaml]
 
-[source,yaml]
+[source,bash,role=execute]
 ----
 oc apply -f - <<EOF
 apiVersion: k8s.ovn.org/v1
@@ -95,9 +95,11 @@ EOF
 
 Create a VM that connects to both the pod network and the localnet secondary network for dual connectivity.
 
-xref:attachment$fedora-localnet-vm.yaml[Download fedora-localnet-vm.yaml]
+WARNING: The cloud-init password in this example is for demo purposes only. Always use a strong, unique password or SSH key authentication in production environments.
 
-[source,yaml]
+xref:attachment$localnet-secondary/fedora-localnet-vm.yaml[Download fedora-localnet-vm.yaml]
+
+[source,bash,role=execute]
 ----
 oc apply -f - <<EOF
 apiVersion: kubevirt.io/v1
@@ -213,9 +215,17 @@ curl localhost:8080
 curl <localnet-ip>:8080
 ----
 
-== References
+== Summary
 
-=== OpenShift Documentation
+In this tutorial, you learned:
+
+* How to configure a bridge mapping using a `NodeNetworkConfigurationPolicy` to connect OVN-Kubernetes to the `br-ex` bridge
+* How to create a `ClusterUserDefinedNetwork` with localnet topology for secondary network connectivity
+* How to deploy a VM with dual network interfaces providing both pod network and localnet access
+* How to verify dual network connectivity including IP addressing, routing, and external reachability
+* How CUDN provides centralized, cluster-scoped management of localnet secondary networks
+
+== See Also
 
 * link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.19/html/multiple_networks/understanding-multiple-networks[OpenShift - Understanding Multiple Networks,window=_blank]
 * link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.19/html/virtualization/networking#virt-creating-secondary-localnet-udn_virt-connecting-vm-to-secondary-udn[Localnet Topology Configuration for OCP Virtualization,window=_blank]
