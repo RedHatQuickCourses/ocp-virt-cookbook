@@ -1,0 +1,67 @@
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: windows-vm
+  labels:
+    app: windows-vm
+    os.template.kubevirt.io/win10: "true"
+spec:
+  runStrategy: RerunOnFailure
+  template:
+    metadata:
+      labels:
+        kubevirt.io/domain: windows-vm
+        kubevirt.io/size: medium
+        os.template.kubevirt.io/win10: "true"
+    spec:
+      domain:
+        cpu:
+          cores: 4
+          sockets: 1
+          threads: 1
+        memory:
+          guest: 8Gi
+        devices:
+          disks:
+          # Boot disk (uploaded Windows image)
+          - name: harddrive
+            disk:
+              bus: virtio
+            bootOrder: 1
+          # VirtIO drivers container disk
+          - name: virtiocontainerdisk
+            cdrom:
+              bus: sata
+            bootOrder: 2
+          interfaces:
+          - masquerade: {}
+            model: virtio
+            name: default
+          inputs:
+          - bus: usb
+            name: tablet
+            type: tablet
+          tpm:
+            persistent: true
+        features:
+          acpi: {}
+          smm:
+            enabled: true
+        firmware:
+          bootloader:
+            efi:
+              secureBoot: false
+        machine:
+          type: pc-q35-rhel8.6.0
+      networks:
+      - name: default
+        pod: {}
+      volumes:
+      # Windows disk from uploaded image
+      - name: harddrive
+        persistentVolumeClaim:
+          claimName: windows-vm-disk
+      # VirtIO drivers from container disk
+      - name: virtiocontainerdisk
+        containerDisk:
+          image: registry.redhat.io/container-native-virtualization/virtio-win-rhel9@sha256:0289a572bdaa409ec9d458136b0abebbf8616eb418e7267d276d6762d22a3f3b

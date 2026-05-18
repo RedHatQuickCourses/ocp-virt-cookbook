@@ -1,0 +1,12 @@
+# Add this section to your existing VM spec to attach VirtIO drivers disk
+# after initial deployment for post-installation driver setup
+
+# Add to spec.template.spec.domain.devices.disks:
+- cdrom:
+    bus: sata
+  name: virtio-drivers
+
+# Add to spec.template.spec.volumes:
+- name: virtio-drivers
+  containerDisk:
+    image: registry.redhat.io/container-native-virtualization/virtio-win-rhel9@sha256:0289a572bdaa409ec9d458136b0abebbf8616eb418e7267d276d6762d22a3f3b

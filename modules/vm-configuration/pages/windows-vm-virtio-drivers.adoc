@@ -1,0 +1,466 @@
+= Creating Windows VMs with VirtIO Drivers
+:navtitle: Windows VMs with VirtIO Drivers
+
+== Overview
+
+This tutorial guides you through creating Windows virtual machines in OpenShift Virtualization using Red Hat's **official web console and template-based methodology**. This approach uses existing Windows VM images with the Containerized Data Importer (CDI) for seamless upload and containerized VirtIO drivers for optimal performance.
+
+**Important**: This tutorial follows Red Hat's current best practices using the OpenShift web console, VM templates, and container disks for enterprise Windows deployment.
+
+== What problem does this solve?
+
+Organizations need to deploy Windows VMs in OpenShift Virtualization with optimal performance for enterprise workloads including:
+
+* Legacy Windows applications requiring native performance
+* Active Directory integration and domain services
+* Microsoft SQL Server workloads
+* .NET Framework applications
+* Mixed Windows/Linux containerized environments
+
+Without VirtIO drivers, Windows VMs rely on emulated hardware which results in poor I/O performance and higher resource consumption.
+
+== Prerequisites
+
+* OpenShift 4.18+ with OpenShift Virtualization operator installed
+* **Windows VM image** in QCOW2, IMG, or VMDK format (see <<obtaining_images,Obtaining Windows Images>>)
+* Valid Windows licensing (see <<licensing_considerations,Licensing Considerations>>)
+* Storage class configured for VM disk provisioning
+* Administrative access to OpenShift cluster with web console
+* CDI (Containerized Data Importer) installed and configured
+
+Verify CDI and VirtIO drivers are available:
+
+[source,bash,role=execute]
+----
+oc get crd datavolumes.cdi.kubevirt.io
+oc get deployments -n openshift-cnv cdi-uploadproxy
+----
+
+=== Obtaining Windows Images [[obtaining_images]]
+
+Red Hat's methodology uses existing Windows VM images rather than ISO installation media. Obtain Windows images from:
+
+* **Microsoft Evaluation Center**: Download evaluation VMs for testing
+* **Volume Licensing**: Export existing Windows VMs to QCOW2/VMDK
+* **Cloud Providers**: Download Windows images from Azure, AWS, or GCP
+* **Existing Virtualization**: Export VMs from VMware vSphere or Hyper-V
+
+**Image format conversion** (if needed):
+
+[source,bash,role=execute]
+----
+# Convert VMDK to QCOW2
+qemu-img convert -f vmdk -O qcow2 windows.vmdk windows.qcow2
+
+# Check virtual disk size
+qemu-img info windows.qcow2
+----
+
+**Important**: Ensure you have proper licensing rights for virtualization use.
+
+== Tutorial Steps
+
+=== Step 1: Trust CDI Upload Proxy Certificate
+
+The Containerized Data Importer requires SSL certificate trust for image uploads.
+
+. **Generate CDI proxy URL**
++
+[source,bash,role=execute]
+----
+oc whoami --show-console | sed 's/console-openshift-console/cdi-uploadproxy-openshift-cnv/'
+----
+
+. **Trust the certificate**
++
+Navigate to the generated URL in your browser and accept the SSL certificate warning. This is required for the web console upload to function properly.
+
+=== Step 2: Upload Windows Image via Web Console
+
+Red Hat's preferred method uses the OpenShift web console for image upload to a PVC.
+
+. **Access OpenShift web console**
++
+Navigate to **Storage → Persistent Volume Claims**
+
+. **Create PVC with data upload**
++
+* Click **"Create Persistent Volume Claim"**
+* Choose **"With Data upload form"**
+* **Name**: `windows-vm-disk`
+* **Size**: Enter the virtual size from your image info (e.g., `40Gi`)
+* **Storage Class**: Select your cluster's default storage class
+* **Access Mode**: `ReadWriteOnce`
+
+. **Upload the image**
++
+* Click **"Browse"** and select your Windows QCOW2/IMG file
+* Click **"Upload"** and keep the browser tab open until complete
+* Monitor upload progress in the console
+
+. **Verify upload completion**
++
+[source,bash,role=execute]
+----
+oc get pvc windows-vm-disk
+----
++
+Status should show `Bound` when upload is complete.
+
+=== Step 3: Create Windows VM from Template
+
+Red Hat's template-based approach provides pre-configured Windows VMs with proper VirtIO driver integration.
+
+. **Navigate to VM creation**
++
+* Go to **Workloads → Virtualization**
+* Click **"Create Virtual Machine"**
+* Select **"New with Wizard"**
+
+. **Configure General settings**
++
+* **Name**: `windows-vm` (or your preferred name)
+* **Operating System**: `Microsoft Windows 10` or `Microsoft Windows Server 2019`
+* **Flavor**: `Medium` (4 vCPU, 8Gi RAM)
+* **Workload Profile**: `desktop` for Windows 10, `server` for Windows Server
+* **Boot Source**: `Existing PVC`
+* **Enable**: ✓ Mount Windows guest tools
+
+. **Configure Networking**
++
+* **Name**: `default`
+* **Network Interface**: `masquerade`
+* **Type**: `virtio`
+
+. **Configure Storage**
++
+* **Boot disk**: Click **"Add Disk"**
+** **Source**: `Use an existing PVC`
+** **PVC Name**: Select `windows-vm-disk`
+** **Interface**: `virtio`
+** **Storage Class**: Your cluster's storage class
++
+* **VirtIO drivers disk**: Verify CD-ROM with `windows-guest-tools` is present
+** **Source**: `container-native-virtualization/virtio-win`
+** **Interface**: `sata`
+** **Type**: `CD-ROM`
+
+. **Review and create**
++
+* Review all settings
+* **Enable**: ✓ Start virtual machine on creation
+* Click **"Create Virtual Machine"**
+
+=== Step 4: Install VirtIO Drivers
+
+Windows may boot into Recovery Environment due to missing storage drivers. Install VirtIO drivers to enable proper hardware detection.
+
+. **Access VM Console**
++
+* In the VM details page, click **"Console"** tab
+* Or use CLI: `virtctl console windows-vm`
+
+. **Handle Windows Recovery (if needed)**
++
+If Windows boots to Recovery Environment:
++
+* Select keyboard layout
+* Choose **"Troubleshoot"** → **"Command Prompt"**
++
+In command prompt, load VirtIO storage driver:
++
+[source,cmd]
+----
+drvload D:\amd64\w10\viostor.inf
+dism /image=C:\ /add-driver /driver=D:\amd64\w10\viostor.inf
+----
++
+Exit and select **"Continue"** to boot Windows normally.
+
+. **Complete driver installation**
++
+Once Windows is running:
++
+* Navigate to the VirtIO drivers CD-ROM (usually Drive D: or E:)
+* Run `virtio-win-guest-tools.exe`
+* Follow the installation wizard to install all drivers
+* **Important**: Install all drivers including network, storage, and guest agent
+
+. **Verify driver installation**
++
+* Open **Device Manager**
+* Verify no devices show yellow warning icons
+* Look for **"Red Hat VirtIO Ethernet Adapter"** under Network adapters
+* Look for **"Red Hat VirtIO SCSI controller"** under Storage controllers
+
+=== Step 5: Finalize VM Configuration
+
+After successful Windows boot and driver installation, optimize the VM configuration.
+
+. **Shut down the VM**
++
+[source,bash,role=execute]
+----
+virtctl stop windows-vm
+----
+
+. **Remove VirtIO drivers CD-ROM** (optional)
++
+The drivers are now installed and the CD-ROM can be removed:
++
+* Edit the VM in web console: **Actions → Edit**
+* Navigate to **Storage** tab
+* Remove the `windows-guest-tools` CD-ROM disk
+* Save changes
+
+. **Start the optimized VM**
++
+[source,bash,role=execute]
+----
+virtctl start windows-vm
+----
+
+=== Step 6: Configure Windows for Virtualization
+
+Optimize Windows settings for virtualized environment performance.
+
+==== Configure Windows Power Settings
+
+[source,cmd]
+----
+# Set high performance power plan
+powercfg /setactive 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c
+
+# Disable hibernation to save disk space
+powercfg /hibernate off
+----
+
+==== Disable Unnecessary Services
+
+[source,cmd]
+----
+# Disable services not needed in virtual environment
+sc config "Windows Search" start= disabled
+sc config "Superfetch" start= disabled
+sc config "TabletInputService" start= disabled
+----
+
+=== Step 7: Create VM Template (Optional)
+
+For deploying multiple Windows VMs, create a reusable template.
+
+. **Prepare the VM for templating**
++
+Inside Windows, run Sysprep to generalize the installation:
++
+Download the Sysprep answer file:
++
+xref:attachment$windows-vm-virtio-drivers/unattend.xml[Download unattend.xml]
++
+[source,cmd]
+----
+C:\Windows\System32\Sysprep\sysprep.exe /generalize /oobe /shutdown /unattend:C:\path\to\unattend.xml
+----
+
+. **Create template from VM**
++
+After the VM shuts down:
++
+* In the web console, go to **Virtualization → Templates**
+* Click **"Create Template"**
+* Select the source VM and configure template settings
+
+== Verification and Testing
+
+=== Verify VirtIO Driver Installation
+
+. **Check Device Manager**
++
+Open Device Manager and verify all devices are properly recognized:
++
+* **Network adapters**: "Red Hat VirtIO Ethernet Adapter"
+* **Storage controllers**: "Red Hat VirtIO SCSI controller"
+* **System devices**: Various VirtIO devices should be present
+
+. **Check driver versions**
++
+[source,cmd]
+----
+driverquery | findstr virtio
+----
+
+. **Verify performance improvements**
++
+Compare disk and network performance with VirtIO drivers enabled versus disabled.
+
+=== Test VM Functionality
+
+. **Network connectivity**
++
+[source,cmd]
+----
+ping google.com
+ipconfig /all
+----
+
+. **Disk performance**
++
+Run disk benchmarks using tools like CrystalDiskMark to verify VirtIO performance improvements.
+
+. **Guest agent functionality**
++
+Verify the QEMU guest agent is running:
++
+[source,cmd]
+----
+sc query qemu-ga
+----
+
+== Alternative: Command Line Approach
+
+For automation or CI/CD workflows, use the CLI method with pre-configured manifests.
+
+=== CLI Image Upload
+
+[source,bash,role=execute]
+----
+# Create DataVolume for image upload
+oc apply -f - <<EOF
+apiVersion: cdi.kubevirt.io/v1beta1
+kind: DataVolume
+metadata:
+  name: windows-vm-disk
+spec:
+  source:
+    upload: {}
+  pvc:
+    accessModes:
+      - ReadWriteOnce
+    resources:
+      requests:
+        storage: 40Gi
+    storageClassName: gp3-csi
+    volumeMode: Block
+EOF
+
+# Upload the image
+virtctl image-upload dv windows-vm-disk --size=40Gi --image-path=/path/to/windows.qcow2 --insecure
+----
+
+=== CLI VM Creation
+
+Download and apply the Red Hat-compatible VM configuration:
+
+xref:attachment$windows-vm-virtio-drivers/windows-vm-redhat-template.yaml[Download windows-vm-redhat-template.yaml]
+
+[source,bash,role=execute]
+----
+oc apply -f windows-vm-redhat-template.yaml
+virtctl start windows-vm
+----
+
+== Licensing Considerations [[licensing_considerations]]
+
+**Important Windows Licensing Requirements:**
+
+* **Volume Licensing**: Use Windows Server with appropriate CALs for server workloads
+* **SPLA Licensing**: Consider Service Provider License Agreement for hosted scenarios
+* **Activation**: Configure KMS server or MAK activation for enterprise deployments
+* **Virtual Rights**: Ensure compliance with Microsoft virtualization rights
+
+**Activation Methods:**
+
+* **KMS Activation**: Connect to existing KMS server
+* **MAK Activation**: Use Multiple Activation Key for isolated VMs
+* **AVMA**: Automatic VM Activation for Windows Server in licensed environments
+
+Configure activation after driver installation:
+
+[source,cmd]
+----
+slmgr /skms your-kms-server.domain.com
+slmgr /ato
+----
+
+== Security Considerations
+
+* **Disable unnecessary services** to reduce attack surface
+* **Install Windows updates** regularly for security patches
+* **Configure Windows Firewall** appropriately for your network
+* **Use antivirus** compatible with virtualized environments
+* **Implement least privilege** access for VM user accounts
+* **Enable Windows Defender** or enterprise endpoint protection
+
+== Troubleshooting
+
+=== Common Issues
+
+|===
+| Issue | Cause | Solution
+
+| **VM boots to Windows Recovery**
+| VirtIO storage driver not present
+| Load `viostor` driver using `drvload` command
+
+| **Poor network performance**
+| Using emulated network adapter
+| Verify VirtIO network driver is installed (`NetKVM`)
+
+| **VM won't boot after driver installation**
+| Boot configuration issue
+| Boot from Windows recovery and repair boot configuration
+
+| **Blue screen on first boot**
+| Driver conflict or corruption
+| Boot in safe mode and reinstall VirtIO drivers
+
+| **Guest agent not working**
+| Service not started or not installed
+| Install guest tools and verify `qemu-ga` service is running
+
+| **Poor disk I/O performance**
+| Using IDE instead of VirtIO
+| Verify disk interface is set to `virtio` in VM specification
+
+| **Upload fails in web console**
+| CDI proxy certificate not trusted
+| Trust the CDI uploadproxy SSL certificate in browser
+
+| **Template creation fails**
+| VM not properly sysprepped
+| Run Sysprep with proper answer file before creating template
+|===
+
+=== Performance Verification
+
+Expected improvements with VirtIO drivers:
+
+* **Disk I/O**: 3-5x improvement over IDE/SATA emulation
+* **Network throughput**: 2-3x improvement over emulated adapters
+* **CPU utilization**: 10-20% reduction in hypervisor overhead
+* **Memory efficiency**: Better memory management with balloon driver
+
+== Summary
+
+In this tutorial, you learned:
+
+* How to create Windows VMs using Red Hat's official web console methodology
+* Uploading Windows images via the Containerized Data Importer (CDI)
+* Template-based VM creation with automatic VirtIO driver integration
+* Installing and configuring VirtIO drivers for optimal performance
+* Windows optimization techniques for virtualized environments
+* Creating reusable VM templates with Sysprep
+* Windows licensing considerations for virtualized environments
+* Troubleshooting common VirtIO driver issues
+
+Red Hat's web console and template-based approach provides a streamlined, enterprise-ready method for Windows VM deployment in OpenShift Virtualization.
+
+== See Also
+
+* link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/virtualization/advanced-vm-creation#virt-creating-windows-vm_virt-creating-vms-uploading-images[Creating a Windows VM - OpenShift Virtualization,window=_blank]
+* link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.21/html/virtualization/managing-vms#installing-virtio-drivers_virt-installing-virtio-drivers-on-new-windows-vm[Installing VirtIO Drivers on Windows VMs - OpenShift Virtualization,window=_blank]
+* link:https://docs.fedoraproject.org/en-US/quick-docs/creating-windows-virtual-machines-using-virtio-drivers/[Creating Windows Virtual Machines using VirtIO Drivers - Fedora Documentation,window=_blank]
+* link:https://github.com/virtio-win/kvm-guest-drivers-windows[Windows VirtIO Drivers - Official GitHub Repository,window=_blank]
+* xref:remote-access-windows-vms.adoc[Remote Access to Windows VMs via RDP]
+* link:https://www.microsoft.com/licensing/guidance/Windows-Server-Virtualization-Technologies[Windows Server Virtualization Technologies Licensing Guidance,window=_blank]
+* link:https://www.microsoft.com/licensing/guidance/Server_Virtualization[Microsoft Server Virtualization Licensing Guidance,window=_blank]

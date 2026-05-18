@@ -1,0 +1,20 @@
+# DataVolume for uploading Windows VM image via web console or CLI
+# This creates a PVC that can receive uploaded VM images through CDI
+apiVersion: cdi.kubevirt.io/v1beta1
+kind: DataVolume
+metadata:
+  name: windows-vm-disk
+  annotations:
+    # Force immediate binding for storage classes with WaitForFirstConsumer
+    cdi.kubevirt.io/storage.bind.immediate.requested: "true"
+spec:
+  source:
+    upload: {}
+  pvc:
+    accessModes:
+      - ReadWriteOnce
+    resources:
+      requests:
+        storage: 40Gi  # Adjust based on your Windows image size
+    storageClassName: gp3-csi  # Update to match your cluster's storage class
+    volumeMode: Block  # Block mode provides better performance for VM disks
