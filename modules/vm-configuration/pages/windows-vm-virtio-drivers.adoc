@@ -1,0 +1,381 @@
+= Deploying Windows VMs with VirtIO Drivers
+:navtitle: Windows VMs with VirtIO Drivers
+
+== Overview
+
+This tutorial demonstrates how to deploy Windows virtual machines on OpenShift Virtualization with VirtIO drivers for optimal performance. VirtIO drivers provide significant performance improvements over emulated hardware by enabling paravirtualized I/O operations for network, storage, and other critical VM components.
+
+You will create a Windows VM, install VirtIO drivers during the Windows installation process, and configure the guest agent for enhanced integration with OpenShift Virtualization.
+
+== Prerequisites
+
+* **OpenShift 4.18+** with OpenShift Virtualization operator installed
+* **CLI tools**: `oc` and `virtctl` installed
+* **Windows installation ISO** (Windows 10/11 or Server 2019/2022)
+* **VirtIO drivers ISO** from Red Hat Customer Portal or Fedora project
+* **Valid Windows license** and product key
+* **Cluster resources**: 4+ GB RAM, 60+ GB storage available
+
+Versions tested:
+----
+OpenShift 4.20, 4.21
+----
+
+== Step 1: Download and Upload VirtIO Drivers
+
+Download the VirtIO drivers ISO from the Fedora project:
+
+[source,bash,role=execute]
+----
+curl -L -O https://fedorapeople.org/groups/virt/virtio-win/direct-downloads/stable-virtio/virtio-win.iso
+----
+
+Create a DataVolume for the VirtIO drivers ISO:
+
+xref:attachment$windows-vm-virtio-drivers/virtio-drivers-dv.yaml[Download virtio-drivers-dv.yaml]
+
+[source,bash,role=execute]
+----
+oc apply -f - <<EOF
+apiVersion: cdi.kubevirt.io/v1beta1
+kind: DataVolume
+metadata:
+  name: virtio-drivers-iso
+  annotations:
+    cdi.kubevirt.io/storage.bind.immediate.requested: "true"
+spec:
+  storage:
+    resources:
+      requests:
+        storage: 1Gi
+    accessModes:
+      - ReadWriteOnce
+  source:
+    upload: {}
+EOF
+----
+
+Upload the VirtIO drivers ISO:
+
+[source,bash,role=execute]
+----
+virtctl image-upload dv virtio-drivers-iso --image-path=virtio-win.iso --insecure
+----
+
+IMPORTANT: The `--insecure` flag is often needed in development environments where the CDI upload proxy uses self-signed certificates.
+
+== Step 2: Upload Windows Installation ISO
+
+Create a DataVolume for the Windows installation ISO:
+
+[source,bash,role=execute]
+----
+oc apply -f - <<EOF
+apiVersion: cdi.kubevirt.io/v1beta1
+kind: DataVolume
+metadata:
+  name: windows-installation-iso
+  annotations:
+    cdi.kubevirt.io/storage.bind.immediate.requested: "true"
+spec:
+  storage:
+    resources:
+      requests:
+        storage: 6Gi
+    accessModes:
+      - ReadWriteOnce
+  source:
+    upload: {}
+EOF
+----
+
+Upload your Windows installation ISO (replace `windows.iso` with your actual ISO filename):
+
+[source,bash,role=execute]
+----
+virtctl image-upload dv windows-installation-iso --image-path=windows.iso --insecure
+----
+
+== Step 3: Create Windows VM with VirtIO Configuration
+
+Create the Windows virtual machine with VirtIO devices and proper boot order:
+
+xref:attachment$windows-vm-virtio-drivers/windows-vm-virtio.yaml[Download windows-vm-virtio.yaml]
+
+[source,bash,role=execute]
+----
+oc apply -f - <<EOF
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: windows-vm-virtio
+  labels:
+    app: windows-vm-virtio
+spec:
+  runStrategy: Always
+  template:
+    metadata:
+      labels:
+        kubevirt.io/size: medium
+        kubevirt.io/domain: windows-vm-virtio
+        vm.kubevirt.io/name: windows-vm-virtio
+    spec:
+      domain:
+        cpu:
+          cores: 2
+          sockets: 1
+          threads: 2
+        resources:
+          requests:
+            memory: 4Gi
+        devices:
+          disks:
+            - name: rootdisk
+              disk:
+                bus: virtio
+              bootOrder: 2
+            - name: windows-installation-iso
+              cdrom:
+                bus: sata
+              bootOrder: 1
+            - name: virtio-drivers-iso
+              cdrom:
+                bus: sata
+          interfaces:
+            - name: default
+              masquerade: {}
+              model: virtio
+          tpm: {}
+          rng: {}
+        clock:
+          utc: {}
+          timer:
+            hpet:
+              present: false
+            pit:
+              tickPolicy: delay
+            rtc:
+              tickPolicy: catchup
+            hyperv: {}
+        features:
+          acpi: {}
+          apic: {}
+          hyperv:
+            relaxed: {}
+            vapic: {}
+            spinlocks:
+              spinlocks: 8191
+            vpindex: {}
+            runtime: {}
+            synic: {}
+            stimer: {}
+            reset: {}
+            frequencies: {}
+            reenlightenment: {}
+            tlbflush: {}
+            ipi: {}
+          smm:
+            enabled: true
+        firmware:
+          bootloader:
+            efi:
+              secureBoot: true
+      networks:
+        - name: default
+          pod: {}
+      volumes:
+        - name: rootdisk
+          dataVolume:
+            name: windows-vm-virtio-rootdisk
+        - name: windows-installation-iso
+          dataVolume:
+            name: windows-installation-iso
+        - name: virtio-drivers-iso
+          dataVolume:
+            name: virtio-drivers-iso
+  dataVolumeTemplates:
+    - metadata:
+        name: windows-vm-virtio-rootdisk
+        annotations:
+          cdi.kubevirt.io/storage.bind.immediate.requested: "true"
+      spec:
+        storage:
+          resources:
+            requests:
+              storage: 60Gi
+          accessModes:
+            - ReadWriteOnce
+        source:
+          blank: {}
+EOF
+----
+
+Wait for the VM to start:
+
+[source,bash,role=execute]
+----
+oc get vm windows-vm-virtio -w
+----
+
+Once `STATUS=Running` and `READY=True`, proceed. Press `Ctrl+C` to exit the watch.
+
+== Step 4: Install Windows with VirtIO Storage Driver
+
+Access the VM console to begin Windows installation:
+
+[source,bash,role=execute]
+----
+virtctl vnc windows-vm-virtio
+----
+
+Alternatively, use the OpenShift web console: **Virtualization** → **VirtualMachines** → **windows-vm-virtio** → **Console** tab.
+
+. **Begin Windows Installation**:
++
+When the VM starts, you may initially see a "No bootable device found" message. This is normal behavior. You need to navigate the UEFI boot menu:
++
+* Wait for the UEFI menu or press any key when prompted to "boot from other media or DVD"
+* Navigate to the boot menu and select "Boot from DVD/CD"
+* Choose the first available option, which should be the Windows ISO
+* The Windows installation will then begin - proceed through initial setup screens
+
+. **Load VirtIO Storage Driver**: When you reach the "Where do you want to install Windows?" screen:
++
+* Click **Load driver**
+* Browse to the VirtIO drivers CD (typically D: or E: drive)
+* Navigate to `viostor\\{windows-version}\amd64\` folder
+* For Windows Server 2022: `viostor\2k22\amd64\`
+* For Windows 11: `viostor\w11\amd64\`
+* Select **Red Hat VirtIO SCSI Controller** and click **Next**
+
+. **Select Installation Disk**: The VirtIO disk will now appear in the installation target list. Select it and continue with Windows installation.
+
+. **Complete Installation**: Follow the standard Windows setup process.
+
+== Step 5: Install Remaining VirtIO Drivers
+
+After Windows installation completes and you reach the desktop:
+
+. **Open Device Manager**: Right-click **This PC** → **Properties** → **Device Manager**
+
+. **Install Network Driver**:
++
+* Right-click the network device with a warning icon
+* Select **Update driver** → **Browse my computer for driver software**
+* Navigate to VirtIO CD: `NetKVM\\{windows-version}\amd64\`
+* Complete the installation
+
+. **Install Additional Drivers**:
++
+* **Balloon Driver**: Update the "PCI Device" → `Balloon\\{windows-version}\amd64\`
+* **Serial Driver**: Update "PCI Simple Communications Controller" → `vioserial\\{windows-version}\amd64\`
+* **Input Driver**: Update "PCI Input Device" → `vioinput\\{windows-version}\amd64\`
+
+. **Install QEMU Guest Agent**:
++
+From the VirtIO drivers CD, run `guest-agent\\qemu-ga-x86_64.msi` and follow the installation wizard.
+
+== Step 6: Verify Installation
+
+Verify all VirtIO drivers are properly installed:
+
+. **Check Device Manager**: Ensure no devices show warning icons
+. **Verify Guest Agent**: Open **Services** (services.msc) and confirm **QEMU Guest Agent** is running
+. **Test Integration**: From OpenShift, verify guest agent communication:
+
+[source,bash,role=execute]
+----
+oc get vmi windows-vm-virtio -o jsonpath='{.status.guestOSInfo}'
+----
+
+Check VM performance metrics:
+
+[source,bash,role=execute]
+----
+oc get vmi windows-vm-virtio -o jsonpath='{.status.interfaces[0].ipAddress}'
+----
+
+== VirtIO Driver Benefits
+
+With VirtIO drivers installed, your Windows VM benefits from:
+
+[cols="1,2"]
+|===
+|Component |Performance Improvement
+
+|**Network (NetKVM)**
+|Up to 10x network throughput improvement
+
+|**Storage (viostor)**
+|Significantly reduced storage latency and improved IOPS
+
+|**Balloon (vioser)**
+|Dynamic memory management and better resource utilization
+
+|**Guest Agent**
+|Enhanced integration, graceful shutdown, and monitoring capabilities
+|===
+
+== Troubleshooting
+
+=== Common Issues
+
+[cols="1,1,2"]
+|===
+|Issue |Cause |Solution
+
+|**TPM 2.0 error during installation**
+|Missing TPM device
+|The VM template includes TPM support for Windows 11 requirements
+
+|**No boot device found**
+|Incorrect boot order
+|Ensure Windows ISO has `bootOrder: 1` and root disk has `bootOrder: 2`
+
+|**Disk not visible during installation**
+|VirtIO storage driver not loaded
+|Load the viostor driver before selecting the installation disk
+
+|**Poor network performance**
+|Missing NetKVM driver
+|Install the network driver from Device Manager after Windows installation
+|===
+
+=== Upload Issues
+
+If you encounter TLS certificate errors during ISO upload:
+
+[source,bash,role=execute]
+----
+# Use --insecure flag for development environments
+virtctl image-upload dv <datavolume-name> --image-path=<iso-file> --insecure
+----
+
+== Cleanup
+
+Remove all resources created in this tutorial:
+
+[source,bash,role=execute]
+----
+oc delete vm windows-vm-virtio
+oc delete dv windows-installation-iso virtio-drivers-iso
+----
+
+== Summary
+
+In this tutorial, you learned how to:
+
+* Upload VirtIO drivers and Windows installation ISOs using DataVolumes
+* Create a Windows VM with VirtIO devices and proper hardware configuration
+* Install VirtIO storage drivers during Windows installation for optimal performance
+* Configure remaining VirtIO drivers and the QEMU guest agent after installation
+* Verify proper driver installation and VM integration with OpenShift Virtualization
+* Troubleshoot common installation issues
+
+Your Windows VM now provides enterprise-grade performance with full VirtIO driver support and integration with OpenShift Virtualization.
+
+== See Also
+
+* link:https://docs.openshift.com/container-platform/latest/virt/vm_networking/virt-installing-virtio-drivers.html[OpenShift VirtIO Driver Installation,window=_blank]
+* link:https://kubevirt.io/user-guide/[KubeVirt User Guide,window=_blank]
+* xref:remote-access-windows-vms.adoc[Remote Access to Windows VMs]
