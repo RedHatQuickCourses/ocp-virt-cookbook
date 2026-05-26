@@ -1,0 +1,575 @@
+= Configuring SR-IOV Secondary Networks for Virtual Machines
+:navtitle: SR-IOV Secondary Networks
+
+Versions tested:
+----
+OpenShift 4.21
+----
+
+SR-IOV (Single Root I/O Virtualization) enables a single physical network adapter to present multiple virtual functions (VFs) that can be passed directly into virtual machines.
+Unlike software-based networking (OVN overlays, Linux bridges), SR-IOV bypasses the host network stack entirely, giving the VM near-native network performance.
+This makes SR-IOV the right choice for workloads that demand high throughput, low latency, or both -- such as network functions (NFV), real-time data processing, and large-scale data transfers.
+
+In production, SR-IOV physical ports are typically configured as VLAN trunks, carrying multiple VLANs over a single cable.
+Each SR-IOV VF is assigned to a specific VLAN, allowing a single VM to have multiple high-performance interfaces on isolated network segments.
+This pattern is standard in telco environments where network functions like User Plane Functions (UPFs) need separate data-plane and management-plane interfaces, each on its own VLAN.
+
+This tutorial walks through the complete process: verifying the SR-IOV Network Operator, discovering SR-IOV-capable hardware, creating Virtual Functions, defining two SR-IOV networks on separate VLANs, and deploying a VM with dual SR-IOV passthrough interfaces.
+
+== Prerequisites
+
+* OpenShift 4.18+ cluster (tested on 4.21) with OpenShift Virtualization operator installed
+* SR-IOV Network Operator installed in the cluster
+* At least one SR-IOV-capable network adapter on the worker node (Intel X710, XXV710, E810, or Mellanox ConnectX-4/5/6 families)
+* IOMMU (Intel VT-d or AMD-Vi) enabled in BIOS/UEFI
+* Physical switch port configured as a VLAN trunk carrying VLANs 100 and 200 (or your chosen VLAN IDs)
+* Cluster admin access
+* `oc` CLI installed
+
+WARNING: SR-IOV configuration changes the number of Virtual Functions on the physical NIC.
+Depending on the adapter and driver, this may require a node reboot managed by the SR-IOV Network Operator through the Machine Config Operator.
+Plan accordingly for production nodes.
+
+== Step 1: Verify SR-IOV Operator Readiness
+
+After installing the SR-IOV Network Operator from OperatorHub, confirm that its ClusterServiceVersion reports `Succeeded` and that all operator pods are running.
+
+[source,bash,role=execute]
+----
+oc get csv -n openshift-sriov-network-operator
+----
+
+Expected output (version may differ):
+
+----
+NAME                                          DISPLAY                   VERSION               PHASE
+sriov-network-operator.v4.21.0-202605200241   SR-IOV Network Operator   4.21.0-202605200241   Succeeded
+----
+
+Verify the operator pods are running:
+
+[source,bash,role=execute]
+----
+oc get pods -n openshift-sriov-network-operator
+----
+
+You should see the operator, webhook, and injector pods in `Running` state.
+On each worker node with SR-IOV-capable hardware, a `sriov-network-config-daemon` pod should also appear.
+
+== Step 2: Discover SR-IOV-Capable Devices
+
+The SR-IOV Network Operator automatically scans each node for SR-IOV-capable devices and records them in `SriovNetworkNodeState` custom resources.
+
+[source,bash,role=execute]
+----
+oc get sriovnetworknodestates -n openshift-sriov-network-operator
+----
+
+Inspect the node state to see discovered devices:
+
+[source,bash,role=execute]
+----
+oc get sriovnetworknodestates -n openshift-sriov-network-operator -o yaml
+----
+
+In the `.status.interfaces` section, look for entries with `totalvfs` greater than zero.
+Each entry shows the PCI address, vendor and device ID, driver, link speed, and the maximum number of VFs the adapter supports.
+
+For example, a Mellanox ConnectX-4 Lx entry looks like:
+
+----
+- deviceID: "1015"
+  driver: mlx5_core
+  linkSpeed: 25000 Mb/s
+  linkType: ETH
+  name: enp11s0f0np0
+  pciAddress: "0000:0b:00.0"
+  totalvfs: 6
+  vendor: "15b3"
+----
+
+NOTE: If no interfaces appear, verify that IOMMU is enabled in the node's BIOS/UEFI.
+You can check the kernel log with `oc debug node/<node-name> -- chroot /host dmesg | grep -i iommu`.
+Look for `DMAR` or `AMD-Vi` messages and `iommu: Default domain type: Translated`.
+
+== Step 3: Create an SriovNetworkNodePolicy
+
+An `SriovNetworkNodePolicy` tells the operator how many VFs to create on a specific physical function (PF) and which device type to use.
+For OpenShift Virtualization VMs, set `deviceType: vfio-pci` so that VFs are exposed through the VFIO framework for direct PCI passthrough into the guest.
+
+This policy creates 4 VFs on the physical function.
+The VFs themselves are VLAN-agnostic at this stage -- VLAN assignment happens later in the `SriovNetwork` resources.
+This means one pool of VFs serves multiple VLANs.
+
+xref:attachment$sriov-secondary/sriov-network-node-policy.yaml[Download sriov-network-node-policy.yaml]
+
+[source,bash,role=execute]
+----
+oc apply -f - <<EOF
+apiVersion: sriovnetwork.openshift.io/v1
+kind: SriovNetworkNodePolicy
+metadata:
+  name: mlx-sriov-policy
+  namespace: openshift-sriov-network-operator
+spec:
+  resourceName: mlxsriovnic
+  nodeSelector:
+    kubernetes.io/hostname: <node-name>
+  numVfs: 4
+  nicSelector:
+    vendor: "15b3"
+    deviceID: "1015"
+    pfNames:
+    - enp11s0f0np0
+  deviceType: vfio-pci
+  isRdma: false
+EOF
+----
+
+Replace `<node-name>` with the hostname of the node that has the SR-IOV NIC (for example, `ocplab01`).
+
+Key fields:
+
+* `resourceName` -- the Kubernetes extended resource name the VFs are registered under (for example, `openshift.io/mlxsriovnic`).
+* `numVfs` -- number of VFs to create (must not exceed `totalvfs` reported in the node state). This VM uses 2 VFs (one per VLAN), leaving 2 available for additional VMs.
+* `nicSelector.vendor` / `deviceID` -- target the specific NIC model. Use `15b3` / `1015` for Mellanox ConnectX-4 Lx, or `8086` and the appropriate device ID for Intel NICs.
+* `nicSelector.pfNames` -- restrict VF creation to specific physical functions by interface name.
+* `deviceType: vfio-pci` -- required for VM passthrough. Use `netdevice` for pod workloads instead.
+
+IMPORTANT: Applying this policy triggers the SR-IOV config daemon to configure VFs on the node.
+Depending on the driver, this may require a node drain and reboot.
+The operator handles this automatically through the Machine Config Operator, but the node will be temporarily unavailable.
+
+Monitor the policy application:
+
+[source,bash,role=execute]
+----
+oc get sriovnetworknodestates -n openshift-sriov-network-operator -o jsonpath='{.items[0].status.syncStatus}'
+----
+
+Wait until the sync status reports `Succeeded`.
+
+== Step 4: Verify Virtual Functions
+
+After the policy is applied and the node has finished configuration (and any required reboot), verify that VFs have been created.
+
+[source,bash,role=execute]
+----
+oc get sriovnetworknodestates -n openshift-sriov-network-operator -o yaml
+----
+
+In the `.status.interfaces` section, the PF entry should now show `numVfs: 4` and a list of VF PCI addresses underneath.
+
+You can also verify directly on the node:
+
+[source,bash,role=execute]
+----
+oc debug node/<node-name> -- chroot /host cat /sys/class/net/enp11s0f0np0/device/sriov_numvfs
+----
+
+The output should match the `numVfs` value from the policy (for example, `4`).
+
+Confirm the VF resources are available in the node's allocatable capacity:
+
+[source,bash,role=execute]
+----
+oc get node <node-name> -o jsonpath='{.status.allocatable}' | python3 -m json.tool | grep mlxsriovnic
+----
+
+Expected output:
+
+----
+"openshift.io/mlxsriovnic": "4"
+----
+
+== Step 5: Create SR-IOV Networks for Each VLAN
+
+In a trunk configuration, the physical switch port carries multiple VLANs over the same cable.
+Each `SriovNetwork` resource defines a separate VLAN -- the operator generates a distinct `NetworkAttachmentDefinition` (NAD) for each one.
+When a VF is assigned to a VM through one of these NADs, it automatically tags egress traffic with the specified VLAN ID and strips the tag on ingress, so the guest OS sees untagged frames.
+
+Create a namespace for the VMs first:
+
+xref:attachment$sriov-secondary/sriov-demo-namespace.yaml[Download sriov-demo-namespace.yaml]
+
+[source,bash,role=execute]
+----
+oc apply -f - <<EOF
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: sriov-demo
+EOF
+----
+
+Create the data-plane network on VLAN 100:
+
+xref:attachment$sriov-secondary/sriov-net-data.yaml[Download sriov-net-data.yaml]
+
+[source,bash,role=execute]
+----
+oc apply -f - <<EOF
+apiVersion: sriovnetwork.openshift.io/v1
+kind: SriovNetwork
+metadata:
+  name: sriov-net-data
+  namespace: openshift-sriov-network-operator
+spec:
+  networkNamespace: sriov-demo
+  resourceName: mlxsriovnic
+  vlan: 100
+  spoofChk: "off"
+  trust: "on"
+EOF
+----
+
+Create the management network on VLAN 200:
+
+xref:attachment$sriov-secondary/sriov-net-mgmt.yaml[Download sriov-net-mgmt.yaml]
+
+[source,bash,role=execute]
+----
+oc apply -f - <<EOF
+apiVersion: sriovnetwork.openshift.io/v1
+kind: SriovNetwork
+metadata:
+  name: sriov-net-mgmt
+  namespace: openshift-sriov-network-operator
+spec:
+  networkNamespace: sriov-demo
+  resourceName: mlxsriovnic
+  vlan: 200
+  spoofChk: "off"
+  trust: "on"
+EOF
+----
+
+Key fields:
+
+* `vlan` -- the 802.1Q VLAN ID assigned to VFs using this network. The NIC handles tagging and untagging in hardware, so the guest OS sees only untagged traffic on its interface.
+* `networkNamespace` -- the namespace where the NAD will be created. VMs in this namespace can reference it.
+* `resourceName` -- must match the `resourceName` in the `SriovNetworkNodePolicy`. Both networks share the same VF pool.
+* `spoofChk: "off"` and `trust: "on"` -- recommended for VM workloads where the guest OS manages its own MAC and IP addresses.
+
+Verify both NADs were created:
+
+[source,bash,role=execute]
+----
+oc get net-attach-def -n sriov-demo
+----
+
+Expected output:
+
+----
+NAME             AGE
+sriov-net-data   10s
+sriov-net-mgmt   5s
+----
+
+== Step 6: Deploy a VM with Dual SR-IOV Interfaces
+
+Create a VM with three network interfaces: the pod network for cluster connectivity, a data-plane SR-IOV interface on VLAN 100, and a management SR-IOV interface on VLAN 200.
+This mirrors a production pattern where network functions require isolated planes for different traffic types.
+
+WARNING: The cloud-init password in this example is for demo purposes only.
+Always use SSH key authentication or a strong password in production environments.
+
+xref:attachment$sriov-secondary/fedora-sriov-vm.yaml[Download fedora-sriov-vm.yaml]
+
+[source,bash,role=execute]
+----
+oc apply -f - <<EOF
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: fedora-sriov-vm
+  namespace: sriov-demo
+  labels:
+    app: fedora-sriov-vm
+spec:
+  runStrategy: Always
+  dataVolumeTemplates:
+  - metadata:
+      name: fedora-sriov-volume
+    spec:
+      pvc:
+        accessModes:
+        - ReadWriteOnce
+        resources:
+          requests:
+            storage: 33Gi
+      sourceRef:
+        kind: DataSource
+        name: fedora
+        namespace: openshift-virtualization-os-images
+  template:
+    metadata:
+      labels:
+        app: fedora-sriov-vm
+    spec:
+      domain:
+        devices:
+          disks:
+          - name: datavolumedisk
+            disk:
+              bus: virtio
+          - name: cloudinitdisk
+            disk:
+              bus: virtio
+          interfaces:
+          - name: default
+            masquerade: {}
+          - name: data-plane
+            sriov: {}
+          - name: mgmt-plane
+            sriov: {}
+        resources:
+          requests:
+            memory: 4Gi
+            cpu: 2
+      networks:
+      - name: default
+        pod: {}
+      - name: data-plane
+        multus:
+          networkName: sriov-net-data
+      - name: mgmt-plane
+        multus:
+          networkName: sriov-net-mgmt
+      volumes:
+      - name: datavolumedisk
+        dataVolume:
+          name: fedora-sriov-volume
+      - name: cloudinitdisk
+        cloudInitNoCloud:
+          userData: |
+            #cloud-config
+            user: fedora
+            password: fedora
+            chpasswd: { expire: False }
+EOF
+----
+
+The VM configuration has three network interfaces:
+
+* `default` with `masquerade: {}` -- provides cluster (pod) network connectivity with automatic IP assignment.
+* `data-plane` with `sriov: {}` -- attaches a VF on VLAN 100 for high-throughput data traffic.
+* `mgmt-plane` with `sriov: {}` -- attaches a VF on VLAN 200 for management and control traffic.
+
+Each SR-IOV interface consumes one VF from the pool. This VM uses 2 of the 4 available VFs, leaving capacity for additional VMs.
+
+Wait for the VM to start and its data volume to finish importing:
+
+[source,bash,role=execute]
+----
+oc get vm -n sriov-demo
+----
+
+[source,bash,role=execute]
+----
+oc get vmi -n sriov-demo
+----
+
+Wait until the VMI shows `Running` phase and `READY: True`.
+
+== Step 7: Verify VLAN Isolation and SR-IOV Passthrough
+
+This step confirms that both SR-IOV VFs are visible inside the guest as PCI devices and that each interface is operating on its assigned VLAN.
+
+=== Verify PCI Passthrough
+
+Access the VM console:
+
+[source,bash,role=execute]
+----
+virtctl console -n sriov-demo fedora-sriov-vm
+----
+
+Log in with `fedora` / `fedora`, then confirm the VFs appear as PCI devices:
+
+[source,bash]
+----
+lspci | grep -i ethernet
+----
+
+You should see two Mellanox (or Intel) Ethernet VF entries in addition to the virtio NIC used by the pod network.
+This confirms VFIO passthrough is active -- the VFs are real PCI devices exposed directly to the guest, not emulated.
+
+=== Verify Network Interfaces
+
+List all network interfaces:
+
+[source,bash]
+----
+ip link show
+----
+
+Expected interfaces:
+
+* `enp1s0` -- the pod network interface (virtio device)
+* `enp2s0` -- first SR-IOV VF (data-plane, VLAN 100)
+* `enp3s0` -- second SR-IOV VF (management-plane, VLAN 200)
+
+NOTE: Interface names inside the guest are assigned by `udev` based on PCI slot order and may vary depending on hardware and kernel version.
+
+=== Assign IP Addresses and Test Connectivity
+
+Assign IPs to the SR-IOV interfaces.
+Replace the addresses with values appropriate for your VLAN subnets.
+
+Configure the data-plane interface (VLAN 100):
+
+[source,bash]
+----
+sudo ip addr add 10.100.0.10/24 dev enp2s0
+----
+
+[source,bash]
+----
+sudo ip link set enp2s0 up
+----
+
+Configure the management interface (VLAN 200):
+
+[source,bash]
+----
+sudo ip addr add 10.200.0.10/24 dev enp3s0
+----
+
+[source,bash]
+----
+sudo ip link set enp3s0 up
+----
+
+Verify both interfaces are up with their assigned addresses:
+
+[source,bash]
+----
+ip -br addr show
+----
+
+Expected output:
+
+----
+lo               UNKNOWN        127.0.0.1/8 ::1/128
+enp1s0           UP             10.0.2.2/24
+enp2s0           UP             10.100.0.10/24
+enp3s0           UP             10.200.0.10/24
+----
+
+=== Test VLAN Isolation
+
+To confirm each interface is on its correct VLAN, ping a known host on each VLAN.
+Replace the gateway addresses with hosts reachable on your VLAN 100 and VLAN 200 networks.
+
+Test the data-plane VLAN (100):
+
+[source,bash]
+----
+ping -c 3 -I enp2s0 <vlan-100-gateway>
+----
+
+Test the management VLAN (200):
+
+[source,bash]
+----
+ping -c 3 -I enp3s0 <vlan-200-gateway>
+----
+
+If both pings succeed, the VLAN trunk is working correctly -- each VF is sending and receiving on its assigned VLAN.
+
+To further confirm isolation, verify that traffic from the data-plane interface cannot reach hosts that are only on VLAN 200, and vice versa.
+
+To exit the console, press `Ctrl+]`.
+
+== Troubleshooting
+
+=== VFs Not Created After Policy Application
+
+* Check the `SriovNetworkNodeState` sync status. A `Failed` status usually indicates a driver issue or an unsupported NIC.
+* Verify IOMMU is enabled in BIOS/UEFI and visible in the kernel log.
+* Ensure the `nicSelector` in the policy matches the hardware (correct vendor, device ID, and PF name).
+
+=== VM Stuck in Scheduling
+
+* Verify the VF resource is available: `oc get node <node-name> -o jsonpath='{.status.allocatable}'`.
+* If the resource count is zero, the VFs may not have been created or the device plugin is not running.
+* Check that `deviceType: vfio-pci` is set in the policy. VMs require VFIO passthrough.
+* If you see `Insufficient openshift.io/mlxsriovnic` events, the VM requests more VFs than are available. Either reduce the number of SR-IOV interfaces per VM or increase `numVfs` in the policy.
+
+=== SR-IOV Interfaces Not Visible Inside the VM
+
+* Confirm the `SriovNetwork` `resourceName` matches the `SriovNetworkNodePolicy` `resourceName`.
+* Check that both NADs exist in the correct namespace: `oc get net-attach-def -n sriov-demo`.
+* Inspect the virt-launcher pod for resource allocation: `oc describe pod -n sriov-demo -l app=fedora-sriov-vm`.
+
+=== No Link on the SR-IOV Interface
+
+* Verify the physical NIC port is cabled and has link on the host: `oc debug node/<node-name> -- chroot /host ip link show <pf-name>`.
+* Confirm the switch port is configured as a trunk carrying VLANs 100 and 200.
+* For Mellanox NICs, verify the firmware is up to date.
+
+=== VLAN Traffic Not Reaching the VM
+
+* Verify the `vlan` field in the `SriovNetwork` matches your physical switch VLAN configuration.
+* Confirm the switch port is trunking (not access mode) and allows the specified VLAN IDs.
+* Check that `spoofChk` is `"off"` and `trust` is `"on"` in the `SriovNetwork`, as some switches reject frames from untrusted VFs.
+
+== Cleanup
+
+Remove all resources created in this tutorial:
+
+[source,bash,role=execute]
+----
+oc delete vm fedora-sriov-vm -n sriov-demo
+----
+
+[source,bash,role=execute]
+----
+oc delete sriovnetwork sriov-net-data -n openshift-sriov-network-operator
+----
+
+[source,bash,role=execute]
+----
+oc delete sriovnetwork sriov-net-mgmt -n openshift-sriov-network-operator
+----
+
+[source,bash,role=execute]
+----
+oc delete sriovnetworknodepolicy mlx-sriov-policy -n openshift-sriov-network-operator
+----
+
+Wait for the SR-IOV config daemon to reconfigure the node (this may trigger a reboot to remove VFs):
+
+[source,bash,role=execute]
+----
+oc get sriovnetworknodestates -n openshift-sriov-network-operator -o jsonpath='{.items[0].status.syncStatus}'
+----
+
+Once sync is complete, delete the namespace:
+
+[source,bash,role=execute]
+----
+oc delete namespace sriov-demo
+----
+
+== Summary
+
+In this tutorial, you learned:
+
+* How SR-IOV provides near-native network performance by passing VFs directly into VMs via PCI passthrough
+* How to discover SR-IOV-capable devices using `SriovNetworkNodeState`
+* How to create an `SriovNetworkNodePolicy` with `deviceType: vfio-pci` for VM workloads
+* How VLAN trunking works with SR-IOV -- one physical port carries multiple VLANs, and each `SriovNetwork` assigns a VLAN to its VFs in hardware
+* How to create separate `SriovNetwork` resources for data-plane (VLAN 100) and management-plane (VLAN 200) traffic
+* How to deploy a VM with dual SR-IOV passthrough interfaces on isolated VLANs
+* How to verify PCI passthrough, VLAN assignment, and network isolation inside the guest
+
+== See Also
+
+* link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.18/html/networking/hardware-networks[OpenShift Hardware Networks,window=_blank]
+* link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.18/html/virtualization/networking#virt-attaching-vm-to-sriov-network[Connecting a VM to an SR-IOV Network,window=_blank]
+* link:https://kubevirt.io/user-guide/network/interfaces_and_networks/#sriov[KubeVirt SR-IOV Interface Binding,window=_blank]
+* xref:localnet-secondary.adoc[Localnet Secondary Networks] -- alternative secondary network approach using software-defined networking
+* xref:localnet-vlan.adoc[Localnet VLAN Configuration] -- VLAN tagging with localnet topology (software-based alternative)
+* xref:linux-bridges.adoc[Linux Bridges] -- another secondary network option for simpler hardware requirements
