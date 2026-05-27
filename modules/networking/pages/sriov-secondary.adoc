@@ -298,10 +298,10 @@ spec:
         resources:
           requests:
             storage: 33Gi
-      sourceRef:
-        kind: DataSource
-        name: fedora
-        namespace: openshift-virtualization-os-images
+      source:
+        pvc:
+          name: fedora
+          namespace: openshift-virtualization-os-images
   template:
     metadata:
       labels:
@@ -407,10 +407,11 @@ ip link show
 Expected interfaces:
 
 * `enp1s0` -- the pod network interface (virtio device)
-* `enp2s0` -- first SR-IOV VF (data-plane, VLAN 100)
-* `enp3s0` -- second SR-IOV VF (management-plane, VLAN 200)
+* `enp7s0` -- first SR-IOV VF (data-plane, VLAN 100)
+* `enp8s0` -- second SR-IOV VF (management-plane, VLAN 200)
 
-NOTE: Interface names inside the guest are assigned by `udev` based on PCI slot order and may vary depending on hardware and kernel version.
+NOTE: Interface names inside the guest are assigned by `udev` based on PCI bus/slot order and may differ in your environment.
+Use `ip link show` to identify which interfaces are the SR-IOV VFs (they will show a Mellanox or Intel hardware address distinct from the virtio interface).
 
 === Assign IP Addresses and Test Connectivity
 
@@ -421,24 +422,24 @@ Configure the data-plane interface (VLAN 100):
 
 [source,bash]
 ----
-sudo ip addr add 10.100.0.10/24 dev enp2s0
+sudo ip addr add 10.100.0.10/24 dev enp7s0
 ----
 
 [source,bash]
 ----
-sudo ip link set enp2s0 up
+sudo ip link set enp7s0 up
 ----
 
 Configure the management interface (VLAN 200):
 
 [source,bash]
 ----
-sudo ip addr add 10.200.0.10/24 dev enp3s0
+sudo ip addr add 10.200.0.10/24 dev enp8s0
 ----
 
 [source,bash]
 ----
-sudo ip link set enp3s0 up
+sudo ip link set enp8s0 up
 ----
 
 Verify both interfaces are up with their assigned addresses:
@@ -453,8 +454,8 @@ Expected output:
 ----
 lo               UNKNOWN        127.0.0.1/8 ::1/128
 enp1s0           UP             10.0.2.2/24
-enp2s0           UP             10.100.0.10/24
-enp3s0           UP             10.200.0.10/24
+enp7s0           UP             10.100.0.10/24
+enp8s0           UP             10.200.0.10/24
 ----
 
 === Test VLAN Isolation
@@ -466,14 +467,14 @@ Test the data-plane VLAN (100):
 
 [source,bash]
 ----
-ping -c 3 -I enp2s0 <vlan-100-gateway>
+ping -c 3 -I enp7s0 10.100.0.1
 ----
 
 Test the management VLAN (200):
 
 [source,bash]
 ----
-ping -c 3 -I enp3s0 <vlan-200-gateway>
+ping -c 3 -I enp8s0 10.200.0.1
 ----
 
 If both pings succeed, the VLAN trunk is working correctly -- each VF is sending and receiving on its assigned VLAN.
