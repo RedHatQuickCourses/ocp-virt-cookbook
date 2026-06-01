@@ -375,7 +375,7 @@ templates take this a step further by templatizing a <code>VirtualMachine</code>
 <div class="ulist">
 <ul>
 <li>
-<p>A bash compatible shell environment.</p>
+<p>A bash or compatible shell environment (zsh was also tested).</p>
 </li>
 <li>
 <p>The OpenShift client tool, <code>oc</code>.</p>
@@ -743,7 +743,15 @@ This can be accomplished by piping the output of the <code>oc process</code> com
 </div>
 <div class="listingblock execute">
 <div class="content">
-<pre>export RHEL9_SERVER_VM=$(oc get vm -o custom-columns=:metadata.name -n template-example)</pre>
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">export RHEL9_SERVER_VM=$(oc get vm -o custom-columns=:metadata.name --no-headers -n template-example)</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Check the variable to make sure the VM name is correct, and that the variable is not empty. You should see a value like <code>rhel9-abcdef0987654321</code>.</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">echo $RHEL9_SERVER_VM</code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -983,6 +991,18 @@ parameters:
 </li>
 </ul>
 </div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-important" title="Important"></i>
+</td>
+<td class="content">
+Before proceeding, you must update the <code>rhel9-custom.template.yaml</code> file with the yaml data provided above.
+</td>
+</tr>
+</table>
+</div>
 <div class="paragraph">
 <p>With the custom template finalized, test that it renders correctly by using <code>oc process</code>:</p>
 </div>
@@ -1024,7 +1044,7 @@ and clean up the resources created by following this tutorial.</p>
 </div>
 <div class="listingblock execute">
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">export RHEL9_CUSTOM_VM=$(oc get vm -o custom-columns=:metadata.name -n template-example | grep custom)</code></pre>
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">export RHEL9_CUSTOM_VM=$(oc get vm -o custom-columns=:metadata.name --no-headers -n template-example | grep custom)</code></pre>
 </div>
 </div>
 <div class="admonitionblock note">
