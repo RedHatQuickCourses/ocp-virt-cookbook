@@ -180,13 +180,13 @@ Confirm the VF resources are available in the node's allocatable capacity:
 
 [source,bash,role=execute]
 ----
-oc get node <node-name> -o jsonpath='{.status.allocatable}' | python3 -m json.tool | grep mlxsriovnic
+oc get node <node-name> -o jsonpath='{.status.allocatable.openshift\.io/mlxsriovnic}'
 ----
 
 Expected output:
 
 ----
-"openshift.io/mlxsriovnic": "4"
+4
 ----
 
 == Step 5: Create SR-IOV Networks for Each VLAN
@@ -305,10 +305,10 @@ spec:
         resources:
           requests:
             storage: 33Gi
-      source:
-        pvc:
-          name: fedora
-          namespace: openshift-virtualization-os-images
+      sourceRef:
+        kind: DataSource
+        name: fedora
+        namespace: openshift-virtualization-os-images
   template:
     metadata:
       labels:
@@ -465,10 +465,16 @@ enp7s0           UP             10.100.0.10/24
 enp8s0           UP             10.200.0.10/24
 ----
 
+TIP: Manual `ip addr add` is used here for clarity, but addresses assigned this way are lost on link flap or reboot.
+In production, use one of these persistent alternatives:
+
+* **DHCP** -- deploy a DHCP server on each VLAN and let the guest acquire addresses automatically via NetworkManager.
+* **Cloud-init** -- add a `networkData` section to the VM's cloud-init volume to configure static IPs at first boot. See xref:static-ip-configuration.adoc[] for details.
+* **NetworkManager connection files** -- use cloud-init `write_files` to drop `.nmconnection` files that NetworkManager activates on boot.
+
 === Test VLAN Isolation
 
 To confirm each interface is on its correct VLAN, ping a known host on each VLAN.
-Replace the gateway addresses with hosts reachable on your VLAN 100 and VLAN 200 networks.
 
 Test the data-plane VLAN (100):
 
