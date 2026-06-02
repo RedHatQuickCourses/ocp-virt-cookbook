@@ -88,9 +88,16 @@ For example, a Mellanox ConnectX-4 Lx entry looks like:
   vendor: "15b3"
 ----
 
-NOTE: If no interfaces appear, verify that IOMMU is enabled in the node's BIOS/UEFI.
-You can check the kernel log with `oc debug node/<node-name> -- chroot /host dmesg | grep -i iommu`.
-Look for `DMAR` or `AMD-Vi` messages and `iommu: Default domain type: Translated`.
+NOTE: If no interfaces appear, verify that IOMMU is enabled.
+The quickest check is whether IOMMU groups exist on the node:
+
+[source,bash,role=execute]
+----
+oc debug node/<node-name> -- chroot /host ls /sys/kernel/iommu_groups/ | wc -l
+----
+
+A non-zero count (typically dozens or hundreds) confirms IOMMU is active.
+If the count is zero, enable IOMMU in the BIOS/UEFI and add `intel_iommu=on iommu=pt` (Intel) or `amd_iommu=on iommu=pt` (AMD) to the kernel command line via a MachineConfig.
 
 == Step 3: Create an SriovNetworkNodePolicy
 
