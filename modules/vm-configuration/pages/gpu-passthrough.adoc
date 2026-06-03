@@ -1,0 +1,623 @@
+= Nvidia GPU Passthrough for Virtual Machines
+:navtitle: GPU Passthrough
+
+== Overview
+
+GPU passthrough allows a virtual machine to directly access a physical GPU on the host, providing near-native performance for hardware-accelerated workloads. This is accomplished through PCI passthrough, where the GPU is bound to the VFIO driver on the host and presented as a host device to the VM.
+
+This tutorial walks through configuring Nvidia GPU passthrough for VMs in OpenShift Virtualization using the Nvidia GPU Operator approach. The GPU Operator deploys the VFIO Manager (to bind GPUs to the `vfio-pci` driver) and the Sandbox Device Plugin (to advertise passthrough GPUs to the kubelet).
+
+=== What You'll Learn
+
+* How to enable IOMMU on worker nodes via MachineConfig
+* How to label nodes for GPU passthrough workloads
+* How to configure the Nvidia GPU Operator ClusterPolicy for passthrough
+* How to register GPU devices in the HyperConverged custom resource
+* How to create a VM with an attached passthrough GPU
+* How to install Nvidia drivers inside the guest VM and verify GPU access
+
+Versions tested:
+
+[source,text]
+----
+OpenShift 4.17
+OpenShift Virtualization 4.17
+Nvidia GPU Operator 24.9
+----
+
+== Prerequisites
+
+* OpenShift 4.14+ with OpenShift Virtualization operator installed (bare-metal worker nodes with Nvidia GPUs)
+* Intel VT-d or AMD IOMMU enabled in the host BIOS/firmware
+* Node Feature Discovery (NFD) operator installed and a NodeFeatureDiscovery instance created
+* Nvidia GPU Operator installed in the `nvidia-gpu-operator` namespace
+* `oc` and `virtctl` CLI tools installed
+* Cluster admin access
+
+IMPORTANT: A node can run GPU containers, passthrough VMs, or vGPU VMs, but not a combination. Labeling a node for passthrough dedicates its GPUs exclusively to VM passthrough workloads.
+
+== Verify Operator Prerequisites
+
+Before configuring passthrough, confirm the NFD operator has discovered your Nvidia GPUs.
+
+[source,bash,role=execute]
+----
+oc describe node | egrep 'Roles|pci' | grep -v master
+----
+
+Look for the `pci-10de.present=true` label on GPU worker nodes:
+
+[source,text]
+----
+Roles:              worker
+                    feature.node.kubernetes.io/pci-10de.present=true
+----
+
+Confirm the Nvidia GPU Operator pods are running:
+
+[source,bash,role=execute]
+----
+oc get pods -n nvidia-gpu-operator
+----
+
+== Enable IOMMU via MachineConfig
+
+IOMMU (Input-Output Memory Management Unit) is required for PCI passthrough. It provides hardware-level isolation between the GPU and host memory, allowing safe direct device assignment to VMs.
+
+Create a MachineConfig to add the `intel_iommu=on` kernel argument to all worker nodes.
+
+xref:attachment$gpu-passthrough/100-worker-iommu.yaml[Download 100-worker-iommu.yaml]
+
+[source,yaml]
+----
+apiVersion: machineconfiguration.openshift.io/v1
+kind: MachineConfig
+metadata:
+  labels:
+    machineconfiguration.openshift.io/role: worker
+  name: 100-worker-iommu
+spec:
+  config:
+    ignition:
+      version: 3.2.0
+  kernelArguments:
+    - intel_iommu=on
+----
+
+Apply the MachineConfig:
+
+[source,bash,role=execute]
+----
+oc create -f 100-worker-iommu.yaml
+----
+
+WARNING: Applying a MachineConfig triggers a rolling reboot of all worker nodes in the targeted machine config pool. Wait for all nodes to finish updating before proceeding.
+
+Monitor the MachineConfigPool status until it shows `UPDATED=True` and `DEGRADED=False`:
+
+[source,bash,role=execute]
+----
+oc get mcp worker -w
+----
+
+[source,text]
+----
+NAME     CONFIG             UPDATED   UPDATING   DEGRADED   MACHINECOUNT   READYMACHINECOUNT
+worker   rendered-worker-…  True      False      False      3              3
+----
+
+Once all worker nodes have rebooted, verify the kernel argument is active by checking any worker node:
+
+[source,bash,role=execute]
+----
+oc debug node/<worker-node-name> -- cat /proc/cmdline | tr ' ' '\n' | grep iommu
+----
+
+[source,text]
+----
+intel_iommu=on
+----
+
+== Label the GPU Worker Node
+
+Label each worker node that has an Nvidia GPU for passthrough workloads. This tells the GPU Operator which operands to deploy on the node.
+
+[source,bash,role=execute]
+----
+oc label node <gpu-node-name> --overwrite nvidia.com/gpu.workload.config=vm-passthrough
+----
+
+Verify the label:
+
+[source,bash,role=execute]
+----
+oc get node <gpu-node-name> -L nvidia.com/gpu.workload.config
+----
+
+[source,text]
+----
+NAME            STATUS   ROLES    AGE   VERSION        GPU.WORKLOAD.CONFIG
+<gpu-node-name> Ready    worker   30d   v1.30.0       vm-passthrough
+----
+
+== Configure the ClusterPolicy for Passthrough
+
+The Nvidia GPU Operator ClusterPolicy controls which operands are deployed. For GPU passthrough, you must enable the sandbox workloads, sandbox device plugin, and VFIO manager components.
+
+If you have not yet created a ClusterPolicy, extract the default template from the operator CSV:
+
+[source,bash,role=execute]
+----
+CHANNEL=$(oc get packagemanifest gpu-operator-certified -n openshift-marketplace -o jsonpath='{.status.defaultChannel}')
+----
+
+[source,bash,role=execute]
+----
+STARTING_CSV=$(oc get packagemanifests/gpu-operator-certified -n openshift-marketplace -ojson | jq -r '.status.channels[] | select(.name == "'$CHANNEL'") | .currentCSV')
+----
+
+[source,bash,role=execute]
+----
+oc get csv -n nvidia-gpu-operator $STARTING_CSV -o jsonpath='{.metadata.annotations.alm-examples}' | jq -r 'map(select(.kind == "ClusterPolicy")) | .[0]' > clusterpolicy.json
+----
+
+Edit `clusterpolicy.json` and set the following fields:
+
+[cols="2,1,2",options="header"]
+|===
+|Field |Value |Purpose
+
+|`sandboxWorkloads.enabled`
+|`true`
+|Enables sandbox workload support
+
+|`sandboxDevicePlugin.enabled`
+|`true`
+|Discovers and advertises passthrough GPUs
+
+|`vfioManager.enabled`
+|`true`
+|Loads `vfio-pci` and binds it to GPUs
+|===
+
+Apply the ClusterPolicy:
+
+[source,bash,role=execute]
+----
+oc apply -f clusterpolicy.json
+----
+
+If you already have a ClusterPolicy, patch it to enable the passthrough components:
+
+[source,bash,role=execute]
+----
+oc patch clusterpolicy gpu-cluster-policy --type=merge -p '{"spec":{"sandboxWorkloads":{"enabled":true},"sandboxDevicePlugin":{"enabled":true},"vfioManager":{"enabled":true}}}'
+----
+
+Wait for the sandbox device plugin and VFIO manager pods to start on the labeled node:
+
+[source,bash,role=execute]
+----
+oc get pods -n nvidia-gpu-operator -l app=nvidia-sandbox-device-plugin-daemonset
+----
+
+[source,text]
+----
+NAME                                               READY   STATUS    RESTARTS   AGE
+nvidia-sandbox-device-plugin-daemonset-xxxxx        1/1     Running   0          60s
+----
+
+[source,bash,role=execute]
+----
+oc get pods -n nvidia-gpu-operator -l app=nvidia-vfio-manager-daemonset
+----
+
+[source,text]
+----
+NAME                                       READY   STATUS    RESTARTS   AGE
+nvidia-vfio-manager-daemonset-xxxxx         1/1     Running   0          60s
+----
+
+== Identify the GPU PCI Device ID and Resource Name
+
+You need two pieces of information to register the GPU in the HyperConverged custom resource: the PCI vendor:device ID and the Kubernetes resource name.
+
+=== Find the Resource Name
+
+Query the node's allocatable resources for Nvidia GPU entries:
+
+[source,bash,role=execute]
+----
+oc get node <gpu-node-name> -o json | jq '.status.allocatable | with_entries(select(.key | startswith("nvidia.com/"))) | with_entries(select(.value != "0"))'
+----
+
+[source,json]
+----
+{
+  "nvidia.com/GA102GL_A10": "1"
+}
+----
+
+The key (for example, `nvidia.com/GA102GL_A10`) is the resource name. The value is the number of GPUs available.
+
+=== Find the PCI Device ID
+
+Use `lspci` on the GPU node to find the PCI vendor:device ID:
+
+[source,bash,role=execute]
+----
+oc debug node/<gpu-node-name> -- lspci -nnk -d 10de:
+----
+
+[source,text]
+----
+65:00.0 3D controller [0302]: NVIDIA Corporation GA102GL [A10] [10de:2236] (rev a1)
+        Subsystem: NVIDIA Corporation GA102GL [A10] [10de:1482]
+        Kernel driver in use: vfio-pci
+        Kernel modules: nvidiafb, nouveau
+----
+
+The PCI device ID is the pair in brackets after the device name. In this example it is `10DE:2236`. Note that the kernel driver in use should show `vfio-pci`, confirming the VFIO Manager has bound the GPU.
+
+== Configure the HyperConverged Custom Resource
+
+Two changes are needed in the HyperConverged (HCO) custom resource: disable mediated device configuration and register the GPU as a permitted host device.
+
+=== Disable Mediated Device Configuration
+
+[source,bash,role=execute]
+----
+oc patch hyperconverged kubevirt-hyperconverged -n openshift-cnv --type=json -p '[{"op":"add","path":"/spec/featureGates/disableMDevConfiguration","value":true}]'
+----
+
+[source,text]
+----
+hyperconverged.hco.kubevirt.io/kubevirt-hyperconverged patched
+----
+
+=== Register the GPU as a Permitted Host Device
+
+Patch the HyperConverged CR to add the GPU under `permittedHostDevices`. Replace the `pciDeviceSelector` and `resourceName` values with the ones you identified in the previous section.
+
+[source,bash,role=execute]
+----
+oc patch hyperconverged kubevirt-hyperconverged -n openshift-cnv --type=json -p '[{"op":"add","path":"/spec/permittedHostDevices","value":{"pciHostDevices":[{"externalResourceProvider":true,"pciDeviceSelector":"10DE:2236","resourceName":"nvidia.com/GA102GL_A10"}]}}]'
+----
+
+[source,text]
+----
+hyperconverged.hco.kubevirt.io/kubevirt-hyperconverged patched
+----
+
+[cols="2,3",options="header"]
+|===
+|Field |Description
+
+|`pciDeviceSelector`
+|PCI vendor:device ID for the GPU (for example, `10DE:2236` for an A10)
+
+|`resourceName`
+|Must match the resource name from the node's allocatable resources
+
+|`externalResourceProvider`
+|Set to `true` because the sandbox device plugin (not OpenShift Virtualization) manages the device
+|===
+
+Verify the HyperConverged CR has the permitted device registered:
+
+[source,bash,role=execute]
+----
+oc get hyperconverged kubevirt-hyperconverged -n openshift-cnv -o jsonpath='{.spec.permittedHostDevices}' | jq .
+----
+
+== Create a VM with GPU Passthrough
+
+Create a namespace for the GPU workload:
+
+[source,bash,role=execute]
+----
+oc create namespace gpu-passthrough
+----
+
+Create a VirtualMachine that requests the passthrough GPU. Replace the `deviceName` with your GPU's resource name.
+
+xref:attachment$gpu-passthrough/gpu-passthrough-vm.yaml[Download gpu-passthrough-vm.yaml]
+
+[source,yaml]
+----
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: gpu-vm
+  namespace: gpu-passthrough
+spec:
+  runStrategy: Manual
+  template:
+    metadata:
+      labels:
+        app: gpu-workload
+    spec:
+      domain:
+        cpu:
+          cores: 4
+        memory:
+          guest: 8Gi
+        devices:
+          disks:
+          - name: rootdisk
+            disk:
+              bus: virtio
+          - name: cloudinitdisk
+            disk:
+              bus: virtio
+          gpus:
+          - deviceName: nvidia.com/GA102GL_A10
+            name: gpu1
+      volumes:
+      - name: rootdisk
+        containerDisk:
+          image: quay.io/containerdisks/fedora:43
+      - name: cloudinitdisk
+        cloudInitNoCloud:
+          userData: |
+            #cloud-config
+            user: fedora
+            password: fedora
+            chpasswd: { expire: False }
+----
+
+WARNING: The cloud-init password in this example is for demonstration purposes only. Use SSH key authentication or a strong, unique password in production environments.
+
+Apply the manifest and start the VM:
+
+[source,bash,role=execute]
+----
+oc apply -f gpu-passthrough-vm.yaml
+----
+
+[source,bash,role=execute]
+----
+virtctl start gpu-vm -n gpu-passthrough
+----
+
+Wait for the VM to reach the Running phase:
+
+[source,bash,role=execute]
+----
+oc get vmi gpu-vm -n gpu-passthrough -w
+----
+
+[source,text]
+----
+NAME     AGE   PHASE     IP             NODENAME         READY
+gpu-vm   30s   Running   10.128.0.215   <gpu-node-name>  True
+----
+
+Verify the VM was scheduled on the GPU node:
+
+[source,bash,role=execute]
+----
+oc get vmi gpu-vm -n gpu-passthrough -o jsonpath='{.status.nodeName}'
+----
+
+== Install Nvidia Drivers Inside the VM
+
+The Nvidia GPU Operator does not install guest drivers automatically. You must install the Nvidia driver inside the VM manually.
+
+Connect to the VM console:
+
+[source,bash,role=execute]
+----
+virtctl console gpu-vm -n gpu-passthrough
+----
+
+The remaining commands in this section are run inside the VM guest.
+
+Update the system and install kernel headers and development tools required to build the Nvidia driver:
+
+[source,bash,role=execute]
+----
+sudo dnf update -y
+----
+
+[source,bash,role=execute]
+----
+sudo dnf install -y kernel-devel kernel-headers gcc make dkms
+----
+
+Verify the GPU is visible as a PCI device inside the VM:
+
+[source,bash,role=execute]
+----
+lspci | grep -i nvidia
+----
+
+[source,text]
+----
+06:00.0 3D controller: NVIDIA Corporation GA102GL [A10] (rev a1)
+----
+
+Download and install the Nvidia driver. Visit link:https://www.nvidia.com/en-us/drivers/unix/[Nvidia Unix Drivers,window=_blank] to find the latest driver version for your GPU, then download and run the installer:
+
+[source,bash,role=execute]
+----
+curl -LO https://us.download.nvidia.com/tesla/<version>/NVIDIA-Linux-x86_64-<version>.run
+----
+
+[source,bash,role=execute]
+----
+sudo bash NVIDIA-Linux-x86_64-<version>.run
+----
+
+TIP: For RHEL-based guests, you can alternatively use the Nvidia CUDA repository to install drivers via `dnf`. See the link:https://docs.nvidia.com/cuda/cuda-installation-guide-linux/[Nvidia CUDA Installation Guide,window=_blank] for details.
+
+After installation, verify the driver loaded successfully:
+
+[source,bash,role=execute]
+----
+nvidia-smi
+----
+
+[source,text]
+----
++-----------------------------------------------------------------------------+
+| NVIDIA-SMI 550.xx.xx    Driver Version: 550.xx.xx    CUDA Version: 12.x    |
+|-------------------------------+----------------------+----------------------+
+| GPU  Name        Persistence-M| Bus-Id        Disp.A | Volatile Uncorr. ECC |
+| Fan  Temp  Perf  Pwr:Usage/Cap|         Memory-Usage | GPU-Util  Compute M.  |
+|===============================+======================+======================|
+|   0  NVIDIA A10          Off  | 00000000:06:00.0 Off |                    0 |
+|  0%   30C    P8    15W / 150W |      0MiB / 23028MiB |      0%      Default |
++-------------------------------+----------------------+----------------------+
+----
+
+Exit the VM console by pressing `Ctrl+]`.
+
+== Troubleshooting
+
+=== VM Stuck in Scheduling State
+
+**Problem**: The VM does not start and remains in a Scheduling or Pending state.
+
+**Diagnosis**:
+
+[source,bash,role=execute]
+----
+oc describe vmi gpu-vm -n gpu-passthrough
+----
+
+Look for events indicating insufficient GPU resources or scheduling failures.
+
+**Common causes**:
+
+* The GPU resource name in the VM manifest does not match the resource name in the HyperConverged CR or on the node
+* No nodes have available GPU resources (all GPUs are already allocated)
+* The node was not labeled with `nvidia.com/gpu.workload.config=vm-passthrough`
+
+**Solution**: Verify the resource name matches across all three locations:
+
+[source,bash,role=execute]
+----
+oc get node <gpu-node-name> -o json | jq '.status.allocatable | with_entries(select(.key | startswith("nvidia.com/")))'
+----
+
+[source,bash,role=execute]
+----
+oc get hyperconverged kubevirt-hyperconverged -n openshift-cnv -o jsonpath='{.spec.permittedHostDevices.pciHostDevices}' | jq .
+----
+
+=== GPU Not Visible Inside the VM
+
+**Problem**: `lspci` inside the VM does not show the Nvidia GPU.
+
+**Possible causes**:
+
+* IOMMU is not enabled (check kernel arguments on the host)
+* The VFIO Manager did not bind the GPU to `vfio-pci`
+* The `permittedHostDevices` configuration in the HyperConverged CR is incorrect
+
+**Diagnosis**:
+
+Verify IOMMU is active on the host node:
+
+[source,bash,role=execute]
+----
+oc debug node/<gpu-node-name> -- dmesg | grep -i iommu | head
+----
+
+Check that the GPU is bound to `vfio-pci`:
+
+[source,bash,role=execute]
+----
+oc debug node/<gpu-node-name> -- lspci -nnk -d 10de:
+----
+
+The `Kernel driver in use` field should show `vfio-pci`.
+
+=== nvidia-smi Fails Inside the VM
+
+**Problem**: The `nvidia-smi` command returns an error after driver installation.
+
+**Common causes**:
+
+* Driver version is incompatible with the GPU hardware
+* Kernel headers do not match the running kernel
+* The driver module failed to build during installation
+
+**Solution**: Check the driver installation log and verify kernel compatibility:
+
+[source,bash,role=execute]
+----
+dmesg | grep -i nvidia
+----
+
+[source,bash,role=execute]
+----
+uname -r
+----
+
+[source,bash,role=execute]
+----
+rpm -qa | grep kernel-devel
+----
+
+Ensure the `kernel-devel` package version matches the running kernel. If they do not match, update and reboot the VM, then reinstall the driver.
+
+== Cleanup
+
+Remove the VM and namespace:
+
+[source,bash,role=execute]
+----
+oc delete vm gpu-vm -n gpu-passthrough
+----
+
+[source,bash,role=execute]
+----
+oc delete namespace gpu-passthrough
+----
+
+To revert the GPU node to container workloads, remove the passthrough label:
+
+[source,bash,role=execute]
+----
+oc label node <gpu-node-name> nvidia.com/gpu.workload.config-
+----
+
+To remove the IOMMU MachineConfig (triggers a rolling reboot of worker nodes):
+
+[source,bash,role=execute]
+----
+oc delete machineconfig 100-worker-iommu
+----
+
+To revert the HyperConverged CR changes:
+
+[source,bash,role=execute]
+----
+oc patch hyperconverged kubevirt-hyperconverged -n openshift-cnv --type=json -p '[{"op":"remove","path":"/spec/permittedHostDevices"}]'
+----
+
+[source,bash,role=execute]
+----
+oc patch hyperconverged kubevirt-hyperconverged -n openshift-cnv --type=json -p '[{"op":"remove","path":"/spec/featureGates/disableMDevConfiguration"}]'
+----
+
+== Summary
+
+In this tutorial you learned:
+
+* How to enable IOMMU on OpenShift worker nodes using a MachineConfig
+* How to label nodes to dedicate their GPUs to passthrough workloads
+* How to configure the Nvidia GPU Operator ClusterPolicy for passthrough (VFIO Manager, Sandbox Device Plugin)
+* How to register GPU PCI devices in the HyperConverged custom resource
+* How to create a VirtualMachine with an attached passthrough GPU
+* How to install and verify Nvidia drivers inside the guest VM
+
+== See Also
+
+* xref:node-placement-affinity.adoc[Node Placement and Affinity] - Control which nodes run your GPU VMs
+* xref:performance:index.adoc[Performance Tuning] - CPU pinning, NUMA, and hugepages for GPU workloads
+* link:https://docs.nvidia.com/datacenter/cloud-native/openshift/latest/openshift-virtualization.html[Nvidia GPU Operator with OpenShift Virtualization,window=_blank]
+* link:https://docs.nvidia.com/datacenter/cloud-native/openshift/latest/install-gpu-ocp.html[Nvidia GPU Operator Installation Guide,window=_blank]
+* link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.17/html/virtualization/virtual-machines#virt-configuring-pci-passthrough[Configuring PCI Passthrough - Red Hat Documentation,window=_blank]
