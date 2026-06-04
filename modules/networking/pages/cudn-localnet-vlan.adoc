@@ -163,7 +163,6 @@ Create a VM in one of the configured namespaces that connects to both the pod ne
 
 WARNING: The cloud-init password in this example is for demo purposes only. Always use a strong, unique password or SSH key authentication in production environments.
 
-[source,yaml]
 [source,bash,role=execute]
 ----
 oc apply -f - <<EOF
@@ -234,7 +233,8 @@ spec:
             #cloud-config
             user: fedora
             password: fedora
-            chpasswd: { expire: False }
+            chpasswd:
+              expire: false
             packages:
             - python3
             - tcpdump
@@ -327,7 +327,8 @@ spec:
             #cloud-config
             user: fedora
             password: fedora
-            chpasswd: { expire: False }
+            chpasswd:
+              expire: false
             packages:
             - python3
             - tcpdump

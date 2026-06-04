@@ -170,7 +170,7 @@ spec:
 
 Each field from the above example is explained below (optional fields are shown with their respective default values):
 
-* *`metadata.name`*: k8s name of the `NetworkAttachmentDefinition`.
+* *`metadata.name`*: Kubernetes name of the `NetworkAttachmentDefinition`.
 * *`metadata.namespace`*: should match the namespace that the pods/VMs are running in (`bridge-demo` in this example), but could exist in another namespace.
 * *`spec.config`*: accepts a json string value with the following sub-fields:
 ** *`"name"`*: name of the configuration, which should ideally match `metadata.name`.
@@ -196,7 +196,7 @@ More example configurations of the Linux bridge CNI plugin (including several ex
 * OpenShift Virtualization does not support https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/10/html/configuring_and_managing_networking/configuring-a-network-bond#upstream-switch-configuration-depending-on-the-bonding-modes[Linux bridge bonding modes,window=_blank] 0, 5, and 6.
 ====
 
-Once the file is saved as `lnbr0-bridge.net-attach-def.yaml` (where `net-attach-def` is the valid k8s short-name), go ahead and apply the `network-attachment-definition` to the OpenShift cluster:
+Once the file is saved as `lnbr0-bridge.net-attach-def.yaml` (where `net-attach-def` is the valid Kubernetes short-name), go ahead and apply the `network-attachment-definition` to the OpenShift cluster:
 
 [source,bash,role=execute]
 ----
@@ -302,7 +302,8 @@ spec:
             #cloud-config
             user: fedora
             password: fedora
-            chpasswd: { expire: False }
+            chpasswd:
+              expire: false
 ----
 
 Reviewing specific fields from the above example (all field paths are relative to `spec.template.spec`):
@@ -409,7 +410,8 @@ spec:
             #cloud-config
             user: fedora
             password: fedora
-            chpasswd: { expire: False }
+            chpasswd:
+              expire: false
 ----
 
 With the file saved as `fedora-bridge-demo2.vm.yaml`, apply this second `VirtualMachine` to the OpenShift cluster:
