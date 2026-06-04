@@ -55,12 +55,26 @@ spec:
       terminationGracePeriodSeconds: 0
       volumes:
       - name: rootdisk
-        containerDisk:
-          image: quay.io/containerdisks/fedora:latest
+        dataVolume:
+          name: vm-realtime
       - name: cloudinitdisk
         cloudInitNoCloud:
           userData: |
             #cloud-config
+            user: fedora
             password: redhat
             chpasswd:
               expire: false
+            ssh_pwauth: true
+  dataVolumeTemplates:
+  - metadata:
+      name: vm-realtime
+    spec:
+      sourceRef:
+        kind: DataSource
+        name: fedora
+        namespace: openshift-virtualization-os-images
+      storage:
+        resources:
+          requests:
+            storage: 30Gi
