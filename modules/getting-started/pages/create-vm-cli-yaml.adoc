@@ -1,0 +1,710 @@
+= Creating VMs from CLI Using YAML Manifests
+:navtitle: Create VM from CLI
+
+== Overview
+
+This tutorial demonstrates how to create virtual machines using the OpenShift CLI (`oc`) and YAML manifests. CLI-based VM creation is the foundation for automation, GitOps, and Infrastructure as Code workflows. Unlike the web console approach, YAML manifests provide version control, repeatability, and integration with CI/CD pipelines.
+
+=== What You'll Learn
+
+* Generating VM manifests using `virtctl create vm` and customizing before applying
+* VirtualMachine YAML manifest structure (apiVersion, kind, metadata, spec)
+* Creating VMs with containerDisk for testing (no persistent storage)
+* Creating VMs with DataVolume boot sources for production workloads
+* Configuring CPU, memory, and disk resources
+* Using `runStrategy` instead of the deprecated `running` field
+* Integrating cloud-init for user setup and SSH key injection
+* Applying manifests with `oc apply -f`
+* Verifying VM creation and accessing VMs via console and SSH
+
+== Prerequisites
+
+* OpenShift 4.18+ with OpenShift Virtualization operator installed (tested on 4.20)
+* OpenShift CLI (`oc`) and virtctl installed (see xref:virtctl-basics.adoc[])
+* A default StorageClass configured for VM disk provisioning
+* Available boot source images (DataSources) in the cluster
+
+Verify boot sources are available:
+
+[source,bash,role=execute]
+----
+oc get datasources -n openshift-virtualization-os-images
+----
+
+Verify your cluster has a default StorageClass:
+
+[source,bash,role=execute]
+----
+oc get storageclass
+----
+
+Look for a StorageClass marked with `(default)`. If none exists, see xref:default-storage-class.adoc[].
+
+== Anatomy of a VirtualMachine YAML Manifest
+
+A VirtualMachine resource in OpenShift Virtualization follows standard Kubernetes resource structure. Here's the basic anatomy:
+
+[source,yaml]
+----
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: my-vm
+  namespace: demo
+spec:
+  runStrategy: Always                # <1>
+  template:
+    metadata:
+      labels:
+        kubevirt.io/domain: my-vm
+    spec:
+      domain:
+        devices:
+          disks:
+            - name: example-disk
+          interfaces:
+            - name: default
+        resources:
+          requests:
+            memory: 2Gi
+            cpu: 1
+      networks:
+        - name: default
+      volumes:
+        - name: example-volume
+  dataVolumeTemplates:                   # <2>
+    - metadata:
+        name: example-dv
+----
+<1> Lifecycle policy - `Always`, `RerunOnFailure`, `Manual`, or `Halted`
+<2> Optional DataVolume templates for creating persistent disks
+
+IMPORTANT: Use `runStrategy` instead of the deprecated `running: true/false` field. The `runStrategy` provides more granular lifecycle control.
+
+== Step 1: Generate a VM Manifest with virtctl
+
+The `virtctl create vm` command can generate a base YAML manifest that you can customize before applying. This is often easier than writing manifests from scratch.
+
+=== Create the Project
+
+First, create a namespace for the tutorial:
+
+[source,bash,role=execute]
+----
+oc new-project demo
+----
+
+=== Generate Base Manifest
+
+Use `virtctl create vm` to generate a manifest with a DataVolume boot source:
+
+[source,bash,role=execute]
+----
+virtctl create vm --name=my-rhel-vm \
+  --volume-import type:ds,src:openshift-virtualization-os-images/rhel9 \
+  --memory=2Gi \
+  --user=cloud-user \
+  --ssh-key="$(cat ~/.ssh/id_rsa.pub)" > my-rhel-vm.yaml
+----
+
+This command:
+- Creates a VM named `my-rhel-vm`
+- Imports from the RHEL 9 DataSource as the boot volume
+- Sets memory to 2Gi (CPU allocation is handled via instancetypes or manual manifest editing)
+- Creates a cloud-init user named `cloud-user`
+- Injects your SSH public key for passwordless access
+- Outputs the YAML manifest to `my-rhel-vm.yaml` (virtctl outputs YAML by default)
+
+TIP: If you don't have an SSH key, generate one with `ssh-keygen -t ed25519 -C "your.email@example.com"`.
+
+Review the generated manifest:
+
+[source,bash,role=execute]
+----
+cat my-rhel-vm.yaml
+----
+
+=== Customize the Generated Manifest
+
+The generated manifest provides a good starting point, but you'll likely want to customize it. The `virtctl` command already created basic cloud-init configuration, but you may want to add more customizations:
+
+1. **Add SSH keys and passwords to cloud-init**
+2. **Adjust CPU and memory allocations**
+3. **Install additional packages**
+4. **Add labels and annotations**
+
+Use your preferred text editor to customize the manifest:
+
+[source,bash,role=execute]
+----
+# Edit with your preferred editor
+vi my-rhel-vm.yaml
+# or
+nano my-rhel-vm.yaml
+----
+
+IMPORTANT: Replace `AAAA...your-public-key...` with your actual SSH public key from `~/.ssh/id_ed25519.pub` or similar.
+
+=== Apply the Customized Manifest
+
+Once you've customized the manifest, apply it to create the VM:
+
+[source,bash,role=execute]
+----
+oc apply -f my-rhel-vm.yaml
+----
+
+Monitor the VM creation:
+
+[source,bash,role=execute]
+----
+oc get vm my-rhel-vm -n demo -w
+----
+
+This workflow of generate → customize → apply is the most common pattern for creating VMs with YAML manifests in production environments.
+
+== Step 2: Create a Minimal VM with containerDisk
+
+The simplest VM uses a containerDisk for the boot source. containerDisks are ephemeral (no persistent storage) but ideal for testing and development.
+
+=== Create the Project
+
+First, create a namespace for the tutorial:
+
+[source,bash,role=execute]
+----
+oc new-project demo
+----
+
+=== Apply the Minimal VM Manifest
+
+xref:attachment$create-vm-cli-yaml/vm-minimal-containerdisk.yaml[Download vm-minimal-containerdisk.yaml]
+
+[source,yaml]
+----
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: vm-minimal
+  namespace: demo
+spec:
+  runStrategy: Always
+  template:
+    metadata:
+      labels:
+        kubevirt.io/domain: vm-minimal
+    spec:
+      domain:
+        devices:
+          disks:
+            - name: rootdisk
+              disk:
+                bus: virtio
+            - name: cloudinitdisk
+              disk:
+                bus: virtio
+          interfaces:
+            - name: default
+              masquerade:
+        resources:
+          requests:
+            memory: 1Gi
+      networks:
+        - name: default
+          pod:
+      volumes:
+        - name: rootdisk
+          containerDisk:                     # <1>
+            image: quay.io/containerdisks/fedora:latest
+        - name: cloudinitdisk
+          cloudInitNoCloud:
+            userData: |
+              #cloud-config
+              user: fedora
+              password: fedora123
+              chpasswd:
+                expire: false
+              ssh_pwauth: true
+----
+<1> containerDisk volume type - pulls a disk image from a container registry
+
+Apply the manifest:
+
+[source,bash,role=execute]
+----
+oc apply -f vm-minimal-containerdisk.yaml
+----
+
+=== Verify VM Creation
+
+Check the VM status:
+
+[source,bash,role=execute]
+----
+oc get vm vm-minimal -n demo
+----
+
+Expected output:
+[source,text]
+----
+NAME         AGE   STATUS    READY
+vm-minimal   30s   Running   True
+----
+
+Check the VirtualMachineInstance (the running VM):
+
+[source,bash,role=execute]
+----
+oc get vmi vm-minimal -n demo
+----
+
+Expected output:
+[source,text]
+----
+NAME         AGE   PHASE     IP             NODENAME           READY
+vm-minimal   1m    Running   10.128.1.123   worker-node-2      True
+----
+
+Since this VM uses a containerDisk, no DataVolume is created. The disk image is pulled directly from the container registry.
+
+=== Access the VM Console
+
+Access the VM console to verify it's working:
+
+[source,bash,role=execute]
+----
+virtctl console vm-minimal -n demo
+----
+
+Log in with the credentials from cloud-init:
+- Username: `fedora`
+- Password: `fedora123`
+
+Type `exit` to close the console session.
+
+NOTE: ContainerDisk VMs boot quickly since no disk provisioning is required. However, any changes made to the disk are lost when the VM is stopped.
+
+== Step 2: Create a VM with DataVolume Boot Source
+
+For production workloads, use DataVolume boot sources that create persistent disks. DataVolumes clone from existing disk images and provide persistent storage that survives VM restarts.
+
+xref:attachment$create-vm-cli-yaml/vm-datavolume.yaml[Download vm-datavolume.yaml]
+
+[source,yaml]
+----
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: vm-datavolume
+  namespace: demo
+spec:
+  runStrategy: Always
+  template:
+    metadata:
+      labels:
+        kubevirt.io/domain: vm-datavolume
+    spec:
+      domain:
+        devices:
+          disks:
+            - name: rootdisk
+              disk:
+                bus: virtio
+            - name: cloudinitdisk
+              disk:
+                bus: virtio
+          interfaces:
+            - name: default
+              masquerade:
+        resources:
+          requests:
+            memory: 2Gi
+            cpu: 1
+      networks:
+        - name: default
+          pod:
+      volumes:
+        - name: rootdisk
+          dataVolume:                        # <1>
+            name: vm-datavolume
+        - name: cloudinitdisk
+          cloudInitNoCloud:
+            userData: |
+              #cloud-config
+              ssh_pwauth: true
+              user:
+                name: fedora
+                lock_passwd: false
+                plain_text_passwd: fedora123
+                ssh_authorized_keys:
+                  - 'ssh-ed25519 AAAA...your-public-key... user@workstation'
+              packages:
+                - vim
+                - git
+              runcmd:
+                - echo "VM setup complete" > /tmp/vm-ready
+  dataVolumeTemplates:                       # <2>
+    - metadata:
+        name: vm-datavolume
+      spec:
+        sourceRef:
+          kind: DataSource
+          name: fedora
+          namespace: openshift-virtualization-os-images
+        storage:
+          resources:
+            requests:
+              storage: 30Gi
+----
+<1> Reference to a DataVolume instead of a containerDisk
+<2> DataVolume template creates a persistent disk from the Fedora DataSource
+
+IMPORTANT: Replace `AAAA...your-public-key...` with your actual SSH public key from `~/.ssh/id_ed25519.pub` or similar.
+
+Apply the manifest:
+
+[source,bash,role=execute]
+----
+oc apply -f vm-datavolume.yaml
+----
+
+=== Monitor DataVolume Provisioning
+
+DataVolume VMs take longer to start because the disk must be provisioned first. Monitor the process:
+
+[source,bash,role=execute]
+----
+oc get dv vm-datavolume -n demo -w
+----
+
+Expected progression:
+[source,text]
+----
+NAME            PHASE       PROGRESS   RESTARTS   AGE
+vm-datavolume   Pending                           5s
+vm-datavolume   ImportInProgress   0.00%          10s
+vm-datavolume   ImportInProgress   45.2%          30s
+vm-datavolume   Succeeded                         45s
+----
+
+Press `Ctrl+C` to stop watching once the DataVolume shows `Succeeded`.
+
+Check the VM status:
+
+[source,bash,role=execute]
+----
+oc get vm vm-datavolume -n demo
+----
+
+=== SSH Access to DataVolume VM
+
+Once the VM is running, you can access it via SSH if you injected your public key:
+
+[source,bash,role=execute]
+----
+virtctl ssh fedora@vm-datavolume -n demo
+----
+
+TIP: If SSH isn't working, check that you replaced the placeholder SSH key with your actual public key in the YAML manifest.
+
+== Step 3: Customize CPU, Memory, and Advanced Cloud-init
+
+This example demonstrates more advanced VM configuration with specific CPU/memory settings and comprehensive cloud-init setup.
+
+xref:attachment$create-vm-cli-yaml/vm-customized.yaml[Download vm-customized.yaml]
+
+[source,yaml]
+----
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: vm-customized
+  namespace: demo
+spec:
+  runStrategy: Always
+  template:
+    metadata:
+      labels:
+        kubevirt.io/domain: vm-customized
+    spec:
+      domain:
+        cpu:
+          cores: 2                           # <1>
+        devices:
+          disks:
+            - name: rootdisk
+              disk:
+                bus: virtio
+            - name: cloudinitdisk
+              disk:
+                bus: virtio
+          interfaces:
+            - name: default
+              masquerade:
+        machine:
+          type: pc-q35-rhel9.4.0
+        memory:
+          guest: 4Gi                         # <2>
+        resources:
+          requests:
+            memory: 4Gi
+            cpu: 2
+      networks:
+        - name: default
+          pod:
+      volumes:
+        - name: rootdisk
+          dataVolume:
+            name: vm-customized
+        - name: cloudinitdisk
+          cloudInitNoCloud:
+            userData: |
+              #cloud-config
+              ssh_pwauth: true
+              user:
+                name: fedora
+                lock_passwd: false
+                plain_text_passwd: s3cur3p4ss
+                ssh_authorized_keys:
+                  - 'ssh-ed25519 AAAA...your-public-key... user@workstation'
+              users:                         # <3>
+                - name: admin
+                  groups: wheel
+                  sudo: ALL=(ALL) NOPASSWD:ALL
+                  ssh_authorized_keys:
+                    - 'ssh-ed25519 AAAA...your-public-key... user@workstation'
+              packages:
+                - vim
+                - git
+                - tmux
+                - htop
+              write_files:
+                - path: /etc/motd
+                  content: |
+                    Welcome to your customized VM!
+                    Created via YAML manifest and oc apply.
+                  permissions: '0644'
+              runcmd:
+                - systemctl enable --now cockpit.socket
+                - echo "VM initialization complete at $(date)" > /var/log/vm-init.log
+  dataVolumeTemplates:
+    - metadata:
+        name: vm-customized
+      spec:
+        sourceRef:
+          kind: DataSource
+          name: fedora
+          namespace: openshift-virtualization-os-images
+        storage:
+          resources:
+            requests:
+              storage: 50Gi
+----
+<1> Specific CPU core count
+<2> Guest memory allocation (should match resources.requests.memory)
+<3> Additional user creation with sudo privileges
+
+Apply the customized VM:
+
+[source,bash,role=execute]
+----
+oc apply -f vm-customized.yaml
+----
+
+=== Verify Advanced Configuration
+
+Check the VM's CPU and memory allocation:
+
+[source,bash,role=execute]
+----
+oc describe vmi vm-customized -n demo | grep -A 5 "Requests"
+----
+
+Access the VM to verify cloud-init ran successfully:
+
+[source,bash,role=execute]
+----
+virtctl ssh admin@vm-customized -n demo
+----
+
+Check the message of the day that was written by cloud-init:
+
+[source,bash,role=execute]
+----
+cat /etc/motd
+----
+
+Verify packages were installed:
+
+[source,bash,role=execute]
+----
+which tmux htop
+----
+
+Check the initialization log:
+
+[source,bash,role=execute]
+----
+cat /var/log/vm-init.log
+----
+
+== Step 4: VM Lifecycle Operations
+
+=== Check VM Status and Events
+
+View detailed VM information:
+
+[source,bash,role=execute]
+----
+oc describe vm vm-customized -n demo
+----
+
+Check VM events for troubleshooting:
+
+[source,bash,role=execute]
+----
+oc get events -n demo --field-selector involvedObject.name=vm-customized
+----
+
+=== Stop and Start VMs
+
+Stop a VM (graceful shutdown):
+
+[source,bash,role=execute]
+----
+virtctl stop vm-customized -n demo
+----
+
+Verify it's stopped:
+
+[source,bash,role=execute]
+----
+oc get vm vm-customized -n demo
+----
+
+Start the VM again:
+
+[source,bash,role=execute]
+----
+virtctl start vm-customized -n demo
+----
+
+=== Restart a VM
+
+Perform a graceful restart:
+
+[source,bash,role=execute]
+----
+virtctl restart vm-customized -n demo
+----
+
+=== Update VM Configuration
+
+You can modify most VM settings by editing the manifest and reapplying it. For example, to change memory:
+
+[source,bash,role=execute]
+----
+oc patch vm vm-customized -n demo --type merge --patch '{"spec":{"template":{"spec":{"domain":{"memory":{"guest":"6Gi"},"resources":{"requests":{"memory":"6Gi"}}}}}}}'
+----
+
+NOTE: Memory and CPU changes require a VM restart to take effect.
+
+== Troubleshooting
+
+=== VM Won't Start
+
+Check the VirtualMachine and VirtualMachineInstance events:
+
+[source,bash,role=execute]
+----
+oc describe vm <vm-name> -n demo
+oc describe vmi <vm-name> -n demo
+----
+
+Common issues:
+- DataVolume provisioning failed (check `oc get dv`)
+- Insufficient cluster resources (check node capacity)
+- Invalid cloud-init syntax (check pod logs)
+
+=== DataVolume Provisioning Issues
+
+Check DataVolume status:
+
+[source,bash,role=execute]
+----
+oc describe dv <datavolume-name> -n demo
+----
+
+Check the CDI import pod logs:
+
+[source,bash,role=execute]
+----
+oc logs -l app=containerized-data-importer -n openshift-cnv
+----
+
+=== Cloud-init Errors
+
+Access the VM console and check cloud-init status:
+
+[source,bash,role=execute]
+----
+virtctl console <vm-name> -n demo
+----
+
+Inside the VM:
+
+[source,bash,role=execute]
+----
+cloud-init status --long
+cat /var/log/cloud-init.log
+----
+
+For detailed cloud-init troubleshooting, see xref:cloud-init-fundamentals.adoc[].
+
+== Cleanup
+
+Remove all VMs and associated resources:
+
+[source,bash,role=execute]
+----
+oc delete vm vm-minimal vm-datavolume vm-customized -n demo
+----
+
+Wait a moment for DataVolumes to be cleaned up, then remove the project:
+
+[source,bash,role=execute]
+----
+oc delete project demo
+----
+
+WARNING: Deleting the project removes all VMs and their persistent disks. Ensure you have backups if needed.
+
+== Summary
+
+You learned how to:
+
+* Generate VM manifests using `virtctl create vm` with volume imports from DataSources
+* Customize generated manifests before applying them (the recommended workflow)
+* Structure VirtualMachine YAML manifests with proper apiVersion, metadata, and spec sections
+* Create lightweight VMs using containerDisk for testing scenarios
+* Create production VMs with DataVolume boot sources for persistent storage
+* Configure CPU cores, memory allocation, and disk sizes
+* Use `runStrategy` for VM lifecycle management instead of deprecated `running` field
+* Integrate cloud-init for automated user setup, SSH key injection, and package installation
+* Apply manifests with `oc apply -f` and verify creation with `oc get vm`, `oc get vmi`, `oc get dv`
+* Access VMs via `virtctl console` and `virtctl ssh`
+* Perform basic lifecycle operations (stop, start, restart)
+* Clean up resources properly
+
+== Next Steps
+
+* xref:cloud-init-fundamentals.adoc[] - Deep dive into cloud-init configuration options
+* xref:networking:static-ip-configuration.adoc[] - Configure static IP addresses for VMs
+* xref:vm-configuration:node-placement-affinity.adoc[] - Control which nodes run your VMs
+* xref:storage:multi-disk-configuration.adoc[] - Advanced storage configuration for VMs
+
+== See Also
+
+* link:https://docs.redhat.com/en/documentation/OpenShift_container_platform/latest/html/virtualization/creating-a-virtual-machine[Creating a Virtual Machine - Official Documentation,window=_blank]
+* link:https://kubevirt.io/user-guide/virtual_machines/creating_vms/[KubeVirt Virtual Machine Creation Guide,window=_blank]
+* link:https://cloudinit.readthedocs.io/en/latest/[Cloud-init Documentation,window=_blank]
