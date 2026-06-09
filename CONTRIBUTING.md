@@ -23,20 +23,28 @@ make check-deps
 
 ## Quick Start
 
-1. **Clone the repository:**
+1. **Fork the repository** on GitHub by clicking the **Fork** button on https://github.com/RedHatQuickCourses/ocp-virt-cookbook.
+
+2. **Clone your fork:**
 
    ```bash
-   git clone https://github.com/RedHatQuickCourses/ocp-virt-cookbook.git
+   git clone https://github.com/<your-username>/ocp-virt-cookbook.git
    cd ocp-virt-cookbook
    ```
 
-2. **Install dependencies:**
+3. **Add the upstream remote:**
+
+   ```bash
+   git remote add upstream https://github.com/RedHatQuickCourses/ocp-virt-cookbook.git
+   ```
+
+4. **Install dependencies:**
 
    ```bash
    make setup
    ```
 
-3. **Start development environment:**
+5. **Start development environment:**
 
    ```bash
    make dev
@@ -48,16 +56,11 @@ make check-deps
 
 ### Creating a New Tutorial
 
-1. **Create a feature branch:**
+1. **Sync your fork and create a feature branch:**
 
    ```bash
-   make branch NAME=add-tutorial-xyz
-   ```
-
-   Or manually:
-
-   ```bash
-   git checkout -b yourusername/add-tutorial-xyz
+   git fetch upstream
+   git checkout -b yourusername/add-tutorial-xyz upstream/main
    ```
 
 2. **Add your tutorial:**
@@ -82,7 +85,7 @@ make check-deps
 
    This runs all checks: linting, building, link validation, and documentation review.
 
-5. **Commit and push:**
+5. **Commit and push to your fork:**
 
    ```bash
    git add modules/
@@ -90,13 +93,11 @@ make check-deps
    git push -u origin yourusername/add-tutorial-xyz
    ```
 
-6. **Create a pull request:**
+6. **Create a pull request** from your fork's branch to the upstream `main` branch using the GitHub web UI or:
 
    ```bash
-   make pr
+   gh pr create --repo RedHatQuickCourses/ocp-virt-cookbook
    ```
-
-   Or use the GitHub web UI.
 
 ## Make Targets Reference
 
