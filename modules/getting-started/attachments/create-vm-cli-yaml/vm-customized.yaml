@@ -1,0 +1,84 @@
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: vm-customized
+  namespace: demo
+spec:
+  runStrategy: Always
+  template:
+    metadata:
+      labels:
+        kubevirt.io/domain: vm-customized
+    spec:
+      domain:
+        cpu:
+          cores: 2
+        devices:
+          disks:
+            - name: rootdisk
+              disk:
+                bus: virtio
+            - name: cloudinitdisk
+              disk:
+                bus: virtio
+          interfaces:
+            - name: default
+              masquerade: {}
+        machine:
+          type: pc-q35-rhel9.4.0
+        memory:
+          guest: 4Gi
+        resources:
+          requests:
+            memory: 4Gi
+            cpu: 2
+      networks:
+        - name: default
+          pod: {}
+      volumes:
+        - name: rootdisk
+          dataVolume:
+            name: vm-customized
+        - name: cloudinitdisk
+          cloudInitNoCloud:
+            userData: |
+              #cloud-config
+              ssh_pwauth: true
+              user:
+                name: fedora
+                lock_passwd: false
+                plain_text_passwd: s3cur3p4ss
+                ssh_authorized_keys:
+                  - 'ssh-ed25519 AAAA...your-public-key... user@workstation'
+              users:
+                - name: admin
+                  groups: wheel
+                  sudo: ALL=(ALL) NOPASSWD:ALL
+                  ssh_authorized_keys:
+                    - 'ssh-ed25519 AAAA...your-public-key... user@workstation'
+              packages:
+                - vim
+                - git
+                - tmux
+                - htop
+              write_files:
+                - path: /etc/motd
+                  content: |
+                    Welcome to your customized VM!
+                    Created via YAML manifest and oc apply.
+                  permissions: '0644'
+              runcmd:
+                - systemctl enable --now cockpit.socket
+                - echo "VM initialization complete at $(date)" > /var/log/vm-init.log
+  dataVolumeTemplates:
+    - metadata:
+        name: vm-customized
+      spec:
+        sourceRef:
+          kind: DataSource
+          name: fedora
+          namespace: openshift-virtualization-os-images
+        storage:
+          resources:
+            requests:
+              storage: 50Gi
