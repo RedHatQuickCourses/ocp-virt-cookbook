@@ -787,7 +787,7 @@ These parameters are aggressive power/latency trade-offs. CPUs on RT nodes will 
 <h2 id="_step_5_deploy_a_real_time_vm"><a class="anchor" href="#_step_5_deploy_a_real_time_vm"></a>Step 5: Deploy a Real-Time VM</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>The following VM manifest combines all real-time tuning layers. It uses a standard Fedora container disk. While a purpose-built RT guest image with a real-time kernel provides the best results, the standard image is sufficient to demonstrate and verify the host-side configuration.</p>
+<p>The following VM manifest combines all real-time tuning layers. It uses a Fedora DataSource as the boot volume with persistent storage, which allows kernel upgrades and configuration changes to survive VM restarts. While a purpose-built RT guest image with a real-time kernel provides the best results, the standard image is sufficient to demonstrate and verify the host-side configuration.</p>
 </div>
 <div class="paragraph">
 <p>Key configuration fields:</p>
@@ -898,20 +898,42 @@ spec:
       terminationGracePeriodSeconds: 0
       volumes:
       - name: rootdisk
-        containerDisk:
-          image: quay.io/containerdisks/fedora:latest
+        dataVolume:
+          name: vm-realtime
       - name: cloudinitdisk
         cloudInitNoCloud:
           userData: |
             #cloud-config
+            user: fedora
             password: redhat
             chpasswd:
               expire: false
+            ssh_pwauth: true
+  dataVolumeTemplates:
+  - metadata:
+      name: vm-realtime
+    spec:
+      sourceRef:
+        kind: DataSource
+        name: fedora
+        namespace: openshift-virtualization-os-images
+      storage:
+        resources:
+          requests:
+            storage: 30Gi
 EOF</code></pre>
 </div>
 </div>
 <div class="paragraph">
-<p>Wait for the VM to reach Running status:</p>
+<p>The DataVolume clones the Fedora image from the cluster&#8217;s DataSource into a persistent disk. Monitor the provisioning progress:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get dv vm-realtime -n realtime-demo -w</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Wait until the DataVolume shows <code>Succeeded</code>, then check the VM status:</p>
 </div>
 <div class="listingblock execute">
 <div class="content">
@@ -923,8 +945,8 @@ EOF</code></pre>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre>NAME          AGE   STATUS    READY
-vm-realtime   90s   Running   True</pre>
+<pre>NAME          AGE    STATUS    READY
+vm-realtime   5m     Running   True</pre>
 </div>
 </div>
 <div class="admonitionblock note">
@@ -1183,6 +1205,170 @@ Latency results vary significantly based on hardware, BIOS settings, and workloa
 </div>
 </div>
 <div class="sect1">
+<h2 id="_step_9_full_stack_real_time_with_a_guest_rt_kernel"><a class="anchor" href="#_step_9_full_stack_real_time_with_a_guest_rt_kernel"></a>Step 9: Full-Stack Real-Time with a Guest RT Kernel</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The cyclictest results from Step 8 show max latencies in the hundreds to thousands of microseconds. This is because the standard Fedora kernel inside the guest uses <code>PREEMPT_DYNAMIC</code> scheduling, which cannot guarantee bounded preemption of in-kernel code paths. The host-side <code>SCHED_FIFO</code> priority and CPU isolation eliminate <strong>external</strong> jitter (other pods, IRQs, kernel threads stealing CPU time), but once a timer interrupt arrives at the vCPU, the <strong>guest kernel</strong> must still wake the sleeping cyclictest thread&#8201;&#8212;&#8201;and a standard kernel may delay that wake-up while finishing a non-preemptible code section.</p>
+</div>
+<div class="paragraph">
+<p>Installing a <code>PREEMPT_RT</code> kernel inside the guest completes the real-time stack. With a guest RT kernel, virtually every kernel code path becomes preemptible, and cyclictest max latencies drop from milliseconds to the low tens of microseconds.</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 25%;">
+<col style="width: 37.5%;">
+<col style="width: 37.5%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Configuration</th>
+<th class="tableblock halign-left valign-top">Guest kernel</th>
+<th class="tableblock halign-left valign-top">Expected cyclictest max latency</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Host RT only</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Standard (<code>PREEMPT_DYNAMIC</code>)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Hundreds to thousands of microseconds</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Full-stack RT</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Real-time (<code>PREEMPT_RT</code>)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Low tens of microseconds</p></td>
+</tr>
+</tbody>
+</table>
+<div class="sect2">
+<h3 id="_install_the_rt_kernel_inside_the_guest"><a class="anchor" href="#_install_the_rt_kernel_inside_the_guest"></a>Install the RT Kernel Inside the Guest</h3>
+<div class="paragraph">
+<p>Connect to the running VM:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">virtctl console vm-realtime -n realtime-demo</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Log in as <code>fedora</code> with password <code>redhat</code>.</p>
+</div>
+<div class="paragraph">
+<p>Enable the Fedora Kernel Vanilla COPR repository, which provides <code>PREEMPT_RT</code> kernel packages:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">sudo dnf -y copr enable @kernel-vanilla/stable</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Install the real-time kernel:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">sudo dnf -y install kernel-rt-core kernel-rt-modules</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Set the RT kernel as the default boot entry:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">sudo grubby --set-default /boot/vmlinuz-*rt*</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Disconnect from the console by pressing <code>Ctrl+]</code>.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_reboot_the_vm"><a class="anchor" href="#_reboot_the_vm"></a>Reboot the VM</h3>
+<div class="paragraph">
+<p>Restart the VM to boot into the RT kernel:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">virtctl restart vm-realtime -n realtime-demo</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Wait for the VM to return to Running status:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vm vm-realtime -n realtime-demo -w</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_verify_the_guest_rt_kernel"><a class="anchor" href="#_verify_the_guest_rt_kernel"></a>Verify the Guest RT Kernel</h3>
+<div class="paragraph">
+<p>Connect to the VM console:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">virtctl console vm-realtime -n realtime-demo</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Log in and verify the kernel version:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">uname -r</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The output should contain <code>rt</code> in the version string, for example:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>6.15.2-0.rc0.20250604gite53b1bae1f73.502.vanilla.fc42.x86_64+rt</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Verify that <code>PREEMPT_RT</code> is active:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">uname -v</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The output should include <code>PREEMPT_RT</code>, confirming fully preemptible kernel mode.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_re_run_cyclictest_with_the_rt_kernel"><a class="anchor" href="#_re_run_cyclictest_with_the_rt_kernel"></a>Re-Run cyclictest with the RT Kernel</h3>
+<div class="paragraph">
+<p>Since the VM uses persistent storage, <code>realtime-tests</code> is still installed from Step 8. Run cyclictest with the same parameters:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">sudo cyclictest --mlockall --smp --priority=80 --interval=200 --distance=0 --duration=60</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>With the guest RT kernel, expect max latencies in the low tens of microseconds&#8201;&#8212;&#8201;a significant improvement over the hundreds to thousands of microseconds seen with the standard kernel in Step 8.</p>
+</div>
+<div class="paragraph">
+<p>Disconnect from the console by pressing <code>Ctrl+]</code>.</p>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-important" title="Important"></i>
+</td>
+<td class="content">
+For production real-time workloads, build a custom disk image with the RT kernel pre-installed rather than installing it at runtime. This eliminates the post-boot kernel installation and reboot cycle, and guarantees consistent, version-locked deployments across all RT VMs.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
 <h2 id="_troubleshooting"><a class="anchor" href="#_troubleshooting"></a>Troubleshooting</h2>
 <div class="sectionbody">
 <div class="sect2">
@@ -1352,7 +1538,10 @@ Deleting the PerformanceProfile and MachineConfigPool triggers a reboot to rever
 <p>Measure and baseline latency using <code>cyclictest</code></p>
 </li>
 <li>
-<p>Understand the role of each configuration layer in eliminating specific sources of jitter</p>
+<p>Install a guest RT kernel to achieve full-stack real-time and compare latency results</p>
+</li>
+<li>
+<p>Understand the difference between host-only RT tuning and full-stack RT (host + guest RT kernel)</p>
 </li>
 </ul>
 </div>
