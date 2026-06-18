@@ -1,0 +1,532 @@
+= Network Policies for Virtual Machines
+:navtitle: Network Policies for VMs
+
+== Overview
+
+This tutorial demonstrates how to apply Kubernetes NetworkPolicy and AdminNetworkPolicy to virtual machine workloads in OpenShift Virtualization. Because VMs run inside virt-launcher pods, network policies apply at the pod level using labels defined in the VM's `spec.template.metadata.labels`. This guide walks through building a zero-trust network model for VMs: starting with a deny-all baseline, then selectively allowing traffic for a frontend/backend architecture.
+
+You will learn how to isolate VM traffic, permit specific port access between VM tiers, and use AdminNetworkPolicy for cluster-wide guardrails that tenant users cannot override.
+
+== Prerequisites
+
+* OpenShift 4.18+ with OpenShift Virtualization operator installed (tested on 4.21)
+* OVN-Kubernetes as the cluster network plugin (default since OpenShift 4.12)
+* Cluster admin access for AdminNetworkPolicy resources
+* `oc` CLI installed
+
+== How Network Policies Select VM Pods
+
+When OpenShift Virtualization creates a running VM, it spawns a virt-launcher pod. The labels you define in `spec.template.metadata.labels` of the VirtualMachine resource are applied to this pod. NetworkPolicy objects select these pods using `podSelector` just like any other workload.
+
+[source,yaml]
+----
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: web-vm
+  labels:
+    app: web
+spec:
+  template:
+    metadata:
+      labels:
+        app: web        # <1>
+        role: frontend  # <1>
+    spec:
+      # ...
+----
+<1> These labels are propagated to the virt-launcher pod and can be used in NetworkPolicy `podSelector` fields.
+
+IMPORTANT: Labels on `metadata.labels` of the VirtualMachine resource itself do not affect the virt-launcher pod. Always place policy-relevant labels in `spec.template.metadata.labels`.
+
+== Step 1: Create a Namespace and Deploy VMs
+
+Create a namespace for the demonstration and deploy two VMs: a frontend web server and a backend database listener.
+
+[source,bash,role=execute]
+----
+oc create namespace netpol-demo
+----
+
+Deploy the frontend VM running Nginx on port 80:
+
+xref:attachment$network-policies-vms/vm-web.yaml[Download vm-web.yaml]
+
+[source,bash,role=execute]
+----
+oc apply -f - <<EOF
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: web-vm
+  namespace: netpol-demo
+  labels:
+    app: web
+    role: frontend
+spec:
+  runStrategy: Always
+  template:
+    metadata:
+      labels:
+        app: web
+        role: frontend
+    spec:
+      domain:
+        resources:
+          requests:
+            memory: 2Gi
+        devices:
+          disks:
+            - name: containerdisk
+              disk:
+                bus: virtio
+            - name: cloudinitdisk
+              disk:
+                bus: virtio
+          interfaces:
+            - name: default
+              masquerade: {}
+      networks:
+        - name: default
+          pod: {}
+      volumes:
+        - name: containerdisk
+          containerDisk:
+            image: quay.io/containerdisks/fedora:40
+        - name: cloudinitdisk
+          cloudInitNoCloud:
+            userData: |
+              #cloud-config
+              password: changeme
+              chpasswd:
+                expire: false
+              packages:
+                - nginx
+              runcmd:
+                - systemctl enable --now nginx
+EOF
+----
+
+Deploy the backend VM listening on port 5432:
+
+xref:attachment$network-policies-vms/vm-db.yaml[Download vm-db.yaml]
+
+[source,bash,role=execute]
+----
+oc apply -f - <<EOF
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: db-vm
+  namespace: netpol-demo
+  labels:
+    app: database
+    role: backend
+spec:
+  runStrategy: Always
+  template:
+    metadata:
+      labels:
+        app: database
+        role: backend
+    spec:
+      domain:
+        resources:
+          requests:
+            memory: 2Gi
+        devices:
+          disks:
+            - name: containerdisk
+              disk:
+                bus: virtio
+            - name: cloudinitdisk
+              disk:
+                bus: virtio
+          interfaces:
+            - name: default
+              masquerade: {}
+      networks:
+        - name: default
+          pod: {}
+      volumes:
+        - name: containerdisk
+          containerDisk:
+            image: quay.io/containerdisks/fedora:40
+        - name: cloudinitdisk
+          cloudInitNoCloud:
+            userData: |
+              #cloud-config
+              password: changeme
+              chpasswd:
+                expire: false
+              packages:
+                - nmap-ncat
+              runcmd:
+                - ncat -l -k -p 5432 -e /usr/bin/echo &
+EOF
+----
+
+Wait for both VMs to be ready:
+
+[source,bash,role=execute]
+----
+oc wait vm web-vm db-vm -n netpol-demo --for=condition=Ready --timeout=300s
+----
+
+Verify the virt-launcher pods have the expected labels:
+
+[source,bash,role=execute]
+----
+oc get pods -n netpol-demo -l app=web --show-labels
+----
+
+[source,bash,role=execute]
+----
+oc get pods -n netpol-demo -l app=database --show-labels
+----
+
+== Step 2: Verify Baseline Connectivity (Before Policies)
+
+Before applying any policies, confirm that traffic flows freely to the VMs. Get the pod IPs of both VMs:
+
+[source,bash,role=execute]
+----
+oc get vmi -n netpol-demo -o 'custom-columns=NAME:.metadata.name,IP:.status.interfaces[0].ipAddress'
+----
+
+Note the IP addresses shown. You will use them for connectivity tests throughout this tutorial.
+
+Create a long-lived test pod in the default namespace to use for connectivity checks:
+
+[source,bash,role=execute]
+----
+oc run curl-test -n default --image=registry.access.redhat.com/ubi9/ubi-minimal --restart=Never -- sleep 3600
+----
+
+Test connectivity to the web VM (replace `<web-vm-ip>` with the IP from above):
+
+[source,bash,role=execute]
+----
+oc exec -n default curl-test -- curl -s --connect-timeout 5 http://<web-vm-ip>:80
+----
+
+You should see the Nginx welcome page HTML, confirming unrestricted connectivity.
+
+== Step 3: Apply a Deny-All Baseline
+
+A zero-trust model starts by denying all traffic, then explicitly allowing what is needed. This policy denies all ingress and egress for every pod in the namespace.
+
+xref:attachment$network-policies-vms/deny-all.yaml[Download deny-all.yaml]
+
+[source,bash,role=execute]
+----
+oc apply -f - <<EOF
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: deny-all
+  namespace: netpol-demo
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+    - Egress
+EOF
+----
+
+Verify traffic is now blocked. From the test pod, attempt to reach the web VM:
+
+[source,bash,role=execute]
+----
+oc exec -n default curl-test -- curl -s --connect-timeout 5 http://<web-vm-ip>:80
+----
+
+Expected result:
+----
+command terminated with exit code 28
+----
+
+Exit code 28 means the connection timed out. OVN-Kubernetes silently drops packets that violate the policy rather than sending a TCP RST, so curl waits until the `--connect-timeout` expires.
+
+== Step 4: Allow DNS Egress
+
+With a deny-all policy in place, DNS resolution is also blocked. Allow all pods to reach the cluster DNS service so name resolution continues to work.
+
+xref:attachment$network-policies-vms/allow-dns-egress.yaml[Download allow-dns-egress.yaml]
+
+[source,bash,role=execute]
+----
+oc apply -f - <<EOF
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-dns-egress
+  namespace: netpol-demo
+spec:
+  podSelector: {}
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: openshift-dns
+      ports:
+        - protocol: UDP
+          port: 5353
+        - protocol: TCP
+          port: 5353
+EOF
+----
+
+== Step 5: Allow HTTP Ingress to the Web VM
+
+Allow ingress traffic to the web VM on TCP port 80 from any source. This simulates exposing a frontend to internal consumers.
+
+xref:attachment$network-policies-vms/allow-web-ingress.yaml[Download allow-web-ingress.yaml]
+
+[source,bash,role=execute]
+----
+oc apply -f - <<EOF
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-web-ingress
+  namespace: netpol-demo
+spec:
+  podSelector:
+    matchLabels:
+      app: web
+  policyTypes:
+    - Ingress
+  ingress:
+    - ports:
+        - protocol: TCP
+          port: 80
+EOF
+----
+
+Verify that the web VM is now reachable on port 80 from the test pod:
+
+[source,bash,role=execute]
+----
+oc exec -n default curl-test -- curl -s --connect-timeout 5 http://<web-vm-ip>:80
+----
+
+The Nginx welcome page should appear again, confirming the ingress allow rule works.
+
+== Step 6: Allow Web VM to Reach the Database VM
+
+In a typical architecture, the frontend needs access to the backend database. Create two policies: one allowing egress from the web VM to the database port, and one allowing ingress to the database VM only from pods labeled `app: web`.
+
+xref:attachment$network-policies-vms/allow-web-to-db-egress.yaml[Download allow-web-to-db-egress.yaml]
+
+[source,bash,role=execute]
+----
+oc apply -f - <<EOF
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-web-to-db-egress
+  namespace: netpol-demo
+spec:
+  podSelector:
+    matchLabels:
+      app: web
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app: database
+      ports:
+        - protocol: TCP
+          port: 5432
+EOF
+----
+
+xref:attachment$network-policies-vms/allow-db-from-web.yaml[Download allow-db-from-web.yaml]
+
+[source,bash,role=execute]
+----
+oc apply -f - <<EOF
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-db-from-web
+  namespace: netpol-demo
+spec:
+  podSelector:
+    matchLabels:
+      app: database
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: web
+      ports:
+        - protocol: TCP
+          port: 5432
+EOF
+----
+
+Verify that the test pod (which does not have label `app: web`) cannot reach the database -- the connection should time out:
+
+[source,bash,role=execute]
+----
+oc exec -n default curl-test -- curl -s --connect-timeout 5 http://<db-vm-ip>:5432
+----
+
+Replace `<db-vm-ip>` with the database VM IP from Step 2. Expected result:
+----
+command terminated with exit code 28
+----
+
+The timeout confirms the policy blocks unauthorized access to the database.
+
+The database port is only reachable from the web VM's virt-launcher pod because the `allow-db-from-web` policy restricts ingress to pods with label `app: web` within the namespace.
+
+== Step 7: View Active Policies
+
+List all NetworkPolicy resources in the namespace to review your security posture:
+
+[source,bash,role=execute]
+----
+oc get networkpolicy -n netpol-demo
+----
+
+Expected output:
+----
+NAME                     POD-SELECTOR   AGE
+allow-db-from-web        app=database   ...
+allow-dns-egress         <none>         ...
+allow-web-ingress        app=web        ...
+allow-web-to-db-egress   app=web        ...
+deny-all                 <none>         ...
+----
+
+== AdminNetworkPolicy for Cluster-Wide Guardrails
+
+While NetworkPolicy is namespace-scoped and managed by application teams, cluster administrators can enforce non-overridable rules using AdminNetworkPolicy (ANP). OVN-Kubernetes evaluates policies in this order:
+
+1. **AdminNetworkPolicy** (highest priority) -- `Allow` or `Deny` rules are final; `Pass` delegates to the next tier.
+2. **NetworkPolicy** -- Standard namespace-scoped rules.
+3. **BaselineAdminNetworkPolicy** -- Cluster-wide fallback applied when no NetworkPolicy matches.
+
+The following example ANP protects the OpenShift Virtualization infrastructure namespaces from unauthorized access:
+
+xref:attachment$network-policies-vms/admin-network-policy.yaml[Download admin-network-policy.yaml]
+
+[source,yaml]
+----
+apiVersion: policy.networking.k8s.io/v1alpha1
+kind: AdminNetworkPolicy
+metadata:
+  name: cluster-deny-to-virt-infra
+spec:
+  priority: 50
+  subject:
+    namespaces:
+      matchExpressions:
+        - key: kubernetes.io/metadata.name
+          operator: NotIn
+          values:
+            - openshift-cnv
+            - openshift-virtualization-os-images
+  ingress:
+    - name: deny-ingress-to-virt-infra
+      action: Deny
+      from:
+        - namespaces:
+            matchExpressions:
+              - key: kubernetes.io/metadata.name
+                operator: NotIn
+                values:
+                  - openshift-cnv
+                  - openshift-virtualization-os-images
+      ports:
+        - portRange:
+            start: 1
+            end: 65535
+            protocol: TCP
+----
+
+NOTE: AdminNetworkPolicy is at `v1alpha1` API version. The API is stable and enabled by default on OVN-Kubernetes clusters since OpenShift 4.14, but may evolve before reaching `v1`.
+
+== Important Considerations
+
+=== Secondary Networks
+
+NetworkPolicy only applies to traffic on the **primary pod network** (the default cluster network or a primary UDN). Traffic on secondary networks attached via NetworkAttachmentDefinition, localnet, or Linux bridge interfaces is **not** governed by NetworkPolicy. To control traffic on secondary networks, use firewall rules inside the VM guest or external network infrastructure controls.
+
+=== Live Migration
+
+During live migration, the VM's virt-launcher pod is recreated on the target node. Because the new pod inherits the same labels from `spec.template.metadata.labels`, existing NetworkPolicy rules continue to apply without any changes. The migration itself uses internal KubeVirt communication channels that are not affected by namespace-scoped NetworkPolicy.
+
+=== Masquerade vs Bridge Binding
+
+When using the `masquerade` interface binding (default for pod network), traffic between the VM guest and the pod network is NATed. NetworkPolicy sees the virt-launcher pod IP as the source/destination. With the `bridge` binding, the VM gets a pod IP directly. In both cases, the policy targets the virt-launcher pod.
+
+== Troubleshooting
+
+=== Policies Not Taking Effect
+
+Verify that labels on the virt-launcher pod match your policy selectors:
+
+[source,bash,role=execute]
+----
+oc get pods -n netpol-demo --show-labels
+----
+
+Ensure your VM defines labels in `spec.template.metadata.labels`, not only in `metadata.labels`.
+
+=== DNS Resolution Broken After Deny-All
+
+If you apply a deny-all egress policy but forget to allow DNS, all name resolution fails. Apply the DNS egress policy from Step 4.
+
+=== Traffic Still Flows After Deny-All
+
+If you only specify `Ingress` in `policyTypes`, egress is unrestricted (and vice versa). To block both directions, include both `Ingress` and `Egress` in `policyTypes`.
+
+== Cleanup
+
+Remove the test pod and namespace:
+
+[source,bash,role=execute]
+----
+oc delete pod curl-test -n default
+----
+
+[source,bash,role=execute]
+----
+oc delete namespace netpol-demo
+----
+
+WARNING: If you applied the AdminNetworkPolicy example, remove it separately since it is cluster-scoped:
+
+[source,bash,role=execute]
+----
+oc delete adminnetworkpolicy cluster-deny-to-virt-infra
+----
+
+== Summary
+
+In this tutorial you learned:
+
+* NetworkPolicy selects VM workloads through labels on `spec.template.metadata.labels`, which propagate to the virt-launcher pod
+* A deny-all baseline provides zero-trust isolation for VM namespaces
+* Granular ingress and egress rules enable controlled communication between VM tiers
+* DNS egress must be explicitly allowed when using a deny-all baseline
+* AdminNetworkPolicy provides cluster-wide guardrails that tenant users cannot override
+* NetworkPolicy only governs primary network traffic; secondary network interfaces require separate controls
+* Policies persist across live migration because pod labels are preserved
+
+== See Also
+
+* xref:vm-ingress-routes.adoc[VM Ingress and Routes] -- Expose VM HTTP services externally
+* xref:udn-primary-networks.adoc[UDN Primary Networks] -- Configure Layer 2 primary networks with built-in isolation
+* link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.22/html/network_security/network-policy-apis[OpenShift Network Security Documentation,window=_blank]
+* link:https://kubernetes.io/docs/concepts/services-networking/network-policies/[Kubernetes NetworkPolicy Reference,window=_blank]
