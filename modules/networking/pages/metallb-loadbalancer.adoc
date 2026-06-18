@@ -1,0 +1,528 @@
+= MetalLB and Load Balancer Services for VM Workloads
+:navtitle: MetalLB Load Balancer for VMs
+
+== Overview
+
+This tutorial demonstrates how to configure MetalLB on bare-metal OpenShift clusters to expose virtual machine services via LoadBalancer-type Services. While OpenShift Routes handle HTTP/HTTPS traffic through the Ingress controller, many VM workloads require direct external access for non-HTTP protocols such as SSH, databases, RDP, or custom TCP/UDP services.
+
+MetalLB provides LoadBalancer Service support on bare-metal clusters by assigning external IP addresses from configured pools and announcing them via Layer 2 (ARP/NDP) or BGP protocols.
+
+== Prerequisites
+
+* OpenShift 4.18+ with OpenShift Virtualization operator installed (tested on 4.21)
+* Bare-metal cluster or infrastructure without a cloud load balancer
+* A range of IP addresses on the same Layer 2 network as cluster nodes (for L2 mode)
+* Cluster admin access
+* `oc` CLI installed
+
+== When to Use MetalLB vs Routes
+
+|===
+| Access Method | Protocol | Use Case
+
+| OpenShift Route
+| HTTP/HTTPS only
+| Web applications, APIs with TLS termination
+
+| NodePort Service
+| Any TCP/UDP
+| Simple external access on high port numbers (30000-32767)
+
+| LoadBalancer (MetalLB)
+| Any TCP/UDP
+| Production external access on standard ports (22, 80, 443, 3306, 5432)
+
+| Gateway API (HTTPRoute)
+| HTTP/HTTPS, gRPC
+| Kubernetes-standard L7 ingress with role-based routing, TLS, traffic splitting (OCP 4.19+)
+|===
+
+Use MetalLB when you need to expose VM services on standard ports with a dedicated external IP address, especially for non-HTTP protocols that Routes and Gateway API cannot serve.
+
+== Step 1: Install the MetalLB Operator
+
+Create the namespace for the MetalLB Operator:
+
+[source,bash,role=execute]
+----
+oc create namespace metallb-system
+----
+
+Create an OperatorGroup with AllNamespaces install mode (required by the MetalLB Operator):
+
+[source,bash,role=execute]
+----
+oc apply -f - <<EOF
+apiVersion: operators.coreos.com/v1
+kind: OperatorGroup
+metadata:
+  name: metallb-operator
+  namespace: metallb-system
+spec: {}
+EOF
+----
+
+Subscribe to the MetalLB Operator from the Red Hat Operators catalog:
+
+xref:attachment$metallb-loadbalancer/metallb-subscription.yaml[Download metallb-subscription.yaml]
+
+[source,bash,role=execute]
+----
+oc apply -f - <<EOF
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: metallb-operator
+  namespace: metallb-system
+spec:
+  channel: stable
+  name: metallb-operator
+  source: redhat-operators
+  sourceNamespace: openshift-marketplace
+EOF
+----
+
+Wait for the Operator to install:
+
+[source,bash,role=execute]
+----
+oc wait --for=condition=CatalogSourcesUnhealthy=False subscription metallb-operator -n metallb-system --timeout=120s
+----
+
+Verify the ClusterServiceVersion is ready:
+
+[source,bash,role=execute]
+----
+oc get csv -n metallb-system -o custom-columns=NAME:.metadata.name,PHASE:.status.phase
+----
+
+Wait until the PHASE column shows `Succeeded`.
+
+== Step 2: Create a MetalLB Instance
+
+Deploy the MetalLB instance. This creates the speaker and controller pods that handle IP advertisement and allocation:
+
+xref:attachment$metallb-loadbalancer/metallb-instance.yaml[Download metallb-instance.yaml]
+
+[source,bash,role=execute]
+----
+oc apply -f - <<EOF
+apiVersion: metallb.io/v1beta1
+kind: MetalLB
+metadata:
+  name: metallb
+  namespace: metallb-system
+spec: {}
+EOF
+----
+
+Wait for the MetalLB pods to be running:
+
+[source,bash,role=execute]
+----
+oc wait deployment controller -n metallb-system --for=condition=Available --timeout=120s
+----
+
+[source,bash,role=execute]
+----
+oc get pods -n metallb-system
+----
+
+You should see a `controller` deployment and `speaker` daemonset pods running.
+
+== Step 3: Configure an IP Address Pool
+
+Define a pool of IP addresses that MetalLB can assign to LoadBalancer services. These addresses must be routable on the same Layer 2 network as your cluster nodes and must not be assigned to any other device.
+
+IMPORTANT: Replace the address range below with IPs available on your network. The range must be on the same subnet as your worker nodes and must not conflict with existing DHCP assignments or static IPs.
+
+xref:attachment$metallb-loadbalancer/ipaddresspool.yaml[Download ipaddresspool.yaml]
+
+[source,bash,role=execute]
+----
+oc apply -f - <<EOF
+apiVersion: metallb.io/v1beta1
+kind: IPAddressPool
+metadata:
+  name: vm-services-pool
+  namespace: metallb-system
+spec:
+  addresses:
+    - 192.168.2.200-192.168.2.210
+EOF
+----
+
+== Step 4: Configure L2 Advertisement
+
+Create an L2Advertisement to announce the IP addresses via ARP (IPv4) or NDP (IPv6) on the local network:
+
+xref:attachment$metallb-loadbalancer/l2advertisement.yaml[Download l2advertisement.yaml]
+
+[source,bash,role=execute]
+----
+oc apply -f - <<EOF
+apiVersion: metallb.io/v1beta1
+kind: L2Advertisement
+metadata:
+  name: vm-services-l2
+  namespace: metallb-system
+spec:
+  ipAddressPools:
+    - vm-services-pool
+EOF
+----
+
+== Step 5: Deploy a VM
+
+Create a namespace and deploy a VM with an Nginx web server to test external access:
+
+[source,bash,role=execute]
+----
+oc create namespace metallb-demo
+----
+
+xref:attachment$metallb-loadbalancer/vm-webserver.yaml[Download vm-webserver.yaml]
+
+[source,bash,role=execute]
+----
+oc apply -f - <<EOF
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: web-vm
+  namespace: metallb-demo
+  labels:
+    app: web-vm
+spec:
+  runStrategy: Always
+  template:
+    metadata:
+      labels:
+        app: web-vm
+    spec:
+      domain:
+        resources:
+          requests:
+            memory: 2Gi
+        devices:
+          disks:
+            - name: containerdisk
+              disk:
+                bus: virtio
+            - name: cloudinitdisk
+              disk:
+                bus: virtio
+          interfaces:
+            - name: default
+              masquerade: {}
+      networks:
+        - name: default
+          pod: {}
+      volumes:
+        - name: containerdisk
+          containerDisk:
+            image: quay.io/containerdisks/fedora:40
+        - name: cloudinitdisk
+          cloudInitNoCloud:
+            userData: |
+              #cloud-config
+              user: fedora
+              password: changeme
+              chpasswd:
+                expire: false
+              ssh_pwauth: true
+              packages:
+                - nginx
+              runcmd:
+                - systemctl enable --now nginx
+EOF
+----
+
+Wait for the VM to be ready:
+
+[source,bash,role=execute]
+----
+oc wait vm web-vm -n metallb-demo --for=condition=Ready --timeout=300s
+----
+
+== Step 6: Create a LoadBalancer Service for HTTP
+
+Expose the VM's HTTP port through a LoadBalancer Service. MetalLB assigns an external IP from the configured pool:
+
+xref:attachment$metallb-loadbalancer/service-lb-http.yaml[Download service-lb-http.yaml]
+
+[source,bash,role=execute]
+----
+oc apply -f - <<EOF
+apiVersion: v1
+kind: Service
+metadata:
+  name: web-vm-lb
+  namespace: metallb-demo
+spec:
+  type: LoadBalancer
+  selector:
+    app: web-vm
+  ports:
+    - name: http
+      protocol: TCP
+      port: 80
+      targetPort: 80
+EOF
+----
+
+Verify that an external IP has been assigned:
+
+[source,bash,role=execute]
+----
+oc get svc web-vm-lb -n metallb-demo
+----
+
+Expected output shows an EXTERNAL-IP from the MetalLB pool:
+
+[source,text]
+----
+NAME        TYPE           CLUSTER-IP     EXTERNAL-IP     PORT(S)        AGE
+web-vm-lb   LoadBalancer   172.30.x.x     192.168.2.200   80:3xxxx/TCP   ...
+----
+
+Test external access to the VM from a machine on the same network, using the external IP shown in the previous command output:
+
+[source,bash]
+----
+curl -s http://<EXTERNAL-IP>:80 | head -5
+----
+
+== Step 7: Expose SSH Access via LoadBalancer
+
+For non-HTTP protocols like SSH, create a separate LoadBalancer Service. MetalLB assigns another IP from the pool:
+
+xref:attachment$metallb-loadbalancer/service-lb-ssh.yaml[Download service-lb-ssh.yaml]
+
+[source,bash,role=execute]
+----
+oc apply -f - <<EOF
+apiVersion: v1
+kind: Service
+metadata:
+  name: web-vm-ssh
+  namespace: metallb-demo
+spec:
+  type: LoadBalancer
+  selector:
+    app: web-vm
+  ports:
+    - name: ssh
+      protocol: TCP
+      port: 22
+      targetPort: 22
+EOF
+----
+
+Verify the SSH service has an external IP:
+
+[source,bash,role=execute]
+----
+oc get svc web-vm-ssh -n metallb-demo
+----
+
+Connect via SSH using the assigned external IP:
+
+[source,bash]
+----
+ssh fedora@<EXTERNAL-IP>
+----
+
+== Multi-Port Services
+
+For VMs that expose multiple services, you can define multiple ports in a single LoadBalancer Service:
+
+[source,yaml]
+----
+apiVersion: v1
+kind: Service
+metadata:
+  name: multi-port-vm
+  namespace: metallb-demo
+spec:
+  type: LoadBalancer
+  selector:
+    app: web-vm
+  ports:
+    - name: http
+      protocol: TCP
+      port: 80
+      targetPort: 80
+    - name: https
+      protocol: TCP
+      port: 443
+      targetPort: 443
+    - name: ssh
+      protocol: TCP
+      port: 22
+      targetPort: 22
+----
+
+This assigns a single external IP with all three ports accessible.
+
+== BGP Mode for Routed Environments
+
+For data center environments with BGP-capable routers, MetalLB can advertise LoadBalancer IPs via BGP. This enables equal-cost multi-path (ECMP) routing across multiple nodes and avoids the single-node bottleneck of L2 mode.
+
+BGP mode requires:
+
+* A BGP-capable upstream router
+* Peering configuration (AS numbers, peer addresses)
+* `BGPPeer` and `BGPAdvertisement` resources instead of `L2Advertisement`
+
+[source,yaml]
+----
+apiVersion: metallb.io/v1beta2
+kind: BGPPeer
+metadata:
+  name: upstream-router
+  namespace: metallb-system
+spec:
+  myASN: 64500
+  peerASN: 64501
+  peerAddress: 192.168.2.1
+----
+
+[source,yaml]
+----
+apiVersion: metallb.io/v1beta1
+kind: BGPAdvertisement
+metadata:
+  name: bgp-advertisement
+  namespace: metallb-system
+spec:
+  ipAddressPools:
+    - vm-services-pool
+----
+
+NOTE: BGP mode configuration depends entirely on your network infrastructure. Coordinate with your network team to determine AS numbers, peer addresses, and routing policies.
+
+== Gateway API: The Kubernetes-Native Ingress Standard
+
+Starting with OpenShift 4.19, the Kubernetes Gateway API is generally available as an ingress option alongside OpenShift Routes. Gateway API provides role-oriented L7 traffic management through GatewayClass, Gateway, and HTTPRoute custom resources, backed by Envoy via OpenShift Service Mesh 3 and managed by the Ingress Operator.
+
+Gateway API works with VM workloads by routing HTTP/HTTPS/gRPC traffic to a ClusterIP Service that selects the VM's virt-launcher pod. On bare-metal clusters, MetalLB can serve as the underlying LoadBalancer that provides the external IP for the Gateway's Service.
+
+The following example shows an HTTPRoute directing traffic to a VM web service:
+
+[source,yaml]
+----
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: web-vm-route
+  namespace: metallb-demo
+spec:
+  parentRefs:
+    - name: my-gateway
+      namespace: openshift-ingress
+  hostnames:
+    - "web-vm.apps.example.com"
+  rules:
+    - backendRefs:
+        - name: web-vm-lb
+          port: 80
+----
+
+OpenShift supports all three ingress models simultaneously:
+
+* **OpenShift Routes** -- stable, proven default ingress backed by HAProxy; HTTP/HTTPS with edge, passthrough, or re-encrypt TLS termination.
+* **Gateway API** -- Kubernetes-standard alternative with L7 routing, traffic splitting, and cross-namespace references; requires OCP 4.19+.
+* **MetalLB LoadBalancer** -- L4 external IP assignment for any TCP/UDP protocol; the only option for non-HTTP workloads (SSH, databases, RDP) on bare metal.
+
+Routes and Gateway API both handle L7 HTTP traffic. MetalLB fills the L4 gap for protocols that neither can serve. On bare metal, MetalLB and Gateway API are complementary: MetalLB provides the external IP, and the Gateway handles L7 routing decisions.
+
+== Troubleshooting
+
+=== Service Stuck in Pending State
+
+If a LoadBalancer Service stays in `Pending` state with no external IP:
+
+[source,bash,role=execute]
+----
+oc describe svc <service-name> -n <namespace>
+----
+
+Common causes:
+
+* No `IPAddressPool` configured or all addresses exhausted
+* No `L2Advertisement` or `BGPAdvertisement` referencing the pool
+* MetalLB speaker pods not running (check `oc get pods -n metallb-system`)
+
+=== External IP Assigned but Not Reachable
+
+* Verify the IP is on the same L2 subnet as your client machine
+* Check that no firewall is blocking ARP or the target port
+* Verify the speaker pod is running on the node owning the IP: `oc get pods -n metallb-system -o wide`
+
+=== Connection Timeouts with externalTrafficPolicy: Cluster
+
+By default, services use `externalTrafficPolicy: Cluster`, which can cause asymmetric routing. If you experience timeouts, try setting `externalTrafficPolicy: Local`:
+
+[source,yaml]
+----
+spec:
+  externalTrafficPolicy: Local
+----
+
+This ensures traffic is only handled by the node advertising the IP, avoiding routing asymmetry.
+
+== Cleanup
+
+Remove the demo namespace:
+
+[source,bash,role=execute]
+----
+oc delete namespace metallb-demo
+----
+
+CAUTION: The MetalLB Operator remains installed for continued use. To remove it entirely:
+
+[source,bash,role=execute]
+----
+oc delete metallb metallb -n metallb-system
+----
+
+[source,bash,role=execute]
+----
+oc delete subscription metallb-operator -n metallb-system
+----
+
+[source,bash,role=execute]
+----
+CSV_NAME=$(oc get csv -n metallb-system -o jsonpath='{.items[0].metadata.name}')
+----
+
+[source,bash,role=execute]
+----
+oc delete csv -n metallb-system ${CSV_NAME}
+----
+
+[source,bash,role=execute]
+----
+oc delete namespace metallb-system
+----
+
+== Summary
+
+In this tutorial you learned:
+
+* MetalLB provides LoadBalancer Service support for bare-metal clusters without a cloud provider
+* L2 mode uses ARP announcements and requires IPs on the same subnet as cluster nodes
+* BGP mode enables route advertisement for routed data center environments
+* LoadBalancer Services expose VM non-HTTP ports (SSH, databases, RDP) on dedicated external IPs
+* Multiple ports can be combined in a single Service for a single external IP
+* The Service `selector` targets VM pods using labels from `spec.template.metadata.labels`
+* MetalLB assigns IPs automatically from configured `IPAddressPool` resources
+
+== See Also
+
+* xref:vm-ingress-routes.adoc[VM Ingress and Routes] -- Expose VM HTTP services via OpenShift Routes
+* link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.18/html/networking_operators/metallb-operator[MetalLB Operator Documentation,window=_blank]
+* link:https://docs.redhat.com/en/documentation/red_hat_openshift_service_mesh/3.0/html-single/gateways/index#ossm-exposing-a-service-by-using-the-kubernetes-gateway-api_ossm-getting-traffic-into-a-mesh[Exposing a Service Using the Kubernetes Gateway API (Service Mesh 3.0),window=_blank]
+* link:https://kubevirt.io/2022/Virtual-Machines-with-MetalLB.html[KubeVirt MetalLB Guide,window=_blank]
