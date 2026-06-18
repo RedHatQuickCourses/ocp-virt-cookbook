@@ -1,6 +1,6 @@
 # OpenShift Virtualization Cookbook
 
-[![Build](https://github.com/RedHatQuickCourses/ocp-virt-cookbook/actions/workflows/build.yml/badge.svg)](https://github.com/RedHatQuickCourses/ocp-virt-cookbook/actions/workflows/build.yml)
+[![Build](https://github.com/RedHatQuickCourses/ocp-virt-cookbook/actions/workflows/main.yml/badge.svg)](https://github.com/RedHatQuickCourses/ocp-virt-cookbook/actions/workflows/main.yml)
 [![OpenShift 4.18+](https://img.shields.io/badge/OpenShift-4.18%2B-ee0000)](https://docs.redhat.com/en/documentation/openshift_container_platform/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
