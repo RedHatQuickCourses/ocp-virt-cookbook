@@ -1,0 +1,49 @@
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: db-vm
+  namespace: netpol-demo
+  labels:
+    app: database
+    role: backend
+spec:
+  runStrategy: Always
+  template:
+    metadata:
+      labels:
+        app: database
+        role: backend
+    spec:
+      domain:
+        resources:
+          requests:
+            memory: 2Gi
+        devices:
+          disks:
+            - name: containerdisk
+              disk:
+                bus: virtio
+            - name: cloudinitdisk
+              disk:
+                bus: virtio
+          interfaces:
+            - name: default
+              masquerade: {}
+      networks:
+        - name: default
+          pod: {}
+      volumes:
+        - name: containerdisk
+          containerDisk:
+            image: quay.io/containerdisks/fedora:40
+        - name: cloudinitdisk
+          cloudInitNoCloud:
+            userData: |
+              #cloud-config
+              password: changeme
+              chpasswd:
+                expire: false
+              packages:
+                - nmap-ncat
+              runcmd:
+                - ncat -l -k -p 5432 -e /usr/bin/echo &
