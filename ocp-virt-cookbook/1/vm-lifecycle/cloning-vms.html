@@ -585,7 +585,8 @@ spec:
               #cloud-config
               user: fedora
               password: fedora123
-              chpasswd: { expire: false }
+              chpasswd:
+                expire: false
               ssh_pwauth: true
               runcmd:
                 - dnf install -y nginx
@@ -1124,7 +1125,8 @@ spec:
               fqdn: webserver-custom.local
               manage_etc_hosts: true
               password: fedora123
-              chpasswd: { expire: false }
+              chpasswd:
+                expire: false
               ssh_pwauth: true
               runcmd:
                 - hostnamectl set-hostname webserver-custom
@@ -1222,9 +1224,15 @@ rules:
     verbs: ["get", "list"]
   - apiGroups: ["cdi.kubevirt.io"]
     resources: ["datavolumes"]
-    verbs: ["get", "list"]
----
-apiVersion: rbac.authorization.k8s.io/v1
+    verbs: ["get", "list"]</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Bind the Role to the default service account in the production namespace:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
   name: allow-clone-from-demo
@@ -1349,7 +1357,8 @@ spec:
               fqdn: webserver-prod.production.local
               manage_etc_hosts: true
               password: fedora123
-              chpasswd: { expire: false }
+              chpasswd:
+                expire: false
               ssh_pwauth: true
               runcmd:
                 - hostnamectl set-hostname webserver-prod
