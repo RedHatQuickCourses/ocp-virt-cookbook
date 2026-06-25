@@ -1,0 +1,529 @@
+= Dual-Stack IPv4/IPv6 Networking for VMs
+:navtitle: Dual-Stack IPv4/IPv6 VMs
+
+== Overview
+
+This tutorial demonstrates how to deploy virtual machines with dual-stack (IPv4 + IPv6) networking on OpenShift Virtualization. You will configure VMs with both IPv4 and IPv6 connectivity using the default pod network with masquerade mode, and explore dual-stack User Defined Networks (UDN) for primary network isolation.
+
+Dual-stack networking is required in many enterprise and government environments (US federal OMB M-21-07), telco/5G deployments, and organizations transitioning to IPv6.
+
+== Prerequisites
+
+* **OpenShift 4.18+** with OpenShift Virtualization operator installed
+* OVN-Kubernetes network plugin (default)
+* **Dual-stack cluster networking** -- the cluster must have both IPv4 and IPv6 CIDRs configured for clusterNetwork and serviceNetwork (can be enabled at install time or as a day-2 operation on OpenShift 4.12+)
+* `oc` CLI installed
+* Cluster admin access
+
+Versions tested:
+----
+OpenShift 4.22
+----
+
+== Verify or Enable Dual-Stack Networking
+
+Both the cluster network and service network must have IPv4 and IPv6 CIDRs. Check the current configuration:
+
+[source,bash,role=execute]
+----
+oc get network.config cluster -o jsonpath='{.status.clusterNetwork[*].cidr}'
+----
+
+[source,bash,role=execute]
+----
+oc get network.config cluster -o jsonpath='{.status.serviceNetwork[*]}'
+----
+
+Expected output for a dual-stack cluster:
+----
+10.128.0.0/14 fd01::/48
+172.30.0.0/16 fd02::/112
+----
+
+If you only see IPv4 CIDRs, your cluster is single-stack. You can enable dual-stack as a day-2 operation without reinstalling. Patch the network configuration to add IPv6 CIDRs:
+
+[source,bash,role=execute]
+----
+oc patch network.config.openshift.io cluster --type=merge --patch='
+{
+  "spec": {
+    "clusterNetwork": [
+      {"cidr": "10.128.0.0/14", "hostPrefix": 23},
+      {"cidr": "fd01::/48", "hostPrefix": 64}
+    ],
+    "serviceNetwork": [
+      "172.30.0.0/16",
+      "fd02::/112"
+    ]
+  }
+}'
+----
+
+NOTE: This triggers a rolling restart of OVN-Kubernetes. On a single-node cluster, the API server will be temporarily unavailable for a few minutes. Wait for all cluster operators to stabilize before proceeding.
+
+Monitor the rollout:
+
+[source,bash,role=execute]
+----
+oc get co network -o jsonpath='{.status.conditions[?(@.type=="Progressing")].status}'
+----
+
+When the output shows `False` and the service network includes the IPv6 CIDR, the conversion is complete:
+
+[source,bash,role=execute]
+----
+oc get network.config cluster -o jsonpath='{.status.serviceNetwork[*]}'
+----
+
+Verify that nodes have both IPv4 and IPv6 addresses:
+
+[source,bash,role=execute]
+----
+oc get nodes -o jsonpath='{range .items[*]}{.metadata.name}: {.status.addresses[?(@.type=="InternalIP")].address}{"\n"}{end}'
+----
+
+== Step 1: Create a Namespace
+
+[source,bash,role=execute]
+----
+oc create namespace dualstack-demo
+----
+
+== Step 2: Deploy a Dual-Stack VM on the Pod Network
+
+With masquerade mode, the VM receives IPv4 automatically via DHCP from the virt-launcher pod. Unlike IPv4, the configuration of the IPv6 address and default route is not automatic and must be configured via cloud-init `networkData`. Although the virt-launcher starts a DHCPv6 server, it does not send Router Advertisements (RAs), so the guest OS never triggers a DHCPv6 solicitation. Static IPv6 addressing through cloud-init is the documented approach in both the link:https://kubevirt.io/user-guide/network/interfaces_and_networks/#masquerade-ipv4-and-ipv6-dual-stack-support[KubeVirt user guide,window=_blank] and the link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.22/html/virtualization/networking#virt-configuring-masquerade-mode-dual-stack_virt-connecting-vm-to-default-pod-network[OpenShift Virtualization documentation,window=_blank].
+
+The virt-launcher pod uses the internal subnet `fd10:0:2::/120` to route IPv6 traffic between itself and the VM. The VM gets address `fd10:0:2::2/120` and uses `fd10:0:2::1` as the gateway. These are fixed internal addresses determined by the `Network.pod.vmIPv6NetworkCIDR` field and do not appear on the external cluster network.
+
+xref:attachment$dual-stack-vms/vm-dualstack-masquerade.yaml[Download vm-dualstack-masquerade.yaml]
+
+[source,bash,role=execute]
+----
+oc apply -f - <<EOF
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: dualstack-vm
+  namespace: dualstack-demo
+spec:
+  runStrategy: Always
+  template:
+    metadata:
+      labels:
+        app: dualstack-vm
+    spec:
+      domain:
+        resources:
+          requests:
+            memory: 2Gi
+        devices:
+          disks:
+            - name: containerdisk
+              disk:
+                bus: virtio
+            - name: cloudinitdisk
+              disk:
+                bus: virtio
+          interfaces:
+            - name: default
+              masquerade: {}
+              ports:
+                - port: 80
+      networks:
+        - name: default
+          pod: {}
+      volumes:
+        - name: containerdisk
+          containerDisk:
+            image: quay.io/containerdisks/fedora:40
+        - name: cloudinitdisk
+          cloudInitNoCloud:
+            userData: |
+              #cloud-config
+              password: changeme
+              chpasswd:
+                expire: false
+              packages:
+                - nginx
+              runcmd:
+                - systemctl enable --now nginx
+            networkData: |
+              version: 2
+              ethernets:
+                eth0:
+                  dhcp4: true
+                  addresses: [ fd10:0:2::2/120 ]
+                  gateway6: fd10:0:2::1
+EOF
+----
+
+NOTE: The KubeVirt user guide uses `gateway6` and inline `addresses` format. This tutorial follows the same convention. While `gateway6` is deprecated in netplan 0.103+, KubeVirt's cloud-init implementation processes it correctly. If your guest OS warns about the deprecation, you can use `routes` entries instead (see <<_cloud_init_networkdata_reference>>).
+
+Wait for the VM to become ready:
+
+[source,bash,role=execute]
+----
+oc wait vm dualstack-vm -n dualstack-demo --for=condition=Ready --timeout=300s
+----
+
+== Step 3: Verify Dual-Stack Connectivity Inside the VM
+
+Access the VM console and verify both IPv4 and IPv6 are configured:
+
+[source,bash,role=execute]
+----
+virtctl console dualstack-vm -n dualstack-demo
+----
+
+Once logged in (user: `fedora` or `root`, password: `changeme`), check the network interfaces:
+
+[source,bash]
+----
+ip -4 addr show eth0
+----
+
+Expected output shows a `10.0.2.x` address (internal masquerade subnet):
+----
+inet 10.0.2.2/24 brd 10.0.2.255 scope global dynamic eth0
+----
+
+[source,bash]
+----
+ip -6 addr show eth0
+----
+
+Expected output shows the configured IPv6 address:
+----
+inet6 fd10:0:2::2/120 scope global
+----
+
+Verify IPv4 connectivity by pinging the gateway:
+
+[source,bash]
+----
+ping -c 3 10.0.2.1
+----
+
+Verify IPv6 connectivity by pinging the gateway:
+
+[source,bash]
+----
+ping6 -c 3 fd10:0:2::1
+----
+
+Exit the console with `Ctrl+]`.
+
+== Step 4: Verify External Dual-Stack Reachability
+
+The virt-launcher pod has both IPv4 and IPv6 addresses on the cluster network. Check the pod IPs:
+
+[source,bash,role=execute]
+----
+oc get vmi dualstack-vm -n dualstack-demo -o jsonpath='{.status.interfaces[0].ipAddresses}'
+----
+
+On a dual-stack cluster, this shows both an IPv4 and an IPv6 address. External clients can reach the VM through either address (via the masquerade NAT).
+
+== Step 5: Create a Dual-Stack Service
+
+Expose the VM through a Service that allocates both IPv4 and IPv6 cluster IPs:
+
+xref:attachment$dual-stack-vms/service-dualstack.yaml[Download service-dualstack.yaml]
+
+[source,bash,role=execute]
+----
+oc apply -f - <<EOF
+apiVersion: v1
+kind: Service
+metadata:
+  name: dualstack-web
+  namespace: dualstack-demo
+spec:
+  ipFamilyPolicy: RequireDualStack
+  ipFamilies:
+    - IPv4
+    - IPv6
+  selector:
+    app: dualstack-vm
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80
+EOF
+----
+
+Verify the Service has dual-stack ClusterIPs:
+
+[source,bash,role=execute]
+----
+oc get svc dualstack-web -n dualstack-demo -o jsonpath='{.spec.clusterIPs}'
+----
+
+Expected output shows two IPs (one IPv4, one IPv6):
+----
+["172.30.x.x","fd02::x"]
+----
+
+Test connectivity to the service over both families:
+
+[source,bash,role=execute]
+----
+oc run test-v4 --rm -i --restart=Never -n dualstack-demo --image=registry.access.redhat.com/ubi9/ubi-minimal -- curl -4 -s --connect-timeout 5 http://dualstack-web.dualstack-demo.svc:80
+----
+
+[source,bash,role=execute]
+----
+oc run test-v6 --rm -i --restart=Never -n dualstack-demo --image=registry.access.redhat.com/ubi9/ubi-minimal -- curl -6 -s --connect-timeout 5 http://dualstack-web.dualstack-demo.svc:80
+----
+
+== Dual-Stack with User Defined Networks
+
+For environments requiring network isolation with dual-stack, you can configure a primary UDN with both IPv4 and IPv6 subnets. This approach provides:
+
+* Native Layer 2 isolation between namespaces
+* Persistent IP addresses across live migrations
+* Managed IPAM for both address families
+
+=== Create a Dual-Stack UDN
+
+xref:attachment$dual-stack-vms/udn-dualstack.yaml[Download udn-dualstack.yaml]
+
+[source,bash,role=execute]
+----
+oc apply -f - <<EOF
+apiVersion: k8s.ovn.org/v1
+kind: UserDefinedNetwork
+metadata:
+  name: dualstack-udn
+  namespace: dualstack-demo
+spec:
+  topology: Layer2
+  layer2:
+    role: Primary
+    subnets:
+      - "10.200.0.0/16"
+      - "2001:db8:abcd::/64"
+    ipam:
+      lifecycle: Persistent
+EOF
+----
+
+NOTE: To use a primary UDN, the namespace must have the label `k8s.ovn.org/primary-user-defined-network: ""` set at namespace creation time. A ValidatingAdmissionPolicy prevents adding or removing this label after the namespace exists. If you used a namespace without this label for the earlier steps, delete and recreate it:
+
+[source,bash,role=execute]
+----
+oc delete namespace dualstack-demo
+----
+
+[source,bash,role=execute]
+----
+oc apply -f - <<EOF
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: dualstack-demo
+  labels:
+    k8s.ovn.org/primary-user-defined-network: ""
+EOF
+----
+
+=== Deploy a VM on the Dual-Stack UDN
+
+VMs on a primary UDN with IPAM receive both IPv4 and IPv6 addresses automatically from the configured subnets:
+
+xref:attachment$dual-stack-vms/vm-dualstack-udn.yaml[Download vm-dualstack-udn.yaml]
+
+[source,bash,role=execute]
+----
+oc apply -f - <<EOF
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: dualstack-udn-vm
+  namespace: dualstack-demo
+spec:
+  runStrategy: Always
+  template:
+    metadata:
+      labels:
+        app: dualstack-udn-vm
+    spec:
+      domain:
+        resources:
+          requests:
+            memory: 2Gi
+        devices:
+          disks:
+            - name: containerdisk
+              disk:
+                bus: virtio
+            - name: cloudinitdisk
+              disk:
+                bus: virtio
+          interfaces:
+            - name: primary-udn
+              binding:
+                name: l2bridge
+      networks:
+        - name: primary-udn
+          pod: {}
+      volumes:
+        - name: containerdisk
+          containerDisk:
+            image: quay.io/containerdisks/fedora:40
+        - name: cloudinitdisk
+          cloudInitNoCloud:
+            userData: |
+              #cloud-config
+              password: changeme
+              chpasswd:
+                expire: false
+EOF
+----
+
+With IPAM lifecycle set to `Persistent`, the VM retains its IPv4 and IPv6 addresses across reboots and live migrations.
+
+[[_cloud_init_networkdata_reference]]
+== Cloud-init networkData Reference
+
+The `networkData` field uses netplan version 2 format. The KubeVirt user guide and OpenShift documentation use the `gateway6` field with inline `addresses`:
+
+[source,yaml]
+----
+version: 2
+ethernets:
+  eth0:
+    dhcp4: true
+    addresses: [ fd10:0:2::2/120 ]
+    gateway6: fd10:0:2::1
+----
+
+The `gateway6` field is deprecated since netplan 0.103 and cloud-init 23.1. If your guest OS version produces deprecation warnings, use `routes` entries as an alternative:
+
+[source,yaml]
+----
+version: 2
+ethernets:
+  eth0:
+    dhcp4: true
+    addresses:
+      - fd10:0:2::2/120
+    routes:
+      - to: "::/0"
+        via: "fd10:0:2::1"
+----
+
+Both formats produce identical results. The `gateway6` format matches the upstream KubeVirt documentation; the `routes` format is forward-compatible with newer netplan versions.
+
+IMPORTANT: Do not wrap `networkData` in a top-level `network:` key. The field must start directly with `version: 2`.
+
+IMPORTANT: The interface name in `networkData` must match the primary name inside the guest OS. ContainerDisk images (e.g., `quay.io/containerdisks/fedora`) use `eth0`. OpenShift Virtualization DataSource images (golden images) may use predictable naming (`enp1s0`). Check with `ip link show` inside the VM -- the primary name appears first, with any alternate name shown as `altname`. If the name does not match, cloud-init silently skips the entire network configuration and `ip -6 addr show` will show no global IPv6 address on any interface.
+
+=== Why Static IPv6 Is Required on Masquerade
+
+The virt-launcher pod starts both a DHCP server (IPv4) and a DHCPv6 server (IPv6) on the internal masquerade bridge. IPv4 works automatically because the DHCP server responds to guest DHCP Discover messages. However, the DHCPv6 path is incomplete: the virt-launcher does not send Router Advertisements (RAs) on the masquerade bridge. Without RAs, the guest OS never triggers a DHCPv6 Solicit, so `dhcp6: true` in cloud-init does not acquire an address. Static IPv6 configuration through cloud-init `networkData` is required.
+
+The addresses `fd10:0:2::2/120` and gateway `fd10:0:2::1` are fixed internal values determined by the `Network.pod.vmIPv6NetworkCIDR` field in the VMI configuration and are used by the virt-launcher pod for VM-to-pod routing.
+
+On UDN primary networks with IPAM enabled, both IPv4 and IPv6 addresses are assigned automatically by OVN-Kubernetes and no cloud-init networkData is needed.
+
+== Common Pitfalls
+
+=== IPv6 Disabled in Guest OS
+
+Some guest images have IPv6 disabled via sysctl (`net.ipv6.conf.all.disable_ipv6=1`). Verify and enable if necessary:
+
+[source,bash]
+----
+sysctl net.ipv6.conf.all.disable_ipv6
+----
+
+If the value is `1`, enable IPv6:
+
+[source,bash]
+----
+sudo sysctl -w net.ipv6.conf.all.disable_ipv6=0
+sudo sysctl -w net.ipv6.conf.default.disable_ipv6=0
+----
+
+To make it persistent, add to cloud-init `userData`:
+
+[source,yaml]
+----
+write_files:
+  - path: /etc/sysctl.d/99-ipv6.conf
+    content: |
+      net.ipv6.conf.all.disable_ipv6=0
+      net.ipv6.conf.default.disable_ipv6=0
+runcmd:
+  - sysctl --system
+----
+
+=== SLAAC and DHCPv6 Do Not Work on Masquerade
+
+On the masquerade internal network, the virt-launcher starts a DHCPv6 server but does not send Router Advertisements. Without RAs, the guest OS cannot use SLAAC (Stateless Address Autoconfiguration) or trigger DHCPv6 solicitation. Setting `dhcp6: true` in cloud-init networkData will not acquire an address. Static IPv6 configuration via cloud-init is required. On external secondary networks (localnet, bridge), SLAAC and DHCPv6 depend on the external infrastructure.
+
+=== Privacy Extensions
+
+Linux distributions may enable IPv6 privacy extensions (RFC 4941) that generate temporary addresses. These can cause unexpected source address selection. If you need predictable source addresses for firewall rules, disable privacy extensions:
+
+[source,yaml]
+----
+version: 2
+ethernets:
+  eth0:
+    ipv6-privacy: false
+----
+
+=== DNS for IPv6
+
+On dual-stack clusters, the cluster DNS service (CoreDNS) resolves both A (IPv4) and AAAA (IPv6) records. VMs on the pod network can resolve cluster services over both protocols without additional configuration.
+
+On IPv6-only internal masquerade networks, note that FQDN resolution may not work because the DHCP-assigned search domains are only available for IPv4. Ensure nameserver configuration includes cluster DNS explicitly if needed.
+
+== Troubleshooting
+
+=== No IPv6 Address on VM Interface
+
+* Verify cloud-init `networkData` starts with `version: 2` (no `network:` wrapper)
+* Confirm the address format includes the prefix length: `fd10:0:2::2/120`
+* Check cloud-init logs inside the VM: `sudo cat /var/log/cloud-init.log | grep -i network`
+
+=== IPv6 Ping Works but TCP Connections Fail
+
+* Verify no NetworkPolicy is blocking IPv6 traffic
+* Check that the application inside the VM is listening on `::` (all interfaces) not just `0.0.0.0`
+
+=== Service Not Reachable Over IPv6
+
+* Confirm `spec.ipFamilyPolicy` is set to `PreferDualStack` or `RequireDualStack`
+* Verify both ClusterIPs are assigned: `oc get svc <name> -o jsonpath='{.spec.clusterIPs}'`
+* Ensure the cluster DNS returns AAAA records: `dig AAAA <svc>.<ns>.svc.cluster.local`
+
+== Cleanup
+
+Remove all resources created during this tutorial:
+
+[source,bash,role=execute]
+----
+oc delete namespace dualstack-demo
+----
+
+== Summary
+
+In this tutorial you learned:
+
+* Dual-stack clusters require both IPv4 and IPv6 CIDRs in clusterNetwork and serviceNetwork, which can be enabled at install time or as a day-2 operation.
+* On masquerade mode, IPv4 is configured via DHCP but IPv6 requires explicit static configuration through cloud-init `networkData` because the virt-launcher does not send Router Advertisements
+* The internal masquerade IPv6 subnet uses `fd10:0:2::/120` with a fixed gateway at `fd10:0:2::1`, determined by the `Network.pod.vmIPv6NetworkCIDR` field
+* User Defined Networks support dual-stack with two subnet CIDRs (one per address family) and automatic IPAM
+* Services can be configured for dual-stack using `ipFamilyPolicy: RequireDualStack`
+* Privacy extensions and disabled IPv6 in guest images are common sources of connectivity issues
+
+== See Also
+
+* xref:static-ip-configuration.adoc[Configuring Static IPs for VMs] -- Detailed cloud-init networkData reference
+* xref:cloud-init-troubleshooting.adoc[Cloud-init Troubleshooting] -- Common cloud-init network issues
+* xref:udn-primary-networks.adoc[UDN Primary Networks] -- Layer 2 primary networks for VMs
+* link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.22/html/virtualization/networking#virt-configuring-masquerade-mode-dual-stack_virt-connecting-vm-to-default-pod-network[OpenShift Virtualization Dual-Stack Masquerade (OCP 4.22),window=_blank]
+* link:https://kubevirt.io/user-guide/network/interfaces_and_networks/#masquerade-ipv4-and-ipv6-dual-stack-support[KubeVirt Dual-Stack Support,window=_blank]
