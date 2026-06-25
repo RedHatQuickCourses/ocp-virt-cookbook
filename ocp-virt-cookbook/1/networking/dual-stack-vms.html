@@ -1,0 +1,1091 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Dual-Stack IPv4/IPv6 Networking for VMs :: OpenShift Virtualization cookbook</title>
+    <link rel="prev" href="metallb-loadbalancer.html">
+    <link rel="next" href="vm-ingress-routes.html">
+    <meta name="generator" content="Antora 3.1.3">
+    <link rel="stylesheet" href="../../../_/css/site.css">
+    <script>var uiRootPath = '../../../_'</script>
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://www.redhat.com" target="_blank"><img src="../../../_/img/redhat-logo.png" height="40px" alt="Red Hat"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="../../..">OpenShift Virtualization cookbook</a>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues" target="_blank">Report Issues</a>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="ocp-virt-cookbook" data-version="1">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="../index.html">OpenShift Virtualization cookbook</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../index.html">Introduction</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../getting-started/index.html">Getting Started</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/prerequisites.html">Prerequisites</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/install-openshift-virtualization.html">Install OpenShift Virtualization</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/default-storage-class.html">Storage Setup</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/create-vm-web-console.html">Create VM from Web Console</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/create-vm-cli-yaml.html">Create VM from CLI</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/vm-lifecycle-states.html">VM Lifecycle States</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/virtctl-basics.html">Virtctl Basics</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/cloud-init-fundamentals.html">Cloud-init Fundamentals</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../storage/index.html">Storage Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/lvm-operator.html">LVM Operator Installation</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/lvm-troubleshooting.html">LVM Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/hostpath-provisioner.html">HostPath Provisioner</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/creating-managing-storage-class.html">Creating and Managing Storage Classes</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/multi-disk-configuration.html">Multi-Disk VMs</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="index.html">Networking Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="static-ip-configuration.html">Static IP Configuration</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="cloud-init-troubleshooting.html">Cloud-init Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="udn-primary-networks.html">UDN Primary Networks</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="localnet-secondary.html">Localnet Secondary Networks with CUDN</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="localnet-vlan.html">Localnet Secondary Networks with VLAN using NAD</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="cudn-localnet-vlan.html">Localnet VLAN with CUDN</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="layer2-secondary.html">Layer 2 Secondary Networks</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="linux-bridges.html">Linux Bridges</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="sriov-secondary.html">SR-IOV Secondary Networks</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="network-policies-vms.html">Network Policies for VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="metallb-loadbalancer.html">MetalLB Load Balancer for VMs</a>
+  </li>
+  <li class="nav-item is-current-page" data-depth="2">
+    <a class="nav-link" href="dual-stack-vms.html">Dual-Stack IPv4/IPv6 VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="vm-ingress-routes.html">VM Ingress and Routes</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="ovs-bridge-troubleshooting.html">Troubleshooting Localnet Networks</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../vm-configuration/index.html">Virtual Machine Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/internal-dns-for-vms.html">Internal DNS for VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/remote-access-linux-vms.html">Remote Access to Linux VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/remote-access-linux-troubleshooting.html">Remote Access to Linux VMs Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/remote-access-windows-vms.html">Remote Access to Windows VMs via RDP</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/windows-vm-virtio-drivers.html">Windows VMs with VirtIO Drivers</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/infrastructure-node-placement.html">Infrastructure Node Placement</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/node-placement-affinity.html">Node Placement and Affinity</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/hotplug-volumes-interfaces.html">Hotplug Volumes and Interfaces</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/vm-templates.html">Virtual Machine Templates</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../performance/index.html">VM Performance Tuning</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/resource-limits-qos.html">Resource Limits and QoS</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/cpu-pinning.html">Dedicated CPU Placement</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/numa-hugepages.html">NUMA and Hugepages</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/realtime-vms.html">Real-Time VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/vm-monitoring-metrics.html">VM Monitoring and Metrics</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../vm-lifecycle/index.html">VM Lifecycle Management</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/import-qcow2-boot-volume.html">Import qcow2 Boot Volume</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/custom-golden-images.html">Custom Golden Images</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/golden-images-troubleshooting.html">Golden Images Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/cloning-vms.html">Cloning VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/vm-snapshots.html">VM Snapshots</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/boot-order-boot-sources.html">VM Boot Order and Boot Sources</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../manifests/index.html">Manifests</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../api/index.html">API Guide</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../api/api-component-overview.html">API Component Overview</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../appendix/glossary.html">Glossary</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">OpenShift Virtualization cookbook</span>
+    <span class="version">1</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <a class="title" href="../index.html">OpenShift Virtualization cookbook</a>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">1</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">OpenShift Virtualization cookbook</a></li>
+    <li><a href="index.html">Networking Configuration</a></li>
+    <li><a href="dual-stack-vms.html">Dual-Stack IPv4/IPv6 VMs</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">Dual-Stack IPv4/IPv6 Networking for VMs</h1>
+<div class="sect1">
+<h2 id="_overview"><a class="anchor" href="#_overview"></a>Overview</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>This tutorial demonstrates how to deploy virtual machines with dual-stack (IPv4 + IPv6) networking on OpenShift Virtualization. You will configure VMs with both IPv4 and IPv6 connectivity using the default pod network with masquerade mode, and explore dual-stack User Defined Networks (UDN) for primary network isolation.</p>
+</div>
+<div class="paragraph">
+<p>Dual-stack networking is required in many enterprise and government environments (US federal OMB M-21-07), telco/5G deployments, and organizations transitioning to IPv6.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_prerequisites"><a class="anchor" href="#_prerequisites"></a>Prerequisites</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p><strong>OpenShift 4.18+</strong> with OpenShift Virtualization operator installed</p>
+</li>
+<li>
+<p>OVN-Kubernetes network plugin (default)</p>
+</li>
+<li>
+<p><strong>Dual-stack cluster networking</strong>&#8201;&#8212;&#8201;the cluster must have both IPv4 and IPv6 CIDRs configured for clusterNetwork and serviceNetwork (can be enabled at install time or as a day-2 operation on OpenShift 4.12+)</p>
+</li>
+<li>
+<p><code>oc</code> CLI installed</p>
+</li>
+<li>
+<p>Cluster admin access</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Versions tested:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>OpenShift 4.22</pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_verify_or_enable_dual_stack_networking"><a class="anchor" href="#_verify_or_enable_dual_stack_networking"></a>Verify or Enable Dual-Stack Networking</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Both the cluster network and service network must have IPv4 and IPv6 CIDRs. Check the current configuration:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get network.config cluster -o jsonpath='{.status.clusterNetwork[*].cidr}'</code></pre>
+</div>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get network.config cluster -o jsonpath='{.status.serviceNetwork[*]}'</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Expected output for a dual-stack cluster:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>10.128.0.0/14 fd01::/48
+172.30.0.0/16 fd02::/112</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If you only see IPv4 CIDRs, your cluster is single-stack. You can enable dual-stack as a day-2 operation without reinstalling. Patch the network configuration to add IPv6 CIDRs:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc patch network.config.openshift.io cluster --type=merge --patch='
+{
+  "spec": {
+    "clusterNetwork": [
+      {"cidr": "10.128.0.0/14", "hostPrefix": 23},
+      {"cidr": "fd01::/48", "hostPrefix": 64}
+    ],
+    "serviceNetwork": [
+      "172.30.0.0/16",
+      "fd02::/112"
+    ]
+  }
+}'</code></pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+This triggers a rolling restart of OVN-Kubernetes. On a single-node cluster, the API server will be temporarily unavailable for a few minutes. Wait for all cluster operators to stabilize before proceeding.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Monitor the rollout:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get co network -o jsonpath='{.status.conditions[?(@.type=="Progressing")].status}'</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>When the output shows <code>False</code> and the service network includes the IPv6 CIDR, the conversion is complete:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get network.config cluster -o jsonpath='{.status.serviceNetwork[*]}'</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Verify that nodes have both IPv4 and IPv6 addresses:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get nodes -o jsonpath='{range .items[*]}{.metadata.name}: {.status.addresses[?(@.type=="InternalIP")].address}{"\n"}{end}'</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_1_create_a_namespace"><a class="anchor" href="#_step_1_create_a_namespace"></a>Step 1: Create a Namespace</h2>
+<div class="sectionbody">
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc create namespace dualstack-demo</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_2_deploy_a_dual_stack_vm_on_the_pod_network"><a class="anchor" href="#_step_2_deploy_a_dual_stack_vm_on_the_pod_network"></a>Step 2: Deploy a Dual-Stack VM on the Pod Network</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>With masquerade mode, the VM receives IPv4 automatically via DHCP from the virt-launcher pod. Unlike IPv4, the configuration of the IPv6 address and default route is not automatic and must be configured via cloud-init <code>networkData</code>. Although the virt-launcher starts a DHCPv6 server, it does not send Router Advertisements (RAs), so the guest OS never triggers a DHCPv6 solicitation. Static IPv6 addressing through cloud-init is the documented approach in both the <a href="https://kubevirt.io/user-guide/network/interfaces_and_networks/#masquerade-ipv4-and-ipv6-dual-stack-support" target="_blank" rel="noopener">KubeVirt user guide</a> and the <a href="https://docs.redhat.com/en/documentation/openshift_container_platform/4.22/html/virtualization/networking#virt-configuring-masquerade-mode-dual-stack_virt-connecting-vm-to-default-pod-network" target="_blank" rel="noopener">OpenShift Virtualization documentation</a>.</p>
+</div>
+<div class="paragraph">
+<p>The virt-launcher pod uses the internal subnet <code>fd10:0:2::/120</code> to route IPv6 traffic between itself and the VM. The VM gets address <code>fd10:0:2::2/120</code> and uses <code>fd10:0:2::1</code> as the gateway. These are fixed internal addresses determined by the <code>Network.pod.vmIPv6NetworkCIDR</code> field and do not appear on the external cluster network.</p>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/dual-stack-vms/vm-dualstack-masquerade.yaml" class="xref attachment">Download vm-dualstack-masquerade.yaml</a></p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f - &lt;&lt;EOF
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: dualstack-vm
+  namespace: dualstack-demo
+spec:
+  runStrategy: Always
+  template:
+    metadata:
+      labels:
+        app: dualstack-vm
+    spec:
+      domain:
+        resources:
+          requests:
+            memory: 2Gi
+        devices:
+          disks:
+            - name: containerdisk
+              disk:
+                bus: virtio
+            - name: cloudinitdisk
+              disk:
+                bus: virtio
+          interfaces:
+            - name: default
+              masquerade: {}
+              ports:
+                - port: 80
+      networks:
+        - name: default
+          pod: {}
+      volumes:
+        - name: containerdisk
+          containerDisk:
+            image: quay.io/containerdisks/fedora:40
+        - name: cloudinitdisk
+          cloudInitNoCloud:
+            userData: |
+              #cloud-config
+              password: changeme
+              chpasswd:
+                expire: false
+              packages:
+                - nginx
+              runcmd:
+                - systemctl enable --now nginx
+            networkData: |
+              version: 2
+              ethernets:
+                eth0:
+                  dhcp4: true
+                  addresses: [ fd10:0:2::2/120 ]
+                  gateway6: fd10:0:2::1
+EOF</code></pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+The KubeVirt user guide uses <code>gateway6</code> and inline <code>addresses</code> format. This tutorial follows the same convention. While <code>gateway6</code> is deprecated in netplan 0.103+, KubeVirt&#8217;s cloud-init implementation processes it correctly. If your guest OS warns about the deprecation, you can use <code>routes</code> entries instead (see <a href="#_cloud_init_networkdata_reference">Cloud-init networkData Reference</a>).
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Wait for the VM to become ready:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc wait vm dualstack-vm -n dualstack-demo --for=condition=Ready --timeout=300s</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_3_verify_dual_stack_connectivity_inside_the_vm"><a class="anchor" href="#_step_3_verify_dual_stack_connectivity_inside_the_vm"></a>Step 3: Verify Dual-Stack Connectivity Inside the VM</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Access the VM console and verify both IPv4 and IPv6 are configured:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">virtctl console dualstack-vm -n dualstack-demo</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Once logged in (user: <code>fedora</code> or <code>root</code>, password: <code>changeme</code>), check the network interfaces:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">ip -4 addr show eth0</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Expected output shows a <code>10.0.2.x</code> address (internal masquerade subnet):</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>inet 10.0.2.2/24 brd 10.0.2.255 scope global dynamic eth0</pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">ip -6 addr show eth0</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Expected output shows the configured IPv6 address:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>inet6 fd10:0:2::2/120 scope global</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Verify IPv4 connectivity by pinging the gateway:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">ping -c 3 10.0.2.1</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Verify IPv6 connectivity by pinging the gateway:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">ping6 -c 3 fd10:0:2::1</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Exit the console with <code>Ctrl+]</code>.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_4_verify_external_dual_stack_reachability"><a class="anchor" href="#_step_4_verify_external_dual_stack_reachability"></a>Step 4: Verify External Dual-Stack Reachability</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The virt-launcher pod has both IPv4 and IPv6 addresses on the cluster network. Check the pod IPs:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vmi dualstack-vm -n dualstack-demo -o jsonpath='{.status.interfaces[0].ipAddresses}'</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>On a dual-stack cluster, this shows both an IPv4 and an IPv6 address. External clients can reach the VM through either address (via the masquerade NAT).</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_5_create_a_dual_stack_service"><a class="anchor" href="#_step_5_create_a_dual_stack_service"></a>Step 5: Create a Dual-Stack Service</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Expose the VM through a Service that allocates both IPv4 and IPv6 cluster IPs:</p>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/dual-stack-vms/service-dualstack.yaml" class="xref attachment">Download service-dualstack.yaml</a></p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f - &lt;&lt;EOF
+apiVersion: v1
+kind: Service
+metadata:
+  name: dualstack-web
+  namespace: dualstack-demo
+spec:
+  ipFamilyPolicy: RequireDualStack
+  ipFamilies:
+    - IPv4
+    - IPv6
+  selector:
+    app: dualstack-vm
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80
+EOF</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Verify the Service has dual-stack ClusterIPs:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get svc dualstack-web -n dualstack-demo -o jsonpath='{.spec.clusterIPs}'</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Expected output shows two IPs (one IPv4, one IPv6):</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>["172.30.x.x","fd02::x"]</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Test connectivity to the service over both families:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc run test-v4 --rm -i --restart=Never -n dualstack-demo --image=registry.access.redhat.com/ubi9/ubi-minimal -- curl -4 -s --connect-timeout 5 http://dualstack-web.dualstack-demo.svc:80</code></pre>
+</div>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc run test-v6 --rm -i --restart=Never -n dualstack-demo --image=registry.access.redhat.com/ubi9/ubi-minimal -- curl -6 -s --connect-timeout 5 http://dualstack-web.dualstack-demo.svc:80</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_dual_stack_with_user_defined_networks"><a class="anchor" href="#_dual_stack_with_user_defined_networks"></a>Dual-Stack with User Defined Networks</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>For environments requiring network isolation with dual-stack, you can configure a primary UDN with both IPv4 and IPv6 subnets. This approach provides:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Native Layer 2 isolation between namespaces</p>
+</li>
+<li>
+<p>Persistent IP addresses across live migrations</p>
+</li>
+<li>
+<p>Managed IPAM for both address families</p>
+</li>
+</ul>
+</div>
+<div class="sect2">
+<h3 id="_create_a_dual_stack_udn"><a class="anchor" href="#_create_a_dual_stack_udn"></a>Create a Dual-Stack UDN</h3>
+<div class="paragraph">
+<p><a href="_attachments/dual-stack-vms/udn-dualstack.yaml" class="xref attachment">Download udn-dualstack.yaml</a></p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f - &lt;&lt;EOF
+apiVersion: k8s.ovn.org/v1
+kind: UserDefinedNetwork
+metadata:
+  name: dualstack-udn
+  namespace: dualstack-demo
+spec:
+  topology: Layer2
+  layer2:
+    role: Primary
+    subnets:
+      - "10.200.0.0/16"
+      - "2001:db8:abcd::/64"
+    ipam:
+      lifecycle: Persistent
+EOF</code></pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+To use a primary UDN, the namespace must have the label <code>k8s.ovn.org/primary-user-defined-network: ""</code> set at namespace creation time. A ValidatingAdmissionPolicy prevents adding or removing this label after the namespace exists. If you used a namespace without this label for the earlier steps, delete and recreate it:
+</td>
+</tr>
+</table>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc delete namespace dualstack-demo</code></pre>
+</div>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f - &lt;&lt;EOF
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: dualstack-demo
+  labels:
+    k8s.ovn.org/primary-user-defined-network: ""
+EOF</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_deploy_a_vm_on_the_dual_stack_udn"><a class="anchor" href="#_deploy_a_vm_on_the_dual_stack_udn"></a>Deploy a VM on the Dual-Stack UDN</h3>
+<div class="paragraph">
+<p>VMs on a primary UDN with IPAM receive both IPv4 and IPv6 addresses automatically from the configured subnets:</p>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/dual-stack-vms/vm-dualstack-udn.yaml" class="xref attachment">Download vm-dualstack-udn.yaml</a></p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f - &lt;&lt;EOF
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: dualstack-udn-vm
+  namespace: dualstack-demo
+spec:
+  runStrategy: Always
+  template:
+    metadata:
+      labels:
+        app: dualstack-udn-vm
+    spec:
+      domain:
+        resources:
+          requests:
+            memory: 2Gi
+        devices:
+          disks:
+            - name: containerdisk
+              disk:
+                bus: virtio
+            - name: cloudinitdisk
+              disk:
+                bus: virtio
+          interfaces:
+            - name: primary-udn
+              binding:
+                name: l2bridge
+      networks:
+        - name: primary-udn
+          pod: {}
+      volumes:
+        - name: containerdisk
+          containerDisk:
+            image: quay.io/containerdisks/fedora:40
+        - name: cloudinitdisk
+          cloudInitNoCloud:
+            userData: |
+              #cloud-config
+              password: changeme
+              chpasswd:
+                expire: false
+EOF</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>With IPAM lifecycle set to <code>Persistent</code>, the VM retains its IPv4 and IPv6 addresses across reboots and live migrations.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_cloud_init_networkdata_reference"><a class="anchor" href="#_cloud_init_networkdata_reference"></a>Cloud-init networkData Reference</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The <code>networkData</code> field uses netplan version 2 format. The KubeVirt user guide and OpenShift documentation use the <code>gateway6</code> field with inline <code>addresses</code>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">version: 2
+ethernets:
+  eth0:
+    dhcp4: true
+    addresses: [ fd10:0:2::2/120 ]
+    gateway6: fd10:0:2::1</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The <code>gateway6</code> field is deprecated since netplan 0.103 and cloud-init 23.1. If your guest OS version produces deprecation warnings, use <code>routes</code> entries as an alternative:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">version: 2
+ethernets:
+  eth0:
+    dhcp4: true
+    addresses:
+      - fd10:0:2::2/120
+    routes:
+      - to: "::/0"
+        via: "fd10:0:2::1"</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Both formats produce identical results. The <code>gateway6</code> format matches the upstream KubeVirt documentation; the <code>routes</code> format is forward-compatible with newer netplan versions.</p>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-important" title="Important"></i>
+</td>
+<td class="content">
+Do not wrap <code>networkData</code> in a top-level <code>network:</code> key. The field must start directly with <code>version: 2</code>.
+</td>
+</tr>
+</table>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-important" title="Important"></i>
+</td>
+<td class="content">
+The interface name in <code>networkData</code> must match the primary name inside the guest OS. ContainerDisk images (e.g., <code>quay.io/containerdisks/fedora</code>) use <code>eth0</code>. OpenShift Virtualization DataSource images (golden images) may use predictable naming (<code>enp1s0</code>). Check with <code>ip link show</code> inside the VM&#8201;&#8212;&#8201;the primary name appears first, with any alternate name shown as <code>altname</code>. If the name does not match, cloud-init silently skips the entire network configuration and <code>ip -6 addr show</code> will show no global IPv6 address on any interface.
+</td>
+</tr>
+</table>
+</div>
+<div class="sect2">
+<h3 id="_why_static_ipv6_is_required_on_masquerade"><a class="anchor" href="#_why_static_ipv6_is_required_on_masquerade"></a>Why Static IPv6 Is Required on Masquerade</h3>
+<div class="paragraph">
+<p>The virt-launcher pod starts both a DHCP server (IPv4) and a DHCPv6 server (IPv6) on the internal masquerade bridge. IPv4 works automatically because the DHCP server responds to guest DHCP Discover messages. However, the DHCPv6 path is incomplete: the virt-launcher does not send Router Advertisements (RAs) on the masquerade bridge. Without RAs, the guest OS never triggers a DHCPv6 Solicit, so <code>dhcp6: true</code> in cloud-init does not acquire an address. Static IPv6 configuration through cloud-init <code>networkData</code> is required.</p>
+</div>
+<div class="paragraph">
+<p>The addresses <code>fd10:0:2::2/120</code> and gateway <code>fd10:0:2::1</code> are fixed internal values determined by the <code>Network.pod.vmIPv6NetworkCIDR</code> field in the VMI configuration and are used by the virt-launcher pod for VM-to-pod routing.</p>
+</div>
+<div class="paragraph">
+<p>On UDN primary networks with IPAM enabled, both IPv4 and IPv6 addresses are assigned automatically by OVN-Kubernetes and no cloud-init networkData is needed.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_common_pitfalls"><a class="anchor" href="#_common_pitfalls"></a>Common Pitfalls</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_ipv6_disabled_in_guest_os"><a class="anchor" href="#_ipv6_disabled_in_guest_os"></a>IPv6 Disabled in Guest OS</h3>
+<div class="paragraph">
+<p>Some guest images have IPv6 disabled via sysctl (<code>net.ipv6.conf.all.disable_ipv6=1</code>). Verify and enable if necessary:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">sysctl net.ipv6.conf.all.disable_ipv6</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If the value is <code>1</code>, enable IPv6:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">sudo sysctl -w net.ipv6.conf.all.disable_ipv6=0
+sudo sysctl -w net.ipv6.conf.default.disable_ipv6=0</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>To make it persistent, add to cloud-init <code>userData</code>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">write_files:
+  - path: /etc/sysctl.d/99-ipv6.conf
+    content: |
+      net.ipv6.conf.all.disable_ipv6=0
+      net.ipv6.conf.default.disable_ipv6=0
+runcmd:
+  - sysctl --system</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_slaac_and_dhcpv6_do_not_work_on_masquerade"><a class="anchor" href="#_slaac_and_dhcpv6_do_not_work_on_masquerade"></a>SLAAC and DHCPv6 Do Not Work on Masquerade</h3>
+<div class="paragraph">
+<p>On the masquerade internal network, the virt-launcher starts a DHCPv6 server but does not send Router Advertisements. Without RAs, the guest OS cannot use SLAAC (Stateless Address Autoconfiguration) or trigger DHCPv6 solicitation. Setting <code>dhcp6: true</code> in cloud-init networkData will not acquire an address. Static IPv6 configuration via cloud-init is required. On external secondary networks (localnet, bridge), SLAAC and DHCPv6 depend on the external infrastructure.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_privacy_extensions"><a class="anchor" href="#_privacy_extensions"></a>Privacy Extensions</h3>
+<div class="paragraph">
+<p>Linux distributions may enable IPv6 privacy extensions (RFC 4941) that generate temporary addresses. These can cause unexpected source address selection. If you need predictable source addresses for firewall rules, disable privacy extensions:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">version: 2
+ethernets:
+  eth0:
+    ipv6-privacy: false</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_dns_for_ipv6"><a class="anchor" href="#_dns_for_ipv6"></a>DNS for IPv6</h3>
+<div class="paragraph">
+<p>On dual-stack clusters, the cluster DNS service (CoreDNS) resolves both A (IPv4) and AAAA (IPv6) records. VMs on the pod network can resolve cluster services over both protocols without additional configuration.</p>
+</div>
+<div class="paragraph">
+<p>On IPv6-only internal masquerade networks, note that FQDN resolution may not work because the DHCP-assigned search domains are only available for IPv4. Ensure nameserver configuration includes cluster DNS explicitly if needed.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_troubleshooting"><a class="anchor" href="#_troubleshooting"></a>Troubleshooting</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_no_ipv6_address_on_vm_interface"><a class="anchor" href="#_no_ipv6_address_on_vm_interface"></a>No IPv6 Address on VM Interface</h3>
+<div class="ulist">
+<ul>
+<li>
+<p>Verify cloud-init <code>networkData</code> starts with <code>version: 2</code> (no <code>network:</code> wrapper)</p>
+</li>
+<li>
+<p>Confirm the address format includes the prefix length: <code>fd10:0:2::2/120</code></p>
+</li>
+<li>
+<p>Check cloud-init logs inside the VM: <code>sudo cat /var/log/cloud-init.log | grep -i network</code></p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_ipv6_ping_works_but_tcp_connections_fail"><a class="anchor" href="#_ipv6_ping_works_but_tcp_connections_fail"></a>IPv6 Ping Works but TCP Connections Fail</h3>
+<div class="ulist">
+<ul>
+<li>
+<p>Verify no NetworkPolicy is blocking IPv6 traffic</p>
+</li>
+<li>
+<p>Check that the application inside the VM is listening on <code>::</code> (all interfaces) not just <code>0.0.0.0</code></p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_service_not_reachable_over_ipv6"><a class="anchor" href="#_service_not_reachable_over_ipv6"></a>Service Not Reachable Over IPv6</h3>
+<div class="ulist">
+<ul>
+<li>
+<p>Confirm <code>spec.ipFamilyPolicy</code> is set to <code>PreferDualStack</code> or <code>RequireDualStack</code></p>
+</li>
+<li>
+<p>Verify both ClusterIPs are assigned: <code>oc get svc &lt;name&gt; -o jsonpath='{.spec.clusterIPs}'</code></p>
+</li>
+<li>
+<p>Ensure the cluster DNS returns AAAA records: <code>dig AAAA &lt;svc&gt;.&lt;ns&gt;.svc.cluster.local</code></p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_cleanup"><a class="anchor" href="#_cleanup"></a>Cleanup</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Remove all resources created during this tutorial:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc delete namespace dualstack-demo</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_summary"><a class="anchor" href="#_summary"></a>Summary</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>In this tutorial you learned:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Dual-stack clusters require both IPv4 and IPv6 CIDRs in clusterNetwork and serviceNetwork, which can be enabled at install time or as a day-2 operation.</p>
+</li>
+<li>
+<p>On masquerade mode, IPv4 is configured via DHCP but IPv6 requires explicit static configuration through cloud-init <code>networkData</code> because the virt-launcher does not send Router Advertisements</p>
+</li>
+<li>
+<p>The internal masquerade IPv6 subnet uses <code>fd10:0:2::/120</code> with a fixed gateway at <code>fd10:0:2::1</code>, determined by the <code>Network.pod.vmIPv6NetworkCIDR</code> field</p>
+</li>
+<li>
+<p>User Defined Networks support dual-stack with two subnet CIDRs (one per address family) and automatic IPAM</p>
+</li>
+<li>
+<p>Services can be configured for dual-stack using <code>ipFamilyPolicy: RequireDualStack</code></p>
+</li>
+<li>
+<p>Privacy extensions and disabled IPv6 in guest images are common sources of connectivity issues</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_see_also"><a class="anchor" href="#_see_also"></a>See Also</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p><a href="static-ip-configuration.html" class="xref page">Configuring Static IPs for VMs</a>&#8201;&#8212;&#8201;Detailed cloud-init networkData reference</p>
+</li>
+<li>
+<p><a href="cloud-init-troubleshooting.html" class="xref page">Cloud-init Troubleshooting</a>&#8201;&#8212;&#8201;Common cloud-init network issues</p>
+</li>
+<li>
+<p><a href="udn-primary-networks.html" class="xref page">UDN Primary Networks</a>&#8201;&#8212;&#8201;Layer 2 primary networks for VMs</p>
+</li>
+<li>
+<p><a href="https://docs.redhat.com/en/documentation/openshift_container_platform/4.22/html/virtualization/networking#virt-configuring-masquerade-mode-dual-stack_virt-connecting-vm-to-default-pod-network" target="_blank" rel="noopener">OpenShift Virtualization Dual-Stack Masquerade (OCP 4.22)</a></p>
+</li>
+<li>
+<p><a href="https://kubevirt.io/user-guide/network/interfaces_and_networks/#masquerade-ipv4-and-ipv6-dual-stack-support" target="_blank" rel="noopener">KubeVirt Dual-Stack Support</a></p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<nav class="pagination">
+  <span class="prev"><a href="metallb-loadbalancer.html">MetalLB Load Balancer for VMs</a></span>
+  <span class="next"><a href="vm-ingress-routes.html">VM Ingress and Routes</a></span>
+</nav>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <img src="../../../_/img/rhl-logo-red.png" height="40px" alt="Red Hat"  href="https://redhat.com" >
+</footer><script id="site-script" src="../../../_/js/site.js" data-ui-root-path="../../../_"></script>
+<script async src="../../../_/js/vendor/highlight.js"></script>
+  </body>
+</html>
