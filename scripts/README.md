@@ -20,9 +20,10 @@ npm install -g @mermaid-js/mermaid-cli
 
 ### Adding a new diagram
 
-1. Add a `.mmd` file under `scripts/diagrams/`.
-2. Run `./scripts/render-diagrams.sh`.
-3. Reference the image in the `.adoc` page with `image::filename.png[Alt text]`.
+1. Create a subdirectory under `scripts/diagrams/` matching the target module name (e.g., `scripts/diagrams/vm-lifecycle/`).
+2. Add a `.mmd` file in that subdirectory.
+3. Run `./scripts/render-diagrams.sh` — the PNG is placed in `modules/<module>/images/`.
+4. Reference the image in the `.adoc` page with `image::filename.png[Alt text]`.
 
 ---
 
