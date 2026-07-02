@@ -8,4 +8,4 @@ Read and follow `.cursor/agents/tutorial.md`.
 
 Parse issue numbers from: $ARGUMENTS
 
-Process each issue sequentially through the full pipeline. Use `Co-authored-by: Claude <noreply@anthropic.com>` for the commit trailer.
+Process each issue sequentially through the full pipeline.

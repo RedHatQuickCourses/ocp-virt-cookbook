@@ -28,8 +28,6 @@ Read and follow all rules in `.cursor/rules/shared-constraints.mdc` and `.cursor
 - <change 1>
 - <change 2>
 - ...
-
-Co-authored-by: cursor[bot] <206951365+cursor[bot]@users.noreply.github.com>
 ```
 
 ### PR Title Format
