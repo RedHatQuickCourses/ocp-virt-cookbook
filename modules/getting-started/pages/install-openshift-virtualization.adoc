@@ -5,8 +5,95 @@
 
 This tutorial demonstrates how to install and configure the OpenShift Virtualization operator, which enables you to run virtual machines alongside container workloads on your OpenShift cluster. OpenShift Virtualization is based on the upstream KubeVirt project and provides enterprise-grade virtualization capabilities.
 
+* <<Why OpenShift Virtualization>>
+* <<What Gets Deployed>>
 * <<Installing via Web Console>>
 * <<Installing via Command Line>>
+* <<Post-Install Verification Checklist>>
+
+== Why OpenShift Virtualization
+
+Before diving into the installation, it helps to understand the business drivers behind running virtual machines on OpenShift.
+
+Infrastructure consolidation::
+Run VMs and containers on the same OpenShift cluster, sharing compute, storage, and networking resources. This eliminates the need for a separate hypervisor platform and reduces hardware and licensing costs.
+
+VMware migration path::
+The Migration Toolkit for Virtualization (MTV) enables organizations to migrate existing VMware vSphere VMs to OpenShift Virtualization. This provides a gradual migration path without rewriting applications, supporting both cold and warm migration strategies.
+
+Modernization bridge::
+Keep legacy VM workloads running while modernizing applications into containers. Teams that adopted Kubernetes but retain workloads that cannot be containerized can manage both on a single platform.
+
+Unified management::
+A single control plane handles both VMs and containers. OpenShift RBAC, monitoring (Prometheus), logging, and networking policies apply uniformly to all workload types. The web console provides a single interface for managing VMs and containers side by side.
+
+== What Gets Deployed
+
+Installing the OpenShift Virtualization operator deploys a coordinated set of components across the cluster. Understanding this architecture helps with troubleshooting and capacity planning.
+
+....
+OpenShift Cluster
+│
+└─ openshift-cnv Namespace
+   └─ HyperConverged CR (single entry point)
+      ├─ KubeVirt Operator
+      │    ├─ virt-api        — API server & console access
+      │    └─ virt-controller — VMI lifecycle & scheduling
+      │         ├─ Worker Node 1
+      │         │    ├─ virt-handler (DaemonSet)
+      │         │    └─ virt-launcher Pod
+      │         │         ├─ libvirtd (session mode)
+      │         │         └─ QEMU/KVM
+      │         └─ Worker Node N
+      │              ├─ virt-handler (DaemonSet)
+      │              └─ virt-launcher Pod
+      │                   ├─ libvirtd (session mode)
+      │                   └─ QEMU/KVM
+      ├─ CDI Operator        — VM image import/upload/clone
+      ├─ SSP Operator        — templates & boot sources
+      └─ Network Addons Op   — Multus CNI secondary networks
+....
+
+=== Operators (openshift-cnv namespace)
+
+The HyperConverged custom resource (CR) is the single entry point for the entire stack. Creating one `HyperConverged` CR triggers the deployment of four sub-operators:
+
+[cols="1,3",options="header"]
+|===
+| Operator | Role
+
+| KubeVirt Operator
+| Core virtualization. Deploys and manages `virt-api`, `virt-controller`, and `virt-handler`.
+
+| CDI Operator
+| Containerized Data Importer. Handles VM image import, upload, and cloning into PersistentVolumeClaims.
+
+| SSP Operator
+| Scheduling, Scale, and Performance. Deploys VM templates, default boot sources, and template validation.
+
+| Network Addons Operator
+| Deploys networking components for secondary network support via Multus CNI.
+|===
+
+=== Control Plane
+
+The KubeVirt Operator creates two cluster-level components that run as non-privileged pods:
+
+* **virt-api** -- Kubernetes API extension that validates VM API requests and provides console/VNC access.
+* **virt-controller** -- Monitors VirtualMachineInstance (VMI) objects, creates pods for VM scheduling, and manages VM lifecycle state transitions.
+
+=== Node-Level Components
+
+**virt-handler** runs as a DaemonSet on every node capable of hosting VMs. It operates with elevated privileges to perform host-level setup: device injection, network bridge configuration, and VMI state reconciliation.
+
+=== Per-VM Components
+
+Each virtual machine runs inside its own **virt-launcher** pod. This pod contains:
+
+* **libvirtd** running in session mode (non-root, isolated per VM)
+* **QEMU/KVM** for hardware-accelerated virtualization
+
+This architecture ensures VM processes are isolated from each other and run as unprivileged workloads by default.
 
 == Prerequisites
 
@@ -189,6 +276,60 @@ Degraded: False
 Upgradeable: True
 ----
 
+== Post-Install Verification Checklist
+
+After completing the installation (via web console or CLI), verify the deployment is healthy.
+
+=== Check Pod Status
+
+All pods in the `openshift-cnv` namespace should be in `Running` or `Completed` state:
+
+[source,bash,role=execute]
+----
+oc get pods -n openshift-cnv
+----
+
+=== Verify HyperConverged Conditions
+
+All conditions should report a healthy state:
+
+[source,bash,role=execute]
+----
+oc get hyperconverged kubevirt-hyperconverged -n openshift-cnv -o jsonpath='{range .status.conditions[*]}{.type}: {.status}{"\n"}{end}'
+----
+
+Expected output:
+
+----
+ReconcileComplete: True
+Available: True
+Progressing: False
+Degraded: False
+Upgradeable: True
+----
+
+=== Verify Boot Source DataSources
+
+Default boot sources for supported operating systems should be available:
+
+[source,bash,role=execute]
+----
+oc get datasources -n openshift-virtualization-os-images
+----
+
+You should see entries for RHEL, Fedora, CentOS, and Windows boot images with `Ready` conditions.
+
+=== Verify Default StorageClass
+
+A default StorageClass must be configured for VM disk provisioning:
+
+[source,bash,role=execute]
+----
+oc get storageclass
+----
+
+Look for a StorageClass marked `(default)`. If none is set, see xref:default-storage-class.adoc[Configure a Default StorageClass] before creating VMs.
+
 == Uninstalling OpenShift Virtualization
 
 If you need to remove OpenShift Virtualization from your cluster, follow these steps in order. The uninstallation process takes several minutes as it gracefully terminates all virtualization components.
@@ -262,7 +403,12 @@ oc get csv -n openshift-cnv
 
 == Summary
 
-You have successfully installed and configured OpenShift Virtualization. Your cluster can now run virtual machines alongside container workloads.
+In this tutorial you have:
+
+* Reviewed the business drivers for running VMs on OpenShift
+* Understood the architecture: HyperConverged CR, sub-operators, control plane, node-level, and per-VM components
+* Installed and configured the OpenShift Virtualization operator (via web console or CLI)
+* Verified the deployment using a post-install checklist
 
 == Next Steps
 
@@ -276,4 +422,5 @@ For troubleshooting, advanced configuration options, and Single Node OpenShift c
 
 * link:https://docs.redhat.com/en/documentation/openshift_container_platform/latest/html/virtualization/installing[OpenShift Virtualization Installation Documentation,window=_blank]
 * link:https://docs.redhat.com/en/documentation/openshift_container_platform/latest/html/virtualization/getting-started[OpenShift Virtualization Getting Started,window=_blank]
+* link:https://kubevirt.io/user-guide/architecture/[KubeVirt Architecture,window=_blank]
 * link:https://kubevirt.io/[KubeVirt Project,window=_blank]

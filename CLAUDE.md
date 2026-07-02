@@ -6,18 +6,10 @@ Antora-based AsciiDoc documentation project. Tutorials live in `modules/<module>
 
 Read and follow these rules files on every interaction:
 
-- `.cursor/rules/shared-constraints.mdc` -- git policy, commit attribution, content rules, build gate
+- `.cursor/rules/shared-constraints.mdc` -- git policy, content rules, build gate
 - `.cursor/rules/project-guidelines.mdc` -- AsciiDoc standards, review criteria, terminology, domain guidance
 - `.cursor/rules/security-policy.mdc` -- credential handling, context exclusions, cluster safety
 - `.cursor/rules/allowed-commands.mdc` -- whitelist of CLI commands
-
-## Commit Attribution
-
-When committing with Claude Code, use this trailer instead of the Cursor one:
-
-```
-Co-authored-by: Claude <noreply@anthropic.com>
-```
 
 ## Skills
 

@@ -8,4 +8,3 @@ Read and follow `.cursor/agents/qe.md`.
 
 Parse module filters and flags from: $ARGUMENTS
 
-Use `Co-authored-by: Claude <noreply@anthropic.com>` for the commit trailer.

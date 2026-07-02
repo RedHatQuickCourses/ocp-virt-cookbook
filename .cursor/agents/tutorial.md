@@ -121,8 +121,6 @@ Tutorial: <title> (issue #<number>)
 - <change 1>
 - <change 2>
 - ...
-
-Co-authored-by: cursor[bot] <206951365+cursor[bot]@users.noreply.github.com>
 EOF
 )"
 ```

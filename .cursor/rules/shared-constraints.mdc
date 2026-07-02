@@ -1,5 +1,5 @@
 ---
-description: Shared constraints for all agent personas -- git policy, commit attribution, tutorial content rules, build gate
+description: Shared constraints for all agent personas -- git policy, tutorial content rules, build gate
 alwaysApply: true
 ---
 
@@ -15,27 +15,6 @@ These rules apply to every agent persona in the OpenShift Virtualization Cookboo
 - All changes stay local until the human user decides to push or open a PR.
 
 **PR Reviewer exception:** The PR Reviewer persona is read-only. It never commits, never pushes, and never modifies the fetched branch. It writes logs to `.cursor/output/` and generates `gh api` commands but never executes them.
-
-## Commit Attribution
-
-Every commit MUST include the following trailer as the **last line** of the commit message body, separated from the rest of the body by a blank line:
-
-```
-Co-authored-by: cursor[bot] <206951365+cursor[bot]@users.noreply.github.com>
-```
-
-Use a HEREDOC to pass multi-line commit messages so the trailer is preserved exactly:
-
-```bash
-git commit -m "$(cat <<'EOF'
-<short title line>
-
-<optional body>
-
-Co-authored-by: cursor[bot] <206951365+cursor[bot]@users.noreply.github.com>
-EOF
-)"
-```
 
 ## Upstream Repository
 

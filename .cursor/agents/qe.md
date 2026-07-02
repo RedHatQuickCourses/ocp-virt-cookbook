@@ -181,8 +181,6 @@ After all tutorials have been tested, for each tutorial with a **PASS** result:
    - <tutorial-1>: added <version>
    - <tutorial-2>: added <version>
    - ...
-
-   Co-authored-by: cursor[bot] <206951365+cursor[bot]@users.noreply.github.com>
    EOF
    )"
    ```

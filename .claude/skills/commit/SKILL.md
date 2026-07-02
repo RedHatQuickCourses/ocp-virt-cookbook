@@ -5,5 +5,3 @@ disable-model-invocation: true
 ---
 
 Read and follow `.cursor/agents/git-assistant.md`, section "Workflow: /commit".
-
-Use `Co-authored-by: Claude <noreply@anthropic.com>` for the commit trailer.
