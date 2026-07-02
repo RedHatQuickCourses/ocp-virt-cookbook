@@ -1,0 +1,310 @@
+= Getting Started with Agentic VM Management
+:navtitle: Getting Started with rh-virt
+
+== Overview
+
+This tutorial walks you through installing and configuring the `rh-virt` agentic skill pack, connecting it to your OpenShift cluster through a containerized MCP server, and verifying the setup by listing your virtual machines with the `vm-inventory` skill.
+
+After completing this tutorial, you will have a fully configured agentic environment where you can manage OpenShift Virtualization VMs using natural language prompts in Claude Code or Cursor IDE.
+
+== Prerequisites
+
+* OpenShift 4.19+ cluster with the OpenShift Virtualization operator installed (tested on 4.22)
+* Claude Code CLI or Cursor IDE installed and authenticated
+* Podman 4.0+ installed and accessible in your shell
+* KUBECONFIG pointing to a kubeconfig file with access to the cluster
+* Cluster admin or a ServiceAccount with RBAC permissions to list and manage VirtualMachine resources
+
+Verify cluster access before continuing:
+
+[source,bash,role=execute]
+----
+oc get virtualmachines -A
+----
+
+== What is Agentic VM Management
+
+Agentic VM management replaces manual `oc` command sequences with natural language prompts. You describe what you want to do, and the AI agent selects the correct skill, calls the appropriate API operations through the Model Context Protocol (MCP), and asks for your confirmation before any destructive action.
+
+The `rh-virt` skill pack is the component that teaches the agent how to manage OpenShift Virtualization VMs. It contains 10 skills (vm-inventory, vm-create, vm-lifecycle-manager, vm-clone, vm-delete, vm-snapshot-create, vm-snapshot-list, vm-snapshot-restore, vm-snapshot-delete, vm-rebalance) and an AGENTS.md routing table that maps user intent to the correct skill.
+
+The OpenShift MCP server is the component that executes the actual Kubernetes API calls inside a Podman container. It exposes the `core` toolset (generic Kubernetes CRUD) and the `kubevirt` toolset (vm_create, vm_lifecycle) to the agent over the Model Context Protocol.
+
+== Architecture Overview
+
+The following components work together:
+
+. *Claude Code or Cursor IDE* — the AI interface where you type natural language prompts.
+. *AGENTS.md* — the skill routing table that maps intent phrases to specific skills.
+. *Skill files* (SKILL.md per skill) — detailed instructions the agent follows for each operation.
+. *OpenShift MCP Server* — a containerized server that executes Kubernetes and KubeVirt API calls.
+. *KUBECONFIG* — the credential file mounted read-only into the MCP container for cluster access.
+
+When you type "List all VMs", the agent reads AGENTS.md, selects the `vm-inventory` skill, calls `resources_list` on the MCP server, and formats the results as a table in your IDE.
+
+== Installing the rh-virt Skill Pack
+
+=== Install Lola
+
+The `rh-virt` collection is installed using link:https://github.com/LobsterTrap/lola[Lola,window=_blank], a skill pack manager for Claude Code and Cursor.
+
+Follow the Lola installation instructions in the upstream repository. After installation, verify Lola is available:
+
+[source,bash,role=execute]
+----
+lola --version
+----
+
+=== Clone the agentic-collections-skills Repository
+
+[source,bash,role=execute]
+----
+git clone https://github.com/RHEcosystemAppEng/agentic-collections-skills.git
+----
+
+[source,bash,role=execute]
+----
+cd agentic-collections-skills
+----
+
+=== Add the rh-virt local module to lola
+
+----
+lola mod add rh-virt
+----
+
+=== Install the rh-virt Collection for the selected assistant
+
+Install the pack for Claude Code:
+
+[source,bash,role=execute]
+----
+lola install -f rh-virt -a claude-code
+----
+
+Install for Cursor IDE instead:
+
+[source,bash,role=execute]
+----
+lola install -f rh-virt -a cursor
+----
+
+Lola copies the skill files and MCP configuration to the appropriate IDE configuration directory.
+
+== Configuring the MCP Server
+
+=== Understanding mcps.json
+
+The `rh-virt` collection includes an `mcps.json` file that defines the `openshift-virtualization` MCP server. This server runs as a Podman container and provides the Kubernetes and KubeVirt API tools that the skills use.
+
+The configuration mounts your KUBECONFIG file as a read-only volume inside the container and passes the `KUBECONFIG` environment variable so the server binary knows where to find it.
+
+xref:attachment$getting-started/mcps.json[Download mcps.json]
+
+[source,json,subs="verbatim"]
+----
+{
+  "mcpServers": {
+    "openshift-virtualization": {
+      "command": "podman",
+      "args": [
+        "run",
+        "--rm",
+        "-i",
+        "--network=host",
+        "--userns=keep-id:uid=65532,gid=65532",
+        "-v", "${KUBECONFIG}:/kubeconfig:ro,Z",
+        "--entrypoint", "/openshift-mcp-server",
+        "quay.io/redhat-user-workloads/crt-nshift-lightspeed-tenant/openshift-mcp-server@sha256:2f52c860f91ab3c8a5129b727bdef0d620e733013f073b10355866c45eafd053",
+        "--kubeconfig", "/kubeconfig",
+        "--toolsets", "core,kubevirt"
+      ],
+      "env": {
+        "KUBECONFIG": "${KUBECONFIG}"
+      }
+    }
+  }
+}
+----
+
+Key configuration details:
+
+* `--userns=keep-id:uid=65532,gid=65532` maps the container user namespace for rootless Podman security.
+* `,Z` on the volume mount applies an SELinux context label so the container can read the kubeconfig file.
+* `--entrypoint /openshift-mcp-server` specifies the MCP server binary inside the image.
+* `--toolsets core,kubevirt` enables both the generic Kubernetes toolset and the KubeVirt-specific toolset.
+* `--network=host` is required for the container to reach local or remote Kubernetes API endpoints.
+
+NOTE: The image is pinned by SHA256 digest for supply chain security. No local build is required; the image is pulled automatically from `quay.io` on first use.
+
+=== Setting the KUBECONFIG Environment Variable
+
+The MCP server uses the `KUBECONFIG` environment variable to locate your kubeconfig file. Set it in your shell before starting your IDE:
+
+[source,bash,role=execute]
+----
+export KUBECONFIG="/path/to/your/kubeconfig"
+----
+
+Verify the variable is set correctly:
+
+[source,bash,role=execute]
+----
+echo $KUBECONFIG
+----
+
+The `mcps.json` uses `+${KUBECONFIG}+` as a placeholder. Your IDE substitutes the environment variable value at MCP server startup. Never commit a kubeconfig file or hard-coded credentials into `mcps.json`.
+
+=== Verifying Podman Can Pull the Image
+
+On first use, Podman pulls the MCP server image. Verify the pull succeeds before relying on it in the IDE:
+
+[source,bash,role=execute]
+----
+podman pull quay.io/redhat-user-workloads/crt-nshift-lightspeed-tenant/openshift-mcp-server@sha256:2f52c860f91ab3c8a5129b727bdef0d620e733013f073b10355866c45eafd053
+----
+
+== Verifying the Setup
+
+=== Checking Cluster Connectivity
+
+Before using the agentic skills, confirm that your KUBECONFIG provides access to VirtualMachine resources:
+
+[source,bash,role=execute]
+----
+oc get virtualmachines -A
+----
+
+The output lists all virtual machines across namespaces:
+
+----
+NAMESPACE   NAME               AGE    STATUS    READY
+default     fedora-quickstart  4d7h   Running   True
+----
+
+Verify that your user or ServiceAccount has the required RBAC permissions:
+
+[source,bash,role=execute]
+----
+oc auth can-i list virtualmachines -A
+----
+
+=== Running the vm-inventory Skill
+
+After installing the skill pack and setting KUBECONFIG, restart Claude Code or Cursor IDE to load the MCP server configuration.
+
+In the IDE chat, type:
+
+----
+List all VMs
+----
+
+The agent routes the request to the `vm-inventory` skill, which calls `resources_list` on the MCP server and returns a formatted table:
+
+----
+## Virtual Machines (All Namespaces)
+
+| Namespace | VM Name           | Status  | Age  | Resources    | Node      |
+|-----------|-------------------|---------|------|--------------|-----------|
+| default   | fedora-quickstart | Running | 4d7h | 2 vCPU, 4Gi  | worker-01 |
+
+Summary:
+- Total VMs: 1
+- Running: 1
+- Stopped: 0
+----
+
+If the MCP server is not reachable, the skill reports:
+
+----
+Cannot execute vm-inventory: MCP server not available.
+Setup: Add openshift-virtualization to mcps.json, set KUBECONFIG, restart Claude Code.
+----
+
+== Understanding the Safety Model
+
+The `rh-virt` skill pack enforces a safety model across all operations:
+
+Read-only operations (`vm-inventory`, `vm-snapshot-list`) run without confirmation because they make no changes to the cluster.
+
+Lifecycle operations (`vm-lifecycle-manager` for start/stop/restart) require explicit user confirmation before execution to prevent accidental service disruption.
+
+Destructive operations (`vm-delete`, `vm-snapshot-restore`, `vm-snapshot-delete`) use multiple confirmation steps. For VM deletion, the agent requires you to type the VM name exactly to confirm before proceeding.
+
+Protection labels prevent accidental deletion. A VM with the label `protected: "true"` is refused for deletion by the `vm-delete` skill regardless of user confirmation.
+
+The `vm-create` skill includes automatic error diagnosis. When a newly created VM enters an `ErrorUnschedulable` state, the skill reads the troubleshooting knowledge base, diagnoses the root cause (such as node taints or resource constraints), proposes a workaround, and applies it only after you confirm.
+
+== Troubleshooting
+
+=== MCP Server Does Not Start
+
+Verify that `KUBECONFIG` is set in the environment where your IDE was launched:
+
+[source,bash,role=execute]
+----
+echo $KUBECONFIG
+----
+
+Confirm Podman is accessible:
+
+[source,bash,role=execute]
+----
+podman info --format '{{.Host.Os}}'
+----
+
+Test that the image runs and the server binary is present:
+
+[source,bash,role=execute]
+----
+podman run --rm --entrypoint /openshift-mcp-server quay.io/redhat-user-workloads/crt-nshift-lightspeed-tenant/openshift-mcp-server@sha256:2f52c860f91ab3c8a5129b727bdef0d620e733013f073b10355866c45eafd053 --help
+----
+
+=== Skills Do Not Activate
+
+Verify the collection is installed by listing installed packs:
+
+[source,bash,role=execute]
+----
+lola list
+----
+
+Restart the IDE after installing or updating the skill pack. The AGENTS.md and skill files are read at IDE startup.
+
+=== Permission Denied on VM Operations
+
+Verify your ServiceAccount or user has the required RBAC for VirtualMachine resources:
+
+[source,bash,role=execute]
+----
+oc auth can-i create virtualmachines -A
+----
+
+[source,bash,role=execute]
+----
+oc auth can-i delete virtualmachines -A
+----
+
+Contact your cluster administrator if permissions are insufficient.
+
+== Cleanup
+
+This tutorial creates no cluster resources. No cleanup is required.
+
+== Summary
+
+* The `rh-virt` skill pack provides 10 specialized skills for complete VM lifecycle management in OpenShift Virtualization.
+* The OpenShift MCP server runs as a rootless Podman container, mounting your KUBECONFIG read-only for secure cluster access.
+* Lola is the skill pack manager used to install `rh-virt` into Claude Code or Cursor IDE.
+* The AGENTS.md routing table maps natural language intent to the correct skill without direct MCP tool calls.
+* The safety model enforces human-in-the-loop confirmation for all lifecycle and destructive operations.
+* Running "List all VMs" in the IDE triggers the `vm-inventory` skill and confirms end-to-end connectivity.
+
+== See Also
+
+* xref:index.adoc[Agentic VM Management Module Overview]
+* link:https://github.com/RHEcosystemAppEng/agentic-collections-skills/tree/main/rh-virt[rh-virt Skill Pack Repository,window=_blank]
+* link:https://github.com/LobsterTrap/lola[Lola Skill Pack Manager,window=_blank]
+* link:https://github.com/openshift/openshift-mcp-server[OpenShift MCP Server,window=_blank]
+* link:https://modelcontextprotocol.io[Model Context Protocol Specification,window=_blank]
+* link:https://docs.openshift.com/container-platform/latest/virt/about_virt/about-virt.html[OpenShift Virtualization Documentation,window=_blank]
