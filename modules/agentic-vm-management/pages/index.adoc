@@ -1,0 +1,76 @@
+= Agentic VM Management
+:navtitle: Agentic VM Management
+
+== Overview
+
+This module introduces AI-assisted virtual machine management for OpenShift Virtualization. Using the `rh-virt` skill pack with Claude Code or Cursor IDE, you can manage VM lifecycle operations through natural language prompts backed by the Model Context Protocol (MCP).
+
+The `rh-virt` collection provides 10 specialized skills covering the complete VM lifecycle: inventory, creation, power management, cloning, snapshots, live migration, and deletion. All destructive operations require explicit user confirmation, giving you safety-first automation without sacrificing control.
+
+== What You Will Learn
+
+In this module, you will learn:
+
+* How to install and configure the `rh-virt` skill pack in Claude Code or Cursor IDE
+* How to connect the agentic environment to your OpenShift cluster via a containerized MCP server
+* How to use natural language prompts to manage VM lifecycle operations
+* How the skill-first routing model maps user intent to the correct automation skill
+* How to create, start, stop, clone, snapshot, and delete virtual machines through AI-assisted workflows
+* How to interpret safety confirmations and human-in-the-loop checkpoints
+
+== Skills Overview
+
+The `rh-virt` collection provides 10 skills for complete VM lifecycle management:
+
+[cols="1,3",options="header"]
+|===
+| Skill | Purpose
+
+| `vm-inventory`
+| List and inspect virtual machines across namespaces with status, resource, and health information.
+
+| `vm-create`
+| Create new virtual machines with automatic error diagnosis and scheduling workaround proposals.
+
+| `vm-lifecycle-manager`
+| Start, stop, and restart virtual machines with explicit safety confirmations.
+
+| `vm-clone`
+| Clone VMs with flexible storage strategies, cross-namespace support, and batch cloning.
+
+| `vm-delete`
+| Permanently delete VMs and associated storage with typed confirmation and protection label enforcement.
+
+| `vm-snapshot-create`
+| Create VM snapshots with storage class capability validation before execution.
+
+| `vm-snapshot-list`
+| List and inspect VM snapshots across namespaces.
+
+| `vm-snapshot-restore`
+| Restore VMs from snapshots with pre-flight state checks and explicit user confirmation.
+
+| `vm-snapshot-delete`
+| Delete VM snapshots with storage reclamation reporting.
+
+| `vm-rebalance`
+| Migrate VMs between nodes for load balancing and node maintenance, using live or cold migration.
+
+|===
+
+== Prerequisites
+
+Before proceeding with the tutorials in this module, ensure you have:
+
+* OpenShift 4.19+ cluster with OpenShift Virtualization operator installed (tested on 4.22)
+* Claude Code CLI or Cursor IDE
+* Podman (version 4.0+) for the containerized MCP server
+* KUBECONFIG configured for the target cluster
+* ServiceAccount with RBAC permissions for VirtualMachine resources in target namespaces
+
+== See Also
+
+* link:https://github.com/RHEcosystemAppEng/agentic-collections-skills/tree/main/rh-virt[rh-virt Skill Pack Repository,window=_blank]
+* link:https://github.com/openshift/openshift-mcp-server[OpenShift MCP Server,window=_blank]
+* link:https://docs.openshift.com/container-platform/latest/virt/about_virt/about-virt.html[OpenShift Virtualization Documentation,window=_blank]
+* link:https://modelcontextprotocol.io[Model Context Protocol Specification,window=_blank]
