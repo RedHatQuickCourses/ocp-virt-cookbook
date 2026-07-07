@@ -6,6 +6,7 @@ GALAXY  := $(VENV)/bin/ansible-galaxy
 PYTHON  := $(VENV)/bin/python3
 BUILD_DIR := build
 NODE_MODULES := node_modules
+NODE_INSTALLED := $(NODE_MODULES)/.installed
 
 .DEFAULT_GOAL := help
 
@@ -57,7 +58,7 @@ help:
 # ── Setup ───────────────────────────────────────────────────────────
 
 .PHONY: setup
-setup: $(VENV)/bin/activate
+setup: $(VENV)/bin/activate $(NODE_INSTALLED)
 	@echo "Setup complete. Run 'source $(VENV)/bin/activate' or use make targets."
 
 $(VENV)/bin/activate:
@@ -66,6 +67,13 @@ $(VENV)/bin/activate:
 	$(PIP) install kubernetes ansible yamllint
 	$(GALAXY) collection install -r tests/requirements.yaml
 	@touch $(VENV)/bin/activate
+
+$(NODE_INSTALLED):
+	@command -v pnpm > /dev/null 2>&1 || \
+		{ echo "pnpm not found. Installing..."; \
+		  npm install -g pnpm; }
+	pnpm install
+	@touch $(NODE_INSTALLED)
 
 .PHONY: check-deps
 check-deps:
