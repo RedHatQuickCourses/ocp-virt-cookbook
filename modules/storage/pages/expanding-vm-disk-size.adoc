@@ -1,0 +1,244 @@
+= Expanding VM Disk Size (PVC Volume Expansion)
+:navtitle: Expanding VM Disk Size
+
+== Overview
+
+This tutorial demonstrates how to expand the disk size of a virtual machine in OpenShift Virtualization by resizing the underlying PersistentVolumeClaim (PVC). Disk expansion is one of the most common day-2 operations for VM administrators -- without this guide, users must piece together Kubernetes PVC expansion docs with KubeVirt-specific guest OS steps.
+
+You will learn how to expand a VM disk both offline (VM stopped) and online (VM running), resize the guest OS filesystem to use the new space, and verify the expansion from both the cluster and guest perspectives.
+
+== Prerequisites
+
+* **OpenShift 4.18+** with OpenShift Virtualization operator installed
+* **Cluster admin access** (`system:admin` or equivalent)
+* **`oc` CLI** and **`virtctl` CLI** installed
+* **StorageClass** with `allowVolumeExpansion: true`
+* **A running VM** with a PVC-backed disk
+
+Versions tested:
+----
+TODO
+----
+
+== Step 1: Check StorageClass Expansion Support
+
+Before attempting to expand a VM disk, verify that the StorageClass backing the PVC supports volume expansion:
+
+[source,bash,role=execute]
+----
+oc get storageclass -o custom-columns=NAME:.metadata.name,PROVISIONER:.provisioner,EXPANSION:.allowVolumeExpansion
+----
+
+Expected output:
+----
+NAME                 PROVISIONER    EXPANSION
+lvms-vg1 (default)   topolvm.io     true
+----
+
+NOTE: If `allowVolumeExpansion` is `false` or not set, you must edit the StorageClass before proceeding. Not all CSI drivers support volume expansion.
+
+== Step 2: Identify the VM Disk PVC
+
+Find the PVC backing the VM disk you want to expand:
+
+[source,bash,role=execute]
+----
+oc get vm <vm-name> -n <namespace> -o jsonpath='{.spec.template.spec.volumes[*]}' | jq .
+----
+
+TODO: show expected output mapping volume name to PVC/DataVolume name
+
+Then check the current PVC size:
+
+[source,bash,role=execute]
+----
+oc get pvc -n <namespace>
+----
+
+Expected output:
+----
+TODO
+----
+
+== Step 3: Offline Expansion (VM Stopped)
+
+Offline expansion is the safest method -- the VM is stopped before resizing the PVC.
+
+. Stop the VM:
++
+[source,bash,role=execute]
+----
+virtctl stop <vm-name> -n <namespace>
+----
+
+. Verify the VM is stopped:
++
+[source,bash,role=execute]
+----
+oc get vm <vm-name> -n <namespace>
+----
++
+Expected output:
+----
+TODO
+----
+
+. Patch the PVC to increase the disk size:
++
+[source,bash,role=execute]
+----
+oc patch pvc <pvc-name> -n <namespace> --type merge -p '{"spec":{"resources":{"requests":{"storage":"<new-size>"}}}}'
+----
+
+. Verify the PVC has expanded:
++
+[source,bash,role=execute]
+----
+oc get pvc <pvc-name> -n <namespace>
+----
++
+Expected output:
+----
+TODO
+----
+
+. Start the VM:
++
+[source,bash,role=execute]
+----
+virtctl start <vm-name> -n <namespace>
+----
+
+== Step 4: Online Expansion (VM Running)
+
+Some CSI drivers support expanding a PVC while the VM is still running. This avoids downtime but requires CSI driver support for online expansion.
+
+WARNING: Not all CSI drivers support online expansion. If your driver does not support it, the resize will be deferred until the next time the volume is mounted (i.e., after a VM restart).
+
+. Patch the PVC while the VM is running:
++
+[source,bash,role=execute]
+----
+oc patch pvc <pvc-name> -n <namespace> --type merge -p '{"spec":{"resources":{"requests":{"storage":"<new-size>"}}}}'
+----
+
+. Check PVC status for resize conditions:
++
+[source,bash,role=execute]
+----
+oc describe pvc <pvc-name> -n <namespace> | grep -A 5 Conditions
+----
++
+Expected output:
+----
+TODO
+----
+
+== Step 5: Guest OS Filesystem Resize
+
+After the PVC is expanded, the guest OS filesystem must be resized to use the new space. The filesystem does not auto-resize.
+
+Access the VM console:
+
+[source,bash,role=execute]
+----
+virtctl console <vm-name> -n <namespace>
+----
+
+Check the current disk size inside the guest:
+
+[source,bash]
+----
+lsblk
+df -h
+----
+
+=== XFS Filesystem
+
+XFS supports online resize (no unmount required):
+
+[source,bash]
+----
+sudo xfs_growfs /
+----
+
+=== ext4 Filesystem
+
+For ext4, use `resize2fs`:
+
+[source,bash]
+----
+sudo resize2fs /dev/vda4
+----
+
+NOTE: `resize2fs` supports online resize for ext4 filesystems mounted read-write. No unmount is required.
+
+Verify the filesystem now reflects the new size:
+
+[source,bash]
+----
+df -h
+----
+
+Expected output:
+----
+TODO
+----
+
+Press `Ctrl+]` to exit the console.
+
+== Step 6: Expanding Root Disk vs Data Disks
+
+TODO: Explain the differences and caveats between expanding the root/boot disk versus additional data disks.
+
+== Step 7: Verification
+
+Verify the expansion from outside the VM:
+
+[source,bash,role=execute]
+----
+oc get pvc <pvc-name> -n <namespace> -o jsonpath='Capacity: {.status.capacity.storage}'
+----
+
+Verify from inside the VM:
+
+[source,bash,role=execute]
+----
+virtctl console <vm-name> -n <namespace>
+----
+
+[source,bash]
+----
+lsblk
+df -h
+----
+
+== Limitations and Common Issues
+
+* **Shrinking is not supported.** PVC volume expansion is a one-way operation. You cannot reduce the size of a PVC after expanding it.
+* **Not all CSI drivers support online expansion.** If the driver does not support it, the resize is deferred until the volume is re-mounted.
+* **Filesystem not auto-resized.** Expanding the PVC only increases the block device size. You must manually resize the filesystem inside the guest OS (`xfs_growfs` for XFS, `resize2fs` for ext4).
+* **VM does not see new size.** If the guest OS does not detect the new disk size, try restarting the VM or rescanning the SCSI bus inside the guest.
+
+== Cleanup
+
+TODO
+
+== Summary
+
+In this tutorial you learned how to:
+
+* Check whether a StorageClass supports volume expansion
+* Identify the PVC backing a VM disk
+* Expand a VM disk offline (VM stopped) for maximum safety
+* Expand a VM disk online (VM running) for zero downtime
+* Resize the guest OS filesystem using `xfs_growfs` (XFS) or `resize2fs` (ext4)
+* Understand the differences between expanding root disks and data disks
+* Recognize common issues and limitations of PVC volume expansion
+
+== See Also
+
+* link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/storage/expanding-persistent-volumes[Expanding Persistent Volumes - OpenShift Documentation,window=_blank]
+* link:https://kubevirt.io/user-guide/storage/disks_and_volumes/[Disks and Volumes - KubeVirt User Guide,window=_blank]
+* xref:creating-managing-storage-class.adoc[Creating and Managing Storage Classes]
+* xref:multi-disk-configuration.adoc[Multi-Disk VM Configuration]
