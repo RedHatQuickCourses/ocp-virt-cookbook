@@ -1,0 +1,417 @@
+= Cloning Virtual Machines with AI Agents
+:navtitle: Cloning VMs
+
+Versions tested:
+----
+OpenShift 4.22
+----
+
+This tutorial demonstrates how to clone existing virtual machines using natural language commands through the `vm-clone` agent skill. The agent retrieves the source VM's full configuration and storage layout, asks you to choose a storage cloning strategy, presents a resource-impact summary, and waits for your explicit confirmation before creating any cluster resources.
+
+== Prerequisites
+
+* Completed the xref:getting-started.adoc[Getting Started with Agentic VM Management] tutorial (skill pack installed, MCP server configured, cluster connectivity verified)
+* OpenShift cluster with OpenShift Virtualization installed
+* `KUBECONFIG` environment variable set and pointing to a valid kubeconfig file
+* At least one existing virtual machine to use as a clone source
+* RBAC permissions to create VirtualMachine and DataVolume/PVC resources in the target namespace
+
+Create the namespaces used in this tutorial if they do not already exist:
+
+[source,bash,role=execute]
+----
+oc create namespace my-vms
+oc create namespace qa-environment
+----
+
+If you do not have a source VM, create one using the `vm-create` skill by typing in your IDE chat:
+
+----
+Create a Fedora VM named web-server in namespace my-vms
+----
+
+Verify the VM exists before continuing:
+
+[source,bash,role=execute]
+----
+oc get vm -n my-vms
+----
+
+Expected output:
+
+----
+NAME         AGE   STATUS    READY
+web-server   5m    Running   True
+----
+
+== How It Works
+
+The `vm-clone` skill follows a five-step workflow:
+
+. **Gather source information** — The agent collects the source VM name and namespace, the target VM name and namespace from your prompt. If any parameter is missing, it asks. It then retrieves the full source VM specification and discovers all associated storage (DataVolumes, PVCs).
+
+. **Check for conflicts** — The agent verifies that no VM with the target name already exists in the target namespace. If a conflict is found, you can choose a different name, delete the existing VM, or cancel.
+
+. **Ask for storage strategy** — The agent presents the source VM's storage layout and asks you to choose how to handle storage for the clone: full copy, shared reference, or new empty disk. This choice determines the independence, cost, and speed of the clone.
+
+. **Present configuration for confirmation** — The agent displays a summary showing source and target VMs, the storage strategy, resource impact, and what will change (IP addresses, MAC addresses, firmware UUIDs) versus what will be preserved (instance type, CPU/memory, network configuration, cloud-init). It also checks namespace ResourceQuotas and warns if the clone would push usage above 80% of any limit.
+
+. **Execute and verify** — After your explicit confirmation, the agent creates the storage resources (if applicable), creates the cloned VirtualMachine with regenerated identifiers, monitors storage cloning progress, and reports the result.
+
+== Storage Cloning Strategies
+
+When cloning a VM, you choose how the clone's storage is provisioned. The agent presents these options after discovering the source VM's disk layout:
+
+[cols="1,2,1,1",options="header"]
+|===
+| Strategy | Description | Independence | Provisioning Time
+| Clone Storage | Full copy of the source disk via the cluster's StorageProfile (CSI clone, snapshot, or host-assisted copy) | Fully independent — changes to source or clone do not affect each other | ~5–10 minutes depending on disk size
+| Reference Existing | Clone shares the same PVC as the source VM | Dangerous — both VMs access the same data; risk of corruption if both run simultaneously | Immediate
+| New Empty Storage | Fresh empty disk with the same size and storage class as the source | Fully independent — no data from source | Seconds
+|===
+
+The agent defaults to presenting "Clone Storage" as the recommended option. If you select "Reference Existing", the agent issues a warning about data corruption risk and requires explicit acknowledgment before proceeding.
+
+== Example Scenario 1: Cloning a VM with Full Storage Copy
+
+This example clones a VM with an independent copy of its disk, which is the most common use case for creating test or staging environments.
+
+. In your IDE chat, type:
++
+----
+Clone web-server to web-server-test in namespace qa-environment
+----
+
+. The agent retrieves the source VM configuration, discovers its 30Gi root disk, checks that no VM named `web-server-test` exists in `qa-environment`, and presents storage options:
++
+----
+## VM Cloning - Storage Strategy
+
+**Source VM**: `web-server` (namespace: `my-vms`)
+**Source Storage**: web-server-rootdisk (30Gi)
+
+**Select cloning strategy:**
+
+1. **Clone Storage** - Full copy, independent storage (~5-10 min, 30Gi new allocation)
+2. **Reference Existing** - Shared disk (dangerous, both VMs access same storage)
+3. **New Empty Storage** - Fresh disk, no data copied (30Gi new allocation)
+4. **Cancel** - Abort operation
+
+**Select option (1-4):**
+----
+
+. You select option 1 for a full copy:
++
+----
+1
+----
+
+. The agent checks ResourceQuotas in the target namespace and presents the clone configuration for confirmation:
++
+----
+## VM Clone Configuration - Review
+
+**Source**: `web-server` (my-vms) - u1.medium, 1 vCPU, 4Gi
+**Target**: `web-server-test` (qa-environment) - Same config, starts Stopped
+**Storage**: Clone Storage - 30Gi independent copy (~5-10 min)
+
+**Resource Impact**: 1 vCPU, 4Gi RAM, 30Gi disk
+
+**What changes**: IP addresses, hostname, MAC addresses, firmware UUID
+**What's preserved**: Instance type, vCPU/memory, network config, cloud-init
+
+**Proceed with VM cloning? (yes/no)**
+----
+
+. You confirm:
++
+----
+yes
+----
+
+. The agent creates the DataVolume (triggering the storage clone), creates the VirtualMachine, monitors cloning progress, and reports:
++
+----
+## VM Cloned Successfully
+
+**Source**: `web-server` (my-vms)
+**Target**: `web-server-test` (qa-environment) - Status: Stopped (ready to start)
+**Config**: u1.medium, 1 vCPU, 4Gi, 30Gi
+
+**Storage**: Cloned in 7m23s - Independent storage, changes won't affect source
+
+**Next**: Start with "Start VM web-server-test in namespace qa-environment"
+----
+
+You can verify the clone with:
+
+[source,bash,role=execute]
+----
+oc get vm -n qa-environment
+----
+
+----
+NAME              AGE   STATUS    READY
+web-server-test   8m    Stopped   False
+----
+
+[source,bash,role=execute]
+----
+oc get datavolume -n qa-environment
+----
+
+----
+NAME                       PHASE       PROGRESS   RESTARTS   AGE
+web-server-test-rootdisk   Succeeded   100.0%                8m
+----
+
+== Example Scenario 2: Cloning with New Empty Storage
+
+This example creates a clone that preserves the VM configuration (instance type, network, cloud-init) but starts with a blank disk. This is useful when you want the same VM shape but plan to install a fresh OS or attach different data.
+
+. In your IDE chat, type:
++
+----
+Clone web-server to clean-worker in namespace my-vms with empty storage
+----
+
+. The agent presents storage options. You select option 3:
++
+----
+3
+----
+
+. After confirmation, the agent creates the VM with an empty DataVolume and reports:
++
+----
+## VM Cloned Successfully
+
+**Source**: `web-server` (my-vms)
+**Target**: `clean-worker` (my-vms) - Status: Stopped (ready to start)
+**Config**: u1.medium, 1 vCPU, 4Gi, 30Gi
+
+**Storage**: New empty storage created - OS installation may be required
+
+**Next**: Start with "Start VM clean-worker in namespace my-vms"
+----
+
+== Example Scenario 3: Batch Cloning
+
+The `vm-clone` skill supports creating multiple clones from a single source VM in one request, up to a maximum of 5 per batch.
+
+. In your IDE chat, type:
++
+----
+Create 3 copies of web-server named app-01, app-02, app-03 in namespace qa-environment
+----
+
+. The agent validates the source VM, checks that all three target names are available, and asks for a storage strategy once (applied to all clones):
++
+----
+## Batch Cloning: 3 VMs from `web-server`
+
+**Source**: `web-server` (my-vms) - u1.medium, 1 vCPU, 4Gi, 30Gi
+**Targets**: app-01, app-02, app-03 (qa-environment)
+
+**Total Resource Impact**: 3 vCPU, 12Gi RAM, 90Gi disk
+
+**Select storage strategy (applied to all clones, 1-4):**
+----
+
+. You select option 1 (clone storage). The agent then processes each clone individually with separate confirmation:
++
+----
+## Clone 1 of 3: app-01
+
+**Source**: web-server → **Target**: app-01 (qa-environment), 30Gi clone
+**Proceed with VM cloning? (yes/no)**
+----
+
+. You confirm each clone. The agent creates them one at a time, stopping on first failure:
++
+----
+## Batch Cloning Complete
+
+**Results**:
+app-01 (qa-environment) - Cloned in 6m12s
+app-02 (qa-environment) - Cloned in 7m05s
+app-03 (qa-environment) - Cloned in 5m48s
+
+**Total Storage**: 90Gi cloned
+
+**Next**: Start all with "Start VMs app-01, app-02, app-03 in namespace qa-environment"
+----
+
+You can verify all clones:
+
+[source,bash,role=execute]
+----
+oc get vm -n qa-environment
+----
+
+----
+NAME              AGE   STATUS    READY
+app-01            20m   Stopped   False
+app-02            13m   Stopped   False
+app-03            6m    Stopped   False
+web-server-test   30m   Stopped   False
+----
+
+NOTE: Batch cloning is limited to 5 clones per request to prevent resource exhaustion. If you need more copies, run additional batch requests.
+
+== Example Scenario 4: Shared Storage Warning
+
+If you select the shared storage option, the agent issues a prominent warning because both VMs would access the same underlying PVC, which can lead to data corruption if both run simultaneously.
+
+. In your IDE chat, type:
++
+----
+Clone web-server to web-server-shared in namespace my-vms
+----
+
+. The agent presents storage options. You select option 2:
++
+----
+2
+----
+
+. The agent warns about the risks:
++
+----
+WARNING: Shared Storage is Dangerous
+
+Both VMs will share the same physical disk. Running both simultaneously
+risks data corruption.
+
+This is only safe if the source VM remains stopped while the clone runs.
+
+Recommended: Use Option 1 (Clone Storage) for an independent copy instead.
+
+Proceed with shared storage anyway? (yes/cancel)
+----
+
+. You reconsider and cancel:
++
+----
+cancel
+----
+
+. The agent aborts cleanly:
++
+----
+VM cloning cancelled by user. No resources were created.
+----
+
+== Cross-Namespace Cloning
+
+The `vm-clone` skill supports cloning VMs across namespaces. This is useful for promoting configurations from development to staging or production environments.
+
+When cloning across namespaces, note the following:
+
+* **Storage** is cloned into the target namespace — the clone gets its own PVC in the destination namespace.
+* **Network policies** may differ between namespaces — verify that the clone can reach required services.
+* **ResourceQuotas** are namespace-scoped — the target namespace must have enough quota for the clone's resources.
+* **RBAC permissions** are required in both the source namespace (to read the VM and its storage) and the target namespace (to create the clone).
+
+Example:
+
+----
+Clone production-db from production namespace to staging namespace as staging-db
+----
+
+The agent verifies permissions in both namespaces before proceeding.
+
+NOTE: A future enhancement to the `vm-clone` skill may allow modifying VM configuration during cloning (such as instance type, storage size, or cloud-init settings). Currently, clones inherit the full configuration of the source VM.
+
+== Human-in-the-Loop Confirmation
+
+The `vm-clone` skill enforces a strict confirmation model because cloning creates new resources that consume cluster capacity:
+
+* **Storage strategy selection** — You must explicitly choose how storage is handled. The agent never assumes a strategy.
+* **Configuration review** — Before any resource is created, the agent displays the full clone configuration including resource impact and asks for explicit confirmation.
+* **Batch confirmation** — When cloning multiple VMs, each clone requires individual confirmation. This prevents accidental resource consumption if you realize mid-batch that you need to stop.
+* **Shared storage acknowledgment** — Selecting shared storage triggers an additional warning that requires explicit acknowledgment of the data corruption risk.
+
+If you say "no", "wait", or "cancel" at any confirmation step, the operation is cancelled immediately and no resources are created.
+
+== Error Handling
+
+If cloning fails, the agent reports the error and suggests troubleshooting steps.
+
+=== Common Failure Causes
+
+[cols="1,2",options="header"]
+|===
+| Error | Resolution
+| Target VM name already exists | Choose a different name, delete the existing VM (if safe), or use `vm-inventory` to check
+| Insufficient storage quota | Check quotas with `oc get resourcequota -n <namespace>`, request an increase, or use a smaller disk
+| Storage class not accessible | Verify the storage class exists in the target namespace and supports CSI volume cloning
+| PVC clone not supported | The storage class does not support CSI volume cloning; use "New Empty Storage" option instead, or ask your cluster admin about storage class capabilities
+| Source VM running during clone | Some storage backends require the source VM to be stopped for cloning; stop the source VM first or use snapshot-based cloning
+|===
+
+=== Partial Resource Cleanup
+
+If cloning fails partway through (for example, the DataVolume was created but the VirtualMachine creation failed), the agent reports which resources were partially created and suggests cleanup:
+
+----
+## VM Cloning Failed
+
+**Error**: Insufficient storage quota in namespace qa-environment
+**Source**: `web-server` (my-vms) → **Target**: `web-server-test` (qa-environment)
+
+**Partial Resources** (may need cleanup):
+- DataVolume: `web-server-test-rootdisk`
+
+**Cleanup**: "Delete VM web-server-test in namespace qa-environment"
+
+Would you like help troubleshooting this error?
+----
+
+== Cleanup
+
+To remove cloned VMs created during this tutorial:
+
+[source,bash,role=execute]
+----
+oc delete vm web-server-test -n qa-environment
+oc delete vm clean-worker -n my-vms
+oc delete vm app-01 app-02 app-03 -n qa-environment
+----
+
+Or use natural language: type "Delete VM web-server-test in namespace qa-environment" in your IDE chat. The `vm-delete` skill handles the deletion with its full safety workflow.
+
+To remove the source VM:
+
+[source,bash,role=execute]
+----
+oc delete vm web-server -n my-vms
+----
+
+To remove the namespaces:
+
+[source,bash,role=execute]
+----
+oc delete namespace my-vms
+oc delete namespace qa-environment
+----
+
+== Summary
+
+* The `vm-clone` skill creates new VMs from existing ones, automatically regenerating MAC addresses, firmware UUIDs, and hostnames to avoid conflicts.
+* Three storage strategies are available: full copy (independent), shared reference (dangerous), and new empty disk.
+* The agent checks ResourceQuotas in the target namespace and warns when the clone would approach limits.
+* Batch cloning supports up to 5 clones per request with individual confirmation for each VM.
+* Cross-namespace cloning is supported with RBAC verification in both source and target namespaces.
+* No resources are created until you explicitly confirm — the agent never assumes a storage strategy or auto-executes.
+
+== See Also
+
+* xref:getting-started.adoc[Getting Started with Agentic VM Management]
+* xref:natural-language-vm-create.adoc[Creating Virtual Machines with Natural Language]
+* xref:ai-vm-lifecycle.adoc[AI-Assisted VM Lifecycle Operations]
+* link:https://github.com/RHEcosystemAppEng/agentic-plugins/tree/main/rh-virt[rh-virt Skill Pack Repository,window=_blank]
+* link:https://github.com/openshift/openshift-mcp-server[OpenShift MCP Server,window=_blank]
+* link:https://docs.openshift.com/container-platform/latest/virt/index.html[OpenShift Virtualization Documentation,window=_blank]
+* link:https://kubevirt.io/api-reference/[KubeVirt VirtualMachine API Reference,window=_blank]
+* link:https://kubernetes.io/docs/concepts/storage/volume-pvc-datasource/[CSI Volume Cloning,window=_blank]
