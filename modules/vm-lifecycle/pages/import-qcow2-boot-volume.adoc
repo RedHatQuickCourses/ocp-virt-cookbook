@@ -370,6 +370,7 @@ NOTE: ContainerDisks are ephemeral - changes are lost when the VM stops unless y
 This method combines VM creation with upload capability using DataVolumeTemplates. The DataVolume is defined inline within the VM spec and is created automatically when you create the VM.
 
 **When to use this method:**
+
 - You want to define the VM and its storage in a single manifest
 - You're using GitOps or declarative workflows
 - You want the DataVolume lifecycle tied to the VM
@@ -454,11 +455,13 @@ virtctl start vm-with-upload -n imported-vms
 ----
 
 **Advantages of this method:**
+
 - Single manifest defines both VM and storage
 - DataVolume lifecycle is managed with the VM
 - Good for Infrastructure-as-Code workflows
 
 **Disadvantages:**
+
 - More complex than separate PVC creation
 - Upload must happen after VM creation
 - Subject to DataVolume/virtctl compatibility issues
@@ -539,6 +542,7 @@ virtctl image-upload pvc <pvc-name> \
 ----
 
 Common causes:
+
 * **CDI operator issues**: Check that `cdi-deployment` and `cdi-operator` pods are running
 * **Storage class issues**: Verify your StorageClass can provision volumes
 
@@ -602,6 +606,7 @@ virtctl console fedora-imported-vm -n imported-vms
 ----
 
 Common issues:
+
 * Image is corrupted - verify checksum
 * Wrong machine type - adjust machine.type in VM spec
 * Missing bootloader - ensure image has proper boot configuration
