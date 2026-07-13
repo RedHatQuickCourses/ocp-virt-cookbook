@@ -1,0 +1,422 @@
+= AI-Assisted VM Lifecycle Operations
+:navtitle: AI VM Lifecycle Operations
+
+Versions tested:
+----
+OpenShift 4.22
+----
+
+This tutorial demonstrates how to manage the lifecycle of OpenShift VirtualMachines using natural language commands through the `vm-lifecycle-manager` and `vm-delete` agent skills. You will learn how to start, stop, restart, and delete VMs with human-in-the-loop safety confirmations, and how the agent handles edge cases like protected VMs and running VM deletion.
+
+== Prerequisites
+
+* Completed the xref:getting-started.adoc[Getting Started with Agentic VM Management] tutorial (skill pack installed, MCP server configured, cluster connectivity verified)
+* OpenShift cluster with OpenShift Virtualization installed
+* `KUBECONFIG` environment variable set and pointing to a valid kubeconfig file
+* At least one VM to manage (see xref:natural-language-vm-create.adoc[Creating Virtual Machines with Natural Language] to create one)
+
+Create the namespace used in this tutorial if it does not already exist:
+
+[source,bash,role=execute]
+----
+oc create namespace my-vms
+----
+
+If you do not have a VM to manage, create one using the `vm-create` skill by typing in your IDE chat:
+
+----
+Create a Fedora VM named lifecycle-demo in namespace my-vms
+----
+
+Verify the VM exists before continuing:
+
+[source,bash,role=execute]
+----
+oc get vm -n my-vms
+----
+
+Expected output:
+
+----
+NAME             AGE   STATUS    READY
+lifecycle-demo   2m    Running   True
+----
+
+== How It Works
+
+=== vm-lifecycle-manager Skill
+
+The `vm-lifecycle-manager` skill follows a three-step workflow for start, stop, and restart operations:
+
+. **Gather parameters and confirm** — The agent collects the VM name, namespace, and action from your prompt. It presents the operation with its impact (resource consumption for start, service interruption for stop, brief downtime for restart) and waits for your explicit confirmation before proceeding.
+
+. **Execute the operation** — After confirmation, the agent calls the `vm_lifecycle` MCP tool to change the VM's RunStrategy. For restart, the agent uses a composite pattern: stop the VM, verify it has stopped, wait briefly, then start it again. This two-step approach avoids Kubernetes resourceVersion conflicts.
+
+. **Report and verify** — The agent reports the result, confirms the new RunStrategy, and suggests next steps such as checking VM status or listing VMs in the namespace.
+
+=== vm-delete Skill
+
+The `vm-delete` skill enforces strict safety protocols through a five-step workflow:
+
+. **Validate** — The agent verifies the VM exists, checks for a `protected: "true"` label (which blocks deletion entirely), and checks whether the VM is running.
+
+. **Discover storage** — The agent lists DataVolumes and PVCs associated with the VM to show the full deletion scope.
+
+. **Present options** — The agent displays the deletion scope and offers three options: delete VM only (preserve storage), delete VM and storage (recommended for test/dev), or cancel.
+
+. **Typed confirmation** — You must type the exact VM name to confirm deletion. A mismatch cancels the operation.
+
+. **Execute and report** — The agent deletes the VM and optionally its storage, then reports what was deleted and how much storage was freed.
+
+== Example Scenario 1: Starting a Stopped VM
+
+This example starts a stopped VM using the `vm-lifecycle-manager` skill.
+
+. In your IDE chat, type:
++
+----
+Start VM lifecycle-demo in namespace my-vms
+----
+
+. The agent presents the operation for confirmation:
++
+----
+## VM Lifecycle Operation
+
+| Parameter | Value            | Impact                   |
+|-----------|------------------|--------------------------|
+| VM Name   | `lifecycle-demo` | from user                |
+| Namespace | `my-vms`         | from user                |
+| Action    | `start`          | consumes resources       |
+
+Confirm: yes/no
+----
+
+. You review the impact and confirm:
++
+----
+yes
+----
+
+. The agent calls `vm_lifecycle` to change the RunStrategy from `Halted` to `Always` and verifies the VM reaches Running status:
++
+----
+## ✓ VM Start Successful
+
+**VM**: `lifecycle-demo` | **Namespace**: `my-vms` | **RunStrategy**: Always
+
+**Impact**: Running, consuming resources (CPU/memory).
+Access: virtctl console or SSH.
+RunStrategy: Always (auto-restart on crash)
+
+**Next**: "Show status of VM lifecycle-demo" or "List VMs in namespace my-vms"
+----
+
+You can verify the VM is running with:
+
+[source,bash,role=execute]
+----
+oc get vm lifecycle-demo -n my-vms
+----
+
+----
+NAME             AGE   STATUS    READY
+lifecycle-demo   10m   Running   True
+----
+
+== Example Scenario 2: Stopping a Running VM
+
+This example gracefully stops a running VM.
+
+. In your IDE chat, type:
++
+----
+Stop VM lifecycle-demo in namespace my-vms
+----
+
+. The agent presents the stop operation with its impact:
++
+----
+## VM Lifecycle Operation
+
+| Parameter | Value            | Impact             |
+|-----------|------------------|--------------------|
+| VM Name   | `lifecycle-demo` | from user          |
+| Namespace | `my-vms`         | from user          |
+| Action    | `stop`           | graceful shutdown  |
+
+Confirm: yes/no
+----
+
+. After you confirm, the agent performs a graceful shutdown and transitions the RunStrategy to `Halted`:
++
+----
+## ✓ VM Stop Successful
+
+**VM**: `lifecycle-demo` | **Namespace**: `my-vms` | **RunStrategy**: Halted
+
+**Impact**: Stopped, resources freed. State preserved.
+Start: "Start VM lifecycle-demo in namespace my-vms"
+RunStrategy: Halted (stays off)
+
+**Next**: "Show status of VM lifecycle-demo" or "List VMs in namespace my-vms"
+----
+
+== Example Scenario 3: Restarting a VM
+
+The restart operation uses a composite stop-then-start pattern to avoid Kubernetes API conflicts.
+
+. In your IDE chat, type:
++
+----
+Restart VM lifecycle-demo in namespace my-vms
+----
+
+. The agent warns about the brief interruption:
++
+----
+## VM Lifecycle Operation
+
+| Parameter | Value            | Impact                       |
+|-----------|------------------|------------------------------|
+| VM Name   | `lifecycle-demo` | from user                    |
+| Namespace | `my-vms`         | from user                    |
+| Action    | `restart`        | brief interruption ~1-2min   |
+
+Confirm: yes/no
+----
+
+. After confirmation, the agent executes the composite restart:
++
+----
+## ✓ VM Restart Successful
+
+**VM**: `lifecycle-demo` | **Namespace**: `my-vms` | **RunStrategy**: Always
+
+Composite restart steps completed:
+1. Stopped VM → verified status: Stopped
+2. Started VM → verified status: Running
+
+**Impact**: Running after stop+start. Brief interruption (~1-2min).
+Monitor app logs for any issues.
+
+**Next**: "Show status of VM lifecycle-demo" or "List VMs in namespace my-vms"
+----
+
+== Example Scenario 4: Deleting a VM with Storage Cleanup
+
+This example deletes a VM and its associated storage using the `vm-delete` skill.
+
+. In your IDE chat, type:
++
+----
+Delete VM lifecycle-demo in namespace my-vms
+----
+
+. The agent validates the VM, discovers associated storage, and presents the deletion scope:
++
+----
+## ⚠️ VM Deletion - Review Scope
+
+**VM**: `lifecycle-demo` | **Namespace**: `my-vms` | **Status**: Running
+
+**Resources**: VM `lifecycle-demo` (Age: 10m, vCPU: 1, Memory: 4Gi)
+**Storage**: DataVolume `lifecycle-demo-rootdisk` (30Gi),
+             PVC `lifecycle-demo-rootdisk` (30Gi) - Total: 30Gi
+
+### Deletion Options
+**1: VM Only** - Preserves storage for reuse
+**2: VM + Storage** ← Recommended (test/dev) - Frees storage
+**3: Cancel**
+
+Select (1, 2, or 3):
+----
+
+. You select option 2 to free all resources:
++
+----
+2
+----
+
+. The agent requires you to type the exact VM name to confirm:
++
+----
+## 🔴 PERMANENT DELETION - Typed Confirmation Required
+
+**CANNOT BE UNDONE**
+
+**Will delete**:
+✗ VirtualMachine: `lifecycle-demo` (namespace: `my-vms`)
+✗ DataVolume: `lifecycle-demo-rootdisk`
+✗ PVC: `lifecycle-demo-rootdisk`
+✗ All data lost
+
+Type `lifecycle-demo` to confirm: _____
+----
+
+. You type the exact name:
++
+----
+lifecycle-demo
+----
+
+. The agent stops the running VM, deletes it and its storage, and reports the result:
++
+----
+## ✓ VM Deleted (Complete Cleanup)
+
+**Deleted**: VM + DataVolume + PVC | **Freed**: 30Gi
+**Impact**: Permanent removal. Cannot recover.
+**Verify**: "List VMs in namespace my-vms" - VM should not appear
+----
+
+You can verify the VM and its storage are gone:
+
+[source,bash,role=execute]
+----
+oc get vm -n my-vms
+----
+
+----
+No resources found in my-vms namespace.
+----
+
+[source,bash,role=execute]
+----
+oc get pvc -n my-vms
+----
+
+----
+No resources found in my-vms namespace.
+----
+
+== Example Scenario 5: Protected VM Deletion Refused
+
+VMs with the label `protected: "true"` cannot be deleted regardless of confirmation. This prevents accidental deletion of critical production VMs.
+
+To add a protection label to a VM:
+
+[source,bash,role=execute]
+----
+oc label vm <vm-name> -n <namespace> protected=true
+----
+
+When you attempt to delete a protected VM:
+
+. In your IDE chat, type:
++
+----
+Delete VM production-db in namespace production
+----
+
+. The agent detects the protection label and refuses the operation:
++
+----
+❌ Cannot Delete Protected VM
+
+VM `production-db` has label `protected: "true"` — deletion blocked.
+
+To remove the protection label (requires admin approval):
+  oc label vm production-db -n production protected-
+
+Operation cancelled.
+----
+
+The agent does not proceed to the confirmation step. The protection label must be removed manually before deletion is possible.
+
+== Example Scenario 6: VM Already in Desired State
+
+If a VM is already in the requested state, the agent informs you without taking action.
+
+. In your IDE chat, type:
++
+----
+Start VM lifecycle-demo in namespace my-vms
+----
+
+. If the VM is already running:
++
+----
+## ℹ️ VM Already Running
+
+**VM**: `lifecycle-demo` | **Namespace**: `my-vms` | **Status**: Running
+
+Result: No action taken — VM already in desired state.
+To restart: "Restart VM lifecycle-demo in namespace my-vms"
+----
+
+== Understanding RunStrategy
+
+The agent manages VM power state through the `runStrategy` field on the VirtualMachine resource, which replaced the deprecated `running` field.
+
+[cols="1,1,3",options="header"]
+|===
+| Action | RunStrategy | Behavior
+| start | `Always` | VM runs and auto-restarts on crash or node failure
+| stop | `Halted` | VM stops and stays off until explicitly started
+| restart | `Always` | VM stops, verifies stopped, then starts with auto-restart enabled
+|===
+
+You can check the current RunStrategy of a VM:
+
+[source,bash,role=execute]
+----
+oc get vm lifecycle-demo -n my-vms -o jsonpath='{.spec.runStrategy}'
+----
+
+== Human-in-the-Loop Confirmation
+
+Both skills enforce a safety model that requires explicit user confirmation before any state change:
+
+**Lifecycle operations** (`vm-lifecycle-manager`):
+
+* The agent presents the VM name, namespace, and action with its impact before proceeding.
+* You must explicitly confirm with "yes" before the operation executes.
+* If you say "no" or reconsider, the operation is cancelled and the VM remains unchanged.
+* Batch operations (multiple VMs) require individual confirmation for each VM.
+
+**Deletion operations** (`vm-delete`):
+
+* The agent validates the VM, discovers all associated resources, and shows the full deletion scope.
+* You choose between VM-only deletion, VM-plus-storage deletion, or cancel.
+* You must type the exact VM name (case-sensitive) to confirm.
+* A mismatch cancels the operation immediately.
+* Protected VMs (label `protected: "true"`) are refused before the confirmation step.
+
+This safety model prevents accidental service disruption, resource consumption, and permanent data loss.
+
+== Cleanup
+
+To remove resources created during this tutorial:
+
+[source,bash,role=execute]
+----
+oc delete vm lifecycle-demo -n my-vms
+----
+
+Or use natural language: type "Delete VM lifecycle-demo in namespace my-vms" in your IDE chat. The `vm-delete` skill handles the deletion with its full safety workflow.
+
+To remove the namespace:
+
+[source,bash,role=execute]
+----
+oc delete namespace my-vms
+----
+
+== Summary
+
+* The `vm-lifecycle-manager` skill handles start, stop, and restart operations with explicit user confirmation for each action.
+* Restart uses a composite stop-verify-start pattern to avoid Kubernetes resourceVersion conflicts.
+* RunStrategy management (`Always` / `Halted`) replaces the deprecated `running` field.
+* The `vm-delete` skill enforces multi-step safety: validation, scope review, option selection, and typed name confirmation.
+* Protected VMs (label `protected: "true"`) cannot be deleted regardless of user confirmation.
+* Both skills are read-only safe — no changes are made until you explicitly confirm.
+
+== See Also
+
+* xref:getting-started.adoc[Getting Started with Agentic VM Management]
+* xref:natural-language-vm-create.adoc[Creating Virtual Machines with Natural Language]
+* link:https://github.com/RHEcosystemAppEng/agentic-plugins/tree/main/rh-virt[rh-virt Skill Pack Repository,window=_blank]
+* link:https://github.com/openshift/openshift-mcp-server[OpenShift MCP Server,window=_blank]
+* link:https://docs.openshift.com/container-platform/latest/virt/index.html[OpenShift Virtualization Documentation,window=_blank]
+* link:https://kubevirt.io/user-guide/virtual_machines/run_strategies/[KubeVirt RunStrategy Documentation,window=_blank]
