@@ -35,30 +35,129 @@ NAME                 PROVISIONER    EXPANSION
 lvms-vg1 (default)   topolvm.io     true
 ----
 
-NOTE: If `allowVolumeExpansion` is `false` or not set, you must edit the StorageClass before proceeding. Not all CSI drivers support volume expansion.
-
-== Step 2: Identify the VM Disk PVC
-
-Find the PVC backing the VM disk you want to expand:
+If your StorageClass shows `false` or `<none>` under the EXPANSION column, enable it before proceeding:
 
 [source,bash,role=execute]
 ----
-oc get vm <vm-name> -n <namespace> -o jsonpath='{.spec.template.spec.volumes[*]}' | jq .
+oc patch storageclass <your-storage-class> -p '{"allowVolumeExpansion": true}'
 ----
 
-TODO: show expected output mapping volume name to PVC/DataVolume name
+NOTE: Setting `allowVolumeExpansion` to `true` on the StorageClass is necessary but not sufficient. The CSI driver itself must also support resizing. Some provisioners (such as HostPath) cannot resize volumes at the driver level regardless of this setting. Check your storage provider's documentation if you are unsure.
 
-Then check the current PVC size:
+== Step 2: Create a Namespace and Deploy a Demo VM
+
+Create a dedicated namespace for this tutorial:
 
 [source,bash,role=execute]
 ----
-oc get pvc -n <namespace>
+oc create namespace pvc-expansion-demo
+----
+
+Deploy a Fedora VM with a single 10Gi boot disk. This is the disk you will expand in later steps.
+
+* **rootdisk**: Boot disk (10Gi, default StorageClass) imported from the Fedora container disk image
+* **cloudinitdisk**: Cloud-init configuration for console login
+
+WARNING: The cloud-init password in this example is for demo purposes only. Always use a strong, unique password or SSH key authentication in production environments.
+
+xref:attachment$expanding-vm-disk-size/vm-expansion.yaml[Download vm-expansion.yaml]
+
+[source,bash,role=execute]
+----
+oc apply -f - <<EOF
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: expansion-vm
+  namespace: pvc-expansion-demo
+spec:
+  runStrategy: Always
+  template:
+    metadata:
+      labels:
+        kubevirt.io/domain: expansion-vm
+    spec:
+      domain:
+        devices:
+          disks:
+          - name: rootdisk
+            disk:
+              bus: virtio
+            bootOrder: 1
+          - name: cloudinitdisk
+            disk:
+              bus: virtio
+          interfaces:
+          - name: default
+            masquerade: {}
+        resources:
+          requests:
+            memory: 1Gi
+      networks:
+      - name: default
+        pod: {}
+      volumes:
+      - name: rootdisk
+        dataVolume:
+          name: expansion-vm-rootdisk
+      - name: cloudinitdisk
+        cloudInitNoCloud:
+          userData: |
+            #cloud-config
+            password: redhat
+            chpasswd:
+              expire: false
+  dataVolumeTemplates:
+  - metadata:
+      name: expansion-vm-rootdisk
+    spec:
+      pvc:
+        accessModes:
+        - ReadWriteOnce
+        resources:
+          requests:
+            storage: 10Gi
+      source:
+        registry:
+          pullMethod: node
+          url: docker://quay.io/containerdisks/fedora:latest
+EOF
+----
+
+Wait for the DataVolume to import and the VM to start:
+
+[source,bash,role=execute]
+----
+oc get dv -n pvc-expansion-demo -w
+----
+
+Once the DataVolume shows `Succeeded`, verify the VM is running:
+
+[source,bash,role=execute]
+----
+oc get vm -n pvc-expansion-demo
 ----
 
 Expected output:
 ----
-TODO
+NAME           AGE   STATUS    READY
+expansion-vm   3m    Running   True
 ----
+
+Confirm the initial PVC size:
+
+[source,bash,role=execute]
+----
+oc get pvc -n pvc-expansion-demo
+----
+
+Expected output:
+----
+NAME                      STATUS   VOLUME       CAPACITY   ACCESS MODES   STORAGECLASS      AGE
+expansion-vm-rootdisk     Bound    pvc-xxxx     10Gi       RWO            lvms-vg1          3m
+----
+
+NOTE: The PVC name matches the DataVolume name defined in `dataVolumeTemplates`. For existing VMs where you did not create the manifest, use `oc get vm <vm-name> -n <namespace> -o jsonpath='{.spec.template.spec.volumes}'` to identify which PVC backs each disk.
 
 == Step 3: Offline Expansion (VM Stopped)
 
@@ -68,150 +167,280 @@ Offline expansion is the safest method -- the VM is stopped before resizing the 
 +
 [source,bash,role=execute]
 ----
-virtctl stop <vm-name> -n <namespace>
+virtctl stop expansion-vm -n pvc-expansion-demo
 ----
 
 . Verify the VM is stopped:
 +
 [source,bash,role=execute]
 ----
-oc get vm <vm-name> -n <namespace>
+oc get vm expansion-vm -n pvc-expansion-demo
 ----
 +
 Expected output:
 ----
-TODO
+NAME           AGE   STATUS    READY
+expansion-vm   5m    Stopped   False
 ----
 
-. Patch the PVC to increase the disk size:
+. Patch the PVC to increase the disk size from 10Gi to 20Gi:
 +
 [source,bash,role=execute]
 ----
-oc patch pvc <pvc-name> -n <namespace> --type merge -p '{"spec":{"resources":{"requests":{"storage":"<new-size>"}}}}'
+oc patch pvc expansion-vm-rootdisk -n pvc-expansion-demo --type merge -p '{"spec":{"resources":{"requests":{"storage":"20Gi"}}}}'
 ----
 
 . Verify the PVC has expanded:
 +
 [source,bash,role=execute]
 ----
-oc get pvc <pvc-name> -n <namespace>
+oc get pvc expansion-vm-rootdisk -n pvc-expansion-demo
 ----
 +
 Expected output:
 ----
-TODO
+NAME                      STATUS   VOLUME       CAPACITY   ACCESS MODES   STORAGECLASS      AGE
+expansion-vm-rootdisk     Bound    pvc-xxxx     20Gi       RWO            lvms-vg1          5m
 ----
 
 . Start the VM:
 +
 [source,bash,role=execute]
 ----
-virtctl start <vm-name> -n <namespace>
+virtctl start expansion-vm -n pvc-expansion-demo
 ----
 
-== Step 4: Online Expansion (VM Running)
-
-Some CSI drivers support expanding a PVC while the VM is still running. This avoids downtime but requires CSI driver support for online expansion.
-
-WARNING: Not all CSI drivers support online expansion. If your driver does not support it, the resize will be deferred until the next time the volume is mounted (i.e., after a VM restart).
-
-. Patch the PVC while the VM is running:
+. Verify the VM is running again:
 +
 [source,bash,role=execute]
 ----
-oc patch pvc <pvc-name> -n <namespace> --type merge -p '{"spec":{"resources":{"requests":{"storage":"<new-size>"}}}}'
-----
-
-. Check PVC status for resize conditions:
-+
-[source,bash,role=execute]
-----
-oc describe pvc <pvc-name> -n <namespace> | grep -A 5 Conditions
+oc get vm expansion-vm -n pvc-expansion-demo
 ----
 +
 Expected output:
 ----
-TODO
+NAME           AGE   STATUS    READY
+expansion-vm   6m    Running   True
 ----
+
+NOTE: The PVC now shows 20Gi, but the guest OS filesystem still reflects the original size. Step 5 covers resizing the filesystem inside the VM.
+
+== Step 4: Online Expansion (VM Running)
+
+If your CSI driver supports in-use volume expansion, you can resize the PVC without stopping the VM. This is an alternative to Step 3 for situations where downtime is not acceptable.
+
+WARNING: Not all CSI drivers support online expansion. If your driver does not support it, the resize will be accepted but deferred until the next time the volume is mounted (i.e., after a VM restart).
+
+NOTE: This step is an alternative to Step 3, not a follow-up. If you already performed the offline expansion in Step 3, skip ahead to Step 5. The commands below assume the PVC is still at its original 10Gi size.
+
+To expand the PVC while the VM is running, patch the PVC directly without stopping the VM:
+
+[source,bash,role=execute]
+----
+oc patch pvc expansion-vm-rootdisk -n pvc-expansion-demo --type merge -p '{"spec":{"resources":{"requests":{"storage":"20Gi"}}}}'
+----
+
+Check the PVC status for resize conditions:
+
+[source,bash,role=execute]
+----
+oc describe pvc expansion-vm-rootdisk -n pvc-expansion-demo | grep -A 5 Conditions
+----
+
+If the CSI driver supports online expansion, the PVC capacity updates immediately:
+
+----
+Conditions:
+  Type                      Status
+  ----                      ------
+  FileSystemResizePending   False
+----
+
+If the driver does not support online expansion, you will see `FileSystemResizePending: True` until the VM is restarted:
+
+----
+Conditions:
+  Type                      Status
+  ----                      ------
+  FileSystemResizePending   True
+----
+
+NOTE: For Filesystem PVCs, KubeVirt automatically expands the backing disk image file when it detects the volume size change. The guest OS filesystem still needs to be resized manually in Step 5, regardless of whether the expansion was done online or offline.
 
 == Step 5: Guest OS Filesystem Resize
 
-After the PVC is expanded, the guest OS filesystem must be resized to use the new space. The filesystem does not auto-resize.
+After expanding the PVC, the block device inside the VM is larger but the guest OS filesystem has not grown to match. Two operations are required: expanding the partition, then expanding the filesystem.
 
 Access the VM console:
 
 [source,bash,role=execute]
 ----
-virtctl console <vm-name> -n <namespace>
+virtctl console expansion-vm -n pvc-expansion-demo
 ----
 
-Check the current disk size inside the guest:
+Log in with username `fedora` and password `redhat`.
+
+Check the current disk and partition layout:
 
 [source,bash]
 ----
 lsblk
-df -h
 ----
 
-=== XFS Filesystem
+Expected output:
+----
+NAME   MAJ:MIN RM  SIZE RO TYPE MOUNTPOINTS
+vda    252:0    0   20G  0 disk
+|-vda1 252:1    0    1M  0 part
+|-vda2 252:2    0  1.9G  0 part [SWAP]
+|-vda3 252:3    0    1G  0 part /boot
+`-vda4 252:4    0  7.1G  0 part /
+vdb    252:16   0    1M  0 disk
+----
 
-XFS supports online resize (no unmount required):
+The disk (`vda`) shows 20G, but the root partition (`vda4`) is still 7.1G. The remaining space is unallocated.
+
+=== Expand the Partition
+
+Use `growpart` to extend partition 4 to fill the available space:
+
+[source,bash]
+----
+sudo growpart /dev/vda 4
+----
+
+Expected output:
+----
+CHANGED: partition=4 start=6094848 old: size=14882816 end=20977664 new: size=35756032 end=41850880
+----
+
+=== Expand the Filesystem
+
+The partition is now larger, but the filesystem still uses the original space. Resize it to fill the expanded partition.
+
+For XFS (Fedora/RHEL default), use `xfs_growfs`. XFS supports online resize with no unmount required:
 
 [source,bash]
 ----
 sudo xfs_growfs /
 ----
 
-=== ext4 Filesystem
+Expected output:
+----
+meta-data=/dev/vda4              isize=512    agcount=4, agsize=465088 blks
+         =                       sectsz=512   attr=2, projid32bit=1
+data     =                       bsize=4096   blocks=1860352, imaxpct=25
+         =                       sunit=0      swidth=0 blks
+naming   =version 2              bsize=4096   ascii-ci=0, ftype=1
+log      =internal log           bsize=4096   blocks=16384, version=2
+         =                       sectsz=512   sunit=0 blks, lazy-count=1
+realtime =none                   extsz=4096   blocks=0, rtextents=0
+data blocks changed from 1860352 to 4469504
+----
 
-For ext4, use `resize2fs`:
+For ext4 filesystems, use `resize2fs` instead:
 
 [source,bash]
 ----
 sudo resize2fs /dev/vda4
 ----
 
-NOTE: `resize2fs` supports online resize for ext4 filesystems mounted read-write. No unmount is required.
+NOTE: Both `xfs_growfs` and `resize2fs` support online resize for filesystems mounted read-write. No unmount or reboot is required.
 
-Verify the filesystem now reflects the new size:
+=== Verify Inside the Guest
+
+Confirm the filesystem now reflects the expanded size:
 
 [source,bash]
 ----
-df -h
+df -h /
 ----
 
 Expected output:
 ----
-TODO
+Filesystem      Size  Used Avail Use% Mounted on
+/dev/vda4        17G  1.5G   16G   9% /
 ----
+
+The root filesystem now shows approximately 17G of usable space (20Gi disk minus the boot, swap, and BIOS partitions).
 
 Press `Ctrl+]` to exit the console.
 
 == Step 6: Expanding Root Disk vs Data Disks
 
-TODO: Explain the differences and caveats between expanding the root/boot disk versus additional data disks.
+The procedure in Steps 3-5 expanded the root (boot) disk. Expanding additional data disks follows the same PVC patch process, but the guest OS steps differ depending on how the data disk is configured.
+
+[cols="1,2,2",options="header"]
+|===
+| Scenario
+| Guest OS Steps
+| Notes
+
+| Root disk (partitioned)
+| `growpart` on the root partition, then `xfs_growfs` or `resize2fs`
+| Must identify the correct partition number. The boot, swap, and BIOS partitions are not affected.
+
+| Data disk (partitioned)
+| `growpart` on the data partition, then `xfs_growfs` or `resize2fs`
+| Same process as root disk. Use `lsblk` to find the correct device (e.g., `/dev/vdb1`).
+
+| Data disk (unpartitioned, whole-disk filesystem)
+| `xfs_growfs` or `resize2fs` only
+| No `growpart` needed because the filesystem sits directly on the block device without a partition table.
+
+| Data disk (blank, not yet formatted)
+| `mkfs.xfs /dev/vdb` (or `mkfs.ext4`), then mount
+| New disk added via hotplug or multi-disk configuration. No expansion needed, just format and mount. See xref:multi-disk-configuration.adoc[Multi-Disk VM Configuration].
+|===
+
+NOTE: If you are unsure whether a data disk is partitioned, run `lsblk` inside the guest. A disk with entries like `vdb1`, `vdb2` is partitioned. A disk listed as just `vdb` with no children is either unpartitioned or blank.
 
 == Step 7: Verification
 
-Verify the expansion from outside the VM:
+Confirm the expansion was successful from both the cluster and guest perspectives.
+
+From the cluster side, verify the PVC capacity:
 
 [source,bash,role=execute]
 ----
-oc get pvc <pvc-name> -n <namespace> -o jsonpath='Capacity: {.status.capacity.storage}'
+oc get pvc expansion-vm-rootdisk -n pvc-expansion-demo
 ----
 
-Verify from inside the VM:
+Expected output:
+----
+NAME                      STATUS   VOLUME       CAPACITY   ACCESS MODES   STORAGECLASS      AGE
+expansion-vm-rootdisk     Bound    pvc-xxxx     20Gi       RWO            lvms-vg1          10m
+----
+
+From inside the guest, verify the filesystem:
 
 [source,bash,role=execute]
 ----
-virtctl console <vm-name> -n <namespace>
+virtctl console expansion-vm -n pvc-expansion-demo
 ----
 
 [source,bash]
 ----
 lsblk
-df -h
+df -h /
 ----
+
+Expected output:
+----
+NAME   MAJ:MIN RM  SIZE RO TYPE MOUNTPOINTS
+vda    252:0    0   20G  0 disk
+|-vda1 252:1    0    1M  0 part
+|-vda2 252:2    0  1.9G  0 part [SWAP]
+|-vda3 252:3    0    1G  0 part /boot
+`-vda4 252:4    0   17G  0 part /
+
+Filesystem      Size  Used Avail Use% Mounted on
+/dev/vda4        17G  1.5G   16G   9% /
+----
+
+If the PVC shows 20Gi but the guest filesystem still shows the original size, the `growpart` and filesystem resize steps from Step 5 were not completed. Return to Step 5 and verify each sub-step.
+
+Press `Ctrl+]` to exit the console.
 
 == Limitations and Common Issues
 
@@ -222,14 +451,31 @@ df -h
 
 == Cleanup
 
-TODO
+Delete the namespace, which removes the VM, PVCs, and DataVolumes:
+
+[source,bash,role=execute]
+----
+oc delete namespace pvc-expansion-demo
+----
+
+Verify the namespace has been removed:
+
+[source,bash,role=execute]
+----
+oc get namespace pvc-expansion-demo
+----
+
+Expected output:
+----
+Error from server (NotFound): namespaces "pvc-expansion-demo" not found
+----
 
 == Summary
 
 In this tutorial you learned how to:
 
 * Check whether a StorageClass supports volume expansion
-* Identify the PVC backing a VM disk
+* Understand how PVC names map to VM disk volumes
 * Expand a VM disk offline (VM stopped) for maximum safety
 * Expand a VM disk online (VM running) for zero downtime
 * Resize the guest OS filesystem using `xfs_growfs` (XFS) or `resize2fs` (ext4)
