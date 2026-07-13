@@ -882,10 +882,20 @@ ContainerDisks are ephemeral - changes are lost when the VM stops unless you att
 <p>This method combines VM creation with upload capability using DataVolumeTemplates. The DataVolume is defined inline within the VM spec and is created automatically when you create the VM.</p>
 </div>
 <div class="paragraph">
-<p><strong>When to use this method:</strong>
-- You want to define the VM and its storage in a single manifest
-- You&#8217;re using GitOps or declarative workflows
-- You want the DataVolume lifecycle tied to the VM</p>
+<p><strong>When to use this method:</strong></p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>You want to define the VM and its storage in a single manifest</p>
+</li>
+<li>
+<p>You&#8217;re using GitOps or declarative workflows</p>
+</li>
+<li>
+<p>You want the DataVolume lifecycle tied to the VM</p>
+</li>
+</ul>
 </div>
 <div class="paragraph">
 <p><a href="_attachments/import-qcow2-boot-volume/vm-with-upload-datavolume.yaml" class="xref attachment">Download vm-with-upload-datavolume.yaml</a></p>
@@ -971,16 +981,36 @@ spec:
 </div>
 </div>
 <div class="paragraph">
-<p><strong>Advantages of this method:</strong>
-- Single manifest defines both VM and storage
-- DataVolume lifecycle is managed with the VM
-- Good for Infrastructure-as-Code workflows</p>
+<p><strong>Advantages of this method:</strong></p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Single manifest defines both VM and storage</p>
+</li>
+<li>
+<p>DataVolume lifecycle is managed with the VM</p>
+</li>
+<li>
+<p>Good for Infrastructure-as-Code workflows</p>
+</li>
+</ul>
 </div>
 <div class="paragraph">
-<p><strong>Disadvantages:</strong>
-- More complex than separate PVC creation
-- Upload must happen after VM creation
-- Subject to DataVolume/virtctl compatibility issues</p>
+<p><strong>Disadvantages:</strong></p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>More complex than separate PVC creation</p>
+</li>
+<li>
+<p>Upload must happen after VM creation</p>
+</li>
+<li>
+<p>Subject to DataVolume/virtctl compatibility issues</p>
+</li>
+</ul>
 </div>
 </div>
 </div>
@@ -1121,9 +1151,17 @@ virtctl image-upload pvc &lt;pvc-name&gt; \
 </div>
 </div>
 <div class="paragraph">
-<p>Common causes:
-* <strong>CDI operator issues</strong>: Check that <code>cdi-deployment</code> and <code>cdi-operator</code> pods are running
-* <strong>Storage class issues</strong>: Verify your StorageClass can provision volumes</p>
+<p>Common causes:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>CDI operator issues</strong>: Check that <code>cdi-deployment</code> and <code>cdi-operator</code> pods are running</p>
+</li>
+<li>
+<p><strong>Storage class issues</strong>: Verify your StorageClass can provision volumes</p>
+</li>
+</ul>
 </div>
 <div class="paragraph">
 <p>Check CDI pod status:</p>
@@ -1195,10 +1233,20 @@ oc get events -n imported-vms --field-selector involvedObject.name=fedora-import
 </div>
 </div>
 <div class="paragraph">
-<p>Common issues:
-* Image is corrupted - verify checksum
-* Wrong machine type - adjust machine.type in VM spec
-* Missing bootloader - ensure image has proper boot configuration</p>
+<p>Common issues:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Image is corrupted - verify checksum</p>
+</li>
+<li>
+<p>Wrong machine type - adjust machine.type in VM spec</p>
+</li>
+<li>
+<p>Missing bootloader - ensure image has proper boot configuration</p>
+</li>
+</ul>
 </div>
 </div>
 </div>
