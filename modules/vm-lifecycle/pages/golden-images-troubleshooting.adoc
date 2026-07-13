@@ -71,6 +71,7 @@ oc get vmi base-fedora-vm -n golden-images -o yaml
 ----
 
 Look for:
+
 - `status.phase: Running`
 - `status.interfaces[].ipAddress` (VM has an IP)
 - `status.guestOSInfo.id: fedora` (Guest agent is running)
@@ -321,6 +322,7 @@ oc logs -n golden-images <importer-pod-name>
 ----
 
 **Common Causes**:
+
 - Source DataSource not available
 - Network issues downloading image
 - Insufficient storage space
@@ -369,6 +371,7 @@ oc get events -n golden-images --sort-by='.lastTimestamp' | grep -i error
 ----
 
 **Common Causes**:
+
 - DataVolume in `PendingPopulation` or failed state
 - Storage class issues
 - PVC binding issues
@@ -439,6 +442,7 @@ systemctl status nginx
 ----
 
 **Common Causes**:
+
 - Base VM was not customized before creating DataSource
 - DataSource references wrong PVC
 - VM cloning failed
@@ -530,6 +534,7 @@ oc logs -n golden-images -l app=containerized-data-importer --tail=100
 ----
 
 **Common Causes**:
+
 - Large disk size
 - Storage backend performance
 - Not using efficient cloning (e.g., not using DataSource)
