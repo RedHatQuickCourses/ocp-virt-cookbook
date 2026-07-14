@@ -5,7 +5,7 @@
 
 This tutorial demonstrates how to expand the disk size of a virtual machine in OpenShift Virtualization by resizing the underlying PersistentVolumeClaim (PVC). Disk expansion is one of the most common day-2 operations for VM administrators -- without this guide, users must piece together Kubernetes PVC expansion docs with KubeVirt-specific guest OS steps.
 
-You will learn how to expand a VM disk both offline (VM stopped) and online (VM running), resize the guest OS filesystem to use the new space, and verify the expansion from both the cluster and guest perspectives.
+You will learn how to expand a VM disk both offline (VM stopped) and online (VM running), verify the expansion from both the cluster and guest perspectives, and understand when manual filesystem resize is required inside the guest OS.
 
 == Prerequisites
 
@@ -17,7 +17,8 @@ You will learn how to expand a VM disk both offline (VM stopped) and online (VM 
 
 Versions tested:
 ----
-TODO
+OpenShift 4.21
+OpenShift Virtualization 4.21
 ----
 
 == Step 1: Check StorageClass Expansion Support
@@ -31,9 +32,11 @@ oc get storageclass -o custom-columns=NAME:.metadata.name,PROVISIONER:.provision
 
 Expected output:
 ----
-NAME                 PROVISIONER    EXPANSION
-lvms-vg1 (default)   topolvm.io     true
+NAME         PROVISIONER    EXPANSION
+lvms-vg1     topolvm.io     true
 ----
+
+NOTE: Your cluster may show additional StorageClasses. The important thing is that the StorageClass used by your VM's PVC shows `true` under the EXPANSION column.
 
 If your StorageClass shows `false` or `<none>` under the EXPANSION column, enable it before proceeding:
 
@@ -55,7 +58,7 @@ oc create namespace pvc-expansion-demo
 
 Deploy a Fedora VM with a single 10Gi boot disk. This is the disk you will expand in later steps.
 
-* **rootdisk**: Boot disk (10Gi, default StorageClass) imported from the Fedora container disk image
+* **rootdisk**: Boot disk (10Gi, `lvms-vg1` StorageClass) imported from the Fedora container disk image
 * **cloudinitdisk**: Cloud-init configuration for console login
 
 WARNING: The cloud-init password in this example is for demo purposes only. Always use a strong, unique password or SSH key authentication in production environments.
@@ -117,6 +120,7 @@ spec:
         resources:
           requests:
             storage: 10Gi
+        storageClassName: lvms-vg1
       source:
         registry:
           pullMethod: node
@@ -153,8 +157,8 @@ oc get pvc -n pvc-expansion-demo
 
 Expected output:
 ----
-NAME                      STATUS   VOLUME       CAPACITY   ACCESS MODES   STORAGECLASS      AGE
-expansion-vm-rootdisk     Bound    pvc-xxxx     10Gi       RWO            lvms-vg1          3m
+NAME                      STATUS   VOLUME       CAPACITY   ACCESS MODES   STORAGECLASS   AGE
+expansion-vm-rootdisk     Bound    pvc-xxxx     10Gi       RWO            lvms-vg1       3m
 ----
 
 NOTE: The PVC name matches the DataVolume name defined in `dataVolumeTemplates`. For existing VMs where you did not create the manifest, use `oc get vm <vm-name> -n <namespace> -o jsonpath='{.spec.template.spec.volumes}'` to identify which PVC backs each disk.
@@ -189,19 +193,8 @@ expansion-vm   5m    Stopped   False
 ----
 oc patch pvc expansion-vm-rootdisk -n pvc-expansion-demo --type merge -p '{"spec":{"resources":{"requests":{"storage":"20Gi"}}}}'
 ----
-
-. Verify the PVC has expanded:
 +
-[source,bash,role=execute]
-----
-oc get pvc expansion-vm-rootdisk -n pvc-expansion-demo
-----
-+
-Expected output:
-----
-NAME                      STATUS   VOLUME       CAPACITY   ACCESS MODES   STORAGECLASS      AGE
-expansion-vm-rootdisk     Bound    pvc-xxxx     20Gi       RWO            lvms-vg1          5m
-----
+NOTE: The PVC capacity does not update immediately after patching. The `FileSystemResizePending` condition indicates that the volume resize is waiting for a pod to mount the PVC. Starting the VM in the next step triggers the mount and completes the resize.
 
 . Start the VM:
 +
@@ -210,7 +203,7 @@ expansion-vm-rootdisk     Bound    pvc-xxxx     20Gi       RWO            lvms-v
 virtctl start expansion-vm -n pvc-expansion-demo
 ----
 
-. Verify the VM is running again:
+. Verify the VM is running and the PVC has expanded:
 +
 [source,bash,role=execute]
 ----
@@ -222,8 +215,17 @@ Expected output:
 NAME           AGE   STATUS    READY
 expansion-vm   6m    Running   True
 ----
-
-NOTE: The PVC now shows 20Gi, but the guest OS filesystem still reflects the original size. Step 5 covers resizing the filesystem inside the VM.
++
+[source,bash,role=execute]
+----
+oc get pvc expansion-vm-rootdisk -n pvc-expansion-demo
+----
++
+Expected output:
+----
+NAME                      STATUS   VOLUME       CAPACITY   ACCESS MODES   STORAGECLASS   AGE
+expansion-vm-rootdisk     Bound    pvc-xxxx     20Gi       RWO            lvms-vg1       6m
+----
 
 == Step 4: Online Expansion (VM Running)
 
@@ -247,7 +249,7 @@ Check the PVC status for resize conditions:
 oc describe pvc expansion-vm-rootdisk -n pvc-expansion-demo | grep -A 5 Conditions
 ----
 
-If the CSI driver supports online expansion, the PVC capacity updates immediately:
+If the CSI driver supports online expansion, the PVC capacity updates once the resize completes:
 
 ----
 Conditions:
@@ -256,7 +258,7 @@ Conditions:
   FileSystemResizePending   False
 ----
 
-If the driver does not support online expansion, you will see `FileSystemResizePending: True` until the VM is restarted:
+If the driver does not support online expansion, or the resize is still in progress, you will see `FileSystemResizePending: True` until the volume is re-mounted:
 
 ----
 Conditions:
@@ -265,11 +267,11 @@ Conditions:
   FileSystemResizePending   True
 ----
 
-NOTE: For Filesystem PVCs, KubeVirt automatically expands the backing disk image file when it detects the volume size change. The guest OS filesystem still needs to be resized manually in Step 5, regardless of whether the expansion was done online or offline.
+NOTE: For Filesystem PVCs, KubeVirt automatically expands the backing disk image file when it detects the volume size change. The guest OS filesystem may still need to be resized manually, as described in Step 5.
 
 == Step 5: Guest OS Filesystem Resize
 
-After expanding the PVC, the block device inside the VM is larger but the guest OS filesystem has not grown to match. Two operations are required: expanding the partition, then expanding the filesystem.
+After expanding the PVC, the block device presented to the VM is larger. Depending on the guest OS image, the partition table and filesystem may or may not expand automatically on boot.
 
 Access the VM console:
 
@@ -287,22 +289,49 @@ Check the current disk and partition layout:
 lsblk
 ----
 
-Expected output:
+=== Automatic Resize (Fedora and Similar Images)
+
+Modern Fedora cloud images use `cloud-utils-growpart` and `systemd-growfs` services to automatically expand the root partition and filesystem on boot. If the image handles this automatically, `lsblk` will show the root partition already filling the expanded disk:
+
 ----
 NAME   MAJ:MIN RM  SIZE RO TYPE MOUNTPOINTS
-vda    252:0    0   20G  0 disk
-|-vda1 252:1    0    1M  0 part
-|-vda2 252:2    0  1.9G  0 part [SWAP]
-|-vda3 252:3    0    1G  0 part /boot
-`-vda4 252:4    0  7.1G  0 part /
-vdb    252:16   0    1M  0 disk
+zram0  251:0    0  883M  0 disk [SWAP]
+vda    253:0    0 18.6G  0 disk
+|-vda1 253:1    0    2M  0 part
+|-vda2 253:2    0  100M  0 part /boot/efi
+`-vda3 253:3    0 18.5G  0 part /var
+                                /home
+                                /boot
+                                /
+vdb    253:16   0    1M  0 disk
 ----
 
-The disk (`vda`) shows 20G, but the root partition (`vda4`) is still 7.1G. The remaining space is unallocated.
+NOTE: The disk may show slightly less than 20G (e.g., 18.6G) because the storage provider reserves a small amount of space for metadata. This is expected behavior with thin-provisioned storage.
 
-=== Expand the Partition
+Verify the filesystem reflects the expanded size:
 
-Use `growpart` to extend partition 4 to fill the available space:
+[source,bash]
+----
+df -h /
+----
+
+Expected output:
+----
+Filesystem      Size  Used Avail Use% Mounted on
+/dev/vda3        19G  759M   18G   5% /
+----
+
+If the filesystem already shows the expanded size, the guest OS handled the resize automatically. You can skip the manual resize steps below and proceed to Step 6.
+
+=== Manual Resize (RHEL, CentOS, and Other Images)
+
+If the guest OS does not automatically expand the partition and filesystem, `lsblk` will show the disk at the new size but the root partition at the original size, with unallocated space at the end. In this case, two manual operations are required: expanding the partition, then expanding the filesystem.
+
+Identify the root partition number using `lsblk`. The root partition is the one mounted on `/`. Common layouts include partition 3 (Fedora), partition 4 (RHEL/CentOS), or partition 2 (minimal images). The examples below use `/dev/vda4`, but adjust the partition number to match your image.
+
+==== Expand the Partition
+
+Use `growpart` to extend the root partition to fill the available space:
 
 [source,bash]
 ----
@@ -314,7 +343,9 @@ Expected output:
 CHANGED: partition=4 start=6094848 old: size=14882816 end=20977664 new: size=35756032 end=41850880
 ----
 
-=== Expand the Filesystem
+NOTE: If `growpart` reports `NOCHANGE: partition cannot be grown`, the partition already fills the disk and no expansion is needed. This is normal for images that auto-expand the partition on boot.
+
+==== Expand the Filesystem
 
 The partition is now larger, but the filesystem still uses the original space. Resize it to fill the expanded partition.
 
@@ -323,19 +354,6 @@ For XFS (Fedora/RHEL default), use `xfs_growfs`. XFS supports online resize with
 [source,bash]
 ----
 sudo xfs_growfs /
-----
-
-Expected output:
-----
-meta-data=/dev/vda4              isize=512    agcount=4, agsize=465088 blks
-         =                       sectsz=512   attr=2, projid32bit=1
-data     =                       bsize=4096   blocks=1860352, imaxpct=25
-         =                       sunit=0      swidth=0 blks
-naming   =version 2              bsize=4096   ascii-ci=0, ftype=1
-log      =internal log           bsize=4096   blocks=16384, version=2
-         =                       sectsz=512   sunit=0 blks, lazy-count=1
-realtime =none                   extsz=4096   blocks=0, rtextents=0
-data blocks changed from 1860352 to 4469504
 ----
 
 For ext4 filesystems, use `resize2fs` instead:
@@ -347,7 +365,7 @@ sudo resize2fs /dev/vda4
 
 NOTE: Both `xfs_growfs` and `resize2fs` support online resize for filesystems mounted read-write. No unmount or reboot is required.
 
-=== Verify Inside the Guest
+==== Verify Inside the Guest
 
 Confirm the filesystem now reflects the expanded size:
 
@@ -356,13 +374,7 @@ Confirm the filesystem now reflects the expanded size:
 df -h /
 ----
 
-Expected output:
-----
-Filesystem      Size  Used Avail Use% Mounted on
-/dev/vda4        17G  1.5G   16G   9% /
-----
-
-The root filesystem now shows approximately 17G of usable space (20Gi disk minus the boot, swap, and BIOS partitions).
+The root filesystem should show approximately 17-19G of usable space, depending on the image's partition layout and storage provider overhead.
 
 Press `Ctrl+]` to exit the console.
 
@@ -377,8 +389,8 @@ The procedure in Steps 3-5 expanded the root (boot) disk. Expanding additional d
 | Notes
 
 | Root disk (partitioned)
-| `growpart` on the root partition, then `xfs_growfs` or `resize2fs`
-| Must identify the correct partition number. The boot, swap, and BIOS partitions are not affected.
+| `growpart` on the root partition, then `xfs_growfs` or `resize2fs` (if not auto-expanded)
+| Must identify the correct partition number using `lsblk`. Boot, swap, and EFI partitions are not affected.
 
 | Data disk (partitioned)
 | `growpart` on the data partition, then `xfs_growfs` or `resize2fs`
@@ -408,8 +420,8 @@ oc get pvc expansion-vm-rootdisk -n pvc-expansion-demo
 
 Expected output:
 ----
-NAME                      STATUS   VOLUME       CAPACITY   ACCESS MODES   STORAGECLASS      AGE
-expansion-vm-rootdisk     Bound    pvc-xxxx     20Gi       RWO            lvms-vg1          10m
+NAME                      STATUS   VOLUME       CAPACITY   ACCESS MODES   STORAGECLASS   AGE
+expansion-vm-rootdisk     Bound    pvc-xxxx     20Gi       RWO            lvms-vg1       10m
 ----
 
 From inside the guest, verify the filesystem:
@@ -425,20 +437,9 @@ lsblk
 df -h /
 ----
 
-Expected output:
-----
-NAME   MAJ:MIN RM  SIZE RO TYPE MOUNTPOINTS
-vda    252:0    0   20G  0 disk
-|-vda1 252:1    0    1M  0 part
-|-vda2 252:2    0  1.9G  0 part [SWAP]
-|-vda3 252:3    0    1G  0 part /boot
-`-vda4 252:4    0   17G  0 part /
+The disk (`vda`) should show approximately 20G (minus storage provider overhead), and `df -h /` should confirm the root filesystem is using the expanded space. The exact sizes and partition layout depend on the guest OS image.
 
-Filesystem      Size  Used Avail Use% Mounted on
-/dev/vda4        17G  1.5G   16G   9% /
-----
-
-If the PVC shows 20Gi but the guest filesystem still shows the original size, the `growpart` and filesystem resize steps from Step 5 were not completed. Return to Step 5 and verify each sub-step.
+If the PVC shows 20Gi but the guest filesystem still shows the original size, the partition and filesystem resize steps from Step 5 were not completed and were not handled automatically by the guest OS. Return to Step 5 and follow the manual resize instructions.
 
 Press `Ctrl+]` to exit the console.
 
@@ -446,7 +447,8 @@ Press `Ctrl+]` to exit the console.
 
 * **Shrinking is not supported.** PVC volume expansion is a one-way operation. You cannot reduce the size of a PVC after expanding it.
 * **Not all CSI drivers support online expansion.** If the driver does not support it, the resize is deferred until the volume is re-mounted.
-* **Filesystem not auto-resized.** Expanding the PVC only increases the block device size. You must manually resize the filesystem inside the guest OS (`xfs_growfs` for XFS, `resize2fs` for ext4).
+* **PVC capacity does not update immediately.** After patching, the PVC may show `FileSystemResizePending` until a pod mounts the volume. For offline expansion, starting the VM triggers the mount and completes the resize.
+* **Filesystem auto-resize depends on the image.** Modern Fedora and cloud images automatically expand the partition and filesystem on boot. RHEL, CentOS, and other images may require manual `growpart` and `xfs_growfs`/`resize2fs` steps as described in Step 5.
 * **VM does not see new size.** If the guest OS does not detect the new disk size, try restarting the VM or rescanning the SCSI bus inside the guest.
 
 == Cleanup
@@ -478,13 +480,14 @@ In this tutorial you learned how to:
 * Understand how PVC names map to VM disk volumes
 * Expand a VM disk offline (VM stopped) for maximum safety
 * Expand a VM disk online (VM running) for zero downtime
-* Resize the guest OS filesystem using `xfs_growfs` (XFS) or `resize2fs` (ext4)
+* Determine whether the guest OS auto-expands the filesystem or requires manual resize
+* Resize the guest OS filesystem manually using `growpart`, `xfs_growfs` (XFS), or `resize2fs` (ext4)
 * Understand the differences between expanding root disks and data disks
 * Recognize common issues and limitations of PVC volume expansion
 
 == See Also
 
-* link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/storage/expanding-persistent-volumes[Expanding Persistent Volumes - OpenShift Documentation,window=_blank]
+* link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.21/html/storage/expanding-persistent-volumes[Expanding Persistent Volumes - OpenShift Documentation,window=_blank]
 * link:https://kubevirt.io/user-guide/storage/disks_and_volumes/[Disks and Volumes - KubeVirt User Guide,window=_blank]
 * xref:creating-managing-storage-class.adoc[Creating and Managing Storage Classes]
 * xref:multi-disk-configuration.adoc[Multi-Disk VM Configuration]
