@@ -1,0 +1,568 @@
+= Live Migration and Cluster Rebalancing
+:navtitle: VM Rebalancing and Live Migration
+
+Versions tested:
+----
+OpenShift 4.22
+----
+
+This tutorial demonstrates how to migrate virtual machines across cluster nodes using natural language commands through the `vm-rebalance` agent skill. You will learn how to rebalance VMs manually (user-driven) and automatically (AI-driven), understand the differences between live and cold migration, and practice common scenarios such as draining a node for maintenance and optimizing cluster load distribution.
+
+== Prerequisites
+
+* Completed the xref:getting-started.adoc[Getting Started with Agentic VM Management] tutorial (skill pack installed, MCP server configured, cluster connectivity verified)
+* OpenShift cluster with OpenShift Virtualization installed
+* `KUBECONFIG` environment variable set and pointing to a valid kubeconfig file
+* A multi-node cluster with at least two schedulable worker nodes
+* At least two running VMs distributed across nodes (see xref:natural-language-vm-create.adoc[Creating Virtual Machines with Natural Language] to create them)
+
+Create the namespace used in this tutorial if it does not already exist:
+
+[source,bash,role=execute]
+----
+oc create namespace my-vms
+----
+
+If you do not have VMs to work with, create them using the `vm-create` skill by typing in your IDE chat:
+
+----
+Create a Fedora VM named web-01 in namespace my-vms
+----
+
+----
+Create a Fedora VM named web-02 in namespace my-vms
+----
+
+----
+Create a Fedora VM named db-01 in namespace my-vms
+----
+
+Verify the VMs exist and are running before continuing:
+
+[source,bash,role=execute]
+----
+oc get vm -n my-vms
+----
+
+Expected output:
+
+----
+NAME     AGE   STATUS    READY
+db-01    3m    Running   True
+web-01   5m    Running   True
+web-02   4m    Running   True
+----
+
+Check which nodes the VMs are currently scheduled on:
+
+[source,bash,role=execute]
+----
+oc get vmi -n my-vms -o custom-columns="NAME:.metadata.name,NODE:.status.nodeName,PHASE:.status.phase"
+----
+
+Expected output:
+
+----
+NAME     NODE        PHASE
+db-01    worker-02   Running
+web-01   worker-01   Running
+web-02   worker-01   Running
+----
+
+== How It Works
+
+The `vm-rebalance` skill supports two modes of operation: manual and automatic. Both modes follow a safety-first workflow that validates prerequisites, presents a migration plan, and waits for your explicit confirmation before moving any VM.
+
+=== Manual Rebalancing
+
+In manual mode, you specify which VM to move and where. The agent follows a four-step workflow:
+
+. **Validate source and target** -- The agent verifies the VM exists and is running, checks that the target node is schedulable (not cordoned or tainted), and confirms the target node has sufficient CPU, memory, and storage resources.
+
+. **Check storage compatibility** -- The agent inspects the VM's storage configuration to determine whether live migration is possible. VMs with ReadWriteMany (RWX) storage support live migration. VMs with ReadWriteOnce (RWO) storage require cold migration (stop, migrate storage, start).
+
+. **Present migration plan** -- The agent displays the migration type (live or cold), source and target nodes, expected impact, and estimated duration. It waits for your explicit confirmation.
+
+. **Execute and monitor** -- After confirmation, the agent initiates the migration, monitors state transitions, and reports the result.
+
+=== Automatic Rebalancing
+
+In automatic mode, the agent analyzes cluster-wide resource utilization and proposes a migration plan to distribute VMs more evenly. The workflow adds an analysis step:
+
+. **Gather cluster metrics** -- The agent collects CPU and memory utilization data for all worker nodes and identifies imbalances.
+
+. **Generate migration plan** -- Based on the metrics, the agent determines which VMs should move and where. It considers storage compatibility, node capacity, and anti-affinity rules.
+
+. **Present plan for review** -- The agent displays the full migration plan as a table showing each proposed migration, the migration type, and the expected resource impact on each node.
+
+. **Execute with per-VM confirmation** -- After you approve the plan, the agent executes each migration individually and reports progress. You can cancel remaining migrations at any point.
+
+== Live Migration vs Cold Migration
+
+The `vm-rebalance` skill selects the migration type based on the VM's storage configuration.
+
+[cols="1,2,2",options="header"]
+|===
+| Criteria | Live Migration | Cold Migration
+| Storage access mode | ReadWriteMany (RWX) | ReadWriteOnce (RWO)
+| VM downtime | Zero -- VM continues running during migration | Brief -- VM is stopped, storage is migrated, VM is restarted
+| Typical duration | 30 seconds to 5 minutes (depends on memory size and dirty page rate) | 2 to 15 minutes (depends on disk size)
+| Network connections | Preserved -- active TCP connections remain intact | Dropped -- clients must reconnect after restart
+| Use case | Production workloads, stateful services | Development VMs, batch jobs, non-critical workloads
+|===
+
+=== How Live Migration Works
+
+KubeVirt live migration transfers a running VM's memory state from the source node to the target node without interrupting the guest operating system. The process follows these stages:
+
+. **Scheduling** -- A new VirtualMachineInstance (VMI) pod is scheduled on the target node.
+. **Pre-copy** -- The VM's memory pages are copied to the target while the VM continues running on the source.
+. **Iterative copy** -- Dirty pages (memory modified during copy) are re-sent in successive rounds until the remaining delta is small enough for a quick switchover.
+. **Switchover** -- The VM is paused briefly on the source node, the final dirty pages are transferred, and the VM resumes on the target node.
+. **Cleanup** -- The source VMI pod is terminated.
+
+You can monitor the migration state transitions:
+
+[source,bash,role=execute]
+----
+oc get vmim -n my-vms -w
+----
+
+=== When Cold Migration Is Required
+
+Cold migration is used when the VM's storage does not support shared access across nodes. Common scenarios include:
+
+* The VM uses a PVC with `ReadWriteOnce` (RWO) access mode, which can only be mounted on a single node at a time.
+* The underlying StorageClass does not support volume cloning or multi-attach.
+* The VM has local storage (hostPath or local-volume) that cannot be shared.
+
+The agent always informs you when cold migration will be used and warns about the expected downtime before proceeding.
+
+== Example Scenario 1: Manual Live Migration
+
+This example moves a single VM to a specific target node using live migration.
+
+. In your IDE chat, type:
++
+----
+Migrate VM web-01 from worker-01 to worker-02 in namespace my-vms
+----
+
+. The agent validates the VM, checks the target node's readiness and capacity, inspects the storage access mode, and presents the migration plan:
++
+----
+## VM Migration Plan
+
+| Parameter    | Value                                    |
+|--------------|------------------------------------------|
+| VM Name      | `web-01`                                 |
+| Namespace    | `my-vms`                                 |
+| Source Node  | `worker-01`                              |
+| Target Node  | `worker-02`                              |
+| Migration    | Live (zero downtime)                     |
+| Storage      | web-01-rootdisk (30Gi, RWX) - compatible |
+| Est. Duration| ~1-2 minutes                             |
+
+**Impact**: No downtime. Active connections preserved.
+
+Proceed with migration? (yes/no)
+----
+
+. You review the plan and confirm:
++
+----
+yes
+----
+
+. The agent initiates the VirtualMachineInstanceMigration, monitors the state transitions, and reports:
++
+----
+## VM Migration Progress
+
+Scheduling... Target pod created on worker-02
+Pre-copy...   Memory transfer in progress (2.1 GiB)
+Iterative...  Round 1: 45 MiB dirty pages
+Iterative...  Round 2: 8 MiB dirty pages
+Switchover... VM paused on source, final pages transferred
+Running...    VM resumed on worker-02
+Cleanup...    Source pod terminated on worker-01
+
+## VM Migration Successful
+
+**VM**: `web-01` | **From**: worker-01 | **To**: worker-02
+**Duration**: 1m 23s | **Type**: Live (zero downtime)
+
+**Next**: "List VMs in namespace my-vms" or "Show status of VM web-01"
+----
+
+You can verify the VM is now running on the target node:
+
+[source,bash,role=execute]
+----
+oc get vmi web-01 -n my-vms -o jsonpath='{.status.nodeName}'
+----
+
+----
+worker-02
+----
+
+== Example Scenario 2: Cold Migration (RWO Storage)
+
+This example demonstrates cold migration for a VM whose storage uses `ReadWriteOnce` access mode, which prevents live migration.
+
+. In your IDE chat, type:
++
+----
+Move VM db-01 to worker-01 in namespace my-vms
+----
+
+. The agent detects that the VM's PVC uses RWO access mode and warns about the required downtime:
++
+----
+## VM Migration Plan
+
+| Parameter    | Value                                          |
+|--------------|------------------------------------------------|
+| VM Name      | `db-01`                                        |
+| Namespace    | `my-vms`                                       |
+| Source Node  | `worker-02`                                    |
+| Target Node  | `worker-01`                                    |
+| Migration    | Cold (brief downtime required)                 |
+| Storage      | db-01-rootdisk (30Gi, RWO) - live incompatible |
+| Est. Duration| ~3-5 minutes                                   |
+
+WARNING: Cold migration requires stopping the VM. The VM will be
+unavailable for approximately 3-5 minutes. Active network connections
+will be dropped.
+
+**Cold migration steps**:
+1. Stop VM on worker-02
+2. Reschedule VM to worker-01
+3. Start VM on worker-01
+
+Proceed with cold migration? (yes/no)
+----
+
+. You confirm:
++
+----
+yes
+----
+
+. The agent performs the stop-migrate-start sequence and reports:
++
+----
+## Cold Migration Progress
+
+Step 1/3: Stopping VM db-01 on worker-02... Stopped
+Step 2/3: Rescheduling to worker-01... Scheduled
+Step 3/3: Starting VM db-01 on worker-01... Running
+
+## VM Migration Successful
+
+**VM**: `db-01` | **From**: worker-02 | **To**: worker-01
+**Duration**: 3m 47s | **Type**: Cold (VM was stopped during migration)
+**Downtime**: ~3m 47s
+
+**Next**: Verify application connectivity. Clients may need to reconnect.
+----
+
+== Example Scenario 3: Node Maintenance Drain
+
+This example drains all VMs from a node before maintenance. The agent migrates each VM individually, selecting live or cold migration based on each VM's storage configuration.
+
+. In your IDE chat, type:
++
+----
+Drain all VMs from worker-01 for maintenance in namespace my-vms
+----
+
+. The agent inventories all VMs on the specified node, checks storage compatibility for each, and presents a drain plan:
++
+----
+## Node Drain Plan: worker-01
+
+VMs on worker-01: 2
+
+| VM     | Storage Access | Migration Type | Target Node | Est. Duration |
+|--------|----------------|----------------|-------------|---------------|
+| web-01 | RWX            | Live           | worker-02   | ~1-2 min      |
+| web-02 | RWX            | Live           | worker-02   | ~1-2 min      |
+
+**Target node capacity check**:
+- worker-02: 4/8 vCPU used, 12Gi/32Gi memory used - sufficient for 2 additional VMs
+
+**Total estimated time**: ~3-5 minutes
+**Impact**: Zero downtime for all VMs (all eligible for live migration)
+
+Approve drain plan? (yes/no)
+----
+
+. You approve:
++
+----
+yes
+----
+
+. The agent migrates each VM sequentially and reports progress:
++
+----
+## Node Drain Progress
+
+[1/2] Migrating web-01 (live)... Completed in 1m 15s
+[2/2] Migrating web-02 (live)... Completed in 1m 32s
+
+## Node Drain Complete
+
+**Node**: worker-01 | **VMs migrated**: 2/2
+**Total duration**: 2m 47s | **Downtime**: None
+
+worker-01 is now free of VMs and ready for maintenance.
+
+**Next**: Cordon the node with "oc adm cordon worker-01" before
+starting maintenance to prevent new VMs from scheduling.
+----
+
+After the drain completes, cordon the node to prevent new workloads from being scheduled:
+
+[source,bash,role=execute]
+----
+oc adm cordon worker-01
+----
+
+After maintenance, uncordon the node to allow scheduling again:
+
+[source,bash,role=execute]
+----
+oc adm uncordon worker-01
+----
+
+== Example Scenario 4: Automatic Rebalancing
+
+This example uses automatic mode to let the agent analyze cluster resource utilization and propose a migration plan that distributes VMs more evenly.
+
+. In your IDE chat, type:
++
+----
+Rebalance VMs across nodes in namespace my-vms
+----
+
+. The agent gathers node metrics, analyzes the current VM distribution, and proposes a rebalancing plan:
++
+----
+## Cluster Analysis
+
+| Node      | vCPU Used | vCPU Total | Mem Used | Mem Total | VMs | Load  |
+|-----------|-----------|------------|----------|-----------|-----|-------|
+| worker-01 | 1/8       | 12.5%      | 4Gi      | 32Gi      | 1   | Low   |
+| worker-02 | 3/8       | 37.5%      | 12Gi     | 32Gi      | 3   | High  |
+
+**Imbalance detected**: worker-02 hosts 75% of VMs with 3x the resource
+utilization of worker-01.
+
+## Proposed Migration Plan
+
+| VM     | From      | To        | Type | Reason                          |
+|--------|-----------|-----------|------|---------------------------------|
+| web-02 | worker-02 | worker-01 | Live | Balance CPU/memory utilization  |
+
+**After rebalancing**:
+- worker-01: 2 VMs, ~25% CPU, ~25% memory
+- worker-02: 2 VMs, ~25% CPU, ~25% memory
+
+**Impact**: Zero downtime (all migrations are live)
+
+Approve rebalancing plan? (yes/no)
+----
+
+. You review the plan and approve:
++
+----
+yes
+----
+
+. The agent executes the migration and reports:
++
+----
+## Rebalancing Progress
+
+[1/1] Migrating web-02 from worker-02 to worker-01 (live)... Completed in 1m 18s
+
+## Rebalancing Complete
+
+| Node      | Before         | After          |
+|-----------|----------------|----------------|
+| worker-01 | 1 VM, 12.5% CPU | 2 VMs, 25% CPU |
+| worker-02 | 3 VMs, 37.5% CPU | 2 VMs, 25% CPU |
+
+**VMs migrated**: 1 | **Downtime**: None
+
+Cluster load is now balanced across worker nodes.
+----
+
+You can verify the new distribution:
+
+[source,bash,role=execute]
+----
+oc get vmi -n my-vms -o custom-columns="NAME:.metadata.name,NODE:.status.nodeName,PHASE:.status.phase"
+----
+
+----
+NAME     NODE        PHASE
+db-01    worker-01   Running
+web-01   worker-02   Running
+web-02   worker-01   Running
+----
+
+== Storage Compatibility Validation
+
+Before initiating any migration, the `vm-rebalance` skill validates whether the VM's storage configuration supports the requested migration type. The agent performs the following checks:
+
+=== Access Mode Check
+
+The agent inspects the PVC access mode to determine migration eligibility:
+
+[cols="1,2,2",options="header"]
+|===
+| Access Mode | Live Migration | Cold Migration
+| ReadWriteMany (RWX) | Supported | Supported
+| ReadWriteOnce (RWO) | Not supported | Supported
+| ReadOnlyMany (ROX) | Supported (read-only disks) | Supported
+|===
+
+You can check a VM's PVC access mode:
+
+[source,bash,role=execute]
+----
+oc get pvc -n my-vms -o custom-columns="NAME:.metadata.name,ACCESS:.status.accessModes[0],CAPACITY:.status.capacity.storage"
+----
+
+----
+NAME                 ACCESS          CAPACITY
+db-01-rootdisk       ReadWriteOnce   30Gi
+web-01-rootdisk      ReadWriteMany   30Gi
+web-02-rootdisk      ReadWriteMany   30Gi
+----
+
+=== StorageClass Capability Check
+
+The agent also verifies that the StorageClass supports the required operations for migration:
+
+[source,bash,role=execute]
+----
+oc get storageclass -o custom-columns="NAME:.metadata.name,PROVISIONER:.provisioner,BINDING:.volumeBindingMode"
+----
+
+Storage classes that use CSI drivers with multi-attach support (such as Ceph RBD with RWX or CephFS) enable live migration. Storage classes limited to single-node attachment (such as local-volume or certain LVM implementations) require cold migration.
+
+== Node Readiness Checks
+
+The `vm-rebalance` skill validates target nodes before proposing or executing migrations. The agent checks the following conditions:
+
+=== Node Schedulability
+
+The agent verifies the target node is not cordoned or marked as unschedulable:
+
+[source,bash,role=execute]
+----
+oc get nodes -o custom-columns="NAME:.metadata.name,STATUS:.status.conditions[-1].type,SCHEDULABLE:.spec.unschedulable"
+----
+
+----
+NAME        STATUS   SCHEDULABLE
+worker-01   Ready    <none>
+worker-02   Ready    <none>
+----
+
+A node with `SCHEDULABLE: true` (unschedulable flag set) is cordoned and will be excluded from migration targets.
+
+=== Taint Verification
+
+The agent checks whether the target node has taints that the VM's pod does not tolerate. If untolerated taints exist, the agent either selects a different target node or informs you that no suitable target is available:
+
+[source,bash,role=execute]
+----
+oc get nodes -o custom-columns="NAME:.metadata.name,TAINTS:.spec.taints[*].key"
+----
+
+=== Resource Capacity
+
+The agent verifies that the target node has sufficient allocatable CPU and memory for the incoming VM. It compares the VM's resource requests against the node's remaining capacity (allocatable minus currently allocated):
+
+[source,bash,role=execute]
+----
+oc describe node worker-01 | grep -A 5 "Allocated resources"
+----
+
+If the target node lacks sufficient resources, the agent reports the shortfall and suggests alternative nodes or recommends scaling the cluster.
+
+== Human-in-the-Loop Confirmation
+
+The `vm-rebalance` skill enforces explicit confirmation at every stage because migrations affect VM availability:
+
+**Manual migrations**:
+
+* The agent presents the migration type (live or cold), source node, target node, and expected impact before proceeding.
+* Cold migrations include an explicit downtime warning.
+* You must confirm with "yes" before the migration executes.
+
+**Automatic rebalancing**:
+
+* The agent presents the full migration plan as a table before any migration begins.
+* You review the plan and approve or reject it as a whole.
+* Individual migrations within an approved plan execute sequentially. If any migration fails, the agent stops and reports the failure without proceeding to remaining migrations.
+
+**Node drain operations**:
+
+* The agent inventories all VMs on the node and presents the full drain plan.
+* The plan shows migration types for each VM so you can assess the total impact.
+* You approve the entire drain plan before execution begins.
+
+In all modes, typing "no" or "cancel" at any confirmation step cancels the operation. No VMs are moved until you explicitly approve.
+
+== Cleanup
+
+To remove VMs created during this tutorial:
+
+[source,bash,role=execute]
+----
+oc delete vm web-01 web-02 db-01 -n my-vms
+----
+
+Or use natural language: type "Delete VM web-01 in namespace my-vms" in your IDE chat. The `vm-delete` skill handles the deletion with its full safety workflow.
+
+To uncordon any nodes that were cordoned during testing:
+
+[source,bash,role=execute]
+----
+oc adm uncordon worker-01
+----
+
+To remove the namespace:
+
+[source,bash,role=execute]
+----
+oc delete namespace my-vms
+----
+
+== Summary
+
+* The `vm-rebalance` skill supports manual (user-driven) and automatic (AI-driven) VM migration across cluster nodes.
+* Live migration provides zero-downtime VM movement for VMs with ReadWriteMany (RWX) storage. Active network connections are preserved during live migration.
+* Cold migration is used for VMs with ReadWriteOnce (RWO) storage and involves a stop-reschedule-start sequence with brief downtime.
+* Node drain operations migrate all VMs off a node before maintenance, selecting the appropriate migration type for each VM based on its storage configuration.
+* Automatic rebalancing analyzes cluster CPU and memory utilization and proposes a migration plan to distribute VMs evenly.
+* The agent validates target node readiness (schedulability, taints, resource capacity) and storage compatibility before proposing any migration.
+* All migration operations require explicit user confirmation. Cold migrations include downtime warnings.
+
+== See Also
+
+* xref:getting-started.adoc[Getting Started with Agentic VM Management]
+* xref:natural-language-vm-create.adoc[Creating Virtual Machines with Natural Language]
+* xref:ai-vm-lifecycle.adoc[AI-Assisted VM Lifecycle Operations]
+* xref:vm-clone.adoc[Cloning Virtual Machines with AI Agents]
+* link:https://github.com/RHEcosystemAppEng/agentic-plugins/tree/main/rh-virt[rh-virt Skill Pack Repository,window=_blank]
+* link:https://github.com/openshift/openshift-mcp-server[OpenShift MCP Server,window=_blank]
+* link:https://docs.openshift.com/container-platform/latest/virt/index.html[OpenShift Virtualization Documentation,window=_blank]
+* link:https://docs.openshift.com/container-platform/latest/virt/live_migration/virt-about-live-migration.html[OpenShift Live Migration Documentation,window=_blank]
+* link:https://kubevirt.io/user-guide/compute/live_migration/[KubeVirt Live Migration Guide,window=_blank]
