@@ -1,0 +1,749 @@
+= VM Snapshot Management with Agentic Workflows
+:navtitle: VM Snapshot Management
+
+Versions tested:
+----
+OpenShift 4.22
+----
+
+This tutorial demonstrates how to manage the full virtual machine snapshot lifecycle using natural language commands through four agent skills: `vm-snapshot-create`, `vm-snapshot-list`, `vm-snapshot-restore`, and `vm-snapshot-delete`. You will walk through a realistic scenario of creating a pre-upgrade snapshot, listing available snapshots, restoring after a failed upgrade, verifying the restored VM, and cleaning up old snapshots.
+
+== Prerequisites
+
+* Completed the xref:getting-started.adoc[Getting Started with Agentic VM Management] tutorial (skill pack installed, MCP server configured, cluster connectivity verified)
+* OpenShift cluster with OpenShift Virtualization installed
+* `KUBECONFIG` environment variable set and pointing to a valid kubeconfig file
+* At least one VM to manage (see xref:natural-language-vm-create.adoc[Creating Virtual Machines with Natural Language] to create one)
+* Storage backend with CSI snapshot support (a `VolumeSnapshotClass` must exist for your storage provisioner)
+* RBAC permissions to create, list, and delete `VirtualMachineSnapshot` and `VirtualMachineRestore` resources
+
+Create the namespace used in this tutorial if it does not already exist:
+
+[source,bash,role=execute]
+----
+oc create namespace my-vms
+----
+
+If you do not have a VM to manage, create one using the `vm-create` skill by typing in your IDE chat:
+
+----
+Create a Fedora VM named database-01 in namespace my-vms
+----
+
+Verify the VM exists before continuing:
+
+[source,bash,role=execute]
+----
+oc get vm -n my-vms
+----
+
+Expected output:
+
+----
+NAME          AGE   STATUS    READY
+database-01   5m    Running   True
+----
+
+Verify that your storage backend supports snapshots:
+
+[source,bash,role=execute]
+----
+oc get volumesnapshotclass
+----
+
+Expected output (your driver and class name may differ):
+
+----
+NAME              DRIVER       DELETIONPOLICY   AGE
+lvms-snapclass    topolvm.io   Delete           17d
+----
+
+If no `VolumeSnapshotClass` is returned, contact your cluster administrator to configure one before proceeding.
+
+== How It Works
+
+The four snapshot skills cover the complete snapshot lifecycle. Each skill enforces human-in-the-loop confirmation before any operation that modifies or destroys data.
+
+=== vm-snapshot-create Skill
+
+The `vm-snapshot-create` skill follows a multi-step workflow:
+
+. **Verify VM and analyze storage** -- The agent confirms the VM exists, checks for hot-plugged volumes (which block snapshots), verifies the storage class supports CSI snapshots, and locates the matching `VolumeSnapshotClass`.
+. **Check VM state and guest agent** -- The agent determines whether the VM is running or stopped. If the storage backend supports online snapshots, the agent reports whether the QEMU guest agent is connected. A connected guest agent enables application-consistent snapshots through filesystem freeze/thaw. Without it, snapshots are crash-consistent.
+. **Estimate storage and present configuration** -- The agent estimates storage consumption, displays the exact YAML that will be applied, and waits for your explicit confirmation.
+. **Create and monitor** -- After confirmation, the agent creates the `VirtualMachineSnapshot` resource and monitors its status until it reaches `Succeeded` or `Failed`.
+
+=== vm-snapshot-list Skill
+
+The `vm-snapshot-list` skill is a read-only operation that requires no confirmation. It lists all snapshots in a namespace, optionally filtered by VM name, and displays each snapshot's status, age, and readiness for restore.
+
+=== vm-snapshot-restore Skill
+
+The `vm-snapshot-restore` skill enforces the strictest safety model of any snapshot skill:
+
+. **Verify VM is stopped** -- Restoring a running VM would cause data corruption. If the VM is running, the agent offers to stop it first or cancel.
+. **Verify snapshot is ready** -- The agent confirms the snapshot exists and has `readyToUse: true`.
+. **Typed snapshot name confirmation** -- You must type the exact snapshot name to confirm. A mismatch cancels the operation.
+. **Final yes/cancel confirmation** -- After typed verification passes, the agent asks one more time before executing.
+. **Execute and monitor** -- The agent creates a `VirtualMachineRestore` resource and monitors progress until the restore completes.
+
+=== vm-snapshot-delete Skill
+
+The `vm-snapshot-delete` skill permanently removes a snapshot and frees its storage:
+
+. **Verify snapshot exists** -- The agent retrieves the snapshot details and lists other snapshots for the same VM.
+. **Warn if last snapshot** -- If this is the only snapshot for the VM, the agent displays a warning that no recovery points will remain.
+. **Typed snapshot name confirmation** -- You must type the exact snapshot name to confirm deletion.
+. **Delete and report** -- The agent deletes the snapshot and reports the result with remaining snapshots.
+
+== Snapshot Consistency Levels
+
+The consistency of a snapshot depends on whether the VM is running and whether the QEMU guest agent is active:
+
+[cols="1,1,2",options="header"]
+|===
+| VM State | Guest Agent | Consistency Level
+| Stopped | N/A | Offline snapshot -- fully consistent, equivalent to clean shutdown
+| Running | Connected | Application-consistent -- guest agent freezes filesystems during snapshot
+| Running | Not connected | Crash-consistent -- equivalent to pulling the power cord; usable but may require filesystem recovery on restore
+|===
+
+For production VMs, install the QEMU guest agent before taking snapshots to ensure application-consistent captures. On Linux VMs:
+
+[source,bash,role=execute]
+----
+sudo dnf install qemu-guest-agent
+sudo systemctl enable --now qemu-guest-agent
+----
+
+For Windows VMs, install the VirtIO drivers package which includes the guest agent and supports VSS (Volume Shadow Copy Service) for application-consistent snapshots of Windows workloads.
+
+== Example Scenario 1: Creating a Pre-Upgrade Snapshot
+
+This scenario demonstrates creating a snapshot before upgrading application software on a VM. The snapshot serves as a rollback point if the upgrade fails.
+
+. In your IDE chat, type:
++
+----
+Create a snapshot of database-01 before I upgrade it
+----
+
+. The agent asks for the namespace:
++
+----
+Which namespace is database-01 in?
+----
+
+. You provide the namespace:
++
+----
+my-vms
+----
+
+. The agent verifies the VM, analyzes the storage backend, checks the guest agent status, and presents the configuration for review:
++
+----
+## VM Snapshot - Review Configuration
+
+**VM to Snapshot:**
+- **Name**: `database-01`
+- **Namespace**: `my-vms`
+- **Status**: Running
+- **Storage**: 30Gi
+
+**Storage Backend Analysis:**
+- **Storage Class**: `lvms-vg1`
+- **CSI Driver**: `topolvm.io`
+- **Online Snapshots**: Supported
+- **VolumeSnapshotClass**: `lvms-snapclass`
+
+**Guest Agent Status:**
+- **QEMU Guest Agent**: Connected and running
+- **Filesystem Freeze/Thaw**: Will be performed during snapshot
+- **Expected Consistency**: Application-consistent (with freeze)
+
+**Snapshot Details:**
+- **Snapshot Name**: `database-01-snapshot-20260714-100000` (auto-generated)
+- **Type**: Online snapshot
+- **Estimated Storage**: ~30Gi (initial snapshot)
+
+**YAML to be applied:**
+
+    apiVersion: snapshot.kubevirt.io/v1beta1
+    kind: VirtualMachineSnapshot
+    metadata:
+      name: database-01-snapshot-20260714-100000
+      namespace: my-vms
+    spec:
+      source:
+        apiGroup: kubevirt.io
+        kind: VirtualMachine
+        name: database-01
+
+**Proceed with snapshot creation? (yes/no)**
+----
+
+. You review the configuration and confirm:
++
+----
+yes
+----
+
+. The agent creates the snapshot and monitors its progress:
++
+----
+Creating VM snapshot...
+Snapshot `database-01-snapshot-20260714-100000` created for VM `database-01`
+
+Snapshot creation in progress...
+  Status: InProgress
+
+Snapshot creation in progress...
+  Status: Succeeded
+
+## VM Snapshot Created Successfully
+
+**VM**: `database-01` (namespace: `my-vms`)
+**Snapshot**: `database-01-snapshot-20260714-100000`
+
+### Snapshot Details
+- **Name**: `database-01-snapshot-20260714-100000`
+- **Status**: Ready
+- **Created**: 2026-07-14 10:00:22 UTC
+- **VM Status at Snapshot**: Running
+
+### Snapshot Coordination (from status.indications)
+- **Guest Agent Coordination**: Active
+- **Filesystem Freeze/Thaw**: Performed during snapshot
+- **Actual Consistency**: Application-consistent
+
+### Next Steps
+
+**To list all snapshots:**
+"List snapshots for VM database-01"
+
+**To restore from this snapshot:**
+"Restore VM database-01 from snapshot database-01-snapshot-20260714-100000"
+
+You can now safely upgrade the database. If the upgrade fails,
+restore using the command above.
+----
+
+You can verify the snapshot was created:
+
+[source,bash,role=execute]
+----
+oc get virtualmachinesnapshot -n my-vms
+----
+
+----
+NAME                                     SOURCEVMNAME   PHASE       READYTOUSE   CREATIONTIMESTAMP            AGE
+database-01-snapshot-20260714-100000      database-01    Succeeded   true         2026-07-14T10:00:22Z        2m
+----
+
+== Example Scenario 2: Listing Snapshots
+
+After creating one or more snapshots, you can view them using the `vm-snapshot-list` skill. This is a read-only operation that requires no confirmation.
+
+. In your IDE chat, type:
++
+----
+List snapshots for VM database-01 in namespace my-vms
+----
+
+. The agent queries the cluster and displays the results:
++
+----
+## VM Snapshots
+
+**Namespace**: `my-vms`
+**VM**: `database-01`
+
+### Available Snapshots
+
+| Snapshot Name                          | VM Name       | Status      | Created          | Age     | ReadyToUse |
+|----------------------------------------|---------------|-------------|------------------|---------|------------|
+| `database-01-snapshot-20260714-100000` | `database-01` | Succeeded   | 2026-07-14 10:00 | 30 min  | true       |
+| `database-01-weekly-backup`            | `database-01` | Succeeded   | 2026-07-07 02:00 | 7 days  | true       |
+
+**Total Snapshots**: 2
+
+---
+
+### Actions
+
+**To restore from a snapshot:**
+"Restore VM database-01 from snapshot <snapshot-name>"
+
+**To delete a snapshot:**
+"Delete snapshot <snapshot-name>"
+
+**To create a new snapshot:**
+"Create snapshot of VM database-01"
+----
+
+To list all snapshots in a namespace without filtering by VM, type:
+
+----
+Show me all snapshots in namespace my-vms
+----
+
+== Example Scenario 3: Restoring After a Failed Upgrade
+
+The upgrade has failed and the database is corrupted. You need to roll back to the pre-upgrade snapshot. This scenario demonstrates the `vm-snapshot-restore` skill with its strict safety workflow.
+
+. In your IDE chat, type:
++
+----
+The database upgrade failed. Restore database-01 from snapshot database-01-snapshot-20260714-100000
+----
+
+. The agent asks for the namespace:
++
+----
+Which namespace is database-01 in?
+----
+
+. You provide the namespace:
++
+----
+my-vms
+----
+
+. The agent verifies the VM is running and warns that it must be stopped first:
++
+----
+## VM Must Be Stopped Before Restore
+
+**VM**: `database-01` (namespace: `my-vms`)
+**Status**: Running
+
+**Safety Requirement**: VMs must be stopped before restore to prevent
+data corruption.
+
+**Options:**
+1. "stop-and-restore" - Stop the VM first, then restore from snapshot
+2. "cancel" - Cancel restore operation
+
+How would you like to proceed?
+----
+
+. You choose to stop and restore:
++
+----
+stop-and-restore
+----
+
+. The agent stops the VM, verifies the snapshot exists and is ready, then presents the data loss warning with typed confirmation:
++
+----
+## VM RESTORE - Data Loss Warning
+
+THIS WILL REPLACE CURRENT VM STATE WITH SNAPSHOT DATA
+
+### What Will Happen
+
+**VM to Restore**: `database-01` (namespace: `my-vms`)
+**Snapshot to Restore From**: `database-01-snapshot-20260714-100000`
+
+**Current VM State** (WILL BE LOST):
+- **Last Modified**: 2026-07-14 10:35:00 UTC
+- **Changes Since Snapshot**: ALL changes made after
+  2026-07-14 10:00:22 UTC WILL BE PERMANENTLY LOST
+
+**Snapshot State** (WILL BE RESTORED):
+- **Created**: 2026-07-14 10:00:22 UTC
+- **Age**: 35 minutes
+
+**Time Range of Data Loss**:
+- ALL CHANGES in the last 35 minutes WILL BE LOST
+
+### What Will Be Restored
+- VM configuration (from snapshot time)
+- Disk data (from snapshot time)
+
+### What Will Be Lost
+- ALL disk changes made after 2026-07-14 10:00:22 UTC
+- ALL configuration changes made after 2026-07-14 10:00:22 UTC
+
+---
+
+CRITICAL: This restore is permanent. Current VM state cannot be
+recovered unless you create a snapshot now.
+
+**To proceed with restore, type the snapshot name exactly as shown:**
+
+Type `database-01-snapshot-20260714-100000` to confirm: _____
+----
+
+. You type the exact snapshot name:
++
+----
+database-01-snapshot-20260714-100000
+----
+
+. The agent confirms typed verification passed and asks for final confirmation:
++
+----
+## Typed Verification Passed
+
+**Confirmation received for snapshot**: `database-01-snapshot-20260714-100000`
+
+### Ready to Restore
+
+**VM**: `database-01` (namespace: `my-vms`)
+**From Snapshot**: `database-01-snapshot-20260714-100000`
+
+**Impact**:
+- Current VM state will be replaced with snapshot state
+- All changes in the last 35 minutes will be permanently lost
+
+---
+
+**Proceed with VM restore? This action cannot be undone.**
+- Type "yes" to execute restore
+- Type "cancel" to abort
+
+Your choice: _____
+----
+
+. You confirm:
++
+----
+yes
+----
+
+. The agent executes the restore and monitors progress:
++
+----
+Restoring VM from snapshot...
+This may take several minutes...
+
+## VM Restored Successfully
+
+**VM**: `database-01` (namespace: `my-vms`)
+**Restored From**: Snapshot `database-01-snapshot-20260714-100000`
+
+### Restore Details
+- **Snapshot Created**: 2026-07-14 10:00:22 UTC
+- **Restore Completed**: 2026-07-14 10:37:15 UTC
+- **VM Status**: Stopped (ready to start)
+
+### Data Loss Confirmation
+- All changes made after 2026-07-14 10:00:22 UTC have been lost
+
+### Next Steps
+
+**To start the restored VM:**
+"Start VM database-01 in namespace my-vms"
+----
+
+After the restore completes, start the VM and verify it is healthy:
+
+[source,bash,role=execute]
+----
+oc get vm database-01 -n my-vms
+----
+
+----
+NAME          AGE   STATUS    READY
+database-01   45m   Stopped   False
+----
+
+Start the VM using the `vm-lifecycle-manager` skill by typing in your IDE chat:
+
+----
+Start VM database-01 in namespace my-vms
+----
+
+Or start it directly:
+
+[source,bash,role=execute]
+----
+virtctl start database-01 -n my-vms
+----
+
+== Example Scenario 4: Deleting Old Snapshots
+
+After a successful restore and verification, you may want to delete old snapshots to free storage. This scenario demonstrates the `vm-snapshot-delete` skill.
+
+. In your IDE chat, type:
++
+----
+Delete snapshot database-01-weekly-backup in namespace my-vms
+----
+
+. The agent retrieves the snapshot details, lists other snapshots for the same VM, and presents the deletion confirmation:
++
+----
+## Snapshot Deletion - Review
+
+**Snapshot to Delete**: `database-01-weekly-backup`
+
+### Snapshot Details
+- **Snapshot Name**: `database-01-weekly-backup`
+- **VM**: `database-01`
+- **Namespace**: `my-vms`
+- **Created**: 2026-07-07 02:00:00 UTC
+- **Age**: 7 days
+- **Status**: Succeeded
+
+### Impact of Deletion
+- Snapshot will be permanently deleted
+- This recovery point will be lost
+- Cannot restore VM to this snapshot state after deletion
+- Storage will be freed
+
+### Recovery Impact
+
+**Available snapshots for VM `database-01`:**
+- `database-01-snapshot-20260714-100000` (created 2026-07-14 10:00)
+
+---
+
+**Type the snapshot name `database-01-weekly-backup` to confirm deletion
+(cannot be undone):** _____
+----
+
+. You type the exact snapshot name:
++
+----
+database-01-weekly-backup
+----
+
+. The agent deletes the snapshot and reports the result:
++
+----
+Deleting snapshot...
+Snapshot `database-01-weekly-backup` deleted
+
+## Snapshot Deleted Successfully
+
+**Snapshot**: `database-01-weekly-backup`
+(VM: `database-01`, namespace: `my-vms`)
+
+### Deletion Summary
+- Snapshot permanently deleted
+- Storage freed
+- Recovery point removed
+
+### Remaining Snapshots for VM `database-01`
+- `database-01-snapshot-20260714-100000` (created 2026-07-14 10:00)
+
+This snapshot is still available for recovery.
+----
+
+You can verify the snapshot was removed:
+
+[source,bash,role=execute]
+----
+oc get virtualmachinesnapshot -n my-vms
+----
+
+----
+NAME                                     SOURCEVMNAME   PHASE       READYTOUSE   CREATIONTIMESTAMP            AGE
+database-01-snapshot-20260714-100000      database-01    Succeeded   true         2026-07-14T10:00:22Z        40m
+----
+
+== Example Scenario 5: Last Snapshot Warning
+
+When deleting the only remaining snapshot for a VM, the agent issues an additional warning.
+
+. In your IDE chat, type:
++
+----
+Delete snapshot database-01-snapshot-20260714-100000 in namespace my-vms
+----
+
+. The agent detects this is the last snapshot and warns you:
++
+----
+## Snapshot Deletion - Review
+
+**Snapshot to Delete**: `database-01-snapshot-20260714-100000`
+
+### Snapshot Details
+- **Snapshot Name**: `database-01-snapshot-20260714-100000`
+- **VM**: `database-01`
+- **Namespace**: `my-vms`
+- **Created**: 2026-07-14 10:00:22 UTC
+- **Age**: 45 minutes
+- **Status**: Succeeded
+
+### Impact of Deletion
+- Snapshot will be permanently deleted
+- This recovery point will be lost
+- Storage will be freed
+
+WARNING: This is the ONLY snapshot for VM `database-01`. After deletion,
+no snapshot recovery points will exist.
+
+---
+
+**Type the snapshot name `database-01-snapshot-20260714-100000` to confirm
+deletion (cannot be undone):** _____
+----
+
+If you want to keep this snapshot as a safety net, type anything other than the exact snapshot name, or close the chat prompt. The agent cancels the deletion and preserves the snapshot.
+
+== End-to-End Scenario: Pre-Upgrade Backup and Recovery
+
+This section summarizes the complete workflow you practiced in the scenarios above. Use this as a reference checklist when performing upgrades on production VMs.
+
+. **Create a pre-upgrade snapshot** -- Before starting the upgrade, create a snapshot as a rollback point.
++
+----
+Create a snapshot of database-01 in namespace my-vms
+----
+
+. **Perform the upgrade** -- Carry out your upgrade procedure (install packages, update configurations, run migrations).
+
+. **Verify the upgrade** -- Test the application to confirm the upgrade succeeded.
+
+. **If the upgrade succeeded** -- Delete the pre-upgrade snapshot to free storage.
++
+----
+Delete snapshot database-01-snapshot-20260714-100000 in namespace my-vms
+----
+
+. **If the upgrade failed** -- Restore the VM from the pre-upgrade snapshot.
++
+----
+Restore database-01 from snapshot database-01-snapshot-20260714-100000
+----
+
+. **Start the restored VM** -- After restore completes, start the VM and verify it is healthy.
++
+----
+Start VM database-01 in namespace my-vms
+----
+
+. **Clean up old snapshots** -- After verifying the restored VM is healthy, remove any snapshots you no longer need.
++
+----
+List snapshots for VM database-01 in namespace my-vms
+----
+
+== Hot-Plugged Volume Restrictions
+
+VMs with hot-plugged volumes (volumes attached after VM creation without restarting) cannot be snapshotted. If you attempt to create a snapshot for a VM with hot-plugged volumes, the agent reports the error and suggests resolution steps:
+
+. Stop the VM to detach hot-plugged volumes.
+. Persist the volumes in the VM spec so they are no longer considered hot-plugged.
+. Restart the VM.
+. Retry the snapshot operation.
+
+== Human-in-the-Loop Confirmation
+
+All four snapshot skills enforce a safety model that prevents unintended data changes:
+
+**Read-only operations** (`vm-snapshot-list`):
+
+* No confirmation required. The agent lists snapshots and reports results immediately.
+
+**Snapshot creation** (`vm-snapshot-create`):
+
+* The agent analyzes the storage backend and guest agent status before presenting the configuration.
+* The exact YAML to be applied is displayed for your review.
+* You must explicitly confirm with "yes" before the snapshot is created.
+
+**Snapshot restore** (`vm-snapshot-restore`):
+
+* The VM must be stopped before restore. If running, the agent offers to stop it.
+* You must type the exact snapshot name (case-sensitive) to confirm.
+* After typed verification, you must confirm with "yes" one more time.
+* Any mismatch or non-"yes" response cancels the operation.
+
+**Snapshot deletion** (`vm-snapshot-delete`):
+
+* The agent shows the snapshot details and lists other available snapshots for the same VM.
+* If this is the last snapshot for the VM, a warning is displayed.
+* You must type the exact snapshot name (case-sensitive) to confirm.
+* A mismatch cancels the operation.
+
+== Common Issues
+
+=== VolumeSnapshotClass Not Found
+
+If the agent reports that no `VolumeSnapshotClass` exists for your storage provisioner, your storage backend may not be configured for snapshots. Check with your cluster administrator and verify with:
+
+[source,bash,role=execute]
+----
+oc get volumesnapshotclass
+----
+
+=== Crash-Consistent Snapshot Warning
+
+If the agent reports a crash-consistent snapshot instead of application-consistent, the QEMU guest agent is not running inside the VM. Install and enable it:
+
+[source,bash,role=execute]
+----
+sudo dnf install qemu-guest-agent
+sudo systemctl enable --now qemu-guest-agent
+----
+
+Verify the agent is connected:
+
+[source,bash,role=execute]
+----
+oc get vmi database-01 -n my-vms -o jsonpath='{.status.conditions[?(@.type=="AgentConnected")].status}'
+----
+
+----
+True
+----
+
+=== Restore Stuck in Progress
+
+If a restore operation remains in `InProgress` status for more than 10 minutes, check the `VirtualMachineRestore` resource for error conditions:
+
+[source,bash,role=execute]
+----
+oc get virtualmachinerestore -n my-vms -o yaml
+----
+
+Common causes include insufficient storage quota, CSI driver issues, or a corrupted snapshot. Contact your cluster administrator if the issue persists.
+
+== Cleanup
+
+To remove snapshots created during this tutorial:
+
+[source,bash,role=execute]
+----
+oc delete virtualmachinesnapshot --all -n my-vms
+----
+
+To remove the VM:
+
+[source,bash,role=execute]
+----
+oc delete vm database-01 -n my-vms
+----
+
+To remove the namespace:
+
+[source,bash,role=execute]
+----
+oc delete namespace my-vms
+----
+
+== Summary
+
+* The `vm-snapshot-create` skill creates point-in-time snapshots with full storage backend validation, guest agent detection, and human confirmation before execution.
+* The `vm-snapshot-list` skill is a read-only operation that displays snapshots with their status, age, and readiness without requiring confirmation.
+* The `vm-snapshot-restore` skill enforces the strictest safety model: VM must be stopped, typed snapshot name confirmation, and a final yes/cancel gate before restoring.
+* The `vm-snapshot-delete` skill requires typed name confirmation and warns when deleting the last snapshot for a VM.
+* Application-consistent snapshots require the QEMU guest agent (Linux) or VirtIO drivers with VSS support (Windows) to be installed and running.
+* The end-to-end pre-upgrade workflow is: create snapshot, perform upgrade, verify, and either clean up (on success) or restore (on failure).
+
+== See Also
+
+* xref:getting-started.adoc[Getting Started with Agentic VM Management]
+* xref:natural-language-vm-create.adoc[Creating Virtual Machines with Natural Language]
+* xref:ai-vm-lifecycle.adoc[AI-Assisted VM Lifecycle Operations]
+* xref:vm-clone.adoc[Cloning Virtual Machines with AI Agents]
+* link:https://github.com/RHEcosystemAppEng/agentic-plugins/tree/main/rh-virt[rh-virt Skill Pack Repository,window=_blank]
+* link:https://github.com/openshift/openshift-mcp-server[OpenShift MCP Server,window=_blank]
+* link:https://docs.openshift.com/container-platform/latest/virt/index.html[OpenShift Virtualization Documentation,window=_blank]
+* link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.21/html-single/virtualization/index#virt-backup-restore-snapshots[OpenShift Virtualization Snapshots,window=_blank]
+* link:https://kubevirt.io/user-guide/operations/snapshot_restore_api/[KubeVirt Snapshot and Restore API,window=_blank]
