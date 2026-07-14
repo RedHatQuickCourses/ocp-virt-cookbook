@@ -1,0 +1,630 @@
+= Day-2 Operations with Skill Chaining
+:navtitle: Day-2 Skill Chaining
+
+Versions tested:
+----
+OpenShift 4.22
+----
+
+This advanced tutorial demonstrates how to chain multiple `rh-virt` skills in a single conversation to perform complex Day-2 operations. You will walk through a complete node maintenance workflow that sequences six skill invocations, then a test environment scale-out workflow that sequences four. Along the way, you will learn how the agent routes each request to the correct skill, preserves context across transitions, and maintains human-in-the-loop safety throughout.
+
+== Prerequisites
+
+* Completed the xref:getting-started.adoc[Getting Started with Agentic VM Management] tutorial (skill pack installed, MCP server configured, cluster connectivity verified)
+* Completed the xref:natural-language-vm-create.adoc[Creating Virtual Machines with Natural Language] tutorial
+* Familiarity with the xref:ai-vm-lifecycle.adoc[AI-Assisted VM Lifecycle Operations] and xref:vm-clone.adoc[Cloning Virtual Machines with AI Agents] tutorials
+* OpenShift cluster with OpenShift Virtualization installed and at least two worker nodes
+* `KUBECONFIG` environment variable set and pointing to a valid kubeconfig file
+* RBAC permissions to create, list, snapshot, migrate, and delete VirtualMachine resources
+
+Create the namespace used in this tutorial if it does not already exist:
+
+[source,bash,role=execute]
+----
+oc create namespace production-vms
+----
+
+If you do not have VMs to work with, create several using the `vm-create` skill by typing in your IDE chat:
+
+----
+Create a Fedora VM named web-frontend in namespace production-vms
+----
+
+----
+Create a Fedora VM named api-server in namespace production-vms
+----
+
+----
+Create a Fedora VM named cache-node in namespace production-vms
+----
+
+The VMs are created in `Stopped` state by default. Start all three:
+
+----
+Start all three VMs in namespace production-vms
+----
+
+Verify the VMs exist and are running before continuing:
+
+[source,bash,role=execute]
+----
+oc get vm -n production-vms
+----
+
+Expected output:
+
+----
+NAME           AGE   STATUS    READY
+api-server     3m    Running   True
+cache-node     2m    Running   True
+web-frontend   5m    Running   True
+----
+
+== What Is Skill Chaining
+
+Skill chaining is the practice of invoking multiple agent skills in sequence within a single conversation to complete a multi-step operation. Each natural language prompt routes to a different skill, but the agent preserves context (VM names, namespaces, node assignments, previous results) across transitions.
+
+A single skill handles one concern. For example, `vm-inventory` lists VMs and `vm-snapshot-create` creates snapshots. Neither skill knows about the other. When you chain them in a single conversation, the agent carries forward the information from the inventory result into the snapshot request, so you do not need to re-specify VM names or namespaces.
+
+Skill chaining differs from running skills independently in separate conversations:
+
+[cols="1,2,2",options="header"]
+|===
+| Aspect | Chained (single conversation) | Independent (separate conversations)
+
+| Context
+| Agent remembers VM names, namespaces, nodes, and results from previous steps
+| You must re-specify all parameters each time
+
+| Efficiency
+| Fewer prompts, no repeated lookups
+| Each conversation starts from scratch
+
+| Error recovery
+| Agent can reference earlier state to diagnose issues
+| No prior context available
+
+| Best for
+| Multi-step workflows like node maintenance, environment provisioning, pre-upgrade backups
+| One-off operations like starting a single VM or checking snapshot status
+|===
+
+== How the Agent Routes Skills
+
+The `rh-virt` skill pack uses a skill-first routing architecture defined in its AGENTS.md configuration. When you type a natural language prompt, the agent matches your intent to one of 10 skills using a routing table:
+
+[cols="2,1",options="header"]
+|===
+| Your intent | Routed skill
+
+| "List all VMs", "Show VMs on worker-02", "VM inventory"
+| `vm-inventory`
+
+| "Create a Fedora VM named web-01"
+| `vm-create`
+
+| "Start VM api-server", "Stop the cache node", "Restart web-frontend"
+| `vm-lifecycle-manager`
+
+| "Clone web-server to web-test", "Create 5 copies of golden-image"
+| `vm-clone`
+
+| "Delete VM old-test in namespace dev"
+| `vm-delete`
+
+| "Snapshot api-server before the upgrade"
+| `vm-snapshot-create`
+
+| "List snapshots in production-vms"
+| `vm-snapshot-list`
+
+| "Delete the old snapshot from last week"
+| `vm-snapshot-delete`
+
+| "Restore api-server from snapshot pre-upgrade"
+| `vm-snapshot-restore`
+
+| "Migrate all VMs off worker-02", "Rebalance VMs across the cluster"
+| `vm-rebalance`
+|===
+
+The routing is keyword-driven. Words like "list", "show", and "inventory" route to `vm-inventory`. Words like "migrate", "move", "rebalance", and "drain" route to `vm-rebalance`. The agent never calls MCP tools directly; it always selects a skill first, and the skill defines the workflow, safety checks, and confirmation steps.
+
+In a chained conversation, the agent re-evaluates routing for each new prompt. Your first prompt might route to `vm-inventory`, your second to `vm-snapshot-create`, and your third to `vm-rebalance`. The agent handles each transition transparently.
+
+== Scenario 1: Node Maintenance Workflow
+
+This is the primary scenario. You need to perform maintenance on a worker node (for example, applying a kernel patch and rebooting). The workflow uses six skill invocations in sequence to safely evacuate VMs, perform the maintenance, and rebalance afterward.
+
+=== Step 1: Audit the Fleet with vm-inventory
+
+First, identify which VMs are running on the target maintenance node.
+
+. In your IDE chat, type:
++
+----
+List all VMs in namespace production-vms and show which node each VM is running on
+----
+
+. The agent routes to `vm-inventory` and calls the MCP server. It returns a table with node placement:
++
+----
+## Virtual Machines in production-vms
+
+| VM Name      | Status  | Node      | vCPU | Memory | Age  |
+|--------------|---------|-----------|------|--------|------|
+| web-frontend | Running | worker-01 | 1    | 4Gi    | 25m  |
+| api-server   | Running | worker-02 | 1    | 4Gi    | 23m  |
+| cache-node   | Running | worker-02 | 1    | 4Gi    | 22m  |
+
+Summary:
+- Total VMs: 3
+- Running: 3
+- Stopped: 0
+- Nodes: worker-01 (1 VM), worker-02 (2 VMs)
+----
+
+You now know that `worker-02` hosts two VMs (`api-server` and `cache-node`) that must be evacuated before maintenance. The agent remembers this mapping for subsequent prompts.
+
+=== Step 2: Snapshot Critical VMs with vm-snapshot-create
+
+Before migrating VMs off the node, create snapshots as a safety net in case anything goes wrong during maintenance.
+
+. In your IDE chat, type:
++
+----
+Create snapshots of api-server and cache-node in namespace production-vms before maintenance
+----
+
+. The agent routes to `vm-snapshot-create`. It validates that the storage class supports snapshots, then presents each snapshot for confirmation:
++
+----
+## VM Snapshot - Pre-Maintenance Safety Net
+
+### Snapshot 1 of 2: api-server
+
+| Parameter       | Value                          |
+|-----------------|--------------------------------|
+| VM Name         | api-server                     |
+| Namespace       | production-vms                 |
+| Snapshot Name   | api-server-pre-maintenance     |
+| Storage Class   | lvms-vg1 (CSI snapshots: yes)  |
+| VM Status       | Running (online snapshot)      |
+
+Confirm: yes/no
+----
+
+. You confirm each snapshot. The agent creates them sequentially:
++
+----
+## Snapshots Created
+
+api-server-pre-maintenance  - Ready (32s)
+cache-node-pre-maintenance  - Ready (28s)
+
+Both VMs have pre-maintenance snapshots.
+If maintenance causes issues, restore with:
+  "Restore api-server from snapshot api-server-pre-maintenance"
+----
+
+You can verify the snapshots with:
+
+[source,bash,role=execute]
+----
+oc get virtualmachinesnapshot -n production-vms
+----
+
+----
+NAME                          SOURCEKIND       SOURCENAME   PHASE       READYTOUSE   AGE
+api-server-pre-maintenance    VirtualMachine   api-server   Succeeded   true         1m
+cache-node-pre-maintenance    VirtualMachine   cache-node   Succeeded   true         1m
+----
+
+=== Step 3: Migrate VMs Off the Node with vm-rebalance
+
+Now evacuate all VMs from `worker-02` using manual migration mode.
+
+. In your IDE chat, type:
++
+----
+Migrate all VMs off worker-02 in namespace production-vms
+----
+
+. The agent routes to `vm-rebalance` in manual mode. It identifies the two VMs on `worker-02` and presents the migration plan:
++
+----
+## VM Migration Plan - Node Evacuation
+
+**Source Node**: worker-02
+**Target**: Available nodes (worker-01, worker-03)
+
+| VM           | Current Node | Target Node | Migration Type |
+|--------------|--------------|-------------|----------------|
+| api-server   | worker-02    | worker-01   | Live           |
+| cache-node   | worker-02    | worker-03   | Live           |
+
+**Migration Type**: Live (zero downtime)
+**Impact**: VMs remain running during migration. Brief network blip possible.
+
+Proceed with migration? (yes/no)
+----
+
+. You confirm. The agent performs live migrations and reports progress:
++
+----
+## Migration Complete
+
+api-server  - Migrated to worker-01 (live, 45s)
+cache-node  - Migrated to worker-03 (live, 38s)
+
+worker-02 now has 0 VMs. Safe for maintenance.
+----
+
+NOTE: The `vm-rebalance` skill uses live migration (zero downtime) when possible. If a VM does not support live migration (for example, it uses a local non-shared volume), the agent falls back to cold migration and warns you about the brief downtime before proceeding.
+
+=== Step 4: Verify Evacuation with vm-inventory
+
+Confirm that no VMs remain on the maintenance node.
+
+. In your IDE chat, type:
++
+----
+Verify no VMs are running on worker-02
+----
+
+. The agent routes back to `vm-inventory` and checks node placement:
++
+----
+## Virtual Machines in production-vms
+
+| VM Name      | Status  | Node      | vCPU | Memory | Age  |
+|--------------|---------|-----------|------|--------|------|
+| web-frontend | Running | worker-01 | 1    | 4Gi    | 35m  |
+| api-server   | Running | worker-01 | 1    | 4Gi    | 33m  |
+| cache-node   | Running | worker-03 | 1    | 4Gi    | 32m  |
+
+Summary:
+- worker-01: 2 VMs
+- worker-02: 0 VMs (safe for maintenance)
+- worker-03: 1 VM
+
+All VMs evacuated from worker-02.
+----
+
+=== Step 5: Perform Node Maintenance
+
+With all VMs safely off `worker-02`, you can now cordon, drain, patch, and reboot the node. These steps use standard OpenShift commands outside the agent:
+
+[source,bash,role=execute]
+----
+oc adm cordon worker-02
+----
+
+[source,bash,role=execute]
+----
+oc adm drain worker-02 --ignore-daemonsets --delete-emptydir-data
+----
+
+Perform your maintenance (apply patches, update firmware, reboot):
+
+[source,bash,role=execute]
+----
+# Example: reboot the node after applying patches
+ssh core@worker-02 'sudo systemctl reboot'
+----
+
+Wait for the node to come back online and uncordon it:
+
+[source,bash,role=execute]
+----
+oc adm uncordon worker-02
+----
+
+Verify the node is Ready:
+
+[source,bash,role=execute]
+----
+oc get node worker-02
+----
+
+----
+NAME        STATUS   ROLES    AGE   VERSION
+worker-02   Ready    worker   30d   v1.28.6+openshift.1
+----
+
+=== Step 6: Rebalance VMs with vm-rebalance
+
+After maintenance, rebalance VMs across all nodes including the returned `worker-02`.
+
+. In your IDE chat, type:
++
+----
+Rebalance VMs in namespace production-vms across all nodes
+----
+
+. The agent routes to `vm-rebalance` in automatic mode. It evaluates the current distribution and proposes an optimal placement:
++
+----
+## VM Rebalance Plan
+
+**Current Distribution**:
+  worker-01: 2 VMs (web-frontend, api-server)
+  worker-02: 0 VMs
+  worker-03: 1 VM (cache-node)
+
+**Proposed Distribution** (balanced):
+  worker-01: 1 VM (web-frontend)
+  worker-02: 1 VM (api-server)
+  worker-03: 1 VM (cache-node)
+
+| VM           | Current Node | Target Node | Migration Type |
+|--------------|--------------|-------------|----------------|
+| api-server   | worker-01    | worker-02   | Live           |
+
+**Migrations Required**: 1
+**Impact**: Live migration, zero downtime
+
+Proceed with rebalancing? (yes/no)
+----
+
+. You confirm. The agent migrates `api-server` back to `worker-02`:
++
+----
+## Rebalance Complete
+
+api-server  - Migrated to worker-02 (live, 42s)
+
+**Final Distribution**:
+  worker-01: 1 VM (web-frontend)
+  worker-02: 1 VM (api-server)
+  worker-03: 1 VM (cache-node)
+
+Cluster is balanced. All VMs running.
+----
+
+The node maintenance workflow is complete. You used six skill invocations in a single conversation without re-specifying VM names, namespaces, or node assignments after the initial inventory.
+
+== Scenario 2: Scaling Out a Test Environment
+
+This secondary scenario shows how to clone a golden image VM into multiple test instances and start them all, using four chained skills.
+
+=== Step 1: Find the Golden Image VM with vm-inventory
+
+. In your IDE chat, type:
++
+----
+List VMs in namespace production-vms
+----
+
+. The agent routes to `vm-inventory`:
++
+----
+## Virtual Machines in production-vms
+
+| VM Name      | Status  | Node      | vCPU | Memory | Age  |
+|--------------|---------|-----------|------|--------|------|
+| web-frontend | Running | worker-01 | 1    | 4Gi    | 1h   |
+| api-server   | Running | worker-02 | 1    | 4Gi    | 1h   |
+| cache-node   | Running | worker-03 | 1    | 4Gi    | 1h   |
+
+Summary: 3 VMs, all Running
+----
+
+You identify `web-frontend` as the golden image to clone for load testing.
+
+=== Step 2: Batch Clone with vm-clone
+
+. In your IDE chat, type:
++
+----
+Create 5 clones of web-frontend named loadtest-01 through loadtest-05 in namespace production-vms
+----
+
+. The agent routes to `vm-clone` in batch mode. It validates the source VM, checks that all five target names are available, and asks for a storage strategy:
++
+----
+## Batch Cloning: 5 VMs from `web-frontend`
+
+**Source**: `web-frontend` (production-vms) - u1.medium, 1 vCPU, 4Gi, 30Gi
+**Targets**: loadtest-01, loadtest-02, loadtest-03, loadtest-04, loadtest-05
+
+**Total Resource Impact**: 5 vCPU, 20Gi RAM, 150Gi disk
+
+**Select storage strategy (applied to all clones, 1-4):**
+1. Clone Storage - Full copy (~5-10 min each, 150Gi total)
+2. Reference Existing - Shared disk (dangerous)
+3. New Empty Storage - Fresh disks
+4. Cancel
+----
+
+. You select option 1. The agent creates each clone with individual confirmation and reports:
++
+----
+## Batch Cloning Complete
+
+**Results**:
+loadtest-01 (production-vms) - Cloned in 6m12s
+loadtest-02 (production-vms) - Cloned in 7m05s
+loadtest-03 (production-vms) - Cloned in 5m48s
+loadtest-04 (production-vms) - Cloned in 6m33s
+loadtest-05 (production-vms) - Cloned in 5m55s
+
+**Total Storage**: 150Gi cloned
+**Status**: All 5 clones created (Stopped)
+
+**Next**: Start all with "Start VMs loadtest-01 through loadtest-05"
+----
+
+=== Step 3: Start All Clones with vm-lifecycle-manager
+
+. In your IDE chat, type:
++
+----
+Start all loadtest VMs in namespace production-vms
+----
+
+. The agent routes to `vm-lifecycle-manager`. It identifies the five clones and presents each for confirmation:
++
+----
+## VM Lifecycle Operation - Batch Start
+
+Starting 5 VMs in namespace production-vms:
+
+| VM Name     | Action | Impact              |
+|-------------|--------|---------------------|
+| loadtest-01 | start  | consumes resources  |
+| loadtest-02 | start  | consumes resources  |
+| loadtest-03 | start  | consumes resources  |
+| loadtest-04 | start  | consumes resources  |
+| loadtest-05 | start  | consumes resources  |
+
+**Total Impact**: 5 vCPU, 20Gi RAM
+
+Confirm starting all 5 VMs? (yes/no)
+----
+
+. You confirm. The agent starts each VM and verifies Running status:
++
+----
+## Batch Start Complete
+
+loadtest-01 - Running (RunStrategy: Always)
+loadtest-02 - Running (RunStrategy: Always)
+loadtest-03 - Running (RunStrategy: Always)
+loadtest-04 - Running (RunStrategy: Always)
+loadtest-05 - Running (RunStrategy: Always)
+
+All 5 VMs started successfully.
+----
+
+=== Step 4: Verify All Clones with vm-inventory
+
+. In your IDE chat, type:
++
+----
+Show all loadtest VMs with their IPs
+----
+
+. The agent routes to `vm-inventory` and enriches the output with IP addresses from the VirtualMachineInstance resources:
++
+----
+## Virtual Machines - Load Test Fleet
+
+| VM Name     | Status  | Node      | IP            | vCPU | Memory |
+|-------------|---------|-----------|---------------|------|--------|
+| loadtest-01 | Running | worker-01 | 10.128.0.110  | 1    | 4Gi    |
+| loadtest-02 | Running | worker-02 | 10.128.1.85   | 1    | 4Gi    |
+| loadtest-03 | Running | worker-03 | 10.128.2.42   | 1    | 4Gi    |
+| loadtest-04 | Running | worker-01 | 10.128.0.111  | 1    | 4Gi    |
+| loadtest-05 | Running | worker-02 | 10.128.1.86   | 1    | 4Gi    |
+
+Summary: 5 VMs, all Running, distributed across 3 nodes
+----
+
+Your test environment is ready. You used four skill invocations in a single conversation: `vm-inventory` to find the source, `vm-clone` to create copies, `vm-lifecycle-manager` to start them, and `vm-inventory` again to verify.
+
+== Context Preservation Across Skills
+
+When you chain skills in a single conversation, the agent retains context from previous steps. This means:
+
+* **VM names carry forward.** After `vm-inventory` lists VMs on a node, you can say "snapshot those VMs" without repeating the names. The agent knows which VMs you mean from the inventory result.
+
+* **Namespaces are remembered.** Once you specify `production-vms` in your first prompt, subsequent prompts like "migrate all VMs off worker-02" inherit the namespace. You do not need to repeat it unless you want to change it.
+
+* **Node assignments are tracked.** After `vm-rebalance` migrates VMs, the agent updates its internal context with the new node placements. A follow-up `vm-inventory` call reflects the post-migration state.
+
+* **Snapshot names are available.** After `vm-snapshot-create` names a snapshot `api-server-pre-maintenance`, you can reference it later with "restore api-server from its pre-maintenance snapshot" without looking up the exact name.
+
+* **Operation results inform next steps.** If `vm-rebalance` reports a failed migration, the agent carries that failure context into your next prompt. You can say "try migrating it to worker-03 instead" and the agent knows which VM failed and what was already attempted.
+
+This context preservation eliminates repetitive parameter entry and reduces the chance of errors from manually re-typing VM names or namespaces.
+
+== When to Chain vs When to Run Independently
+
+Not every multi-step task benefits from chaining. Use these guidelines:
+
+=== Chain skills when
+
+* You are performing a multi-step workflow where each step depends on the output of the previous step, such as node maintenance or environment provisioning.
+* You need to reference results from earlier steps (VM names from inventory, snapshot names from snapshot creation, node assignments from migration).
+* You want the agent to suggest next steps based on what just completed.
+* You are troubleshooting and need the agent to correlate information across multiple queries.
+
+=== Run independently when
+
+* You are performing a one-off operation on a single VM (start a VM, check a snapshot, delete an old resource).
+* The operation is fully self-contained and does not depend on prior context.
+* You want a clean conversation without accumulated state, for example when managing VMs in different namespaces for unrelated purposes.
+* You are running the same operation repeatedly with different parameters (deleting several unrelated VMs in different namespaces).
+
+=== Common skill chains
+
+The following chains cover the most frequent Day-2 workflows:
+
+[cols="2,3",options="header"]
+|===
+| Workflow | Skill chain
+
+| Node maintenance
+| `vm-inventory` -> `vm-snapshot-create` -> `vm-rebalance` (manual) -> `vm-inventory` -> maintenance -> `vm-rebalance` (automatic)
+
+| Pre-upgrade backup
+| `vm-snapshot-create` -> upgrade -> `vm-snapshot-restore` (if needed)
+
+| Test environment setup
+| `vm-inventory` -> `vm-clone` (batch) -> `vm-lifecycle-manager` -> `vm-inventory`
+
+| Snapshot housekeeping
+| `vm-snapshot-list` -> `vm-snapshot-delete` (old snapshots)
+
+| VM promotion
+| `vm-clone` (cross-namespace) -> `vm-lifecycle-manager` -> `vm-inventory`
+|===
+
+== Cleanup
+
+To remove resources created during this tutorial:
+
+[source,bash,role=execute]
+----
+oc delete virtualmachinesnapshot api-server-pre-maintenance cache-node-pre-maintenance -n production-vms
+----
+
+[source,bash,role=execute]
+----
+oc delete vm loadtest-01 loadtest-02 loadtest-03 loadtest-04 loadtest-05 -n production-vms
+----
+
+[source,bash,role=execute]
+----
+oc delete vm web-frontend api-server cache-node -n production-vms
+----
+
+To remove the namespace:
+
+[source,bash,role=execute]
+----
+oc delete namespace production-vms
+----
+
+Or use natural language: type "Delete VM loadtest-01 in namespace production-vms" in your IDE chat. The `vm-delete` skill handles the deletion with its full safety workflow.
+
+== Summary
+
+* Skill chaining sequences multiple agent skills in a single conversation to perform complex Day-2 operations without re-specifying parameters.
+* The agent routes each prompt to the correct skill using intent-based keyword matching defined in the AGENTS.md routing table.
+* The node maintenance workflow chains six skill invocations: inventory, snapshot, migrate, verify, maintenance, and rebalance.
+* The test environment scale-out workflow chains four skill invocations: inventory, batch clone, batch start, and verify.
+* Context preservation carries VM names, namespaces, node assignments, and operation results across skill transitions automatically.
+* Chain skills for dependent multi-step workflows; run independently for one-off or unrelated operations.
+
+== See Also
+
+* xref:getting-started.adoc[Getting Started with Agentic VM Management]
+* xref:natural-language-vm-create.adoc[Creating Virtual Machines with Natural Language]
+* xref:ai-vm-lifecycle.adoc[AI-Assisted VM Lifecycle Operations]
+* xref:vm-clone.adoc[Cloning Virtual Machines with AI Agents]
+* link:https://github.com/RHEcosystemAppEng/agentic-plugins/tree/main/rh-virt[rh-virt Skill Pack Repository,window=_blank]
+* link:https://github.com/openshift/openshift-mcp-server[OpenShift MCP Server,window=_blank]
+* link:https://docs.openshift.com/container-platform/latest/virt/index.html[OpenShift Virtualization Documentation,window=_blank]
+* link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.22/html/virtualization/live-migration[OpenShift Live Migration Documentation,window=_blank]
