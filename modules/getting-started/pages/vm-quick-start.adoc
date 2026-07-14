@@ -1,0 +1,183 @@
+= Quick Start: Your First VM in 5 Minutes
+:navtitle: Quick Start
+
+== Overview
+
+This tutorial provides the fastest path to create and run a virtual machine on OpenShift Virtualization. In under 5 minutes, you'll have a running Fedora VM accessible via console. This streamlined approach skips detailed explanations in favor of immediate results - perfect for workshops, demos, and getting started quickly.
+
+For comprehensive coverage, see the full xref:index.adoc[Getting Started module] after completing this quick start.
+
+=== What You'll Accomplish
+
+* Check minimal prerequisites with three commands
+* Create a Fedora VM using a single YAML manifest
+* Verify VM creation and access via console
+* Clean up resources when finished
+
+== Prerequisites
+
+OpenShift 4.18+ with OpenShift Virtualization installed (tested on 4.21) and virtctl CLI tool for VM console access. Verify your setup with these two commands:
+
+Check cluster access:
+[source,bash,role=execute]
+----
+oc get nodes
+----
+
+Verify OpenShift Virtualization operator is running:
+[source,bash,role=execute]
+----
+oc get csv -n openshift-cnv | grep kubevirt-hyperconverged
+----
+
+If any command fails, see xref:prerequisites.adoc[] for detailed setup instructions.
+
+== Create Your First VM
+
+Create a simple Fedora VM using this minimal manifest. Copy and apply it directly:
+
+xref:attachment$vm-quick-start/fedora-quickstart.yaml[Download fedora-quickstart.yaml]
+
+[source,bash,role=execute]
+----
+oc apply -f - <<EOF
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: fedora-quickstart
+  namespace: default
+spec:
+  runStrategy: Always
+  template:
+    metadata:
+      labels:
+        kubevirt.io/vm: fedora-quickstart
+    spec:
+      domain:
+        cpu:
+          cores: 1
+        memory:
+          guest: 2Gi
+        devices:
+          disks:
+          - name: containerdisk
+            disk:
+              bus: virtio
+          - name: cloudinitdisk
+            disk:
+              bus: virtio
+      volumes:
+      - name: containerdisk
+        containerDisk:
+          image: quay.io/containerdisks/fedora:latest
+      - name: cloudinitdisk
+        cloudInitNoCloud:
+          userData: |
+            #cloud-config
+            password: fedora
+            chpasswd: { expire: False }
+            ssh_pwauth: True
+EOF
+----
+
+== Verify VM Creation
+
+Check that your VM is created and running:
+
+[source,bash,role=execute]
+----
+oc get vm fedora-quickstart
+----
+
+Expected output shows `Running` status:
+----
+NAME                AGE   STATUS    READY
+fedora-quickstart   30s   Running   True
+----
+
+Verify the VirtualMachineInstance is active:
+
+[source,bash,role=execute]
+----
+oc get vmi fedora-quickstart
+----
+
+Expected output shows `Running` phase:
+----
+NAME                AGE   PHASE     IP           NODENAME                      READY
+fedora-quickstart   45s   Running   10.244.2.5   ip-10-0-22-218.ec2.internal   True
+----
+
+== Access Your VM
+
+Connect to the VM console (requires virtctl):
+
+[source,bash,role=execute]
+----
+virtctl console fedora-quickstart
+----
+
+Login with username `fedora` and password `fedora`. Type `exit` to disconnect from the console.
+
+NOTE: If virtctl is not installed, see xref:virtctl-basics.adoc[] for installation instructions.
+
+== Troubleshooting
+
+If the VM doesn't start:
+
+* Check pod events: `oc describe vm fedora-quickstart`
+* Verify storage: `oc get pvc` (should show no PVCs for containerDisk)
+* Check logs: `oc logs -l kubevirt.io/vm=fedora-quickstart`
+
+Common issues:
+
+* **No default StorageClass**: See xref:default-storage-class.adoc[]
+* **Insufficient cluster resources**: Check node capacity with `oc describe nodes`
+* **Network connectivity**: Verify pod network with `oc get pods -o wide`
+
+== Cleanup
+
+Remove the VM and associated resources:
+
+[source,bash,role=execute]
+----
+oc delete vm fedora-quickstart
+----
+
+Verify cleanup completed:
+
+[source,bash,role=execute]
+----
+oc get vm fedora-quickstart
+----
+
+Expected output:
+----
+No resources found in default namespace.
+----
+
+== Summary
+
+You successfully:
+
+* Verified OpenShift Virtualization prerequisites in seconds
+* Created a Fedora VM with a single `oc apply` command
+* Accessed the running VM via console
+* Cleaned up all resources
+
+== See Also
+
+=== Next Steps
+Now that you have a working VM, explore these topics for production use:
+
+* xref:create-vm-cli-yaml.adoc[] - Comprehensive CLI VM creation with persistent storage
+* xref:cloud-init-fundamentals.adoc[] - Advanced VM initialization and configuration
+* xref:vm-lifecycle-states.adoc[] - VM management and operations
+* xref:storage:index.adoc[] - Persistent storage configuration
+* xref:networking:index.adoc[] - Network setup for VMs
+
+=== References
+* xref:prerequisites.adoc[] - Detailed setup requirements
+* xref:virtctl-basics.adoc[] - Essential virtctl commands
+* xref:default-storage-class.adoc[] - Storage configuration guide
+* link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.21/html/virtualization/getting-started[OpenShift Virtualization Documentation,window=_blank]
