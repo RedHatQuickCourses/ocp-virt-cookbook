@@ -1,0 +1,50 @@
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: suse-virtctl
+  namespace: qemu-ga-demo
+spec:
+  runStrategy: Always
+  dataVolumeTemplates:
+    - metadata:
+        name: suse-virtctl-rootdisk
+      spec:
+        storage:
+          resources:
+            requests:
+              storage: 10Gi
+          accessModes:
+            - ReadWriteOnce
+        source:
+          registry:
+            url: docker://quay.io/ocpv_cookbook/opensuse-leap-15-no-qga:latest
+  template:
+    metadata:
+      labels:
+        app: suse-virtctl
+    spec:
+      domain:
+        cpu:
+          cores: 2
+        memory:
+          guest: 4Gi
+        devices:
+          disks:
+            - name: rootdisk
+              disk:
+                bus: virtio
+            - name: cloudinitdisk
+              disk:
+                bus: virtio
+      volumes:
+        - name: rootdisk
+          dataVolume:
+            name: suse-virtctl-rootdisk
+        - name: cloudinitdisk
+          cloudInitNoCloud:
+            userData: |-
+              #cloud-config
+              user: opensuse
+              password: opensuse
+              chpasswd: { expire: false }
+
