@@ -9,7 +9,9 @@ This tutorial covers creating, managing, and restoring VM snapshots in OpenShift
 
 === What You'll Learn
 
+* When snapshots are the right tool, and the operational procedures they support
 * How VM snapshot resources work and the difference between online and offline snapshots
+* How a snapshot and a restore change the VM's disk state over time
 * How to create, manage, and delete snapshots via the web console and CLI
 * How to restore a VM from a snapshot
 * Storage requirements and considerations for snapshots
@@ -19,6 +21,18 @@ Versions tested:
 ----
 OpenShift 4.20
 ----
+
+== When to Use Snapshots
+
+Snapshots map onto operational procedures that most virtualization administrators already follow. Common uses:
+
+* **Pre-upgrade safety net**: Snapshot before an OS upgrade or application update. If the upgrade fails, roll back instantly instead of rebuilding the VM.
+* **Pre-patch checkpoint**: Snapshot before monthly security patching, so a patch that causes problems can be reverted.
+* **Safe configuration testing**: Snapshot before changing network configuration, firewall rules, or application settings. Revert if the change breaks functionality.
+* **Compliance checkpoints**: Snapshot at audit milestones to preserve a known-good state as compliance evidence.
+* **Training and labs**: Snapshot a clean lab VM so students can experiment freely and reset to a known state between exercises.
+
+IMPORTANT: A snapshot is not a backup. Snapshots are stored on the same storage backend as the VM's disks, so they do not protect against failure or loss of that backend. Use snapshots for fast, local rollback, and a backup solution for disaster recovery.
 
 == Prerequisites
 
@@ -57,6 +71,46 @@ The request to create a snapshot of a VM. Contains references to the source VM a
 
 **VirtualMachineSnapshotContent**::
 The actual snapshot data, automatically created when a VirtualMachineSnapshot is processed. Contains references to the underlying VolumeSnapshots.
+
+These resources sit on top of the standard Kubernetes CSI snapshot machinery. You create a VirtualMachineSnapshot; the controller creates everything below it. Each of the VM's disks produces one VolumeSnapshot, and the storage backend holds the actual point-in-time disk data:
+
+....
+VirtualMachine  — what you snapshot
+│
+└─ VirtualMachineSnapshot  — the request you create
+   │
+   └─ VirtualMachineSnapshotContent  — the bound result (VM spec + volume refs)
+      │
+      └─ VolumeSnapshot  — one CSI snapshot per VM disk
+         │
+         └─ underlying disk state on the storage backend
+....
+
+This is why a VM with three disks produces three VolumeSnapshots, and why snapshot support depends on your storage provider rather than on OpenShift Virtualization itself.
+
+=== Snapshot Timeline
+
+A snapshot captures the VM's disk state at one moment. Later snapshots do not replace earlier ones, and restoring does not consume the snapshot you restore from. The timeline below follows a VM through two snapshots and a rollback: state A is captured at T1, the VM drifts to state B, state B is captured at T3, and at T4 a problem forces a restore back to state A. Note that the VM must be stopped before it can be restored, and that the later snapshot survives the rollback.
+
+....
+T1  VM disk = state A   (VM running)
+│
+├─ take Snapshot-1  — captures state A
+│
+T2  VM disk = state B   (config changed, patches applied)
+│
+T3  take Snapshot-2  — captures state B
+│
+T4  problem detected in state B
+│
+├─ stop the VM  (required before restore)
+│
+└─ restore Snapshot-1  — VM disk = state A again
+
+Snapshot-2 still exists, so state B remains recoverable.
+....
+
+The restore step is covered in detail in <<Restoring from Snapshots>>.
 
 === Online vs Offline Snapshots
 
@@ -532,7 +586,9 @@ oc get volumesnapshot -n vm-snapshots
 
 In this tutorial you learned:
 
-* How VM snapshot resources work in OpenShift Virtualization
+* When to use snapshots, and why they are not a substitute for backups
+* How VM snapshot resources work in OpenShift Virtualization, from VirtualMachineSnapshot down to the VolumeSnapshot for each disk
+* How snapshot and restore operations change the VM's disk state over time
 * The difference between online and offline snapshots and snapshot indications
 * How to create snapshots via web console and CLI
 * How to manage, list, and delete snapshots
