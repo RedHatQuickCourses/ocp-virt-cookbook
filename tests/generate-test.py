@@ -103,6 +103,13 @@ def _namespace_yamls(block: str) -> List[str]:
     return yamls
 
 
+def _remove_callout_markers(block: str) -> str:
+    """sanitize codeblocks of `<.>` or `<#>`"""
+    pattern = r'\s*(?:(?:#|//|;;|--)\s*)?(?:<(?:\d+|\.)>\s*)+$'
+    lines = block.split("\n")
+    cleaned = [re.sub(pattern, '', line) for line in lines]
+    return "\n".join(cleaned)
+
 # ── Main parser ─────────────────────────────────────────────────────
 
 
@@ -136,6 +143,7 @@ def parse_tutorial(adoc_path: str) -> Tuple[str, List[Resource]]:
             continue
 
         block = "\n".join(lines[i + 1 : block_end])
+        block = _remove_callout_markers(block)
         xref = _xref_above(lines, fence_open)
 
         # Rule 1: namespace commands (always check — may coexist with heredocs)
