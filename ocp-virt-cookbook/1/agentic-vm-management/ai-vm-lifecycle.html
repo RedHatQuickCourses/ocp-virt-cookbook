@@ -426,13 +426,13 @@ lifecycle-demo   2m    Running   True</pre>
 <div class="olist arabic">
 <ol class="arabic">
 <li>
-<p><strong>Gather parameters and confirm</strong> — The agent collects the VM name, namespace, and action from your prompt. It presents the operation with its impact (resource consumption for start, service interruption for stop, brief downtime for restart) and waits for your explicit confirmation before proceeding.</p>
+<p><strong>Gather parameters and confirm</strong> -The agent collects the VM name, namespace, and action from your prompt. It presents the operation with its impact (resource consumption for start, service interruption for stop, brief downtime for restart) and waits for your explicit confirmation before proceeding.</p>
 </li>
 <li>
-<p><strong>Execute the operation</strong> — After confirmation, the agent calls the <code>vm_lifecycle</code> MCP tool to change the VM&#8217;s RunStrategy. For restart, the agent uses a composite pattern: stop the VM, verify it has stopped, wait briefly, then start it again. This two-step approach avoids Kubernetes resourceVersion conflicts.</p>
+<p><strong>Execute the operation</strong> -After confirmation, the agent calls the <code>vm_lifecycle</code> MCP tool to change the VM&#8217;s RunStrategy. For restart, the agent uses a composite pattern: stop the VM, verify it has stopped, wait briefly, then start it again. This two-step approach avoids Kubernetes resourceVersion conflicts.</p>
 </li>
 <li>
-<p><strong>Report and verify</strong> — The agent reports the result, confirms the new RunStrategy, and suggests next steps such as checking VM status or listing VMs in the namespace.</p>
+<p><strong>Report and verify</strong> -The agent reports the result, confirms the new RunStrategy, and suggests next steps such as checking VM status or listing VMs in the namespace.</p>
 </li>
 </ol>
 </div>
@@ -445,19 +445,19 @@ lifecycle-demo   2m    Running   True</pre>
 <div class="olist arabic">
 <ol class="arabic">
 <li>
-<p><strong>Validate</strong> — The agent verifies the VM exists, checks for a <code>protected: "true"</code> label (which blocks deletion entirely), and checks whether the VM is running.</p>
+<p><strong>Validate</strong> -The agent verifies the VM exists, checks for a <code>protected: "true"</code> label (which blocks deletion entirely), and checks whether the VM is running.</p>
 </li>
 <li>
-<p><strong>Discover storage</strong> — The agent lists DataVolumes and PVCs associated with the VM to show the full deletion scope.</p>
+<p><strong>Discover storage</strong> -The agent lists DataVolumes and PVCs associated with the VM to show the full deletion scope.</p>
 </li>
 <li>
-<p><strong>Present options</strong> — The agent displays the deletion scope and offers three options: delete VM only (preserve storage), delete VM and storage (recommended for test/dev), or cancel.</p>
+<p><strong>Present options</strong> -The agent displays the deletion scope and offers three options: delete VM only (preserve storage), delete VM and storage (recommended for test/dev), or cancel.</p>
 </li>
 <li>
-<p><strong>Typed confirmation</strong> — You must type the exact VM name to confirm deletion. A mismatch cancels the operation.</p>
+<p><strong>Typed confirmation</strong> -You must type the exact VM name to confirm deletion. A mismatch cancels the operation.</p>
 </li>
 <li>
-<p><strong>Execute and report</strong> — The agent deletes the VM and optionally its storage, then reports what was deleted and how much storage was freed.</p>
+<p><strong>Execute and report</strong> -The agent deletes the VM and optionally its storage, then reports what was deleted and how much storage was freed.</p>
 </li>
 </ol>
 </div>
@@ -508,7 +508,7 @@ Confirm: yes/no</pre>
 <p>The agent calls <code>vm_lifecycle</code> to change the RunStrategy from <code>Halted</code> to <code>Always</code> and verifies the VM reaches Running status:</p>
 <div class="listingblock">
 <div class="content">
-<pre>## ✓ VM Start Successful
+<pre>## VM Start Successful
 
 **VM**: `lifecycle-demo` | **Namespace**: `my-vms` | **RunStrategy**: Always
 
@@ -574,7 +574,7 @@ Confirm: yes/no</pre>
 <p>After you confirm, the agent performs a graceful shutdown and transitions the RunStrategy to <code>Halted</code>:</p>
 <div class="listingblock">
 <div class="content">
-<pre>## ✓ VM Stop Successful
+<pre>## VM Stop Successful
 
 **VM**: `lifecycle-demo` | **Namespace**: `my-vms` | **RunStrategy**: Halted
 
@@ -587,6 +587,9 @@ RunStrategy: Halted (stays off)
 </div>
 </li>
 </ol>
+</div>
+<div class="paragraph">
+<p>When a VM is stopped, the VirtualMachineInstance (VMI) object is removed. The VirtualMachine resource and its storage (DataVolumes, PVCs) remain intact. No compute resources (CPU, memory) are consumed while the VM is in the <code>Halted</code> state.</p>
 </div>
 </div>
 </div>
@@ -626,13 +629,13 @@ Confirm: yes/no</pre>
 <p>After confirmation, the agent executes the composite restart:</p>
 <div class="listingblock">
 <div class="content">
-<pre>## ✓ VM Restart Successful
+<pre>## VM Restart Successful
 
 **VM**: `lifecycle-demo` | **Namespace**: `my-vms` | **RunStrategy**: Always
 
 Composite restart steps completed:
-1. Stopped VM → verified status: Stopped
-2. Started VM → verified status: Running
+1. Stopped VM -&gt; verified status: Stopped
+2. Started VM -&gt; verified status: Running
 
 **Impact**: Running after stop+start. Brief interruption (~1-2min).
 Monitor app logs for any issues.
@@ -642,6 +645,9 @@ Monitor app logs for any issues.
 </div>
 </li>
 </ol>
+</div>
+<div class="paragraph">
+<p>The composite restart generates a new VirtualMachineInstance with a fresh pod, new IP address, and new MAC address. If your application depends on stable network identity, use a Kubernetes Service to abstract the underlying VMI.</p>
 </div>
 </div>
 </div>
@@ -665,7 +671,7 @@ Monitor app logs for any issues.
 <p>The agent validates the VM, discovers associated storage, and presents the deletion scope:</p>
 <div class="listingblock">
 <div class="content">
-<pre>## ⚠️ VM Deletion - Review Scope
+<pre>## VM Deletion - Review Scope
 
 **VM**: `lifecycle-demo` | **Namespace**: `my-vms` | **Status**: Running
 
@@ -675,7 +681,7 @@ Monitor app logs for any issues.
 
 ### Deletion Options
 **1: VM Only** - Preserves storage for reuse
-**2: VM + Storage** ← Recommended (test/dev) - Frees storage
+**2: VM + Storage** &lt;- Recommended (test/dev) - Frees storage
 **3: Cancel**
 
 Select (1, 2, or 3):</pre>
@@ -694,15 +700,15 @@ Select (1, 2, or 3):</pre>
 <p>The agent requires you to type the exact VM name to confirm:</p>
 <div class="listingblock">
 <div class="content">
-<pre>## 🔴 PERMANENT DELETION - Typed Confirmation Required
+<pre>## PERMANENT DELETION - Typed Confirmation Required
 
 **CANNOT BE UNDONE**
 
 **Will delete**:
-✗ VirtualMachine: `lifecycle-demo` (namespace: `my-vms`)
-✗ DataVolume: `lifecycle-demo-rootdisk`
-✗ PVC: `lifecycle-demo-rootdisk`
-✗ All data lost
+- VirtualMachine: `lifecycle-demo` (namespace: `my-vms`)
+- DataVolume: `lifecycle-demo-rootdisk`
+- PVC: `lifecycle-demo-rootdisk`
+- All data lost
 
 Type `lifecycle-demo` to confirm: _____</pre>
 </div>
@@ -720,7 +726,7 @@ Type `lifecycle-demo` to confirm: _____</pre>
 <p>The agent stops the running VM, deletes it and its storage, and reports the result:</p>
 <div class="listingblock">
 <div class="content">
-<pre>## ✓ VM Deleted (Complete Cleanup)
+<pre>## VM Deleted (Complete Cleanup)
 
 **Deleted**: VM + DataVolume + PVC | **Freed**: 30Gi
 **Impact**: Permanent removal. Cannot recover.
@@ -770,6 +776,14 @@ Type `lifecycle-demo` to confirm: _____</pre>
 </div>
 </div>
 <div class="paragraph">
+<p>Verify the label is set:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vm &lt;vm-name&gt; -n &lt;namespace&gt; --show-labels</code></pre>
+</div>
+</div>
+<div class="paragraph">
 <p>When you attempt to delete a protected VM:</p>
 </div>
 <div class="olist arabic">
@@ -786,9 +800,9 @@ Type `lifecycle-demo` to confirm: _____</pre>
 <p>The agent detects the protection label and refuses the operation:</p>
 <div class="listingblock">
 <div class="content">
-<pre>❌ Cannot Delete Protected VM
+<pre>Cannot Delete Protected VM
 
-VM `production-db` has label `protected: "true"` — deletion blocked.
+VM `production-db` has label `protected: "true"` - deletion blocked.
 
 To remove the protection label (requires admin approval):
   oc label vm production-db -n production protected-
@@ -824,16 +838,70 @@ Operation cancelled.</pre>
 <p>If the VM is already running:</p>
 <div class="listingblock">
 <div class="content">
-<pre>## ℹ️ VM Already Running
+<pre>## VM Already Running
 
 **VM**: `lifecycle-demo` | **Namespace**: `my-vms` | **Status**: Running
 
-Result: No action taken — VM already in desired state.
+Result: No action taken - VM already in desired state.
 To restart: "Restart VM lifecycle-demo in namespace my-vms"</pre>
 </div>
 </div>
 </li>
 </ol>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_example_scenario_7_deleting_a_vm_while_preserving_storage"><a class="anchor" href="#_example_scenario_7_deleting_a_vm_while_preserving_storage"></a>Example Scenario 7: Deleting a VM While Preserving Storage</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Sometimes you want to delete the VM definition but keep its disk for reattachment to a new VM. This is useful when you need to rebuild a VM with a different configuration but retain its data.</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>In your IDE chat, type:</p>
+<div class="listingblock">
+<div class="content">
+<pre>Delete VM lifecycle-demo in namespace my-vms</pre>
+</div>
+</div>
+</li>
+<li>
+<p>At the deletion options prompt, select option 1:</p>
+<div class="listingblock">
+<div class="content">
+<pre>1</pre>
+</div>
+</div>
+</li>
+<li>
+<p>After typing the VM name to confirm, the agent deletes only the VirtualMachine resource:</p>
+<div class="listingblock">
+<div class="content">
+<pre>## VM Deleted (VM Only)
+
+**Deleted**: VM `lifecycle-demo`
+**Preserved**: PVC `lifecycle-demo-rootdisk` (30Gi) - available for reattachment
+**Impact**: VM definition removed. Storage retained.</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>The PVC remains in the namespace for reuse:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get pvc -n my-vms</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>NAME                       STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS
+lifecycle-demo-rootdisk    Bound    pvc-abc12345-6789-0def-ghij-klmnopqrstuv   30Gi       RWO            lvms-vg1</pre>
+</div>
 </div>
 </div>
 </div>
@@ -874,6 +942,21 @@ To restart: "Restart VM lifecycle-demo in namespace my-vms"</pre>
 </tr>
 </tbody>
 </table>
+<div class="paragraph">
+<p>The <code>Always</code> strategy means the platform creates a new VMI if the current one terminates for any reason (guest shutdown, node drain, OOM kill). The <code>Halted</code> strategy means no VMI is created. The agent never sets the deprecated <code>running</code> field; it exclusively uses <code>runStrategy</code> for all power state transitions.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+KubeVirt also supports <code>RerunOnFailure</code> (restarts only on non-zero exit) and <code>Manual</code> (no automatic action) strategies. The <code>vm-lifecycle-manager</code> skill uses <code>Always</code> and <code>Halted</code> because these two states cover the most common power management scenarios.
+</td>
+</tr>
+</table>
+</div>
 <div class="paragraph">
 <p>You can check the current RunStrategy of a VM:</p>
 </div>
@@ -966,22 +1049,28 @@ To restart: "Restart VM lifecycle-demo in namespace my-vms"</pre>
 <div class="ulist">
 <ul>
 <li>
-<p>The <code>vm-lifecycle-manager</code> skill handles start, stop, and restart operations with explicit user confirmation for each action.</p>
+<p>The <code>vm-lifecycle-manager</code> skill manages VM power state by transitioning the <code>runStrategy</code> field between <code>Always</code> (running) and <code>Halted</code> (stopped).</p>
 </li>
 <li>
-<p>Restart uses a composite stop-verify-start pattern to avoid Kubernetes resourceVersion conflicts.</p>
+<p>Stopping a VM performs a graceful shutdown, freeing compute resources while preserving storage and VM state.</p>
 </li>
 <li>
-<p>RunStrategy management (<code>Always</code> / <code>Halted</code>) replaces the deprecated <code>running</code> field.</p>
+<p>Starting a VM sets RunStrategy to <code>Always</code>, which provides auto-restart on crash or node failure.</p>
+</li>
+<li>
+<p>Restart uses a composite stop-verify-start pattern to avoid Kubernetes <code>resourceVersion</code> conflicts. The restart generates a new VMI with a fresh pod and network identity.</p>
 </li>
 <li>
 <p>The <code>vm-delete</code> skill enforces multi-step safety: validation, scope review, option selection, and typed name confirmation.</p>
 </li>
 <li>
-<p>Protected VMs (label <code>protected: "true"</code>) cannot be deleted regardless of user confirmation.</p>
+<p>Protection labels (<code>protected: "true"</code>) block deletion before the confirmation step and must be removed manually.</p>
 </li>
 <li>
-<p>Both skills are read-only safe — no changes are made until you explicitly confirm.</p>
+<p>Deletion supports two modes: VM-only (preserves storage for reattachment) and VM-plus-storage (full cleanup).</p>
+</li>
+<li>
+<p>Both skills are read-only safe -no changes are made until you explicitly confirm.</p>
 </li>
 </ul>
 </div>
@@ -997,6 +1086,9 @@ To restart: "Restart VM lifecycle-demo in namespace my-vms"</pre>
 </li>
 <li>
 <p><a href="natural-language-vm-create.html" class="xref page">Creating Virtual Machines with Natural Language</a></p>
+</li>
+<li>
+<p><a href="vm-clone.html" class="xref page">Cloning Virtual Machines with AI Agents</a></p>
 </li>
 <li>
 <p><a href="https://github.com/RHEcosystemAppEng/agentic-plugins/tree/main/rh-virt" target="_blank" rel="noopener">rh-virt Skill Pack Repository</a></p>
