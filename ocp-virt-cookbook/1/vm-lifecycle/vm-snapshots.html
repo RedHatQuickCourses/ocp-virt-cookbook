@@ -357,7 +357,13 @@
 <div class="ulist">
 <ul>
 <li>
+<p>When snapshots are the right tool, and the operational procedures they support</p>
+</li>
+<li>
 <p>How VM snapshot resources work and the difference between online and offline snapshots</p>
+</li>
+<li>
+<p>How a snapshot and a restore change the VM&#8217;s disk state over time</p>
 </li>
 <li>
 <p>How to create, manage, and delete snapshots via the web console and CLI</p>
@@ -378,6 +384,45 @@
 <pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">OpenShift 4.20</code></pre>
 </div>
 </div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_when_to_use_snapshots"><a class="anchor" href="#_when_to_use_snapshots"></a>When to Use Snapshots</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Snapshots map onto operational procedures that most virtualization administrators already follow. Common uses:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Pre-upgrade safety net</strong>: Snapshot before an OS upgrade or application update. If the upgrade fails, roll back instantly instead of rebuilding the VM.</p>
+</li>
+<li>
+<p><strong>Pre-patch checkpoint</strong>: Snapshot before monthly security patching, so a patch that causes problems can be reverted.</p>
+</li>
+<li>
+<p><strong>Safe configuration testing</strong>: Snapshot before changing network configuration, firewall rules, or application settings. Revert if the change breaks functionality.</p>
+</li>
+<li>
+<p><strong>Compliance checkpoints</strong>: Snapshot at audit milestones to preserve a known-good state as compliance evidence.</p>
+</li>
+<li>
+<p><strong>Training and labs</strong>: Snapshot a clean lab VM so students can experiment freely and reset to a known state between exercises.</p>
+</li>
+</ul>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-important" title="Important"></i>
+</td>
+<td class="content">
+A snapshot is not a backup. Snapshots are stored on the same storage backend as the VM&#8217;s disks, so they do not protect against failure or loss of that backend. Use snapshots for fast, local rollback, and a backup solution for disaster recovery.
+</td>
+</tr>
+</table>
 </div>
 </div>
 </div>
@@ -445,6 +490,53 @@ ocs-storagecluster-rbdplugin-snapclass   openshift-storage.rbd.csi.ceph.com   De
 <p>The actual snapshot data, automatically created when a VirtualMachineSnapshot is processed. Contains references to the underlying VolumeSnapshots.</p>
 </dd>
 </dl>
+</div>
+<div class="paragraph">
+<p>These resources sit on top of the standard Kubernetes CSI snapshot machinery. You create a VirtualMachineSnapshot; the controller creates everything below it. Each of the VM&#8217;s disks produces one VolumeSnapshot, and the storage backend holds the actual point-in-time disk data:</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>VirtualMachine  — what you snapshot
+│
+└─ VirtualMachineSnapshot  — the request you create
+   │
+   └─ VirtualMachineSnapshotContent  — the bound result (VM spec + volume refs)
+      │
+      └─ VolumeSnapshot  — one CSI snapshot per VM disk
+         │
+         └─ underlying disk state on the storage backend</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This is why a VM with three disks produces three VolumeSnapshots, and why snapshot support depends on your storage provider rather than on OpenShift Virtualization itself.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_snapshot_timeline"><a class="anchor" href="#_snapshot_timeline"></a>Snapshot Timeline</h3>
+<div class="paragraph">
+<p>A snapshot captures the VM&#8217;s disk state at one moment. Later snapshots do not replace earlier ones, and restoring does not consume the snapshot you restore from. The timeline below follows a VM through two snapshots and a rollback: state A is captured at T1, the VM drifts to state B, state B is captured at T3, and at T4 a problem forces a restore back to state A. Note that the VM must be stopped before it can be restored, and that the later snapshot survives the rollback.</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>T1  VM disk = state A   (VM running)
+│
+├─ take Snapshot-1  — captures state A
+│
+T2  VM disk = state B   (config changed, patches applied)
+│
+T3  take Snapshot-2  — captures state B
+│
+T4  problem detected in state B
+│
+├─ stop the VM  (required before restore)
+│
+└─ restore Snapshot-1  — VM disk = state A again
+
+Snapshot-2 still exists, so state B remains recoverable.</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The restore step is covered in detail in <a href="#_restoring_from_snapshots">Restoring from Snapshots</a>.</p>
 </div>
 </div>
 <div class="sect2">
@@ -1198,7 +1290,13 @@ oc get volumesnapshot -n vm-snapshots</code></pre>
 <div class="ulist">
 <ul>
 <li>
-<p>How VM snapshot resources work in OpenShift Virtualization</p>
+<p>When to use snapshots, and why they are not a substitute for backups</p>
+</li>
+<li>
+<p>How VM snapshot resources work in OpenShift Virtualization, from VirtualMachineSnapshot down to the VolumeSnapshot for each disk</p>
+</li>
+<li>
+<p>How snapshot and restore operations change the VM&#8217;s disk state over time</p>
 </li>
 <li>
 <p>The difference between online and offline snapshots and snapshot indications</p>
