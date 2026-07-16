@@ -48,25 +48,25 @@ lifecycle-demo   2m    Running   True
 
 The `vm-lifecycle-manager` skill follows a three-step workflow for start, stop, and restart operations:
 
-. **Gather parameters and confirm** — The agent collects the VM name, namespace, and action from your prompt. It presents the operation with its impact (resource consumption for start, service interruption for stop, brief downtime for restart) and waits for your explicit confirmation before proceeding.
+. **Gather parameters and confirm** -The agent collects the VM name, namespace, and action from your prompt. It presents the operation with its impact (resource consumption for start, service interruption for stop, brief downtime for restart) and waits for your explicit confirmation before proceeding.
 
-. **Execute the operation** — After confirmation, the agent calls the `vm_lifecycle` MCP tool to change the VM's RunStrategy. For restart, the agent uses a composite pattern: stop the VM, verify it has stopped, wait briefly, then start it again. This two-step approach avoids Kubernetes resourceVersion conflicts.
+. **Execute the operation** -After confirmation, the agent calls the `vm_lifecycle` MCP tool to change the VM's RunStrategy. For restart, the agent uses a composite pattern: stop the VM, verify it has stopped, wait briefly, then start it again. This two-step approach avoids Kubernetes resourceVersion conflicts.
 
-. **Report and verify** — The agent reports the result, confirms the new RunStrategy, and suggests next steps such as checking VM status or listing VMs in the namespace.
+. **Report and verify** -The agent reports the result, confirms the new RunStrategy, and suggests next steps such as checking VM status or listing VMs in the namespace.
 
 === vm-delete Skill
 
 The `vm-delete` skill enforces strict safety protocols through a five-step workflow:
 
-. **Validate** — The agent verifies the VM exists, checks for a `protected: "true"` label (which blocks deletion entirely), and checks whether the VM is running.
+. **Validate** -The agent verifies the VM exists, checks for a `protected: "true"` label (which blocks deletion entirely), and checks whether the VM is running.
 
-. **Discover storage** — The agent lists DataVolumes and PVCs associated with the VM to show the full deletion scope.
+. **Discover storage** -The agent lists DataVolumes and PVCs associated with the VM to show the full deletion scope.
 
-. **Present options** — The agent displays the deletion scope and offers three options: delete VM only (preserve storage), delete VM and storage (recommended for test/dev), or cancel.
+. **Present options** -The agent displays the deletion scope and offers three options: delete VM only (preserve storage), delete VM and storage (recommended for test/dev), or cancel.
 
-. **Typed confirmation** — You must type the exact VM name to confirm deletion. A mismatch cancels the operation.
+. **Typed confirmation** -You must type the exact VM name to confirm deletion. A mismatch cancels the operation.
 
-. **Execute and report** — The agent deletes the VM and optionally its storage, then reports what was deleted and how much storage was freed.
+. **Execute and report** -The agent deletes the VM and optionally its storage, then reports what was deleted and how much storage was freed.
 
 == Example Scenario 1: Starting a Stopped VM
 
@@ -101,7 +101,7 @@ yes
 . The agent calls `vm_lifecycle` to change the RunStrategy from `Halted` to `Always` and verifies the VM reaches Running status:
 +
 ----
-## ✓ VM Start Successful
+## VM Start Successful
 
 **VM**: `lifecycle-demo` | **Namespace**: `my-vms` | **RunStrategy**: Always
 
@@ -151,7 +151,7 @@ Confirm: yes/no
 . After you confirm, the agent performs a graceful shutdown and transitions the RunStrategy to `Halted`:
 +
 ----
-## ✓ VM Stop Successful
+## VM Stop Successful
 
 **VM**: `lifecycle-demo` | **Namespace**: `my-vms` | **RunStrategy**: Halted
 
@@ -161,6 +161,8 @@ RunStrategy: Halted (stays off)
 
 **Next**: "Show status of VM lifecycle-demo" or "List VMs in namespace my-vms"
 ----
+
+When a VM is stopped, the VirtualMachineInstance (VMI) object is removed. The VirtualMachine resource and its storage (DataVolumes, PVCs) remain intact. No compute resources (CPU, memory) are consumed while the VM is in the `Halted` state.
 
 == Example Scenario 3: Restarting a VM
 
@@ -189,19 +191,21 @@ Confirm: yes/no
 . After confirmation, the agent executes the composite restart:
 +
 ----
-## ✓ VM Restart Successful
+## VM Restart Successful
 
 **VM**: `lifecycle-demo` | **Namespace**: `my-vms` | **RunStrategy**: Always
 
 Composite restart steps completed:
-1. Stopped VM → verified status: Stopped
-2. Started VM → verified status: Running
+1. Stopped VM -> verified status: Stopped
+2. Started VM -> verified status: Running
 
 **Impact**: Running after stop+start. Brief interruption (~1-2min).
 Monitor app logs for any issues.
 
 **Next**: "Show status of VM lifecycle-demo" or "List VMs in namespace my-vms"
 ----
+
+The composite restart generates a new VirtualMachineInstance with a fresh pod, new IP address, and new MAC address. If your application depends on stable network identity, use a Kubernetes Service to abstract the underlying VMI.
 
 == Example Scenario 4: Deleting a VM with Storage Cleanup
 
@@ -216,7 +220,7 @@ Delete VM lifecycle-demo in namespace my-vms
 . The agent validates the VM, discovers associated storage, and presents the deletion scope:
 +
 ----
-## ⚠️ VM Deletion - Review Scope
+## VM Deletion - Review Scope
 
 **VM**: `lifecycle-demo` | **Namespace**: `my-vms` | **Status**: Running
 
@@ -226,7 +230,7 @@ Delete VM lifecycle-demo in namespace my-vms
 
 ### Deletion Options
 **1: VM Only** - Preserves storage for reuse
-**2: VM + Storage** ← Recommended (test/dev) - Frees storage
+**2: VM + Storage** <- Recommended (test/dev) - Frees storage
 **3: Cancel**
 
 Select (1, 2, or 3):
@@ -241,15 +245,15 @@ Select (1, 2, or 3):
 . The agent requires you to type the exact VM name to confirm:
 +
 ----
-## 🔴 PERMANENT DELETION - Typed Confirmation Required
+## PERMANENT DELETION - Typed Confirmation Required
 
 **CANNOT BE UNDONE**
 
 **Will delete**:
-✗ VirtualMachine: `lifecycle-demo` (namespace: `my-vms`)
-✗ DataVolume: `lifecycle-demo-rootdisk`
-✗ PVC: `lifecycle-demo-rootdisk`
-✗ All data lost
+- VirtualMachine: `lifecycle-demo` (namespace: `my-vms`)
+- DataVolume: `lifecycle-demo-rootdisk`
+- PVC: `lifecycle-demo-rootdisk`
+- All data lost
 
 Type `lifecycle-demo` to confirm: _____
 ----
@@ -263,7 +267,7 @@ lifecycle-demo
 . The agent stops the running VM, deletes it and its storage, and reports the result:
 +
 ----
-## ✓ VM Deleted (Complete Cleanup)
+## VM Deleted (Complete Cleanup)
 
 **Deleted**: VM + DataVolume + PVC | **Freed**: 30Gi
 **Impact**: Permanent removal. Cannot recover.
@@ -301,6 +305,13 @@ To add a protection label to a VM:
 oc label vm <vm-name> -n <namespace> protected=true
 ----
 
+Verify the label is set:
+
+[source,bash,role=execute]
+----
+oc get vm <vm-name> -n <namespace> --show-labels
+----
+
 When you attempt to delete a protected VM:
 
 . In your IDE chat, type:
@@ -312,9 +323,9 @@ Delete VM production-db in namespace production
 . The agent detects the protection label and refuses the operation:
 +
 ----
-❌ Cannot Delete Protected VM
+Cannot Delete Protected VM
 
-VM `production-db` has label `protected: "true"` — deletion blocked.
+VM `production-db` has label `protected: "true"` - deletion blocked.
 
 To remove the protection label (requires admin approval):
   oc label vm production-db -n production protected-
@@ -337,12 +348,50 @@ Start VM lifecycle-demo in namespace my-vms
 . If the VM is already running:
 +
 ----
-## ℹ️ VM Already Running
+## VM Already Running
 
 **VM**: `lifecycle-demo` | **Namespace**: `my-vms` | **Status**: Running
 
-Result: No action taken — VM already in desired state.
+Result: No action taken - VM already in desired state.
 To restart: "Restart VM lifecycle-demo in namespace my-vms"
+----
+
+== Example Scenario 7: Deleting a VM While Preserving Storage
+
+Sometimes you want to delete the VM definition but keep its disk for reattachment to a new VM. This is useful when you need to rebuild a VM with a different configuration but retain its data.
+
+. In your IDE chat, type:
++
+----
+Delete VM lifecycle-demo in namespace my-vms
+----
+
+. At the deletion options prompt, select option 1:
++
+----
+1
+----
+
+. After typing the VM name to confirm, the agent deletes only the VirtualMachine resource:
++
+----
+## VM Deleted (VM Only)
+
+**Deleted**: VM `lifecycle-demo`
+**Preserved**: PVC `lifecycle-demo-rootdisk` (30Gi) - available for reattachment
+**Impact**: VM definition removed. Storage retained.
+----
+
+The PVC remains in the namespace for reuse:
+
+[source,bash,role=execute]
+----
+oc get pvc -n my-vms
+----
+
+----
+NAME                       STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS
+lifecycle-demo-rootdisk    Bound    pvc-abc12345-6789-0def-ghij-klmnopqrstuv   30Gi       RWO            lvms-vg1
 ----
 
 == Understanding RunStrategy
@@ -356,6 +405,10 @@ The agent manages VM power state through the `runStrategy` field on the VirtualM
 | stop | `Halted` | VM stops and stays off until explicitly started
 | restart | `Always` | VM stops, verifies stopped, then starts with auto-restart enabled
 |===
+
+The `Always` strategy means the platform creates a new VMI if the current one terminates for any reason (guest shutdown, node drain, OOM kill). The `Halted` strategy means no VMI is created. The agent never sets the deprecated `running` field; it exclusively uses `runStrategy` for all power state transitions.
+
+NOTE: KubeVirt also supports `RerunOnFailure` (restarts only on non-zero exit) and `Manual` (no automatic action) strategies. The `vm-lifecycle-manager` skill uses `Always` and `Halted` because these two states cover the most common power management scenarios.
 
 You can check the current RunStrategy of a VM:
 
@@ -405,17 +458,20 @@ oc delete namespace my-vms
 
 == Summary
 
-* The `vm-lifecycle-manager` skill handles start, stop, and restart operations with explicit user confirmation for each action.
-* Restart uses a composite stop-verify-start pattern to avoid Kubernetes resourceVersion conflicts.
-* RunStrategy management (`Always` / `Halted`) replaces the deprecated `running` field.
+* The `vm-lifecycle-manager` skill manages VM power state by transitioning the `runStrategy` field between `Always` (running) and `Halted` (stopped).
+* Stopping a VM performs a graceful shutdown, freeing compute resources while preserving storage and VM state.
+* Starting a VM sets RunStrategy to `Always`, which provides auto-restart on crash or node failure.
+* Restart uses a composite stop-verify-start pattern to avoid Kubernetes `resourceVersion` conflicts. The restart generates a new VMI with a fresh pod and network identity.
 * The `vm-delete` skill enforces multi-step safety: validation, scope review, option selection, and typed name confirmation.
-* Protected VMs (label `protected: "true"`) cannot be deleted regardless of user confirmation.
-* Both skills are read-only safe — no changes are made until you explicitly confirm.
+* Protection labels (`protected: "true"`) block deletion before the confirmation step and must be removed manually.
+* Deletion supports two modes: VM-only (preserves storage for reattachment) and VM-plus-storage (full cleanup).
+* Both skills are read-only safe -no changes are made until you explicitly confirm.
 
 == See Also
 
 * xref:getting-started.adoc[Getting Started with Agentic VM Management]
 * xref:natural-language-vm-create.adoc[Creating Virtual Machines with Natural Language]
+* xref:vm-clone.adoc[Cloning Virtual Machines with AI Agents]
 * link:https://github.com/RHEcosystemAppEng/agentic-plugins/tree/main/rh-virt[rh-virt Skill Pack Repository,window=_blank]
 * link:https://github.com/openshift/openshift-mcp-server[OpenShift MCP Server,window=_blank]
 * link:https://docs.openshift.com/container-platform/latest/virt/index.html[OpenShift Virtualization Documentation,window=_blank]
