@@ -1,0 +1,168 @@
+<mxfile>
+  <diagram name="VM Execution Flow" id="flow1">
+    <mxGraphModel dx="1200" dy="600" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1200" pageHeight="500" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+
+        <!-- Step 1: User creates VirtualMachine CR -->
+        <mxCell id="s1" value="1. User creates&#xa;VirtualMachine CR" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;fontStyle=1;spacing=6;" vertex="1" parent="1">
+          <mxGeometry x="40" y="60" width="150" height="60" as="geometry"/>
+        </mxCell>
+
+        <!-- Arrow 1->2 -->
+        <mxCell id="a12" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeWidth=2;strokeColor=#333333;" edge="1" parent="1" source="s1" target="s2">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Step 2: virt-controller creates VMI -->
+        <mxCell id="s2" value="2. virt-controller&#xa;creates VMI" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=11;fontStyle=1;spacing=6;" vertex="1" parent="1">
+          <mxGeometry x="240" y="60" width="150" height="60" as="geometry"/>
+        </mxCell>
+
+        <!-- Arrow 2->3 -->
+        <mxCell id="a23" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeWidth=2;strokeColor=#333333;" edge="1" parent="1" source="s2" target="s3">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Step 3: Scheduler places virt-launcher pod -->
+        <mxCell id="s3" value="3. Scheduler places&#xa;virt-launcher Pod" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;fontStyle=1;spacing=6;" vertex="1" parent="1">
+          <mxGeometry x="440" y="60" width="150" height="60" as="geometry"/>
+        </mxCell>
+
+        <!-- Arrow 3->4 -->
+        <mxCell id="a34" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeWidth=2;strokeColor=#333333;" edge="1" parent="1" source="s3" target="s4">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Step 4: virt-handler configures host -->
+        <mxCell id="s4" value="4. virt-handler&#xa;configures host" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=11;fontStyle=1;spacing=6;" vertex="1" parent="1">
+          <mxGeometry x="640" y="60" width="150" height="60" as="geometry"/>
+        </mxCell>
+
+        <!-- Arrow 4->5 -->
+        <mxCell id="a45" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeWidth=2;strokeColor=#333333;" edge="1" parent="1" source="s4" target="s5">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Step 5: libvirtd starts QEMU/KVM -->
+        <mxCell id="s5" value="5. libvirtd starts&#xa;QEMU/KVM" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;fontStyle=1;spacing=6;" vertex="1" parent="1">
+          <mxGeometry x="840" y="60" width="150" height="60" as="geometry"/>
+        </mxCell>
+
+        <!-- Arrow 5->6 -->
+        <mxCell id="a56" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeWidth=2;strokeColor=#333333;" edge="1" parent="1" source="s5" target="s6">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Step 6: Guest OS boots -->
+        <mxCell id="s6" value="6. Guest OS boots&#xa;from PVC disk" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=11;fontStyle=1;spacing=6;" vertex="1" parent="1">
+          <mxGeometry x="1040" y="60" width="150" height="60" as="geometry"/>
+        </mxCell>
+
+        <!-- Detailed view: Worker Node -->
+        <mxCell id="wn" value="Worker Node — Steps 4-6 Detail" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontStyle=1;fontSize=13;verticalAlign=top;align=center;spacingTop=5;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="140" y="190" width="920" height="250" as="geometry"/>
+        </mxCell>
+
+        <!-- Dashed connector from step 4 down to detail view -->
+        <mxCell id="dashed1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeWidth=1.5;strokeColor=#999999;dashed=1;dashPattern=8 4;entryX=0.5;entryY=0;exitX=0.5;exitY=1;" edge="1" parent="1" source="s4" target="wn">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- virt-handler -->
+        <mxCell id="dvh" value="virt-handler" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="170" y="235" width="120" height="45" as="geometry"/>
+        </mxCell>
+
+        <!-- virt-launcher Pod boundary -->
+        <mxCell id="dvl" value="virt-launcher Pod" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;fontSize=12;verticalAlign=top;align=center;spacingTop=5;strokeWidth=1.5;" vertex="1" parent="1">
+          <mxGeometry x="350" y="225" width="530" height="190" as="geometry"/>
+        </mxCell>
+
+        <!-- libvirtd inside virt-launcher -->
+        <mxCell id="dlib" value="libvirtd&#xa;(session mode)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="380" y="270" width="120" height="50" as="geometry"/>
+        </mxCell>
+
+        <!-- QEMU/KVM inside virt-launcher -->
+        <mxCell id="dqemu" value="QEMU/KVM" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="540" y="265" width="130" height="60" as="geometry"/>
+        </mxCell>
+
+        <!-- Guest OS inside virt-launcher -->
+        <mxCell id="dguest" value="Guest OS" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="710" y="270" width="100" height="50" as="geometry"/>
+        </mxCell>
+
+        <!-- PVC disk attached -->
+        <mxCell id="dpvc" value="PVC&#xa;(virtual disk)" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=10;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=10;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="540" y="350" width="100" height="55" as="geometry"/>
+        </mxCell>
+
+        <!-- Network interface -->
+        <mxCell id="dnet" value="Pod Network&#xa;Interface" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=10;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="380" y="360" width="110" height="40" as="geometry"/>
+        </mxCell>
+
+        <!-- Arrow: virt-handler -> virt-launcher -->
+        <mxCell id="avh" value="configures" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeWidth=1.5;strokeColor=#333333;fontSize=9;fontStyle=2;" edge="1" parent="1" source="dvh" target="dvl">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Arrow: libvirtd -> QEMU -->
+        <mxCell id="alq" value="starts" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeWidth=1.5;strokeColor=#333333;fontSize=9;fontStyle=2;" edge="1" parent="1" source="dlib" target="dqemu">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Arrow: QEMU -> Guest -->
+        <mxCell id="aqg" value="runs" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeWidth=1.5;strokeColor=#333333;fontSize=9;fontStyle=2;" edge="1" parent="1" source="dqemu" target="dguest">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Arrow: PVC -> QEMU -->
+        <mxCell id="apq" value="mounted as disk" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeWidth=1.5;strokeColor=#333333;fontSize=9;fontStyle=2;" edge="1" parent="1" source="dpvc" target="dqemu">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Arrow: Network -> Guest OS -->
+        <mxCell id="anet" value="network access" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeWidth=1.5;strokeColor=#333333;fontSize=9;fontStyle=2;exitX=1;exitY=0;exitDx=0;exitDy=0;entryX=0;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="dnet" target="dguest">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Legend -->
+        <mxCell id="fleg1" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="170" y="460" width="20" height="15" as="geometry"/>
+        </mxCell>
+        <mxCell id="fleg1t" value="User action" style="text;html=1;fontSize=10;align=left;" vertex="1" parent="1">
+          <mxGeometry x="195" y="458" width="80" height="20" as="geometry"/>
+        </mxCell>
+        <mxCell id="fleg2" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
+          <mxGeometry x="290" y="460" width="20" height="15" as="geometry"/>
+        </mxCell>
+        <mxCell id="fleg2t" value="KubeVirt control plane" style="text;html=1;fontSize=10;align=left;" vertex="1" parent="1">
+          <mxGeometry x="315" y="458" width="130" height="20" as="geometry"/>
+        </mxCell>
+        <mxCell id="fleg3" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="460" y="460" width="20" height="15" as="geometry"/>
+        </mxCell>
+        <mxCell id="fleg3t" value="VM runtime (virt-launcher)" style="text;html=1;fontSize=10;align=left;" vertex="1" parent="1">
+          <mxGeometry x="485" y="458" width="160" height="20" as="geometry"/>
+        </mxCell>
+        <mxCell id="fleg4" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="1">
+          <mxGeometry x="660" y="460" width="20" height="15" as="geometry"/>
+        </mxCell>
+        <mxCell id="fleg4t" value="Guest OS" style="text;html=1;fontSize=10;align=left;" vertex="1" parent="1">
+          <mxGeometry x="685" y="458" width="80" height="20" as="geometry"/>
+        </mxCell>
+        <mxCell id="fleg5" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="1">
+          <mxGeometry x="780" y="460" width="20" height="15" as="geometry"/>
+        </mxCell>
+        <mxCell id="fleg5t" value="Storage / Networking" style="text;html=1;fontSize=10;align=left;" vertex="1" parent="1">
+          <mxGeometry x="805" y="458" width="130" height="20" as="geometry"/>
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
