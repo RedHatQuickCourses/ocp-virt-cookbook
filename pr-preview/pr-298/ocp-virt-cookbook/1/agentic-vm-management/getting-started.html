@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Getting Started with Agentic VM Management :: OpenShift Virtualization cookbook</title>
+    <link rel="prev" href="index.html">
+    <link rel="next" href="natural-language-vm-create.html">
+    <meta name="generator" content="Antora 3.1.3">
+    <link rel="stylesheet" href="../../../_/css/site.css">
+    <script>var uiRootPath = '../../../_'</script>
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://www.redhat.com" target="_blank"><img src="../../../_/img/redhat-logo.png" height="40px" alt="Red Hat"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="../../..">OpenShift Virtualization cookbook</a>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues" target="_blank">Report Issues</a>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="ocp-virt-cookbook" data-version="1">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="../index.html">OpenShift Virtualization cookbook</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../index.html">Introduction</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../getting-started/index.html">Getting Started</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/vm-quick-start.html">Quick Start</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/prerequisites.html">Prerequisites</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/install-openshift-virtualization.html">Install OpenShift Virtualization</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/default-storage-class.html">Storage Setup</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/create-vm-web-console.html">Create VM from Web Console</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/create-vm-cli-yaml.html">Create VM from CLI</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/vm-lifecycle-states.html">VM Lifecycle States</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/virtctl-basics.html">Virtctl Basics</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/cloud-init-fundamentals.html">Cloud-init Fundamentals</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../storage/index.html">Storage Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/lvm-operator.html">LVM Operator Installation</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/lvm-troubleshooting.html">LVM Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/hostpath-provisioner.html">HostPath Provisioner</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/creating-managing-storage-class.html">Creating and Managing Storage Classes</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/multi-disk-configuration.html">Multi-Disk VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/expanding-vm-disk-size.html">Expanding VM Disk Size</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../networking/index.html">Networking Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/static-ip-configuration.html">Static IP Configuration</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/cloud-init-troubleshooting.html">Cloud-init Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/udn-primary-networks.html">UDN Primary Networks</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/localnet-secondary.html">Localnet Secondary Networks with CUDN</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/localnet-vlan.html">Localnet Secondary Networks with VLAN using NAD</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/cudn-localnet-vlan.html">Localnet VLAN with CUDN</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/layer2-secondary.html">Layer 2 Secondary Networks</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/linux-bridges.html">Linux Bridges</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/sriov-secondary.html">SR-IOV Secondary Networks</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/network-policies-vms.html">Network Policies for VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/metallb-loadbalancer.html">MetalLB Load Balancer for VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/dual-stack-vms.html">Dual-Stack IPv4/IPv6 VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/vm-ingress-routes.html">VM Ingress and Routes</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/ovs-bridge-troubleshooting.html">Troubleshooting Localnet Networks</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../vm-configuration/index.html">Virtual Machine Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/internal-dns-for-vms.html">Internal DNS for VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/remote-access-linux-vms.html">Remote Access to Linux VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/remote-access-linux-troubleshooting.html">Remote Access to Linux VMs Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/remote-access-windows-vms.html">Remote Access to Windows VMs via RDP</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/windows-vm-virtio-drivers.html">Windows VMs with VirtIO Drivers</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/infrastructure-node-placement.html">Infrastructure Node Placement</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/node-placement-affinity.html">Node Placement and Affinity</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/hotplug-volumes-interfaces.html">Hotplug Volumes and Interfaces</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/vm-templates.html">Virtual Machine Templates</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../performance/index.html">VM Performance Tuning</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/resource-limits-qos.html">Resource Limits and QoS</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/cpu-pinning.html">Dedicated CPU Placement</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/numa-hugepages.html">NUMA and Hugepages</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/realtime-vms.html">Real-Time VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/vm-monitoring-metrics.html">VM Monitoring and Metrics</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../vm-lifecycle/index.html">VM Lifecycle Management</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/import-qcow2-boot-volume.html">Import qcow2 Boot Volume</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/custom-golden-images.html">Custom Golden Images</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/golden-images-troubleshooting.html">Golden Images Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/cloning-vms.html">Cloning VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/vm-snapshots.html">VM Snapshots</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/boot-order-boot-sources.html">VM Boot Order and Boot Sources</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../manifests/index.html">Manifests</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../api/index.html">API Guide</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../api/api-component-overview.html">API Component Overview</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="index.html">Agentic VM Management</a>
+<ul class="nav-list">
+  <li class="nav-item is-current-page" data-depth="2">
+    <a class="nav-link" href="getting-started.html">Getting Started with rh-virt</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="natural-language-vm-create.html">Natural Language VM Creation</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="ai-vm-lifecycle.html">AI VM Lifecycle Operations</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="vm-clone.html">Cloning VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="ai-vm-snapshot-management.html">VM Snapshot Management</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../appendix/glossary.html">Glossary</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">OpenShift Virtualization cookbook</span>
+    <span class="version">1</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <a class="title" href="../index.html">OpenShift Virtualization cookbook</a>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">1</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">OpenShift Virtualization cookbook</a></li>
+    <li><a href="index.html">Agentic VM Management</a></li>
+    <li><a href="getting-started.html">Getting Started with rh-virt</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">Getting Started with Agentic VM Management</h1>
+<div class="sect1">
+<h2 id="_overview"><a class="anchor" href="#_overview"></a>Overview</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>This tutorial walks you through installing and configuring the <code>rh-virt</code> agentic skill pack, connecting it to your OpenShift cluster through a containerized MCP server, and verifying the setup by listing your virtual machines with the <code>vm-inventory</code> skill.</p>
+</div>
+<div class="paragraph">
+<p>After completing this tutorial, you will have a fully configured agentic environment where you can manage OpenShift Virtualization VMs using natural language prompts in Claude Code or Cursor IDE.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_prerequisites"><a class="anchor" href="#_prerequisites"></a>Prerequisites</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p>OpenShift 4.19+ cluster with the OpenShift Virtualization operator installed (tested on 4.22)</p>
+</li>
+<li>
+<p>Claude Code CLI or Cursor IDE installed and authenticated</p>
+</li>
+<li>
+<p>Podman 4.0+ installed and accessible in your shell</p>
+</li>
+<li>
+<p>KUBECONFIG pointing to a kubeconfig file with access to the cluster</p>
+</li>
+<li>
+<p>Cluster admin or a ServiceAccount with RBAC permissions to list and manage VirtualMachine resources</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Verify cluster access before continuing:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get virtualmachines -A</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_what_is_agentic_vm_management"><a class="anchor" href="#_what_is_agentic_vm_management"></a>What is Agentic VM Management</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Agentic VM management replaces manual <code>oc</code> command sequences with natural language prompts. You describe what you want to do, and the AI agent selects the correct skill, calls the appropriate API operations through the Model Context Protocol (MCP), and asks for your confirmation before any destructive action.</p>
+</div>
+<div class="paragraph">
+<p>The <code>rh-virt</code> skill pack is the component that teaches the agent how to manage OpenShift Virtualization VMs. It contains 10 skills (vm-inventory, vm-create, vm-lifecycle-manager, vm-clone, vm-delete, vm-snapshot-create, vm-snapshot-list, vm-snapshot-restore, vm-snapshot-delete, vm-rebalance) and an AGENTS.md routing table that maps user intent to the correct skill.</p>
+</div>
+<div class="paragraph">
+<p>The OpenShift MCP server is the component that executes the actual Kubernetes API calls inside a Podman container. It exposes the <code>core</code> toolset (generic Kubernetes CRUD) and the <code>kubevirt</code> toolset (vm_create, vm_lifecycle) to the agent over the Model Context Protocol.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_architecture_overview"><a class="anchor" href="#_architecture_overview"></a>Architecture Overview</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The following components work together:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p><strong>Claude Code or Cursor IDE</strong> — the AI interface where you type natural language prompts.</p>
+</li>
+<li>
+<p><strong>AGENTS.md</strong> — the skill routing table that maps intent phrases to specific skills.</p>
+</li>
+<li>
+<p><strong>Skill files</strong> (SKILL.md per skill) — detailed instructions the agent follows for each operation.</p>
+</li>
+<li>
+<p><strong>OpenShift MCP Server</strong> — a containerized server that executes Kubernetes and KubeVirt API calls.</p>
+</li>
+<li>
+<p><strong>KUBECONFIG</strong> — the credential file mounted read-only into the MCP container for cluster access.</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>When you type "List all VMs", the agent reads AGENTS.md, selects the <code>vm-inventory</code> skill, calls <code>resources_list</code> on the MCP server, and formats the results as a table in your IDE.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_installing_the_rh_virt_skill_pack"><a class="anchor" href="#_installing_the_rh_virt_skill_pack"></a>Installing the rh-virt Skill Pack</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_install_lola"><a class="anchor" href="#_install_lola"></a>Install Lola</h3>
+<div class="paragraph">
+<p>The <code>rh-virt</code> collection is installed using <a href="https://github.com/LobsterTrap/lola" target="_blank" rel="noopener">Lola</a>, a skill pack manager for Claude Code and Cursor.</p>
+</div>
+<div class="paragraph">
+<p>Follow the Lola installation instructions in the upstream repository. After installation, verify Lola is available:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">lola --version</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_clone_the_agentic_plugins_repository"><a class="anchor" href="#_clone_the_agentic_plugins_repository"></a>Clone the agentic-plugins Repository</h3>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">git clone https://github.com/RHEcosystemAppEng/agentic-plugins.git</code></pre>
+</div>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">cd agentic-plugins</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_add_the_rh_virt_local_module_to_lola"><a class="anchor" href="#_add_the_rh_virt_local_module_to_lola"></a>Add the rh-virt local module to lola</h3>
+<div class="listingblock">
+<div class="content">
+<pre>lola mod add rh-virt</pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_install_the_rh_virt_collection_for_the_selected_assistant"><a class="anchor" href="#_install_the_rh_virt_collection_for_the_selected_assistant"></a>Install the rh-virt Collection for the selected assistant</h3>
+<div class="paragraph">
+<p>Install the pack for Claude Code:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">lola install -f rh-virt -a claude-code</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Install for Cursor IDE instead:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">lola install -f rh-virt -a cursor</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Lola copies the skill files and MCP configuration to the appropriate IDE configuration directory.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_configuring_the_mcp_server"><a class="anchor" href="#_configuring_the_mcp_server"></a>Configuring the MCP Server</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_understanding_mcps_json"><a class="anchor" href="#_understanding_mcps_json"></a>Understanding mcps.json</h3>
+<div class="paragraph">
+<p>The <code>rh-virt</code> collection includes an <code>mcps.json</code> file that defines the <code>openshift-virtualization</code> MCP server. This server runs as a Podman container and provides the Kubernetes and KubeVirt API tools that the skills use.</p>
+</div>
+<div class="paragraph">
+<p>The configuration mounts your KUBECONFIG file as a read-only volume inside the container and passes the <code>KUBECONFIG</code> environment variable so the server binary knows where to find it.</p>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/getting-started/mcps.json" class="xref attachment">Download mcps.json</a></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-json hljs" data-lang="json">{
+  "mcpServers": {
+    "openshift-virtualization": {
+      "command": "podman",
+      "args": [
+        "run",
+        "--rm",
+        "-i",
+        "--network=host",
+        "--userns=keep-id:uid=65532,gid=65532",
+        "-v", "${KUBECONFIG}:/kubeconfig:ro,Z",
+        "--entrypoint", "/openshift-mcp-server",
+        "quay.io/redhat-user-workloads/crt-nshift-lightspeed-tenant/openshift-mcp-server@sha256:2f52c860f91ab3c8a5129b727bdef0d620e733013f073b10355866c45eafd053",
+        "--kubeconfig", "/kubeconfig",
+        "--toolsets", "core,kubevirt"
+      ],
+      "env": {
+        "KUBECONFIG": "${KUBECONFIG}"
+      }
+    }
+  }
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Key configuration details:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>--userns=keep-id:uid=65532,gid=65532</code> maps the container user namespace for rootless Podman security.</p>
+</li>
+<li>
+<p><code>,Z</code> on the volume mount applies an SELinux context label so the container can read the kubeconfig file.</p>
+</li>
+<li>
+<p><code>--entrypoint /openshift-mcp-server</code> specifies the MCP server binary inside the image.</p>
+</li>
+<li>
+<p><code>--toolsets core,kubevirt</code> enables both the generic Kubernetes toolset and the KubeVirt-specific toolset.</p>
+</li>
+<li>
+<p><code>--network=host</code> is required for the container to reach local or remote Kubernetes API endpoints.</p>
+</li>
+</ul>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+The image is pinned by SHA256 digest for supply chain security. No local build is required; the image is pulled automatically from <code>quay.io</code> on first use.
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_setting_the_kubeconfig_environment_variable"><a class="anchor" href="#_setting_the_kubeconfig_environment_variable"></a>Setting the KUBECONFIG Environment Variable</h3>
+<div class="paragraph">
+<p>The MCP server uses the <code>KUBECONFIG</code> environment variable to locate your kubeconfig file. Set it in your shell before starting your IDE:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">export KUBECONFIG="/path/to/your/kubeconfig"</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Verify the variable is set correctly:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">echo $KUBECONFIG</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The <code>mcps.json</code> uses <code>${KUBECONFIG}</code> as a placeholder. Your IDE substitutes the environment variable value at MCP server startup. Never commit a kubeconfig file or hard-coded credentials into <code>mcps.json</code>.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_verifying_podman_can_pull_the_image"><a class="anchor" href="#_verifying_podman_can_pull_the_image"></a>Verifying Podman Can Pull the Image</h3>
+<div class="paragraph">
+<p>On first use, Podman pulls the MCP server image. Verify the pull succeeds before relying on it in the IDE:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">podman pull quay.io/redhat-user-workloads/crt-nshift-lightspeed-tenant/openshift-mcp-server@sha256:2f52c860f91ab3c8a5129b727bdef0d620e733013f073b10355866c45eafd053</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_verifying_the_setup"><a class="anchor" href="#_verifying_the_setup"></a>Verifying the Setup</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_checking_cluster_connectivity"><a class="anchor" href="#_checking_cluster_connectivity"></a>Checking Cluster Connectivity</h3>
+<div class="paragraph">
+<p>Before using the agentic skills, confirm that your KUBECONFIG provides access to VirtualMachine resources:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get virtualmachines -A</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The output lists all virtual machines across namespaces:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>NAMESPACE   NAME               AGE    STATUS    READY
+default     fedora-quickstart  4d7h   Running   True</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Verify that your user or ServiceAccount has the required RBAC permissions:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc auth can-i list virtualmachines -A</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_running_the_vm_inventory_skill"><a class="anchor" href="#_running_the_vm_inventory_skill"></a>Running the vm-inventory Skill</h3>
+<div class="paragraph">
+<p>After installing the skill pack and setting KUBECONFIG, restart Claude Code or Cursor IDE to load the MCP server configuration.</p>
+</div>
+<div class="paragraph">
+<p>In the IDE chat, type:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>List all VMs</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The agent routes the request to the <code>vm-inventory</code> skill, which calls <code>resources_list</code> on the MCP server and returns a formatted table:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>## Virtual Machines (All Namespaces)
+
+| Namespace | VM Name           | Status  | Age  | Resources    | Node      |
+|-----------|-------------------|---------|------|--------------|-----------|
+| default   | fedora-quickstart | Running | 4d7h | 2 vCPU, 4Gi  | worker-01 |
+
+Summary:
+- Total VMs: 1
+- Running: 1
+- Stopped: 0</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If the MCP server is not reachable, the skill reports:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>Cannot execute vm-inventory: MCP server not available.
+Setup: Add openshift-virtualization to mcps.json, set KUBECONFIG, restart Claude Code.</pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_understanding_the_safety_model"><a class="anchor" href="#_understanding_the_safety_model"></a>Understanding the Safety Model</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The <code>rh-virt</code> skill pack enforces a safety model across all operations:</p>
+</div>
+<div class="paragraph">
+<p>Read-only operations (<code>vm-inventory</code>, <code>vm-snapshot-list</code>) run without confirmation because they make no changes to the cluster.</p>
+</div>
+<div class="paragraph">
+<p>Lifecycle operations (<code>vm-lifecycle-manager</code> for start/stop/restart) require explicit user confirmation before execution to prevent accidental service disruption.</p>
+</div>
+<div class="paragraph">
+<p>Destructive operations (<code>vm-delete</code>, <code>vm-snapshot-restore</code>, <code>vm-snapshot-delete</code>) use multiple confirmation steps. For VM deletion, the agent requires you to type the VM name exactly to confirm before proceeding.</p>
+</div>
+<div class="paragraph">
+<p>Protection labels prevent accidental deletion. A VM with the label <code>protected: "true"</code> is refused for deletion by the <code>vm-delete</code> skill regardless of user confirmation.</p>
+</div>
+<div class="paragraph">
+<p>The <code>vm-create</code> skill includes automatic error diagnosis. When a newly created VM enters an <code>ErrorUnschedulable</code> state, the skill reads the troubleshooting knowledge base, diagnoses the root cause (such as node taints or resource constraints), proposes a workaround, and applies it only after you confirm.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_troubleshooting"><a class="anchor" href="#_troubleshooting"></a>Troubleshooting</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_mcp_server_does_not_start"><a class="anchor" href="#_mcp_server_does_not_start"></a>MCP Server Does Not Start</h3>
+<div class="paragraph">
+<p>Verify that <code>KUBECONFIG</code> is set in the environment where your IDE was launched:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">echo $KUBECONFIG</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Confirm Podman is accessible:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">podman info --format '{{.Host.Os}}'</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Test that the image runs and the server binary is present:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">podman run --rm --entrypoint /openshift-mcp-server quay.io/redhat-user-workloads/crt-nshift-lightspeed-tenant/openshift-mcp-server@sha256:2f52c860f91ab3c8a5129b727bdef0d620e733013f073b10355866c45eafd053 --help</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_skills_do_not_activate"><a class="anchor" href="#_skills_do_not_activate"></a>Skills Do Not Activate</h3>
+<div class="paragraph">
+<p>Verify the collection is installed by listing installed packs:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">lola list</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Restart the IDE after installing or updating the skill pack. The AGENTS.md and skill files are read at IDE startup.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_permission_denied_on_vm_operations"><a class="anchor" href="#_permission_denied_on_vm_operations"></a>Permission Denied on VM Operations</h3>
+<div class="paragraph">
+<p>Verify your ServiceAccount or user has the required RBAC for VirtualMachine resources:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc auth can-i create virtualmachines -A</code></pre>
+</div>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc auth can-i delete virtualmachines -A</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Contact your cluster administrator if permissions are insufficient.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_cleanup"><a class="anchor" href="#_cleanup"></a>Cleanup</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>This tutorial creates no cluster resources. No cleanup is required.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_summary"><a class="anchor" href="#_summary"></a>Summary</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p>The <code>rh-virt</code> skill pack provides 10 specialized skills for complete VM lifecycle management in OpenShift Virtualization.</p>
+</li>
+<li>
+<p>The OpenShift MCP server runs as a rootless Podman container, mounting your KUBECONFIG read-only for secure cluster access.</p>
+</li>
+<li>
+<p>Lola is the skill pack manager used to install <code>rh-virt</code> into Claude Code or Cursor IDE.</p>
+</li>
+<li>
+<p>The AGENTS.md routing table maps natural language intent to the correct skill without direct MCP tool calls.</p>
+</li>
+<li>
+<p>The safety model enforces human-in-the-loop confirmation for all lifecycle and destructive operations.</p>
+</li>
+<li>
+<p>Running "List all VMs" in the IDE triggers the <code>vm-inventory</code> skill and confirms end-to-end connectivity.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_see_also"><a class="anchor" href="#_see_also"></a>See Also</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p><a href="index.html" class="xref page">Agentic VM Management Module Overview</a></p>
+</li>
+<li>
+<p><a href="https://github.com/RHEcosystemAppEng/agentic-plugins/tree/main/rh-virt" target="_blank" rel="noopener">rh-virt Skill Pack Repository</a></p>
+</li>
+<li>
+<p><a href="https://github.com/LobsterTrap/lola" target="_blank" rel="noopener">Lola Skill Pack Manager</a></p>
+</li>
+<li>
+<p><a href="https://github.com/openshift/openshift-mcp-server" target="_blank" rel="noopener">OpenShift MCP Server</a></p>
+</li>
+<li>
+<p><a href="https://modelcontextprotocol.io" target="_blank" rel="noopener">Model Context Protocol Specification</a></p>
+</li>
+<li>
+<p><a href="https://docs.openshift.com/container-platform/latest/virt/about_virt/about-virt.html" target="_blank" rel="noopener">OpenShift Virtualization Documentation</a></p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<nav class="pagination">
+  <span class="prev"><a href="index.html">Agentic VM Management</a></span>
+  <span class="next"><a href="natural-language-vm-create.html">Natural Language VM Creation</a></span>
+</nav>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <img src="../../../_/img/rhl-logo-red.png" height="40px" alt="Red Hat"  href="https://redhat.com" >
+</footer><script id="site-script" src="../../../_/js/site.js" data-ui-root-path="../../../_"></script>
+<script async src="../../../_/js/vendor/highlight.js"></script>
+  </body>
+</html>

@@ -1,0 +1,72 @@
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: fedora-vlan-vm
+  namespace: vm-guests-vlan
+  labels:
+    app: fedora-vlan-vm
+spec:
+  runStrategy: Always
+  dataVolumeTemplates:
+  - metadata:
+      name: fedora-vlan-volume
+    spec:
+      pvc:
+        accessModes:
+        - ReadWriteOnce
+        resources:
+          requests:
+            storage: 33Gi
+      sourceRef:
+        kind: DataSource
+        name: fedora
+        namespace: openshift-virtualization-os-images
+  template:
+    metadata:
+      labels:
+        app: fedora-vlan-vm
+    spec:
+      domain:
+        devices:
+          disks:
+          - name: datavolumedisk
+            disk:
+              bus: virtio
+          - name: cloudinitdisk
+            disk:
+              bus: virtio
+          interfaces:
+          - name: default
+            bridge: {}
+          - name: vlan_network
+            bridge: {}
+        resources:
+          requests:
+            memory: 2Gi
+            cpu: 1
+      networks:
+      - name: default
+        pod: {}
+      - name: vlan_network
+        multus:
+          networkName: localnet-vlan-100
+      volumes:
+      - name: datavolumedisk
+        dataVolume:
+          name: fedora-vlan-volume
+      - name: cloudinitdisk
+        cloudInitNoCloud:
+          userData: |
+            #cloud-config
+            user: fedora
+            password: fedora
+            chpasswd: { expire: False }
+            packages:
+            - python3
+            - tcpdump
+            - net-tools
+            runcmd:
+            - echo "<h1>Welcome to OpenShift Virtualization VLAN Network!</h1>" > /root/index.html
+            - echo "<p>VLAN ID: 100</p>" >> /root/index.html
+            - echo "<p>Network: 192.168.100.0/24</p>" >> /root/index.html
+            - cd /root && nohup python3 -m http.server 8080 > /dev/null 2>&1 &

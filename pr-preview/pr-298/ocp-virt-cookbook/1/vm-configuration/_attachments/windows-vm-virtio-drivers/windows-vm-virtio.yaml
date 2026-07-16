@@ -1,0 +1,102 @@
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: windows-vm-virtio
+  labels:
+    app: windows-vm-virtio
+spec:
+  runStrategy: Always
+  template:
+    metadata:
+      labels:
+        kubevirt.io/size: medium
+        kubevirt.io/domain: windows-vm-virtio
+        vm.kubevirt.io/name: windows-vm-virtio
+    spec:
+      domain:
+        cpu:
+          cores: 2
+          sockets: 1
+          threads: 2
+        resources:
+          requests:
+            memory: 4Gi
+        devices:
+          disks:
+            - name: rootdisk
+              disk:
+                bus: virtio
+              bootOrder: 2
+            - name: windows-installation-iso
+              cdrom:
+                bus: sata
+              bootOrder: 1
+            - name: virtio-drivers-iso
+              cdrom:
+                bus: sata
+          interfaces:
+            - name: default
+              masquerade: {}
+              model: virtio
+          tpm: {}
+          rng: {}
+        clock:
+          utc: {}
+          timer:
+            hpet:
+              present: false
+            pit:
+              tickPolicy: delay
+            rtc:
+              tickPolicy: catchup
+            hyperv: {}
+        features:
+          acpi: {}
+          apic: {}
+          hyperv:
+            relaxed: {}
+            vapic: {}
+            spinlocks:
+              spinlocks: 8191
+            vpindex: {}
+            runtime: {}
+            synic: {}
+            stimer: {}
+            reset: {}
+            frequencies: {}
+            reenlightenment: {}
+            tlbflush: {}
+            ipi: {}
+          smm:
+            enabled: true
+        firmware:
+          bootloader:
+            efi:
+              secureBoot: true
+      networks:
+        - name: default
+          pod: {}
+      volumes:
+        - name: rootdisk
+          dataVolume:
+            name: windows-vm-virtio-rootdisk
+        - name: windows-installation-iso
+          dataVolume:
+            name: windows-installation-iso
+        - name: virtio-drivers-iso
+          dataVolume:
+            name: virtio-drivers-iso
+  dataVolumeTemplates:
+    - metadata:
+        name: windows-vm-virtio-rootdisk
+        annotations:
+          cdi.kubevirt.io/storage.bind.immediate.requested: "true"
+      spec:
+        storage:
+          resources:
+            requests:
+              storage: 60Gi
+          accessModes:
+            - ReadWriteOnce
+        source:
+          blank: {}

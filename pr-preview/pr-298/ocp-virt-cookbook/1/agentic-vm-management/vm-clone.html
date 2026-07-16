@@ -1,0 +1,1057 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Cloning Virtual Machines with AI Agents :: OpenShift Virtualization cookbook</title>
+    <link rel="prev" href="ai-vm-lifecycle.html">
+    <link rel="next" href="ai-vm-snapshot-management.html">
+    <meta name="generator" content="Antora 3.1.3">
+    <link rel="stylesheet" href="../../../_/css/site.css">
+    <script>var uiRootPath = '../../../_'</script>
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://www.redhat.com" target="_blank"><img src="../../../_/img/redhat-logo.png" height="40px" alt="Red Hat"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="../../..">OpenShift Virtualization cookbook</a>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues" target="_blank">Report Issues</a>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="ocp-virt-cookbook" data-version="1">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="../index.html">OpenShift Virtualization cookbook</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../index.html">Introduction</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../getting-started/index.html">Getting Started</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/vm-quick-start.html">Quick Start</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/prerequisites.html">Prerequisites</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/install-openshift-virtualization.html">Install OpenShift Virtualization</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/default-storage-class.html">Storage Setup</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/create-vm-web-console.html">Create VM from Web Console</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/create-vm-cli-yaml.html">Create VM from CLI</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/vm-lifecycle-states.html">VM Lifecycle States</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/virtctl-basics.html">Virtctl Basics</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/cloud-init-fundamentals.html">Cloud-init Fundamentals</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../storage/index.html">Storage Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/lvm-operator.html">LVM Operator Installation</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/lvm-troubleshooting.html">LVM Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/hostpath-provisioner.html">HostPath Provisioner</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/creating-managing-storage-class.html">Creating and Managing Storage Classes</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/multi-disk-configuration.html">Multi-Disk VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/expanding-vm-disk-size.html">Expanding VM Disk Size</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../networking/index.html">Networking Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/static-ip-configuration.html">Static IP Configuration</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/cloud-init-troubleshooting.html">Cloud-init Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/udn-primary-networks.html">UDN Primary Networks</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/localnet-secondary.html">Localnet Secondary Networks with CUDN</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/localnet-vlan.html">Localnet Secondary Networks with VLAN using NAD</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/cudn-localnet-vlan.html">Localnet VLAN with CUDN</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/layer2-secondary.html">Layer 2 Secondary Networks</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/linux-bridges.html">Linux Bridges</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/sriov-secondary.html">SR-IOV Secondary Networks</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/network-policies-vms.html">Network Policies for VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/metallb-loadbalancer.html">MetalLB Load Balancer for VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/dual-stack-vms.html">Dual-Stack IPv4/IPv6 VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/vm-ingress-routes.html">VM Ingress and Routes</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/ovs-bridge-troubleshooting.html">Troubleshooting Localnet Networks</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../vm-configuration/index.html">Virtual Machine Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/internal-dns-for-vms.html">Internal DNS for VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/remote-access-linux-vms.html">Remote Access to Linux VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/remote-access-linux-troubleshooting.html">Remote Access to Linux VMs Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/remote-access-windows-vms.html">Remote Access to Windows VMs via RDP</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/windows-vm-virtio-drivers.html">Windows VMs with VirtIO Drivers</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/infrastructure-node-placement.html">Infrastructure Node Placement</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/node-placement-affinity.html">Node Placement and Affinity</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/hotplug-volumes-interfaces.html">Hotplug Volumes and Interfaces</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/vm-templates.html">Virtual Machine Templates</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../performance/index.html">VM Performance Tuning</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/resource-limits-qos.html">Resource Limits and QoS</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/cpu-pinning.html">Dedicated CPU Placement</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/numa-hugepages.html">NUMA and Hugepages</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/realtime-vms.html">Real-Time VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/vm-monitoring-metrics.html">VM Monitoring and Metrics</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../vm-lifecycle/index.html">VM Lifecycle Management</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/import-qcow2-boot-volume.html">Import qcow2 Boot Volume</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/custom-golden-images.html">Custom Golden Images</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/golden-images-troubleshooting.html">Golden Images Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/cloning-vms.html">Cloning VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/vm-snapshots.html">VM Snapshots</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/boot-order-boot-sources.html">VM Boot Order and Boot Sources</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../manifests/index.html">Manifests</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../api/index.html">API Guide</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../api/api-component-overview.html">API Component Overview</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="index.html">Agentic VM Management</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="getting-started.html">Getting Started with rh-virt</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="natural-language-vm-create.html">Natural Language VM Creation</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="ai-vm-lifecycle.html">AI VM Lifecycle Operations</a>
+  </li>
+  <li class="nav-item is-current-page" data-depth="2">
+    <a class="nav-link" href="vm-clone.html">Cloning VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="ai-vm-snapshot-management.html">VM Snapshot Management</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../appendix/glossary.html">Glossary</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">OpenShift Virtualization cookbook</span>
+    <span class="version">1</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <a class="title" href="../index.html">OpenShift Virtualization cookbook</a>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">1</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">OpenShift Virtualization cookbook</a></li>
+    <li><a href="index.html">Agentic VM Management</a></li>
+    <li><a href="vm-clone.html">Cloning VMs</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">Cloning Virtual Machines with AI Agents</h1>
+<div id="preamble">
+<div class="sectionbody">
+<div class="paragraph">
+<p>Versions tested:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>OpenShift 4.22</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This tutorial demonstrates how to clone existing virtual machines using natural language commands through the <code>vm-clone</code> agent skill. The agent retrieves the source VM&#8217;s full configuration and storage layout, asks you to choose a storage cloning strategy, presents a resource-impact summary, and waits for your explicit confirmation before creating any cluster resources.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_prerequisites"><a class="anchor" href="#_prerequisites"></a>Prerequisites</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p>Completed the <a href="getting-started.html" class="xref page">Getting Started with Agentic VM Management</a> tutorial (skill pack installed, MCP server configured, cluster connectivity verified)</p>
+</li>
+<li>
+<p>OpenShift cluster with OpenShift Virtualization installed</p>
+</li>
+<li>
+<p><code>KUBECONFIG</code> environment variable set and pointing to a valid kubeconfig file</p>
+</li>
+<li>
+<p>At least one existing virtual machine to use as a clone source</p>
+</li>
+<li>
+<p>RBAC permissions to create VirtualMachine and DataVolume/PVC resources in the target namespace</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Create the namespaces used in this tutorial if they do not already exist:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc create namespace my-vms
+oc create namespace qa-environment</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If you do not have a source VM, create one using the <code>vm-create</code> skill by typing in your IDE chat:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>Create a Fedora VM named web-server in namespace my-vms</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Verify the VM exists before continuing:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vm -n my-vms</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Expected output:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>NAME         AGE   STATUS    READY
+web-server   5m    Running   True</pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_how_it_works"><a class="anchor" href="#_how_it_works"></a>How It Works</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The <code>vm-clone</code> skill follows a five-step workflow:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p><strong>Gather source information</strong> — The agent collects the source VM name and namespace, the target VM name and namespace from your prompt. If any parameter is missing, it asks. It then retrieves the full source VM specification and discovers all associated storage (DataVolumes, PVCs).</p>
+</li>
+<li>
+<p><strong>Check for conflicts</strong> — The agent verifies that no VM with the target name already exists in the target namespace. If a conflict is found, you can choose a different name, delete the existing VM, or cancel.</p>
+</li>
+<li>
+<p><strong>Ask for storage strategy</strong> — The agent presents the source VM&#8217;s storage layout and asks you to choose how to handle storage for the clone: full copy, shared reference, or new empty disk. This choice determines the independence, cost, and speed of the clone.</p>
+</li>
+<li>
+<p><strong>Present configuration for confirmation</strong> — The agent displays a summary showing source and target VMs, the storage strategy, resource impact, and what will change (IP addresses, MAC addresses, firmware UUIDs) versus what will be preserved (instance type, CPU/memory, network configuration, cloud-init). It also checks namespace ResourceQuotas and warns if the clone would push usage above 80% of any limit.</p>
+</li>
+<li>
+<p><strong>Execute and verify</strong> — After your explicit confirmation, the agent creates the storage resources (if applicable), creates the cloned VirtualMachine with regenerated identifiers, monitors storage cloning progress, and reports the result.</p>
+</li>
+</ol>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_storage_cloning_strategies"><a class="anchor" href="#_storage_cloning_strategies"></a>Storage Cloning Strategies</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>When cloning a VM, you choose how the clone&#8217;s storage is provisioned. The agent presents these options after discovering the source VM&#8217;s disk layout:</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 20%;">
+<col style="width: 40%;">
+<col style="width: 20%;">
+<col style="width: 20%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Strategy</th>
+<th class="tableblock halign-left valign-top">Description</th>
+<th class="tableblock halign-left valign-top">Independence</th>
+<th class="tableblock halign-left valign-top">Provisioning Time</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Clone Storage</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Full copy of the source disk via the cluster&#8217;s StorageProfile (CSI clone, snapshot, or host-assisted copy)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Fully independent — changes to source or clone do not affect each other</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">~5–10 minutes depending on disk size</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Reference Existing</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Clone shares the same PVC as the source VM</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Dangerous — both VMs access the same data; risk of corruption if both run simultaneously</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Immediate</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">New Empty Storage</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Fresh empty disk with the same size and storage class as the source</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Fully independent — no data from source</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Seconds</p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>The agent defaults to presenting "Clone Storage" as the recommended option. If you select "Reference Existing", the agent issues a warning about data corruption risk and requires explicit acknowledgment before proceeding.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_example_scenario_1_cloning_a_vm_with_full_storage_copy"><a class="anchor" href="#_example_scenario_1_cloning_a_vm_with_full_storage_copy"></a>Example Scenario 1: Cloning a VM with Full Storage Copy</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>This example clones a VM with an independent copy of its disk, which is the most common use case for creating test or staging environments.</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>In your IDE chat, type:</p>
+<div class="listingblock">
+<div class="content">
+<pre>Clone web-server to web-server-test in namespace qa-environment</pre>
+</div>
+</div>
+</li>
+<li>
+<p>The agent retrieves the source VM configuration, discovers its 30Gi root disk, checks that no VM named <code>web-server-test</code> exists in <code>qa-environment</code>, and presents storage options:</p>
+<div class="listingblock">
+<div class="content">
+<pre>## VM Cloning - Storage Strategy
+
+**Source VM**: `web-server` (namespace: `my-vms`)
+**Source Storage**: web-server-rootdisk (30Gi)
+
+**Select cloning strategy:**
+
+1. **Clone Storage** - Full copy, independent storage (~5-10 min, 30Gi new allocation)
+2. **Reference Existing** - Shared disk (dangerous, both VMs access same storage)
+3. **New Empty Storage** - Fresh disk, no data copied (30Gi new allocation)
+4. **Cancel** - Abort operation
+
+**Select option (1-4):**</pre>
+</div>
+</div>
+</li>
+<li>
+<p>You select option 1 for a full copy:</p>
+<div class="listingblock">
+<div class="content">
+<pre>1</pre>
+</div>
+</div>
+</li>
+<li>
+<p>The agent checks ResourceQuotas in the target namespace and presents the clone configuration for confirmation:</p>
+<div class="listingblock">
+<div class="content">
+<pre>## VM Clone Configuration - Review
+
+**Source**: `web-server` (my-vms) - u1.medium, 1 vCPU, 4Gi
+**Target**: `web-server-test` (qa-environment) - Same config, starts Stopped
+**Storage**: Clone Storage - 30Gi independent copy (~5-10 min)
+
+**Resource Impact**: 1 vCPU, 4Gi RAM, 30Gi disk
+
+**What changes**: IP addresses, hostname, MAC addresses, firmware UUID
+**What's preserved**: Instance type, vCPU/memory, network config, cloud-init
+
+**Proceed with VM cloning? (yes/no)**</pre>
+</div>
+</div>
+</li>
+<li>
+<p>You confirm:</p>
+<div class="listingblock">
+<div class="content">
+<pre>yes</pre>
+</div>
+</div>
+</li>
+<li>
+<p>The agent creates the DataVolume (triggering the storage clone), creates the VirtualMachine, monitors cloning progress, and reports:</p>
+<div class="listingblock">
+<div class="content">
+<pre>## VM Cloned Successfully
+
+**Source**: `web-server` (my-vms)
+**Target**: `web-server-test` (qa-environment) - Status: Stopped (ready to start)
+**Config**: u1.medium, 1 vCPU, 4Gi, 30Gi
+
+**Storage**: Cloned in 7m23s - Independent storage, changes won't affect source
+
+**Next**: Start with "Start VM web-server-test in namespace qa-environment"</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>You can verify the clone with:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vm -n qa-environment</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>NAME              AGE   STATUS    READY
+web-server-test   8m    Stopped   False</pre>
+</div>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get datavolume -n qa-environment</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>NAME                       PHASE       PROGRESS   RESTARTS   AGE
+web-server-test-rootdisk   Succeeded   100.0%                8m</pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_example_scenario_2_cloning_with_new_empty_storage"><a class="anchor" href="#_example_scenario_2_cloning_with_new_empty_storage"></a>Example Scenario 2: Cloning with New Empty Storage</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>This example creates a clone that preserves the VM configuration (instance type, network, cloud-init) but starts with a blank disk. This is useful when you want the same VM shape but plan to install a fresh OS or attach different data.</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>In your IDE chat, type:</p>
+<div class="listingblock">
+<div class="content">
+<pre>Clone web-server to clean-worker in namespace my-vms with empty storage</pre>
+</div>
+</div>
+</li>
+<li>
+<p>The agent presents storage options. You select option 3:</p>
+<div class="listingblock">
+<div class="content">
+<pre>3</pre>
+</div>
+</div>
+</li>
+<li>
+<p>After confirmation, the agent creates the VM with an empty DataVolume and reports:</p>
+<div class="listingblock">
+<div class="content">
+<pre>## VM Cloned Successfully
+
+**Source**: `web-server` (my-vms)
+**Target**: `clean-worker` (my-vms) - Status: Stopped (ready to start)
+**Config**: u1.medium, 1 vCPU, 4Gi, 30Gi
+
+**Storage**: New empty storage created - OS installation may be required
+
+**Next**: Start with "Start VM clean-worker in namespace my-vms"</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_example_scenario_3_batch_cloning"><a class="anchor" href="#_example_scenario_3_batch_cloning"></a>Example Scenario 3: Batch Cloning</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The <code>vm-clone</code> skill supports creating multiple clones from a single source VM in one request, up to a maximum of 5 per batch.</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>In your IDE chat, type:</p>
+<div class="listingblock">
+<div class="content">
+<pre>Create 3 copies of web-server named app-01, app-02, app-03 in namespace qa-environment</pre>
+</div>
+</div>
+</li>
+<li>
+<p>The agent validates the source VM, checks that all three target names are available, and asks for a storage strategy once (applied to all clones):</p>
+<div class="listingblock">
+<div class="content">
+<pre>## Batch Cloning: 3 VMs from `web-server`
+
+**Source**: `web-server` (my-vms) - u1.medium, 1 vCPU, 4Gi, 30Gi
+**Targets**: app-01, app-02, app-03 (qa-environment)
+
+**Total Resource Impact**: 3 vCPU, 12Gi RAM, 90Gi disk
+
+**Select storage strategy (applied to all clones, 1-4):**</pre>
+</div>
+</div>
+</li>
+<li>
+<p>You select option 1 (clone storage). The agent then processes each clone individually with separate confirmation:</p>
+<div class="listingblock">
+<div class="content">
+<pre>## Clone 1 of 3: app-01
+
+**Source**: web-server → **Target**: app-01 (qa-environment), 30Gi clone
+**Proceed with VM cloning? (yes/no)**</pre>
+</div>
+</div>
+</li>
+<li>
+<p>You confirm each clone. The agent creates them one at a time, stopping on first failure:</p>
+<div class="listingblock">
+<div class="content">
+<pre>## Batch Cloning Complete
+
+**Results**:
+app-01 (qa-environment) - Cloned in 6m12s
+app-02 (qa-environment) - Cloned in 7m05s
+app-03 (qa-environment) - Cloned in 5m48s
+
+**Total Storage**: 90Gi cloned
+
+**Next**: Start all with "Start VMs app-01, app-02, app-03 in namespace qa-environment"</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>You can verify all clones:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vm -n qa-environment</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>NAME              AGE   STATUS    READY
+app-01            20m   Stopped   False
+app-02            13m   Stopped   False
+app-03            6m    Stopped   False
+web-server-test   30m   Stopped   False</pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+Batch cloning is limited to 5 clones per request to prevent resource exhaustion. If you need more copies, run additional batch requests.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_example_scenario_4_shared_storage_warning"><a class="anchor" href="#_example_scenario_4_shared_storage_warning"></a>Example Scenario 4: Shared Storage Warning</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>If you select the shared storage option, the agent issues a prominent warning because both VMs would access the same underlying PVC, which can lead to data corruption if both run simultaneously.</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>In your IDE chat, type:</p>
+<div class="listingblock">
+<div class="content">
+<pre>Clone web-server to web-server-shared in namespace my-vms</pre>
+</div>
+</div>
+</li>
+<li>
+<p>The agent presents storage options. You select option 2:</p>
+<div class="listingblock">
+<div class="content">
+<pre>2</pre>
+</div>
+</div>
+</li>
+<li>
+<p>The agent warns about the risks:</p>
+<div class="listingblock">
+<div class="content">
+<pre>WARNING: Shared Storage is Dangerous
+
+Both VMs will share the same physical disk. Running both simultaneously
+risks data corruption.
+
+This is only safe if the source VM remains stopped while the clone runs.
+
+Recommended: Use Option 1 (Clone Storage) for an independent copy instead.
+
+Proceed with shared storage anyway? (yes/cancel)</pre>
+</div>
+</div>
+</li>
+<li>
+<p>You reconsider and cancel:</p>
+<div class="listingblock">
+<div class="content">
+<pre>cancel</pre>
+</div>
+</div>
+</li>
+<li>
+<p>The agent aborts cleanly:</p>
+<div class="listingblock">
+<div class="content">
+<pre>VM cloning cancelled by user. No resources were created.</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_cross_namespace_cloning"><a class="anchor" href="#_cross_namespace_cloning"></a>Cross-Namespace Cloning</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The <code>vm-clone</code> skill supports cloning VMs across namespaces. This is useful for promoting configurations from development to staging or production environments.</p>
+</div>
+<div class="paragraph">
+<p>When cloning across namespaces, note the following:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Storage</strong> is cloned into the target namespace — the clone gets its own PVC in the destination namespace.</p>
+</li>
+<li>
+<p><strong>Network policies</strong> may differ between namespaces — verify that the clone can reach required services.</p>
+</li>
+<li>
+<p><strong>ResourceQuotas</strong> are namespace-scoped — the target namespace must have enough quota for the clone&#8217;s resources.</p>
+</li>
+<li>
+<p><strong>RBAC permissions</strong> are required in both the source namespace (to read the VM and its storage) and the target namespace (to create the clone).</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Example:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>Clone production-db from production namespace to staging namespace as staging-db</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The agent verifies permissions in both namespaces before proceeding.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+A future enhancement to the <code>vm-clone</code> skill may allow modifying VM configuration during cloning (such as instance type, storage size, or cloud-init settings). Currently, clones inherit the full configuration of the source VM.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_human_in_the_loop_confirmation"><a class="anchor" href="#_human_in_the_loop_confirmation"></a>Human-in-the-Loop Confirmation</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The <code>vm-clone</code> skill enforces a strict confirmation model because cloning creates new resources that consume cluster capacity:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Storage strategy selection</strong> — You must explicitly choose how storage is handled. The agent never assumes a strategy.</p>
+</li>
+<li>
+<p><strong>Configuration review</strong> — Before any resource is created, the agent displays the full clone configuration including resource impact and asks for explicit confirmation.</p>
+</li>
+<li>
+<p><strong>Batch confirmation</strong> — When cloning multiple VMs, each clone requires individual confirmation. This prevents accidental resource consumption if you realize mid-batch that you need to stop.</p>
+</li>
+<li>
+<p><strong>Shared storage acknowledgment</strong> — Selecting shared storage triggers an additional warning that requires explicit acknowledgment of the data corruption risk.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>If you say "no", "wait", or "cancel" at any confirmation step, the operation is cancelled immediately and no resources are created.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_error_handling"><a class="anchor" href="#_error_handling"></a>Error Handling</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>If cloning fails, the agent reports the error and suggests troubleshooting steps.</p>
+</div>
+<div class="sect2">
+<h3 id="_common_failure_causes"><a class="anchor" href="#_common_failure_causes"></a>Common Failure Causes</h3>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 33.3333%;">
+<col style="width: 66.6667%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Error</th>
+<th class="tableblock halign-left valign-top">Resolution</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Target VM name already exists</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Choose a different name, delete the existing VM (if safe), or use <code>vm-inventory</code> to check</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Insufficient storage quota</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Check quotas with <code>oc get resourcequota -n &lt;namespace&gt;</code>, request an increase, or use a smaller disk</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Storage class not accessible</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Verify the storage class exists in the target namespace and supports CSI volume cloning</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">PVC clone not supported</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The storage class does not support CSI volume cloning; use "New Empty Storage" option instead, or ask your cluster admin about storage class capabilities</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Source VM running during clone</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Some storage backends require the source VM to be stopped for cloning; stop the source VM first or use snapshot-based cloning</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect2">
+<h3 id="_partial_resource_cleanup"><a class="anchor" href="#_partial_resource_cleanup"></a>Partial Resource Cleanup</h3>
+<div class="paragraph">
+<p>If cloning fails partway through (for example, the DataVolume was created but the VirtualMachine creation failed), the agent reports which resources were partially created and suggests cleanup:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>## VM Cloning Failed
+
+**Error**: Insufficient storage quota in namespace qa-environment
+**Source**: `web-server` (my-vms) → **Target**: `web-server-test` (qa-environment)
+
+**Partial Resources** (may need cleanup):
+- DataVolume: `web-server-test-rootdisk`
+
+**Cleanup**: "Delete VM web-server-test in namespace qa-environment"
+
+Would you like help troubleshooting this error?</pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_cleanup"><a class="anchor" href="#_cleanup"></a>Cleanup</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>To remove cloned VMs created during this tutorial:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc delete vm web-server-test -n qa-environment
+oc delete vm clean-worker -n my-vms
+oc delete vm app-01 app-02 app-03 -n qa-environment</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Or use natural language: type "Delete VM web-server-test in namespace qa-environment" in your IDE chat. The <code>vm-delete</code> skill handles the deletion with its full safety workflow.</p>
+</div>
+<div class="paragraph">
+<p>To remove the source VM:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc delete vm web-server -n my-vms</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>To remove the namespaces:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc delete namespace my-vms
+oc delete namespace qa-environment</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_summary"><a class="anchor" href="#_summary"></a>Summary</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p>The <code>vm-clone</code> skill creates new VMs from existing ones, automatically regenerating MAC addresses, firmware UUIDs, and hostnames to avoid conflicts.</p>
+</li>
+<li>
+<p>Three storage strategies are available: full copy (independent), shared reference (dangerous), and new empty disk.</p>
+</li>
+<li>
+<p>The agent checks ResourceQuotas in the target namespace and warns when the clone would approach limits.</p>
+</li>
+<li>
+<p>Batch cloning supports up to 5 clones per request with individual confirmation for each VM.</p>
+</li>
+<li>
+<p>Cross-namespace cloning is supported with RBAC verification in both source and target namespaces.</p>
+</li>
+<li>
+<p>No resources are created until you explicitly confirm — the agent never assumes a storage strategy or auto-executes.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_see_also"><a class="anchor" href="#_see_also"></a>See Also</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p><a href="getting-started.html" class="xref page">Getting Started with Agentic VM Management</a></p>
+</li>
+<li>
+<p><a href="natural-language-vm-create.html" class="xref page">Creating Virtual Machines with Natural Language</a></p>
+</li>
+<li>
+<p><a href="ai-vm-lifecycle.html" class="xref page">AI-Assisted VM Lifecycle Operations</a></p>
+</li>
+<li>
+<p><a href="https://github.com/RHEcosystemAppEng/agentic-plugins/tree/main/rh-virt" target="_blank" rel="noopener">rh-virt Skill Pack Repository</a></p>
+</li>
+<li>
+<p><a href="https://github.com/openshift/openshift-mcp-server" target="_blank" rel="noopener">OpenShift MCP Server</a></p>
+</li>
+<li>
+<p><a href="https://docs.openshift.com/container-platform/latest/virt/index.html" target="_blank" rel="noopener">OpenShift Virtualization Documentation</a></p>
+</li>
+<li>
+<p><a href="https://kubevirt.io/api-reference/" target="_blank" rel="noopener">KubeVirt VirtualMachine API Reference</a></p>
+</li>
+<li>
+<p><a href="https://kubernetes.io/docs/concepts/storage/volume-pvc-datasource/" target="_blank" rel="noopener">CSI Volume Cloning</a></p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<nav class="pagination">
+  <span class="prev"><a href="ai-vm-lifecycle.html">AI VM Lifecycle Operations</a></span>
+  <span class="next"><a href="ai-vm-snapshot-management.html">VM Snapshot Management</a></span>
+</nav>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <img src="../../../_/img/rhl-logo-red.png" height="40px" alt="Red Hat"  href="https://redhat.com" >
+</footer><script id="site-script" src="../../../_/js/site.js" data-ui-root-path="../../../_"></script>
+<script async src="../../../_/js/vendor/highlight.js"></script>
+  </body>
+</html>

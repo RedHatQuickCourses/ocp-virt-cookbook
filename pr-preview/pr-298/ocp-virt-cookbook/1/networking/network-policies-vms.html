@@ -1,0 +1,1081 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Network Policies for Virtual Machines :: OpenShift Virtualization cookbook</title>
+    <link rel="prev" href="sriov-secondary.html">
+    <link rel="next" href="metallb-loadbalancer.html">
+    <meta name="generator" content="Antora 3.1.3">
+    <link rel="stylesheet" href="../../../_/css/site.css">
+    <script>var uiRootPath = '../../../_'</script>
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://www.redhat.com" target="_blank"><img src="../../../_/img/redhat-logo.png" height="40px" alt="Red Hat"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="../../..">OpenShift Virtualization cookbook</a>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues" target="_blank">Report Issues</a>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="ocp-virt-cookbook" data-version="1">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="../index.html">OpenShift Virtualization cookbook</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../index.html">Introduction</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../getting-started/index.html">Getting Started</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/vm-quick-start.html">Quick Start</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/prerequisites.html">Prerequisites</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/install-openshift-virtualization.html">Install OpenShift Virtualization</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/default-storage-class.html">Storage Setup</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/create-vm-web-console.html">Create VM from Web Console</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/create-vm-cli-yaml.html">Create VM from CLI</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/vm-lifecycle-states.html">VM Lifecycle States</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/virtctl-basics.html">Virtctl Basics</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/cloud-init-fundamentals.html">Cloud-init Fundamentals</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../storage/index.html">Storage Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/lvm-operator.html">LVM Operator Installation</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/lvm-troubleshooting.html">LVM Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/hostpath-provisioner.html">HostPath Provisioner</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/creating-managing-storage-class.html">Creating and Managing Storage Classes</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/multi-disk-configuration.html">Multi-Disk VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/expanding-vm-disk-size.html">Expanding VM Disk Size</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="index.html">Networking Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="static-ip-configuration.html">Static IP Configuration</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="cloud-init-troubleshooting.html">Cloud-init Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="udn-primary-networks.html">UDN Primary Networks</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="localnet-secondary.html">Localnet Secondary Networks with CUDN</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="localnet-vlan.html">Localnet Secondary Networks with VLAN using NAD</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="cudn-localnet-vlan.html">Localnet VLAN with CUDN</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="layer2-secondary.html">Layer 2 Secondary Networks</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="linux-bridges.html">Linux Bridges</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="sriov-secondary.html">SR-IOV Secondary Networks</a>
+  </li>
+  <li class="nav-item is-current-page" data-depth="2">
+    <a class="nav-link" href="network-policies-vms.html">Network Policies for VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="metallb-loadbalancer.html">MetalLB Load Balancer for VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="dual-stack-vms.html">Dual-Stack IPv4/IPv6 VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="vm-ingress-routes.html">VM Ingress and Routes</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="ovs-bridge-troubleshooting.html">Troubleshooting Localnet Networks</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../vm-configuration/index.html">Virtual Machine Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/internal-dns-for-vms.html">Internal DNS for VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/remote-access-linux-vms.html">Remote Access to Linux VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/remote-access-linux-troubleshooting.html">Remote Access to Linux VMs Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/remote-access-windows-vms.html">Remote Access to Windows VMs via RDP</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/windows-vm-virtio-drivers.html">Windows VMs with VirtIO Drivers</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/infrastructure-node-placement.html">Infrastructure Node Placement</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/node-placement-affinity.html">Node Placement and Affinity</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/hotplug-volumes-interfaces.html">Hotplug Volumes and Interfaces</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/vm-templates.html">Virtual Machine Templates</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../performance/index.html">VM Performance Tuning</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/resource-limits-qos.html">Resource Limits and QoS</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/cpu-pinning.html">Dedicated CPU Placement</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/numa-hugepages.html">NUMA and Hugepages</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/realtime-vms.html">Real-Time VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/vm-monitoring-metrics.html">VM Monitoring and Metrics</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../vm-lifecycle/index.html">VM Lifecycle Management</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/import-qcow2-boot-volume.html">Import qcow2 Boot Volume</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/custom-golden-images.html">Custom Golden Images</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/golden-images-troubleshooting.html">Golden Images Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/cloning-vms.html">Cloning VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/vm-snapshots.html">VM Snapshots</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/boot-order-boot-sources.html">VM Boot Order and Boot Sources</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../manifests/index.html">Manifests</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../api/index.html">API Guide</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../api/api-component-overview.html">API Component Overview</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../agentic-vm-management/index.html">Agentic VM Management</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/getting-started.html">Getting Started with rh-virt</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/natural-language-vm-create.html">Natural Language VM Creation</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/ai-vm-lifecycle.html">AI VM Lifecycle Operations</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/vm-clone.html">Cloning VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/ai-vm-snapshot-management.html">VM Snapshot Management</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../appendix/glossary.html">Glossary</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">OpenShift Virtualization cookbook</span>
+    <span class="version">1</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <a class="title" href="../index.html">OpenShift Virtualization cookbook</a>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">1</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">OpenShift Virtualization cookbook</a></li>
+    <li><a href="index.html">Networking Configuration</a></li>
+    <li><a href="network-policies-vms.html">Network Policies for VMs</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">Network Policies for Virtual Machines</h1>
+<div class="sect1">
+<h2 id="_overview"><a class="anchor" href="#_overview"></a>Overview</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>This tutorial demonstrates how to apply Kubernetes NetworkPolicy and AdminNetworkPolicy to virtual machine workloads in OpenShift Virtualization. Because VMs run inside virt-launcher pods, network policies apply at the pod level using labels defined in the VM&#8217;s <code>spec.template.metadata.labels</code>. This guide walks through building a zero-trust network model for VMs: starting with a deny-all baseline, then selectively allowing traffic for a frontend/backend architecture.</p>
+</div>
+<div class="paragraph">
+<p>You will learn how to isolate VM traffic, permit specific port access between VM tiers, and use AdminNetworkPolicy for cluster-wide guardrails that tenant users cannot override.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_prerequisites"><a class="anchor" href="#_prerequisites"></a>Prerequisites</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p>OpenShift 4.18+ with OpenShift Virtualization operator installed (tested on 4.21)</p>
+</li>
+<li>
+<p>OVN-Kubernetes as the cluster network plugin (default since OpenShift 4.12)</p>
+</li>
+<li>
+<p>Cluster admin access for AdminNetworkPolicy resources</p>
+</li>
+<li>
+<p><code>oc</code> CLI installed</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_how_network_policies_select_vm_pods"><a class="anchor" href="#_how_network_policies_select_vm_pods"></a>How Network Policies Select VM Pods</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>When OpenShift Virtualization creates a running VM, it spawns a virt-launcher pod. The labels you define in <code>spec.template.metadata.labels</code> of the VirtualMachine resource are applied to this pod. NetworkPolicy objects select these pods using <code>podSelector</code> just like any other workload.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: web-vm
+  labels:
+    app: web
+spec:
+  template:
+    metadata:
+      labels:
+        app: web        <i class="conum" data-value="1"></i><b>(1)</b>
+        role: frontend  <i class="conum" data-value="1"></i><b>(1)</b>
+    spec:
+      # ...</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>These labels are propagated to the virt-launcher pod and can be used in NetworkPolicy <code>podSelector</code> fields.</td>
+</tr>
+</table>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-important" title="Important"></i>
+</td>
+<td class="content">
+Labels on <code>metadata.labels</code> of the VirtualMachine resource itself do not affect the virt-launcher pod. Always place policy-relevant labels in <code>spec.template.metadata.labels</code>.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_1_create_a_namespace_and_deploy_vms"><a class="anchor" href="#_step_1_create_a_namespace_and_deploy_vms"></a>Step 1: Create a Namespace and Deploy VMs</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Create a namespace for the demonstration and deploy two VMs: a frontend web server and a backend database listener.</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc create namespace netpol-demo</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Deploy the frontend VM running Nginx on port 80:</p>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/network-policies-vms/vm-web.yaml" class="xref attachment">Download vm-web.yaml</a></p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f - &lt;&lt;EOF
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: web-vm
+  namespace: netpol-demo
+  labels:
+    app: web
+    role: frontend
+spec:
+  runStrategy: Always
+  template:
+    metadata:
+      labels:
+        app: web
+        role: frontend
+    spec:
+      domain:
+        resources:
+          requests:
+            memory: 2Gi
+        devices:
+          disks:
+            - name: containerdisk
+              disk:
+                bus: virtio
+            - name: cloudinitdisk
+              disk:
+                bus: virtio
+          interfaces:
+            - name: default
+              masquerade: {}
+      networks:
+        - name: default
+          pod: {}
+      volumes:
+        - name: containerdisk
+          containerDisk:
+            image: quay.io/containerdisks/fedora:40
+        - name: cloudinitdisk
+          cloudInitNoCloud:
+            userData: |
+              #cloud-config
+              password: changeme
+              chpasswd:
+                expire: false
+              packages:
+                - nginx
+              runcmd:
+                - systemctl enable --now nginx
+EOF</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Deploy the backend VM listening on port 5432:</p>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/network-policies-vms/vm-db.yaml" class="xref attachment">Download vm-db.yaml</a></p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f - &lt;&lt;EOF
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: db-vm
+  namespace: netpol-demo
+  labels:
+    app: database
+    role: backend
+spec:
+  runStrategy: Always
+  template:
+    metadata:
+      labels:
+        app: database
+        role: backend
+    spec:
+      domain:
+        resources:
+          requests:
+            memory: 2Gi
+        devices:
+          disks:
+            - name: containerdisk
+              disk:
+                bus: virtio
+            - name: cloudinitdisk
+              disk:
+                bus: virtio
+          interfaces:
+            - name: default
+              masquerade: {}
+      networks:
+        - name: default
+          pod: {}
+      volumes:
+        - name: containerdisk
+          containerDisk:
+            image: quay.io/containerdisks/fedora:40
+        - name: cloudinitdisk
+          cloudInitNoCloud:
+            userData: |
+              #cloud-config
+              password: changeme
+              chpasswd:
+                expire: false
+              packages:
+                - nmap-ncat
+              runcmd:
+                - ncat -l -k -p 5432 -e /usr/bin/echo &amp;
+EOF</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Wait for both VMs to be ready:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc wait vm web-vm db-vm -n netpol-demo --for=condition=Ready --timeout=300s</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Verify the virt-launcher pods have the expected labels:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get pods -n netpol-demo -l app=web --show-labels</code></pre>
+</div>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get pods -n netpol-demo -l app=database --show-labels</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_2_verify_baseline_connectivity_before_policies"><a class="anchor" href="#_step_2_verify_baseline_connectivity_before_policies"></a>Step 2: Verify Baseline Connectivity (Before Policies)</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Before applying any policies, confirm that traffic flows freely to the VMs. Get the pod IPs of both VMs:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vmi -n netpol-demo -o 'custom-columns=NAME:.metadata.name,IP:.status.interfaces[0].ipAddress'</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Note the IP addresses shown. You will use them for connectivity tests throughout this tutorial.</p>
+</div>
+<div class="paragraph">
+<p>Create a long-lived test pod in the default namespace to use for connectivity checks:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc run curl-test -n default --image=registry.access.redhat.com/ubi9/ubi-minimal --restart=Never -- sleep 3600</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Test connectivity to the web VM (replace <code>&lt;web-vm-ip&gt;</code> with the IP from above):</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc exec -n default curl-test -- curl -s --connect-timeout 5 http://&lt;web-vm-ip&gt;:80</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>You should see the Nginx welcome page HTML, confirming unrestricted connectivity.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_3_apply_a_deny_all_baseline"><a class="anchor" href="#_step_3_apply_a_deny_all_baseline"></a>Step 3: Apply a Deny-All Baseline</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>A zero-trust model starts by denying all traffic, then explicitly allowing what is needed. This policy denies all ingress and egress for every pod in the namespace.</p>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/network-policies-vms/deny-all.yaml" class="xref attachment">Download deny-all.yaml</a></p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f - &lt;&lt;EOF
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: deny-all
+  namespace: netpol-demo
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+    - Egress
+EOF</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Verify traffic is now blocked. From the test pod, attempt to reach the web VM:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc exec -n default curl-test -- curl -s --connect-timeout 5 http://&lt;web-vm-ip&gt;:80</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Expected result:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>command terminated with exit code 28</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Exit code 28 means the connection timed out. OVN-Kubernetes silently drops packets that violate the policy rather than sending a TCP RST, so curl waits until the <code>--connect-timeout</code> expires.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_4_allow_dns_egress"><a class="anchor" href="#_step_4_allow_dns_egress"></a>Step 4: Allow DNS Egress</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>With a deny-all policy in place, DNS resolution is also blocked. Allow all pods to reach the cluster DNS service so name resolution continues to work.</p>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/network-policies-vms/allow-dns-egress.yaml" class="xref attachment">Download allow-dns-egress.yaml</a></p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f - &lt;&lt;EOF
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-dns-egress
+  namespace: netpol-demo
+spec:
+  podSelector: {}
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: openshift-dns
+      ports:
+        - protocol: UDP
+          port: 5353
+        - protocol: TCP
+          port: 5353
+EOF</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_5_allow_http_ingress_to_the_web_vm"><a class="anchor" href="#_step_5_allow_http_ingress_to_the_web_vm"></a>Step 5: Allow HTTP Ingress to the Web VM</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Allow ingress traffic to the web VM on TCP port 80 from any source. This simulates exposing a frontend to internal consumers.</p>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/network-policies-vms/allow-web-ingress.yaml" class="xref attachment">Download allow-web-ingress.yaml</a></p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f - &lt;&lt;EOF
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-web-ingress
+  namespace: netpol-demo
+spec:
+  podSelector:
+    matchLabels:
+      app: web
+  policyTypes:
+    - Ingress
+  ingress:
+    - ports:
+        - protocol: TCP
+          port: 80
+EOF</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Verify that the web VM is now reachable on port 80 from the test pod:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc exec -n default curl-test -- curl -s --connect-timeout 5 http://&lt;web-vm-ip&gt;:80</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The Nginx welcome page should appear again, confirming the ingress allow rule works.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_6_allow_web_vm_to_reach_the_database_vm"><a class="anchor" href="#_step_6_allow_web_vm_to_reach_the_database_vm"></a>Step 6: Allow Web VM to Reach the Database VM</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>In a typical architecture, the frontend needs access to the backend database. Create two policies: one allowing egress from the web VM to the database port, and one allowing ingress to the database VM only from pods labeled <code>app: web</code>.</p>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/network-policies-vms/allow-web-to-db-egress.yaml" class="xref attachment">Download allow-web-to-db-egress.yaml</a></p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f - &lt;&lt;EOF
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-web-to-db-egress
+  namespace: netpol-demo
+spec:
+  podSelector:
+    matchLabels:
+      app: web
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app: database
+      ports:
+        - protocol: TCP
+          port: 5432
+EOF</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/network-policies-vms/allow-db-from-web.yaml" class="xref attachment">Download allow-db-from-web.yaml</a></p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f - &lt;&lt;EOF
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-db-from-web
+  namespace: netpol-demo
+spec:
+  podSelector:
+    matchLabels:
+      app: database
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: web
+      ports:
+        - protocol: TCP
+          port: 5432
+EOF</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Verify that the test pod (which does not have label <code>app: web</code>) cannot reach the database&#8201;&#8212;&#8201;the connection should time out:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc exec -n default curl-test -- curl -s --connect-timeout 5 http://&lt;db-vm-ip&gt;:5432</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Replace <code>&lt;db-vm-ip&gt;</code> with the database VM IP from Step 2. Expected result:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>command terminated with exit code 28</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The timeout confirms the policy blocks unauthorized access to the database.</p>
+</div>
+<div class="paragraph">
+<p>The database port is only reachable from the web VM&#8217;s virt-launcher pod because the <code>allow-db-from-web</code> policy restricts ingress to pods with label <code>app: web</code> within the namespace.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_7_view_active_policies"><a class="anchor" href="#_step_7_view_active_policies"></a>Step 7: View Active Policies</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>List all NetworkPolicy resources in the namespace to review your security posture:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get networkpolicy -n netpol-demo</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Expected output:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>NAME                     POD-SELECTOR   AGE
+allow-db-from-web        app=database   ...
+allow-dns-egress         &lt;none&gt;         ...
+allow-web-ingress        app=web        ...
+allow-web-to-db-egress   app=web        ...
+deny-all                 &lt;none&gt;         ...</pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_adminnetworkpolicy_for_cluster_wide_guardrails"><a class="anchor" href="#_adminnetworkpolicy_for_cluster_wide_guardrails"></a>AdminNetworkPolicy for Cluster-Wide Guardrails</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>While NetworkPolicy is namespace-scoped and managed by application teams, cluster administrators can enforce non-overridable rules using AdminNetworkPolicy (ANP). OVN-Kubernetes evaluates policies in this order:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p><strong>AdminNetworkPolicy</strong> (highest priority)&#8201;&#8212;&#8201;<code>Allow</code> or <code>Deny</code> rules are final; <code>Pass</code> delegates to the next tier.</p>
+</li>
+<li>
+<p><strong>NetworkPolicy</strong>&#8201;&#8212;&#8201;Standard namespace-scoped rules.</p>
+</li>
+<li>
+<p><strong>BaselineAdminNetworkPolicy</strong>&#8201;&#8212;&#8201;Cluster-wide fallback applied when no NetworkPolicy matches.</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>The following example ANP protects the OpenShift Virtualization infrastructure namespaces from unauthorized access:</p>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/network-policies-vms/admin-network-policy.yaml" class="xref attachment">Download admin-network-policy.yaml</a></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: policy.networking.k8s.io/v1alpha1
+kind: AdminNetworkPolicy
+metadata:
+  name: cluster-deny-to-virt-infra
+spec:
+  priority: 50
+  subject:
+    namespaces:
+      matchExpressions:
+        - key: kubernetes.io/metadata.name
+          operator: NotIn
+          values:
+            - openshift-cnv
+            - openshift-virtualization-os-images
+  ingress:
+    - name: deny-ingress-to-virt-infra
+      action: Deny
+      from:
+        - namespaces:
+            matchExpressions:
+              - key: kubernetes.io/metadata.name
+                operator: NotIn
+                values:
+                  - openshift-cnv
+                  - openshift-virtualization-os-images
+      ports:
+        - portRange:
+            start: 1
+            end: 65535
+            protocol: TCP</code></pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+AdminNetworkPolicy is at <code>v1alpha1</code> API version. The API is stable and enabled by default on OVN-Kubernetes clusters since OpenShift 4.14, but may evolve before reaching <code>v1</code>.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_important_considerations"><a class="anchor" href="#_important_considerations"></a>Important Considerations</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_secondary_networks"><a class="anchor" href="#_secondary_networks"></a>Secondary Networks</h3>
+<div class="paragraph">
+<p>NetworkPolicy only applies to traffic on the <strong>primary pod network</strong> (the default cluster network or a primary UDN). Traffic on secondary networks attached via NetworkAttachmentDefinition, localnet, or Linux bridge interfaces is <strong>not</strong> governed by NetworkPolicy. To control traffic on secondary networks, use firewall rules inside the VM guest or external network infrastructure controls.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_live_migration"><a class="anchor" href="#_live_migration"></a>Live Migration</h3>
+<div class="paragraph">
+<p>During live migration, the VM&#8217;s virt-launcher pod is recreated on the target node. Because the new pod inherits the same labels from <code>spec.template.metadata.labels</code>, existing NetworkPolicy rules continue to apply without any changes. The migration itself uses internal KubeVirt communication channels that are not affected by namespace-scoped NetworkPolicy.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_masquerade_vs_bridge_binding"><a class="anchor" href="#_masquerade_vs_bridge_binding"></a>Masquerade vs Bridge Binding</h3>
+<div class="paragraph">
+<p>When using the <code>masquerade</code> interface binding (default for pod network), traffic between the VM guest and the pod network is NATed. NetworkPolicy sees the virt-launcher pod IP as the source/destination. With the <code>bridge</code> binding, the VM gets a pod IP directly. In both cases, the policy targets the virt-launcher pod.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_troubleshooting"><a class="anchor" href="#_troubleshooting"></a>Troubleshooting</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_policies_not_taking_effect"><a class="anchor" href="#_policies_not_taking_effect"></a>Policies Not Taking Effect</h3>
+<div class="paragraph">
+<p>Verify that labels on the virt-launcher pod match your policy selectors:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get pods -n netpol-demo --show-labels</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Ensure your VM defines labels in <code>spec.template.metadata.labels</code>, not only in <code>metadata.labels</code>.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_dns_resolution_broken_after_deny_all"><a class="anchor" href="#_dns_resolution_broken_after_deny_all"></a>DNS Resolution Broken After Deny-All</h3>
+<div class="paragraph">
+<p>If you apply a deny-all egress policy but forget to allow DNS, all name resolution fails. Apply the DNS egress policy from Step 4.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_traffic_still_flows_after_deny_all"><a class="anchor" href="#_traffic_still_flows_after_deny_all"></a>Traffic Still Flows After Deny-All</h3>
+<div class="paragraph">
+<p>If you only specify <code>Ingress</code> in <code>policyTypes</code>, egress is unrestricted (and vice versa). To block both directions, include both <code>Ingress</code> and <code>Egress</code> in <code>policyTypes</code>.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_cleanup"><a class="anchor" href="#_cleanup"></a>Cleanup</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Remove the test pod and namespace:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc delete pod curl-test -n default</code></pre>
+</div>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc delete namespace netpol-demo</code></pre>
+</div>
+</div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+If you applied the AdminNetworkPolicy example, remove it separately since it is cluster-scoped:
+</td>
+</tr>
+</table>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc delete adminnetworkpolicy cluster-deny-to-virt-infra</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_summary"><a class="anchor" href="#_summary"></a>Summary</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>In this tutorial you learned:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>NetworkPolicy selects VM workloads through labels on <code>spec.template.metadata.labels</code>, which propagate to the virt-launcher pod</p>
+</li>
+<li>
+<p>A deny-all baseline provides zero-trust isolation for VM namespaces</p>
+</li>
+<li>
+<p>Granular ingress and egress rules enable controlled communication between VM tiers</p>
+</li>
+<li>
+<p>DNS egress must be explicitly allowed when using a deny-all baseline</p>
+</li>
+<li>
+<p>AdminNetworkPolicy provides cluster-wide guardrails that tenant users cannot override</p>
+</li>
+<li>
+<p>NetworkPolicy only governs primary network traffic; secondary network interfaces require separate controls</p>
+</li>
+<li>
+<p>Policies persist across live migration because pod labels are preserved</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_see_also"><a class="anchor" href="#_see_also"></a>See Also</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p><a href="vm-ingress-routes.html" class="xref page">VM Ingress and Routes</a>&#8201;&#8212;&#8201;Expose VM HTTP services externally</p>
+</li>
+<li>
+<p><a href="udn-primary-networks.html" class="xref page">UDN Primary Networks</a>&#8201;&#8212;&#8201;Configure Layer 2 primary networks with built-in isolation</p>
+</li>
+<li>
+<p><a href="https://docs.redhat.com/en/documentation/openshift_container_platform/4.22/html/network_security/network-policy-apis" target="_blank" rel="noopener">OpenShift Network Security Documentation</a></p>
+</li>
+<li>
+<p><a href="https://kubernetes.io/docs/concepts/services-networking/network-policies/" target="_blank" rel="noopener">Kubernetes NetworkPolicy Reference</a></p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<nav class="pagination">
+  <span class="prev"><a href="sriov-secondary.html">SR-IOV Secondary Networks</a></span>
+  <span class="next"><a href="metallb-loadbalancer.html">MetalLB Load Balancer for VMs</a></span>
+</nav>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <img src="../../../_/img/rhl-logo-red.png" height="40px" alt="Red Hat"  href="https://redhat.com" >
+</footer><script id="site-script" src="../../../_/js/site.js" data-ui-root-path="../../../_"></script>
+<script async src="../../../_/js/vendor/highlight.js"></script>
+  </body>
+</html>
