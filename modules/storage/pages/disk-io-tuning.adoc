@@ -1,0 +1,629 @@
+= VM Disk I/O Performance Tuning
+:navtitle: Disk I/O Tuning
+
+== Overview
+
+Disk I/O performance is one of the most common concerns when running virtual machines on OpenShift Virtualization. Default VM configurations work for general workloads, but database servers, logging pipelines, and other I/O-heavy applications benefit from tuning disk bus type, cache mode, I/O threading, and volume mode.
+
+This tutorial walks you through each tuning option, deploys VMs with optimized settings, and uses `fio` inside the guest to measure the impact. You will also learn how to identify I/O bottlenecks from both the guest and host sides.
+
+== What You Will Learn
+
+* How disk bus types (VirtIO, SCSI, SATA) affect I/O performance
+* How volume modes (Block vs Filesystem) change the I/O path
+* How to configure disk cache modes, I/O threads, and multi-queue
+* How to benchmark VM disk I/O with `fio`
+* How to identify I/O bottlenecks using guest and host tools
+* Which tuning options to apply for different workload types
+
+== Prerequisites
+
+* **OpenShift 4.18+** with OpenShift Virtualization operator installed
+* **Cluster admin access** (`system:admin` or equivalent)
+* **`oc` CLI** and **`virtctl` CLI** installed
+* **Default StorageClass** configured (e.g., `lvms-vg1`)
+* Familiarity with basic VM creation in OpenShift Virtualization
+
+Versions tested:
+
+[source,text]
+----
+OpenShift 4.20, 4.21
+----
+
+== Disk Bus Types
+
+The disk bus type determines how a virtual disk is presented to the guest operating system. Each type has different performance characteristics and compatibility trade-offs.
+
+[cols="1,1,1,1",options="header"]
+|===
+| Bus Type
+| Description
+| Performance
+| Use Case
+
+| VirtIO
+| Paravirtualized disk driver
+| Highest throughput and lowest latency
+| Linux VMs, Windows VMs with VirtIO drivers installed
+
+| SCSI
+| Emulated SCSI controller (via virtio-scsi)
+| Good performance with broader feature support
+| VMs that need SCSI features like TRIM/discard or persistent reservations
+
+| SATA
+| Emulated SATA/AHCI controller
+| Lowest performance due to full emulation overhead
+| Legacy guest operating systems without VirtIO or SCSI driver support
+|===
+
+VirtIO is the default and recommended bus type for all Linux VMs. It bypasses device emulation and communicates directly with the hypervisor through a shared memory ring buffer, which reduces CPU overhead and latency per I/O operation.
+
+Use SCSI when you need features like TRIM/discard for thin-provisioned storage or when running guest workloads that expect a SCSI device. Use SATA only for legacy operating systems that lack VirtIO and SCSI drivers.
+
+=== Bus Type in the VM Spec
+
+You set the bus type under `spec.template.spec.domain.devices.disks`:
+
+[source,yaml]
+----
+devices:
+  disks:
+  - name: rootdisk
+    disk:
+      bus: virtio
+----
+
+== Volume Modes: Block vs Filesystem
+
+The volume mode on the PersistentVolumeClaim controls how the storage backend presents the volume to the VM pod.
+
+* **Filesystem** (default): The storage backend provisions a filesystem (typically ext4) on the underlying device. QEMU stores the VM disk as a file on that filesystem. This adds a layer of filesystem overhead between QEMU and the raw storage.
+
+* **Block**: The storage backend exposes the raw block device directly to the VM pod. QEMU reads and writes to the block device without an intermediate filesystem. This eliminates filesystem overhead and reduces latency.
+
+For I/O-sensitive workloads, Block mode typically delivers 5-15% better IOPS and lower latency than Filesystem mode. The exact improvement depends on your storage backend.
+
+NOTE: Not all StorageClasses support Block volume mode. Check your storage provider documentation. LVM Storage and ODF (Ceph RBD) both support Block mode.
+
+=== Setting Volume Mode
+
+You set volume mode on the DataVolume or PVC:
+
+[source,yaml]
+----
+dataVolumeTemplates:
+- metadata:
+    name: my-disk
+  spec:
+    pvc:
+      accessModes:
+      - ReadWriteOnce
+      volumeMode: Block
+      resources:
+        requests:
+          storage: 30Gi
+    source:
+      registry:
+        pullMethod: node
+        url: docker://quay.io/containerdisks/fedora:latest
+----
+
+== Disk Cache Modes
+
+The cache mode controls how the host handles read and write caching for the VM disk. KubeVirt supports three cache modes:
+
+[cols="1,2,1",options="header"]
+|===
+| Cache Mode
+| Behavior
+| Recommended For
+
+| `none`
+| No host-side caching. Reads and writes go directly to the storage backend. Guest OS manages its own page cache.
+| Databases, shared storage, workloads that manage their own caching
+
+| `writeback`
+| Host caches both reads and writes. Writes are acknowledged before they reach storage. Higher risk of data loss on host failure.
+| General purpose VMs where performance matters more than write durability
+
+| `writethrough`
+| Host caches reads but writes go directly to storage. Safe against host-side data loss but slower write performance.
+| Workloads that need write safety but can benefit from read caching
+|===
+
+When no cache mode is set, KubeVirt defaults to `none` for Block volumes and `writethrough` for Filesystem volumes.
+
+For database workloads, use `cache: none` so the database engine controls write ordering and fsync behavior without interference from host-side caching.
+
+=== Setting Cache Mode
+
+[source,yaml]
+----
+devices:
+  disks:
+  - name: rootdisk
+    cache: none
+    disk:
+      bus: virtio
+----
+
+== I/O Threading and Multi-Queue
+
+By default, all VM disk I/O runs on the main QEMU thread. Under heavy I/O load, this single thread becomes a bottleneck. Two settings address this:
+
+=== I/O Threads
+
+The `ioThreadsPolicy` field creates dedicated threads for disk I/O, separate from the main QEMU emulation thread. Set `dedicatedIOThread: true` on individual disks to assign them to these threads.
+
+* `auto`: KubeVirt creates one I/O thread per disk that has `dedicatedIOThread: true`.
+* `shared`: All disks with `dedicatedIOThread: true` share a single I/O thread.
+
+Use `auto` for VMs with multiple disks that each need maximum I/O throughput. Use `shared` when you want to reduce thread count on the host.
+
+=== Block Multi-Queue
+
+The `blockMultiQueue` setting creates multiple virtqueues for VirtIO block devices. Each vCPU gets its own I/O submission queue, which allows parallel I/O processing across CPU cores. This helps workloads with high I/O concurrency, such as databases running many parallel queries.
+
+NOTE: Block multi-queue only applies to VirtIO disk bus. It has no effect on SCSI or SATA disks.
+
+== Step 1: Create a Namespace
+
+[source,bash,role=execute]
+----
+oc create namespace disk-io-tuning
+----
+
+== Step 2: Deploy a Baseline VM
+
+First, deploy a VM with default disk settings to establish a performance baseline.
+
+WARNING: The cloud-init password in this example is for demo purposes only. Always use a strong, unique password or SSH key authentication in production environments.
+
+xref:attachment$disk-io-tuning/vm-baseline.yaml[Download vm-baseline.yaml]
+
+[source,bash,role=execute]
+----
+oc apply -f - <<EOF
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: vm-baseline
+  namespace: disk-io-tuning
+spec:
+  runStrategy: Always
+  template:
+    metadata:
+      labels:
+        kubevirt.io/domain: vm-baseline
+    spec:
+      domain:
+        cpu:
+          cores: 2
+        memory:
+          guest: 2Gi
+        devices:
+          disks:
+          - name: rootdisk
+            disk:
+              bus: virtio
+            bootOrder: 1
+          - name: cloudinitdisk
+            disk:
+              bus: virtio
+          interfaces:
+          - name: default
+            masquerade: {}
+        resources:
+          requests:
+            memory: 2Gi
+      networks:
+      - name: default
+        pod: {}
+      volumes:
+      - name: rootdisk
+        dataVolume:
+          name: baseline-rootdisk
+      - name: cloudinitdisk
+        cloudInitNoCloud:
+          userData: |
+            #cloud-config
+            password: redhat
+            chpasswd:
+              expire: false
+            packages:
+            - fio
+  dataVolumeTemplates:
+  - metadata:
+      name: baseline-rootdisk
+    spec:
+      pvc:
+        accessModes:
+        - ReadWriteOnce
+        resources:
+          requests:
+            storage: 30Gi
+      source:
+        registry:
+          pullMethod: node
+          url: docker://quay.io/containerdisks/fedora:latest
+EOF
+----
+
+Wait for the VM to start:
+
+[source,bash,role=execute]
+----
+oc get vm -n disk-io-tuning -w
+----
+
+Once the STATUS shows `Running`, proceed to the next step.
+
+== Step 3: Deploy a Tuned VM
+
+Deploy a second VM with all I/O tuning options enabled: VirtIO bus, `cache: none`, I/O threads, and block multi-queue.
+
+xref:attachment$disk-io-tuning/vm-tuned.yaml[Download vm-tuned.yaml]
+
+[source,bash,role=execute]
+----
+oc apply -f - <<EOF
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: vm-tuned
+  namespace: disk-io-tuning
+spec:
+  runStrategy: Always
+  template:
+    metadata:
+      labels:
+        kubevirt.io/domain: vm-tuned
+    spec:
+      domain:
+        ioThreadsPolicy: auto
+        cpu:
+          cores: 2
+        memory:
+          guest: 2Gi
+        devices:
+          blockMultiQueue: true
+          disks:
+          - name: rootdisk
+            disk:
+              bus: virtio
+            bootOrder: 1
+            cache: none
+            io: native
+            dedicatedIOThread: true
+          - name: cloudinitdisk
+            disk:
+              bus: virtio
+          interfaces:
+          - name: default
+            masquerade: {}
+        resources:
+          requests:
+            memory: 2Gi
+      networks:
+      - name: default
+        pod: {}
+      volumes:
+      - name: rootdisk
+        dataVolume:
+          name: tuned-rootdisk
+      - name: cloudinitdisk
+        cloudInitNoCloud:
+          userData: |
+            #cloud-config
+            password: redhat
+            chpasswd:
+              expire: false
+            packages:
+            - fio
+  dataVolumeTemplates:
+  - metadata:
+      name: tuned-rootdisk
+    spec:
+      pvc:
+        accessModes:
+        - ReadWriteOnce
+        volumeMode: Block
+        resources:
+          requests:
+            storage: 30Gi
+      source:
+        registry:
+          pullMethod: node
+          url: docker://quay.io/containerdisks/fedora:latest
+EOF
+----
+
+=== Key Tuning Settings in This VM
+
+* **`ioThreadsPolicy: auto`**: Creates a dedicated I/O thread for each disk that requests one.
+* **`blockMultiQueue: true`**: Enables per-vCPU I/O queues on all VirtIO block devices.
+* **`cache: none`**: Bypasses host-side caching so the guest OS controls its own cache.
+* **`io: native`**: Uses Linux native asynchronous I/O (io_uring/libaio) instead of QEMU's threaded I/O. This reduces context switches under high I/O load.
+* **`dedicatedIOThread: true`**: Assigns this disk to its own I/O thread instead of sharing the main QEMU thread.
+* **`volumeMode: Block`**: Exposes the raw block device to QEMU, bypassing filesystem overhead.
+
+Wait for both VMs to be running:
+
+[source,bash,role=execute]
+----
+oc get vm -n disk-io-tuning
+----
+
+.Expected output
+[source,text]
+----
+NAME          AGE   STATUS    READY
+vm-baseline   5m    Running   True
+vm-tuned      2m    Running   True
+----
+
+== Step 4: Benchmark with fio (Baseline VM)
+
+WARNING: The fio write tests generate sustained I/O load that bypasses the page cache and hits the storage backend directly. On production clusters with shared storage (Ceph, ODF, NFS), this can saturate storage bandwidth and degrade performance for other VMs and workloads. Run these benchmarks on a dedicated test cluster or during a maintenance window.
+
+Connect to the baseline VM and run `fio` benchmarks. The `fio` tool was installed by cloud-init during boot.
+
+[source,bash,role=execute]
+----
+virtctl console vm-baseline -n disk-io-tuning
+----
+
+Log in with username `fedora` and password `redhat`.
+
+Wait for cloud-init to finish installing `fio`. You can check the status:
+
+[source,bash]
+----
+cloud-init status --wait
+----
+
+=== Random Read IOPS Test
+
+Run a 4K random read test with 16 concurrent I/O operations:
+
+[source,bash]
+----
+sudo fio --name=randread --ioengine=libaio --direct=1 --bs=4k \
+  --iodepth=16 --numjobs=1 --size=1G --runtime=30 --time_based \
+  --rw=randread --filename=/tmp/fio-test --output-format=terse \
+  | awk -F';' '{print "Random Read IOPS:", $8, "| Avg Latency (usec):", $40}'
+----
+
+=== Random Write IOPS Test
+
+[source,bash]
+----
+sudo fio --name=randwrite --ioengine=libaio --direct=1 --bs=4k \
+  --iodepth=16 --numjobs=1 --size=1G --runtime=30 --time_based \
+  --rw=randwrite --filename=/tmp/fio-test --output-format=terse \
+  | awk -F';' '{print "Random Write IOPS:", $49, "| Avg Latency (usec):", $81}'
+----
+
+=== Sequential Read Throughput Test
+
+[source,bash]
+----
+sudo fio --name=seqread --ioengine=libaio --direct=1 --bs=128k \
+  --iodepth=16 --numjobs=1 --size=1G --runtime=30 --time_based \
+  --rw=read --filename=/tmp/fio-test --output-format=terse \
+  | awk -F';' '{print "Sequential Read BW (KiB/s):", $7}'
+----
+
+=== Sequential Write Throughput Test
+
+[source,bash]
+----
+sudo fio --name=seqwrite --ioengine=libaio --direct=1 --bs=128k \
+  --iodepth=16 --numjobs=1 --size=1G --runtime=30 --time_based \
+  --rw=write --filename=/tmp/fio-test --output-format=terse \
+  | awk -F';' '{print "Sequential Write BW (KiB/s):", $48}'
+----
+
+Record the results from each test. Press `Ctrl+]` to exit the console.
+
+== Step 5: Benchmark with fio (Tuned VM)
+
+Connect to the tuned VM and run the same benchmarks:
+
+[source,bash,role=execute]
+----
+virtctl console vm-tuned -n disk-io-tuning
+----
+
+Log in with username `fedora` and password `redhat`. Wait for cloud-init to finish:
+
+[source,bash]
+----
+cloud-init status --wait
+----
+
+Run the same four fio tests:
+
+[source,bash]
+----
+sudo fio --name=randread --ioengine=libaio --direct=1 --bs=4k \
+  --iodepth=16 --numjobs=1 --size=1G --runtime=30 --time_based \
+  --rw=randread --filename=/tmp/fio-test --output-format=terse \
+  | awk -F';' '{print "Random Read IOPS:", $8, "| Avg Latency (usec):", $40}'
+----
+
+[source,bash]
+----
+sudo fio --name=randwrite --ioengine=libaio --direct=1 --bs=4k \
+  --iodepth=16 --numjobs=1 --size=1G --runtime=30 --time_based \
+  --rw=randwrite --filename=/tmp/fio-test --output-format=terse \
+  | awk -F';' '{print "Random Write IOPS:", $49, "| Avg Latency (usec):", $81}'
+----
+
+[source,bash]
+----
+sudo fio --name=seqread --ioengine=libaio --direct=1 --bs=128k \
+  --iodepth=16 --numjobs=1 --size=1G --runtime=30 --time_based \
+  --rw=read --filename=/tmp/fio-test --output-format=terse \
+  | awk -F';' '{print "Sequential Read BW (KiB/s):", $7}'
+----
+
+[source,bash]
+----
+sudo fio --name=seqwrite --ioengine=libaio --direct=1 --bs=128k \
+  --iodepth=16 --numjobs=1 --size=1G --runtime=30 --time_based \
+  --rw=write --filename=/tmp/fio-test --output-format=terse \
+  | awk -F';' '{print "Sequential Write BW (KiB/s):", $48}'
+----
+
+Compare the IOPS, throughput, and latency numbers between the baseline and tuned VMs. The tuned VM should show improved IOPS and lower latency, particularly on random I/O workloads where I/O threading and direct block access have the most impact.
+
+Press `Ctrl+]` to exit the console.
+
+== Step 6: Verify Tuning Settings from the Host Side
+
+You can confirm that the tuning options are applied by inspecting the virt-launcher pod and the QEMU process.
+
+Check I/O thread allocation on the tuned VM:
+
+[source,bash,role=execute]
+----
+oc get vmi vm-tuned -n disk-io-tuning -o jsonpath='{.status.launcherContainerImageVersion}{"\n"}'
+----
+
+Inspect the QEMU command-line arguments for the tuned VM to confirm the I/O thread and cache settings:
+
+[source,bash,role=execute]
+----
+TUNED_POD=$(oc get pod -n disk-io-tuning -l kubevirt.io/domain=vm-tuned -o jsonpath='{.items[0].metadata.name}')
+oc exec -n disk-io-tuning "$TUNED_POD" -- ps aux | grep -o '\-drive [^ ]*' | head -5
+----
+
+Look for `cache=none`, `aio=native`, and `iothread` in the drive parameters. These confirm the tuning is active at the QEMU level.
+
+== Step 7: Identify I/O Bottlenecks
+
+When I/O performance is not meeting expectations, use these tools to find the bottleneck.
+
+=== Guest-Side Tools
+
+Connect to the VM console and use `iostat` to monitor per-device I/O statistics:
+
+[source,bash]
+----
+sudo dnf install -y sysstat
+iostat -xz 2
+----
+
+Key columns to watch:
+
+* **`%util`**: Percentage of time the device is busy. Values near 100% indicate the device is saturated.
+* **`await`**: Average time (ms) for I/O requests to complete, including queue time. High values indicate congestion.
+* **`r_await` / `w_await`**: Separate read and write wait times. A large difference suggests asymmetric workload patterns.
+* **`avgqu-sz`**: Average I/O queue depth. Values consistently above 1 for a single-spindle device indicate queuing.
+
+=== Host-Side Tools
+
+From the OpenShift node, check the virt-launcher pod resource consumption:
+
+[source,bash,role=execute]
+----
+oc adm top pod -n disk-io-tuning -l kubevirt.io/domain=vm-tuned
+----
+
+Check node-level disk I/O pressure using OpenShift monitoring. High `iowait` CPU values on the node indicate that host-level storage is the bottleneck, not the VM configuration.
+
+[source,bash,role=execute]
+----
+oc adm top node
+----
+
+If the node hosting the VM shows high CPU usage with significant `iowait`, the storage backend itself may be the limiting factor rather than the VM disk configuration.
+
+== Storage Backend Impact
+
+The storage backend has a larger effect on I/O performance than most VM-level tuning options. Here is how common backends compare:
+
+[cols="1,1,1,1",options="header"]
+|===
+| Backend
+| Random IOPS (typical)
+| Latency
+| Best For
+
+| LVM thin pool (local NVMe)
+| 50,000-200,000+
+| Sub-millisecond
+| High-performance databases, latency-sensitive workloads
+
+| ODF / Ceph RBD
+| 10,000-50,000
+| 1-5 ms
+| General purpose, workloads that need replication and snapshots
+
+| NFS
+| 1,000-10,000
+| 2-10 ms
+| Shared storage, read-heavy workloads, non-latency-sensitive applications
+
+| Cloud provider disks (gp3, managed SSD)
+| 3,000-16,000 (provisioned)
+| 1-3 ms
+| Cloud-hosted OpenShift clusters
+|===
+
+NOTE: These numbers are rough ranges that vary by hardware, network, and configuration. Always benchmark your own environment.
+
+== Tuning Recommendations by Workload Type
+
+[cols="1,3",options="header"]
+|===
+| Workload
+| Recommended Settings
+
+| Database (PostgreSQL, MySQL)
+| VirtIO bus, `cache: none`, `io: native`, `dedicatedIOThread: true`, Block volume mode, `blockMultiQueue: true`. Databases manage their own write caching and need predictable fsync behavior.
+
+| Web server / application server
+| VirtIO bus, default cache mode, Filesystem volume mode. Web servers are not typically I/O-bound. Default settings are sufficient.
+
+| Log aggregation / streaming
+| VirtIO bus, `cache: writeback`, `dedicatedIOThread: true`. Sequential write workloads benefit from write caching. Data loss risk is acceptable since logs can be re-collected.
+
+| General purpose / desktop
+| VirtIO bus, default cache and I/O settings. Tuning provides minimal benefit for mixed, light I/O workloads.
+
+| Data analytics / batch processing
+| VirtIO bus, `io: native`, Block volume mode, `blockMultiQueue: true`. Large sequential reads benefit from native I/O and block access.
+|===
+
+== Cleanup
+
+Delete all resources created in this tutorial:
+
+[source,bash,role=execute]
+----
+oc delete namespace disk-io-tuning
+----
+
+== Summary
+
+In this tutorial you learned how to:
+
+* Choose the right disk bus type (VirtIO, SCSI, SATA) based on guest OS compatibility and performance needs
+* Select Block vs Filesystem volume mode for your PVCs
+* Configure disk cache modes (`none`, `writeback`, `writethrough`) to match workload requirements
+* Enable I/O threading and block multi-queue for higher I/O concurrency
+* Benchmark VM disk performance with `fio` inside the guest
+* Identify I/O bottlenecks using guest-side `iostat` and host-side monitoring
+* Apply tuning recommendations based on workload type
+
+== See Also
+
+* xref:multi-disk-configuration.adoc[Multi-Disk VM Configuration]
+* xref:performance:resource-limits-qos.adoc[VM Resource Limits and QoS]
+* link:https://kubevirt.io/user-guide/storage/disks_and_volumes/[KubeVirt Disks and Volumes,window=_blank]
+* link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.18/html/virtualization/storage[OpenShift Virtualization Storage,window=_blank]
+* link:https://fio.readthedocs.io/en/latest/[fio Documentation,window=_blank]
