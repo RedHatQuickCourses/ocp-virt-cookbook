@@ -6,6 +6,7 @@
 Understanding the lifecycle of virtual machines in OpenShift Virtualization is essential for effective VM management, troubleshooting, and automation. This guide explains the relationship between VirtualMachine and VirtualMachineInstance resources, the various states a VM can be in, and how to manage VMs throughout their lifecycle.
 
 Versions tested:
+[source,text]
 ----
 OpenShift 4.20
 ----
@@ -119,6 +120,46 @@ A VM transitions through several states during its lifecycle. Understanding thes
 |Yes (briefly)
 |===
 
+=== State Transition Diagram
+
+The following diagram shows how a VM moves between states. Each arrow represents an operation or automatic transition.
+
+[source,text]
+----
+  ┌─────────┐  start   ┌─────────┐        ┌────────────┐        ┌──────────┐
+  │ Stopped │─────────►│ Pending │───────►│ Scheduling │───────►│ Starting │
+  └─────────┘          └─────────┘        └────────────┘        └────┬─────┘
+       ▲                                                              │
+       │                                                              ▼
+  ┌────┴────────┐      ┌──────────┐ stop  ┌─────────┐  pause  ┌─────────┐
+  │ Terminating │◄─────│ Stopping │◄──────│ Running │────────►│ Paused  │
+  └─────────────┘      └──────────┘       └────┬────┘◄────────└─────────┘
+                                               │      unpause
+                                          migrate
+                                               │
+                                               ▼
+                                        ┌───────────┐
+                                        │ Migrating │──► Running (new node)
+                                        └───────────┘
+----
+
+* **Start** transitions a stopped VM through Pending, Scheduling, Starting, and into Running.
+* **Stop** moves a running VM through Stopping and Terminating back to Stopped.
+* **Restart** performs a full stop-then-start cycle through all intermediate states.
+* **Pause/Unpause** freezes and resumes execution without changing the VMI lifecycle.
+* **Migrate** live-migrates the VM to a different node while it stays in the Running state.
+* **Delete** removes the VM resource entirely from any state.
+
+=== Live Migration as a Lifecycle Event
+
+Live migration moves a running VM from one node to another without downtime. You will encounter migrations during:
+
+* **Node drains** -- when a node is cordoned for maintenance, running VMs are automatically migrated to other nodes.
+* **Cluster upgrades** -- OpenShift rolls through worker nodes one at a time, triggering migrations for VMs on each node.
+* **Rebalancing** -- administrators or the descheduler may migrate VMs to distribute workloads more evenly across nodes.
+
+During migration, the VM briefly enters a `Migrating` phase visible in the VMI status. The VM remains accessible throughout the process. Migration requires shared storage (ReadWriteMany PVCs) or uses post-copy migration for non-shared storage configurations.
+
 == Managing VM Lifecycle
 
 === Starting VMs
@@ -186,7 +227,7 @@ Use force stop when a VM is unresponsive:
 
 [source,bash,role=execute]
 ----
-virtctl stop fedora-app-vm -n my-vms --force
+virtctl stop fedora-app-vm -n my-vms --force --grace-period=0
 ----
 
 WARNING: Force stop is equivalent to pulling the power cord. Use only when graceful shutdown fails.
@@ -542,6 +583,38 @@ Run strategies define how a VM behaves automatically throughout its lifecycle. T
 |Temporarily decommissioned VMs or maintenance mode.
 |===
 
+=== Choosing a Run Strategy
+
+Use this decision tree to pick the right strategy for your workload:
+
+[source,text]
+----
+  Must the VM always be running?
+      │
+      ├── Yes ──► Always
+      │           Auto-starts, auto-restarts on any stop.
+      │
+      └── No
+           │
+           Should it auto-recover from crashes?
+               │
+               ├── Yes ──► RerunOnFailure
+               │           Restarts on failure, stays stopped
+               │           on guest-initiated shutdown.
+               │
+               └── No
+                    │
+                    Do you want manual start/stop control?
+                        │
+                        ├── Yes ──► Manual
+                        │           Starts and stops only when
+                        │           you explicitly request it.
+                        │
+                        └── No ──► Halted
+                                   VM stays stopped. Use this
+                                   to park a VM during maintenance.
+----
+
 === Setting Run Strategy
 
 **In VM YAML:**
@@ -582,13 +655,14 @@ When using `Always` or `RerunOnFailure`, be aware that:
 You have learned:
 
 * The difference between VirtualMachine and VirtualMachineInstance resources
-* VM lifecycle states and transitions
+* VM lifecycle states and how they transition, including the state machine flow
 * How to start, stop, pause, resume, restart, and delete VMs
+* How live migration fits into the VM lifecycle during node drains and upgrades
 * How to monitor VM status using conditions and events
-* How run strategies control automatic VM behavior
+* How run strategies control automatic VM behavior and how to choose the right one
 
 == See Also
 
 * xref:create-vm-web-console.adoc[] - Creating VMs from the web console
 * xref:virtctl-basics.adoc[] - CLI commands for VM management
-* link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/virtualization/managing-vms[Managing Virtual Machines - Official Documentation,window=_blank]
+* link:https://docs.redhat.com/en/documentation/OpenShift_container_platform/4.20/html/virtualization/managing-vms[Managing Virtual Machines - Official Documentation,window=_blank]
