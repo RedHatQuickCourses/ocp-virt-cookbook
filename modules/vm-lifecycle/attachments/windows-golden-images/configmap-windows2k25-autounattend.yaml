@@ -1,0 +1,143 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: windows2k25-autounattend
+  namespace: default
+data:
+  autounattend.xml: |
+    <?xml version="1.0" encoding="utf-8"?>
+    <unattend xmlns="urn:schemas-microsoft-com:unattend">
+      <settings pass="windowsPE">
+        <component name="Microsoft-Windows-PnpCustomizationsWinPE" processorArchitecture="amd64"
+                   publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS"
+                   xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State">
+          <DriverPaths>
+            <PathAndCredentials wcm:action="add" wcm:keyValue="1">
+              <Path>E:\viostor\2k25\amd64</Path>
+            </PathAndCredentials>
+            <PathAndCredentials wcm:action="add" wcm:keyValue="2">
+              <Path>E:\NetKVM\2k25\amd64</Path>
+            </PathAndCredentials>
+          </DriverPaths>
+        </component>
+        <component name="Microsoft-Windows-International-Core-WinPE" processorArchitecture="amd64"
+                   publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS">
+          <SetupUILanguage>
+            <UILanguage>en-US</UILanguage>
+          </SetupUILanguage>
+          <InputLocale>en-US</InputLocale>
+          <SystemLocale>en-US</SystemLocale>
+          <UILanguage>en-US</UILanguage>
+          <UserLocale>en-US</UserLocale>
+        </component>
+        <component name="Microsoft-Windows-Setup" processorArchitecture="amd64"
+                   publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS"
+                   xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State">
+          <UserData>
+            <AcceptEula>true</AcceptEula>
+          </UserData>
+          <DiskConfiguration>
+            <Disk wcm:action="add">
+              <DiskID>0</DiskID>
+              <WillWipeDisk>true</WillWipeDisk>
+              <CreatePartitions>
+                <CreatePartition wcm:action="add">
+                  <Order>1</Order>
+                  <Type>EFI</Type>
+                  <Size>100</Size>
+                </CreatePartition>
+                <CreatePartition wcm:action="add">
+                  <Order>2</Order>
+                  <Type>MSR</Type>
+                  <Size>16</Size>
+                </CreatePartition>
+                <CreatePartition wcm:action="add">
+                  <Order>3</Order>
+                  <Type>Primary</Type>
+                  <Extend>true</Extend>
+                </CreatePartition>
+              </CreatePartitions>
+              <ModifyPartitions>
+                <ModifyPartition wcm:action="add">
+                  <Order>1</Order>
+                  <PartitionID>1</PartitionID>
+                  <Format>FAT32</Format>
+                  <Label>System</Label>
+                </ModifyPartition>
+                <ModifyPartition wcm:action="add">
+                  <Order>2</Order>
+                  <PartitionID>2</PartitionID>
+                </ModifyPartition>
+                <ModifyPartition wcm:action="add">
+                  <Order>3</Order>
+                  <PartitionID>3</PartitionID>
+                  <Format>NTFS</Format>
+                  <Label>Windows</Label>
+                  <Letter>C</Letter>
+                </ModifyPartition>
+              </ModifyPartitions>
+            </Disk>
+          </DiskConfiguration>
+          <ImageInstall>
+            <OSImage>
+              <InstallFrom>
+                <MetaData wcm:action="add">
+                  <Key>/Image/Description</Key>
+                  <Value>Windows Server 2025 SERVERDATACENTER</Value>
+                </MetaData>
+              </InstallFrom>
+              <InstallTo>
+                <DiskID>0</DiskID>
+                <PartitionID>3</PartitionID>
+              </InstallTo>
+            </OSImage>
+          </ImageInstall>
+        </component>
+      </settings>
+      <settings pass="specialize">
+        <component name="Microsoft-Windows-International-Core" processorArchitecture="amd64"
+                   publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS">
+          <InputLocale>en-US</InputLocale>
+          <SystemLocale>en-US</SystemLocale>
+          <UILanguage>en-US</UILanguage>
+          <UserLocale>en-US</UserLocale>
+        </component>
+      </settings>
+      <settings pass="oobeSystem">
+        <component name="Microsoft-Windows-Deployment" processorArchitecture="amd64"
+                   publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS">
+          <Reseal>
+            <Mode>Audit</Mode>
+          </Reseal>
+        </component>
+      </settings>
+      <settings pass="auditUser">
+        <component name="Microsoft-Windows-Deployment" processorArchitecture="amd64"
+                   publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS"
+                   xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State">
+          <RunSynchronous>
+            <RunSynchronousCommand wcm:action="add">
+              <Order>1</Order>
+              <Path>PowerShell -ExecutionPolicy Bypass -NoProfile F:\post-install.ps1</Path>
+              <Description>Run post-install script</Description>
+            </RunSynchronousCommand>
+          </RunSynchronous>
+          <Generalize>
+            <ForceShutdownNow>true</ForceShutdownNow>
+            <Mode>OOBE</Mode>
+          </Generalize>
+        </component>
+      </settings>
+    </unattend>
+  post-install.ps1: |
+    # Install VirtIO guest drivers
+    Start-Process msiexec -Wait -ArgumentList "/i E:\virtio-win-gt-x64.msi /qn /passive /norestart"
+
+    # Install QEMU guest agent
+    Start-Process msiexec -Wait -ArgumentList "/i E:\guest-agent\qemu-ga-x86_64.msi /qn /passive /norestart"
+
+    # Rename cached unattend.xml to prevent sysprep from reusing the install-time answer file
+    mv C:\Windows\Panther\unattend.xml C:\Windows\Panther\unattend.install.xml
+
+    # Eject CD to prevent autounattend.xml on CD from being picked up by sysprep
+    (New-Object -COMObject Shell.Application).NameSpace(17).ParseName("F:").InvokeVerb("Eject")
