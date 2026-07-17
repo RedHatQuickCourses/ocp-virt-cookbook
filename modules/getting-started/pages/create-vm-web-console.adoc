@@ -5,6 +5,57 @@
 
 This tutorial demonstrates how to create virtual machines using the OpenShift web console and pre-built templates. The web console provides an intuitive graphical interface for VM management, making it an ideal starting point for new users.
 
+== How Template-Based VM Creation Works
+
+When you create a VM from a template in the web console, OpenShift Virtualization triggers a chain of resource operations behind the scenes. Understanding this flow helps you troubleshoot provisioning issues and plan storage requirements.
+
+[source,text]
+----
+                                 openshift-virtualization-os-images namespace
+                                +------------------------------------------+
+                                |                                          |
+  VM Template                   |   DataSource                             |
+  (defines VM spec,         ---------->  (points to a golden-image PVC     |
+   boot source ref,         |   |    for a specific OS version)            |
+   CPU/memory defaults)     |   |        |                                 |
+                            |   +------------------------------------------+
+                            |            |
+                            |            |  clone operation
+                            |            v
+                            |   +------------------------------------------+
+                            |   |  your-project namespace                  |
+                            |   |                                          |
+                            |   |   DataVolume                             |
+                            |   |   (manages the clone and creates         |
+                            |   |    a PVC with the OS disk)               |
+                            |   |        |                                 |
+                            |   |        v                                 |
+                            |   |   PVC                                    |
+                            |   |   (persistent disk with the              |
+                            |   |    cloned OS image)                      |
+                            |   |        |                                 |
+                            |   |        v                                 |
+                            |   |   virt-launcher pod                      |
+                            |   |   (runs QEMU/KVM, mounts the PVC,       |
+                            |   |    boots the VM)                         |
+                            |   |        |                                 |
+                            |   |        v                                 |
+                            |   |   Running VirtualMachineInstance         |
+                            |   |                                          |
+                            |   +------------------------------------------+
+----
+
+The key steps in this flow are:
+
+. The **Template** defines a VirtualMachine spec with a reference to a DataSource for the boot disk, along with default CPU, memory, and device settings.
+. The **DataSource** in the `openshift-virtualization-os-images` namespace points to a pre-imported golden-image PVC for the chosen operating system.
+. A **DataVolume** is created in your project namespace. It orchestrates a clone of the golden-image PVC.
+. The clone produces a **PVC** in your namespace containing a copy of the OS disk.
+. A **virt-launcher pod** starts, mounts the PVC, and runs the VM through QEMU/KVM.
+. The **VirtualMachineInstance** (VMI) represents the running VM and reports its status, IP address, and node placement.
+
+NOTE: The clone operation duration depends on the disk size and the storage backend. Storage classes that support smart cloning (CSI volume cloning or snapshot-based cloning) complete faster than host-assisted copies.
+
 == Prerequisites
 
 * OpenShift 4.18+ with OpenShift Virtualization operator installed (see link:https://docs.redhat.com/en/documentation/openshift_container_platform/latest/html/virtualization/installing[Installing OpenShift Virtualization,window=_blank])
@@ -50,6 +101,27 @@ Each template includes:
 * Appropriate disk size for the OS
 * Boot source reference (DataSource)
 * Cloud-init or sysprep configuration (where applicable)
+
+== What a VM Template Contains
+
+A VM template is an OpenShift Template resource that wraps a VirtualMachine manifest with parameterized fields. When you select a template in the web console, the console fills in those parameters (VM name, namespace, disk size) and produces a complete VirtualMachine object.
+
+A template differs from a raw VirtualMachine manifest in three ways:
+
+* **Parameters** -- Fields like `${NAME}` and `${DATA_SOURCE_NAME}` are replaced at creation time. This allows one template to produce many VMs with different names and configurations.
+* **DataSource references** -- Instead of specifying a disk image URL or PVC directly, templates reference a DataSource in the `openshift-virtualization-os-images` namespace. The DataSource abstracts the boot image location, so templates stay valid even when the underlying golden image is updated.
+* **Web console annotations** -- Templates carry annotations such as `template.kubevirt.io/type`, `name.os.template.kubevirt.io`, and `description` that tell the web console how to display the template in the catalog, which icon to show, and what default values to present.
+
+You can inspect any template to see its structure:
+
+[source,bash,role=execute]
+----
+oc get template fedora-server-small -n openshift -o yaml
+----
+
+The output shows the `parameters` section at the bottom of the template and the VirtualMachine object definition in the `objects` section. The web console reads both sections to build the customization form you see during VM creation.
+
+TIP: To create templates tailored to your organization, see xref:vm-configuration:vm-templates.adoc[Create Custom Virtual Machine Templates].
 
 == Step 3: Create a VM from a Template
 
@@ -263,10 +335,40 @@ This is useful for:
 * When default template settings are acceptable
 * Rapid prototyping
 
+== Choosing the Right VM Creation Method
+
+OpenShift Virtualization offers several ways to create VMs. Each method fits different needs. Use the following guidance to pick the right approach.
+
+=== Quick Create from Template
+
+Best for: testing, demos, and throwaway development VMs.
+
+You accept the template defaults and get a running VM in seconds. There is nothing to configure. Use this when you need a VM quickly and don't care about specific resource settings.
+
+=== Customized Template
+
+Best for: VMs that need specific CPU, memory, or disk sizes but can use the OS defaults from a standard template.
+
+You select a template, then adjust individual fields (core count, memory, disk size, cloud-init user data) in the web console before creating. This is the most common method for day-to-day work.
+
+=== Custom YAML Manifests
+
+Best for: automation, GitOps pipelines, multi-NIC configurations, and cases where you need full control over every field.
+
+You write a VirtualMachine manifest directly and apply it with `oc apply -f`. This approach integrates with version control and CI/CD systems. See xref:create-vm-cli-yaml.adoc[Creating VMs from CLI Using YAML Manifests] for details.
+
+=== Custom Templates
+
+Best for: organizations that have standardized VM configurations and want to offer pre-approved VM types to their teams.
+
+You create an OpenShift Template that encodes your organization's standards (approved OS images, network policies, resource limits, required labels). Teams then create VMs from these templates through the web console without needing to know the underlying configuration. See xref:vm-configuration:vm-templates.adoc[Create Custom Virtual Machine Templates] for instructions.
+
 == Summary
 
 You have learned how to:
 
+* Understand the resource flow from template to running VM (Template, DataSource, DataVolume, PVC, virt-launcher pod)
+* Identify what a VM template contains and how it differs from a raw VirtualMachine manifest
 * Navigate to the Virtualization section in the web console
 * Browse and select VM templates
 * Create a VM with customized settings
@@ -274,6 +376,7 @@ You have learned how to:
 * Access the VM console through the web browser
 * Perform basic VM operations (stop, start, restart, delete)
 * View VM details and metrics
+* Choose between quick create, customized templates, custom YAML, and custom templates based on your use case
 
 == Next Steps
 
