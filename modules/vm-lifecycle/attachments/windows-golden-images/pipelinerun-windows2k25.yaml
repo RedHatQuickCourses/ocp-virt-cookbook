@@ -1,0 +1,40 @@
+apiVersion: tekton.dev/v1
+kind: PipelineRun
+metadata:
+  generateName: windows2k25-installer-run-
+  namespace: default
+spec:
+  params:
+    - name: winImageDownloadURL
+      value: "REPLACE_WITH_YOUR_ISO_URL"
+    - name: acceptEula
+      value: "true"
+    - name: preferenceName
+      value: windows.2k25.virtio
+    - name: autounattendConfigMapName
+      value: windows2k25-autounattend
+    - name: baseDvName
+      value: win2k25
+    - name: isoDVName
+      value: win2k25
+  pipelineRef:
+    params:
+      - name: catalog
+        value: redhat-pipelines
+      - name: type
+        value: artifact
+      - name: kind
+        value: pipeline
+      - name: name
+        value: windows-efi-installer
+      - name: version
+        value: v4.21.0
+    resolver: hub
+  taskRunSpecs:
+    - pipelineTaskName: modify-windows-iso-file
+      podTemplate:
+        securityContext:
+          fsGroup: 107
+          runAsUser: 107
+  timeouts:
+    pipeline: 1h0m0s

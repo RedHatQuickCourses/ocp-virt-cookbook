@@ -1,0 +1,782 @@
+= Creating Windows Golden Images
+:navtitle: Windows Golden Images
+
+== Overview
+
+This tutorial walks you through creating a Windows Server 2025 golden image on OpenShift Virtualization using the `windows-efi-installer` Tekton pipeline. The pipeline automates the full workflow: downloading the ISO, modifying it for unattended boot, running a silent installation with VirtIO drivers, and generalizing the image with sysprep. Once complete, you can deploy new Windows VMs from this golden image, with per-clone customization handled through a sysprep `unattend.xml` file.
+
+The pipeline approach is necessary for Windows because Windows lacks an equivalent to Linux's cloud-init. Instead, Windows uses `autounattend.xml` for unattended installation and sysprep for generalization. Automating these steps by hand is error-prone, so the pipeline handles it end to end.
+
+== What You Will Learn
+
+* How Windows golden images differ from Linux golden images
+* How to configure an `autounattend.xml` for unattended Windows Server 2025 installation
+* How to run the `windows-efi-installer` Tekton pipeline to build a golden image
+* How to deploy VMs from the golden image with per-clone sysprep customization
+* How to adapt the process for other Windows versions (10, 11, Server 2022)
+
+== How Windows Golden Images Differ from Linux
+
+Linux and Windows use different mechanisms at each stage of the golden image workflow:
+
+[cols="1,1,1"]
+|===
+|Stage |Linux |Windows
+
+|**Unattended install**
+|Kickstart or preseed
+|`autounattend.xml` (Windows Setup answer file)
+
+|**Post-install customization**
+|cloud-init on first boot
+|`unattend.xml` via sysprep on first boot (OOBE pass)
+
+|**Generalization**
+|Remove `/etc/machine-id`, run `cloud-init clean`
+|Run `sysprep /generalize /oobe /shutdown`
+
+|**Per-clone identity**
+|cloud-init `userData` (hostname, SSH keys, packages)
+|Sysprep `unattend.xml` volume (hostname, admin password, RDP)
+
+|**Driver injection**
+|Drivers typically included in kernel
+|VirtIO drivers must be loaded during installation
+|===
+
+The `windows-efi-installer` pipeline automates all of these steps. It downloads the ISO, patches the bootloader for unattended boot, creates a blank disk, boots an installer VM with the `autounattend.xml` ConfigMap and the VirtIO driver container disk, waits for installation and sysprep to finish, and publishes the resulting disk as a DataSource.
+
+== Prerequisites
+
+* OpenShift 4.18+ with OpenShift Virtualization operator installed
+* OpenShift Pipelines operator installed (provides Tekton)
+* CLI tools: `oc` and `kubectl`
+* A Windows Server 2025 evaluation ISO download URL from the link:https://www.microsoft.com/en-us/evalcenter/evaluate-windows-server-2025[Microsoft Evaluation Center,window=_blank]
+* A storage class with at least 60 GiB available for the root disk
+* Network access from the cluster to `go.microsoft.com` (or an internal ISO mirror)
+* Familiarity with the xref:custom-golden-images.adoc[Linux golden image workflow]
+
+== Step 1: Prepare the Namespace and Service Account
+
+The pipeline runs in the `default` namespace. The `modify-windows-iso-file` pipeline task requires specific user and group IDs to write to its workspace volume. Grant the `anyuid` Security Context Constraint (SCC) to the `pipeline` service account:
+
+[source,bash,role=execute]
+----
+oc adm policy add-scc-to-user anyuid -z pipeline -n default
+----
+
+This allows the task pod to run with `runAsUser: 107` and `fsGroup: 107`, which the ISO modification tool requires.
+
+== Step 2: Obtain the Windows ISO URL
+
+. Visit the link:https://www.microsoft.com/en-us/evalcenter/evaluate-windows-server-2025[Microsoft Evaluation Center for Windows Server 2025,window=_blank].
+. Sign in with a Microsoft account (free registration).
+. Select **64-bit edition**, language **English (United States)**, and fill in the registration form.
+. On the download page, right-click the **Download** button and copy the link address. Do not click the button directly.
+. Save this URL. You will use it in the PipelineRun manifest.
+
+NOTE: The download URL is temporary and expires after approximately 24 hours. If the pipeline fails to download the ISO, generate a new URL from the Evaluation Center.
+
+NOTE: Evaluation ISOs have a 180-day trial limit. For production use, use a licensed ISO from your volume licensing portal.
+
+For other Windows versions, use these download pages:
+
+* link:https://www.microsoft.com/en-us/evalcenter/evaluate-windows-10-enterprise[Windows 10 Enterprise,window=_blank]
+* link:https://www.microsoft.com/en-us/evalcenter/evaluate-windows-11-enterprise[Windows 11 Enterprise,window=_blank]
+* link:https://www.microsoft.com/en-us/evalcenter/evaluate-windows-server-2022[Windows Server 2022,window=_blank]
+
+== Step 3: Create the Autounattend ConfigMap
+
+The `autounattend.xml` file tells Windows Setup how to install unattended, and the `post-install.ps1` script runs after installation to install drivers and prepare the image for sysprep. Both files are stored in a single ConfigMap with two keys.
+
+xref:attachment$windows-golden-images/configmap-windows2k25-autounattend.yaml[Download configmap-windows2k25-autounattend.yaml]
+
+[source,yaml]
+----
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: windows2k25-autounattend
+  namespace: default
+data:
+  autounattend.xml: |
+    <?xml version="1.0" encoding="utf-8"?>
+    <unattend xmlns="urn:schemas-microsoft-com:unattend">
+      <settings pass="windowsPE">
+        <component name="Microsoft-Windows-PnpCustomizationsWinPE" processorArchitecture="amd64"
+                   publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS"
+                   xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State">
+          <DriverPaths>
+            <PathAndCredentials wcm:action="add" wcm:keyValue="1">
+              <Path>E:\viostor\2k25\amd64</Path>
+            </PathAndCredentials>
+            <PathAndCredentials wcm:action="add" wcm:keyValue="2">
+              <Path>E:\NetKVM\2k25\amd64</Path>
+            </PathAndCredentials>
+          </DriverPaths>
+        </component>
+        <component name="Microsoft-Windows-International-Core-WinPE" processorArchitecture="amd64"
+                   publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS">
+          <SetupUILanguage>
+            <UILanguage>en-US</UILanguage>
+          </SetupUILanguage>
+          <InputLocale>en-US</InputLocale>
+          <SystemLocale>en-US</SystemLocale>
+          <UILanguage>en-US</UILanguage>
+          <UserLocale>en-US</UserLocale>
+        </component>
+        <component name="Microsoft-Windows-Setup" processorArchitecture="amd64"
+                   publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS"
+                   xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State">
+          <UserData>
+            <AcceptEula>true</AcceptEula>
+          </UserData>
+          <DiskConfiguration>
+            <Disk wcm:action="add">
+              <DiskID>0</DiskID>
+              <WillWipeDisk>true</WillWipeDisk>
+              <CreatePartitions>
+                <CreatePartition wcm:action="add">
+                  <Order>1</Order>
+                  <Type>EFI</Type>
+                  <Size>100</Size>
+                </CreatePartition>
+                <CreatePartition wcm:action="add">
+                  <Order>2</Order>
+                  <Type>MSR</Type>
+                  <Size>16</Size>
+                </CreatePartition>
+                <CreatePartition wcm:action="add">
+                  <Order>3</Order>
+                  <Type>Primary</Type>
+                  <Extend>true</Extend>
+                </CreatePartition>
+              </CreatePartitions>
+              <ModifyPartitions>
+                <ModifyPartition wcm:action="add">
+                  <Order>1</Order>
+                  <PartitionID>1</PartitionID>
+                  <Format>FAT32</Format>
+                  <Label>System</Label>
+                </ModifyPartition>
+                <ModifyPartition wcm:action="add">
+                  <Order>2</Order>
+                  <PartitionID>2</PartitionID>
+                </ModifyPartition>
+                <ModifyPartition wcm:action="add">
+                  <Order>3</Order>
+                  <PartitionID>3</PartitionID>
+                  <Format>NTFS</Format>
+                  <Label>Windows</Label>
+                  <Letter>C</Letter>
+                </ModifyPartition>
+              </ModifyPartitions>
+            </Disk>
+          </DiskConfiguration>
+          <ImageInstall>
+            <OSImage>
+              <InstallFrom>
+                <MetaData wcm:action="add">
+                  <Key>/Image/Description</Key>
+                  <Value>Windows Server 2025 SERVERDATACENTER</Value>
+                </MetaData>
+              </InstallFrom>
+              <InstallTo>
+                <DiskID>0</DiskID>
+                <PartitionID>3</PartitionID>
+              </InstallTo>
+            </OSImage>
+          </ImageInstall>
+        </component>
+      </settings>
+      <settings pass="specialize">
+        <component name="Microsoft-Windows-International-Core" processorArchitecture="amd64"
+                   publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS">
+          <InputLocale>en-US</InputLocale>
+          <SystemLocale>en-US</SystemLocale>
+          <UILanguage>en-US</UILanguage>
+          <UserLocale>en-US</UserLocale>
+        </component>
+      </settings>
+      <settings pass="oobeSystem">
+        <component name="Microsoft-Windows-Deployment" processorArchitecture="amd64"
+                   publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS">
+          <Reseal>
+            <Mode>Audit</Mode>
+          </Reseal>
+        </component>
+      </settings>
+      <settings pass="auditUser">
+        <component name="Microsoft-Windows-Deployment" processorArchitecture="amd64"
+                   publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS"
+                   xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State">
+          <RunSynchronous>
+            <RunSynchronousCommand wcm:action="add">
+              <Order>1</Order>
+              <Path>PowerShell -ExecutionPolicy Bypass -NoProfile F:\post-install.ps1</Path>
+              <Description>Run post-install script</Description>
+            </RunSynchronousCommand>
+          </RunSynchronous>
+          <Generalize>
+            <ForceShutdownNow>true</ForceShutdownNow>
+            <Mode>OOBE</Mode>
+          </Generalize>
+        </component>
+      </settings>
+    </unattend>
+  post-install.ps1: |
+    # Install VirtIO guest drivers
+    Start-Process msiexec -Wait -ArgumentList "/i E:\virtio-win-gt-x64.msi /qn /passive /norestart"
+
+    # Install QEMU guest agent
+    Start-Process msiexec -Wait -ArgumentList "/i E:\guest-agent\qemu-ga-x86_64.msi /qn /passive /norestart"
+
+    # Rename cached unattend.xml to prevent sysprep from reusing the install-time answer file
+    mv C:\Windows\Panther\unattend.xml C:\Windows\Panther\unattend.install.xml
+
+    # Eject CD to prevent autounattend.xml on CD from being picked up by sysprep
+    (New-Object -COMObject Shell.Application).NameSpace(17).ParseName("F:").InvokeVerb("Eject")
+----
+
+Apply the ConfigMap:
+
+[source,bash,role=execute]
+----
+oc apply -f configmap-windows2k25-autounattend.yaml
+----
+
+=== What the autounattend.xml does
+
+The file contains four Windows Setup passes:
+
+. **windowsPE** -- Runs during the Windows Preinstallation Environment before files are copied to disk. It loads VirtIO storage (`viostor`) and network (`NetKVM`) drivers so the installer can see the VirtIO SCSI disk and NIC. It also partitions the disk with GPT layout (EFI, MSR, and primary partitions), selects the Windows Server 2025 Datacenter (Desktop Experience) edition, and accepts the EULA.
+
+. **specialize** -- Runs after files are copied to disk. Sets regional and language preferences to `en-US`.
+
+. **oobeSystem** -- Normally this pass runs the Out-Of-Box Experience (OOBE) wizard. Here it is configured to reseal into Audit mode instead, which skips OOBE and boots directly to the desktop as the built-in Administrator so the post-install script can run.
+
+. **auditUser** -- Runs in Audit mode. It executes `post-install.ps1`, then calls `sysprep /generalize /oobe /shutdown` to strip machine-specific identifiers and shut down the VM. The resulting disk is a clean, generalized golden image.
+
+=== What the post-install.ps1 does
+
+The PowerShell script runs as SYSTEM in Audit mode and performs four tasks:
+
+. Installs the VirtIO guest driver package (`virtio-win-gt-x64.msi`) from the VirtIO container disk mounted at `E:\`.
+. Installs the QEMU guest agent (`qemu-ga-x86_64.msi`) so that OpenShift can communicate with the VM after deployment.
+. Renames the cached `C:\Windows\Panther\unattend.xml` to `unattend.install.xml`. This prevents sysprep from picking up the install-time answer file when a cloned VM boots for the first time.
+. Ejects the CD-ROM drive to prevent the `autounattend.xml` on the CD from being reused on subsequent boots.
+
+== Step 4: Run the Pipeline
+
+Replace `REPLACE_WITH_YOUR_ISO_URL` in the following manifest with the URL you copied in Step 2.
+
+xref:attachment$windows-golden-images/pipelinerun-windows2k25.yaml[Download pipelinerun-windows2k25.yaml]
+
+[source,yaml]
+----
+apiVersion: tekton.dev/v1
+kind: PipelineRun
+metadata:
+  generateName: windows2k25-installer-run-
+  namespace: default
+spec:
+  params:
+    - name: winImageDownloadURL
+      value: "REPLACE_WITH_YOUR_ISO_URL"
+    - name: acceptEula
+      value: "true"
+    - name: preferenceName
+      value: windows.2k25.virtio
+    - name: autounattendConfigMapName
+      value: windows2k25-autounattend
+    - name: baseDvName
+      value: win2k25
+    - name: isoDVName
+      value: win2k25
+  pipelineRef:
+    params:
+      - name: catalog
+        value: redhat-pipelines
+      - name: type
+        value: artifact
+      - name: kind
+        value: pipeline
+      - name: name
+        value: windows-efi-installer
+      - name: version
+        value: v4.21.0
+    resolver: hub
+  taskRunSpecs:
+    - pipelineTaskName: modify-windows-iso-file
+      podTemplate:
+        securityContext:
+          fsGroup: 107
+          runAsUser: 107
+  timeouts:
+    pipeline: 1h0m0s
+----
+
+Create the PipelineRun. Use `oc create` instead of `oc apply` because the manifest uses `generateName`:
+
+[source,bash,role=execute]
+----
+oc create -f pipelinerun-windows2k25.yaml
+----
+
+Monitor the pipeline progress:
+
+[source,bash,role=execute]
+----
+oc get pipelinerun -n default -w
+----
+
+Press `Ctrl+C` to exit the watch once the PipelineRun shows `Succeeded`.
+
+You can also monitor the DataVolumes created by the pipeline:
+
+[source,bash,role=execute]
+----
+oc get dv -n default -w
+----
+
+=== What the pipeline does
+
+The `windows-efi-installer` pipeline runs the following stages:
+
+. **Import autounattend ConfigMap** -- Reads the `autounattend.xml` and `post-install.ps1` from the ConfigMap you created.
+. **Download Windows ISO** -- Downloads the ISO into a DataVolume.
+. **Modify ISO** -- Replaces the interactive EFI bootloader (`efisys.bin`) with a no-prompt bootloader (`efisys_noprompt.bin`) so the installer boots without waiting for "Press any key."
+. **Create blank root disk** -- Creates a 60 GiB DataVolume for the Windows installation target.
+. **Boot installer VM** -- Starts a VM with the modified ISO, the blank root disk, and the VirtIO driver container disk. The `autounattend.xml` drives the entire installation without user interaction.
+. **Wait for shutdown** -- The pipeline waits for the VM to shut down, which happens after sysprep generalize completes in the `auditUser` pass.
+. **Create DataSource** -- Creates a DataSource pointing to the installed root disk, making it available as a clone source.
+. **Clean up** -- Removes the installer VM and temporary DataVolumes (ISO, modified ISO).
+
+The full pipeline takes 30 to 60 minutes depending on network speed (ISO download) and storage performance (disk cloning).
+
+== Step 5: Verify the Golden Image
+
+After the pipeline completes, verify the golden image DataVolume and DataSource exist:
+
+[source,bash,role=execute]
+----
+oc get dv win2k25 -n default
+----
+
+.Expected output
+[source,text]
+----
+NAME      PHASE       PROGRESS   RESTARTS   AGE
+win2k25   Succeeded   100.0%                45m
+----
+
+[source,bash,role=execute]
+----
+oc get datasource win2k25 -n default
+----
+
+.Expected output
+[source,text]
+----
+NAME      AGE
+win2k25   45m
+----
+
+Confirm the PipelineRun completed successfully:
+
+[source,bash,role=execute]
+----
+oc get pipelinerun -n default
+----
+
+.Expected output
+[source,text]
+----
+NAME                              SUCCEEDED   REASON      STARTTIME   COMPLETIONTIME
+windows2k25-installer-run-abcde   True        Succeeded   50m         5m
+----
+
+== Step 6: Deploy a VM from the Golden Image
+
+Each VM cloned from the golden image needs its own sysprep `unattend.xml` to configure machine-specific settings during the first boot OOBE pass. This file is stored in a ConfigMap and attached to the VM as a sysprep volume. KubeVirt mounts it as a floppy or CD and Windows Setup reads it automatically during OOBE.
+
+=== Create the sysprep ConfigMap
+
+The `unattend.xml` below sets the hostname to `WIN-SERVER-01`, sets the Administrator password, enables auto-logon, extends the OS partition to fill the disk, enables Remote Desktop, and skips all OOBE screens.
+
+WARNING: The password in this example is for demo purposes only. Use a strong, unique password in production environments.
+
+xref:attachment$windows-golden-images/sysprep-unattend-configmap.yaml[Download sysprep-unattend-configmap.yaml]
+
+[source,yaml]
+----
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: win2k25-sysprep-unattend
+  namespace: default
+data:
+  unattend.xml: |
+    <?xml version="1.0" encoding="utf-8"?>
+    <unattend xmlns="urn:schemas-microsoft-com:unattend">
+      <settings pass="specialize">
+        <component name="Microsoft-Windows-Shell-Setup" processorArchitecture="amd64"
+                   publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS">
+          <ComputerName>WIN-SERVER-01</ComputerName>
+        </component>
+        <component name="Microsoft-Windows-Deployment" processorArchitecture="amd64"
+                   publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS">
+          <ExtendOSPartition>
+            <Extend>true</Extend>
+          </ExtendOSPartition>
+        </component>
+        <component name="Microsoft-Windows-TerminalServices-LocalSessionManager"
+                   processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35"
+                   language="neutral" versionScope="nonSxS">
+          <fDenyTSConnections>false</fDenyTSConnections>
+        </component>
+        <component xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State"
+                   name="Networking-MPSSVC-Svc" processorArchitecture="amd64"
+                   publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS">
+          <FirewallGroups>
+            <FirewallGroup wcm:action="add" wcm:keyValue="RemoteDesktop">
+              <Active>true</Active>
+              <Group>Remote Desktop</Group>
+              <Profile>all</Profile>
+            </FirewallGroup>
+          </FirewallGroups>
+        </component>
+      </settings>
+      <settings pass="oobeSystem">
+        <component xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State"
+                   name="Microsoft-Windows-Shell-Setup" processorArchitecture="amd64"
+                   publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS">
+          <OOBE>
+            <HideEULAPage>true</HideEULAPage>
+            <HideOEMRegistrationScreen>true</HideOEMRegistrationScreen>
+            <HideOnlineAccountScreens>true</HideOnlineAccountScreens>
+            <HideWirelessSetupInOOBE>true</HideWirelessSetupInOOBE>
+            <NetworkLocation>Work</NetworkLocation>
+            <SkipUserOOBE>true</SkipUserOOBE>
+            <SkipMachineOOBE>true</SkipMachineOOBE>
+            <ProtectYourPC>3</ProtectYourPC>
+          </OOBE>
+          <AutoLogon>
+            <Password>
+              <Value>R3dH4t1!</Value>
+              <PlainText>true</PlainText>
+            </Password>
+            <Enabled>true</Enabled>
+            <Username>Administrator</Username>
+          </AutoLogon>
+          <UserAccounts>
+            <AdministratorPassword>
+              <Value>R3dH4t1!</Value>
+              <PlainText>true</PlainText>
+            </AdministratorPassword>
+          </UserAccounts>
+          <TimeZone>UTC</TimeZone>
+        </component>
+      </settings>
+    </unattend>
+----
+
+Apply the ConfigMap:
+
+[source,bash,role=execute]
+----
+oc apply -f sysprep-unattend-configmap.yaml
+----
+
+=== Create the VM
+
+The VM below clones its root disk from the `win2k25` DataSource and attaches the sysprep ConfigMap as a volume. The hardware configuration includes Hyper-V enlightenments, EFI with Secure Boot, TPM, and VirtIO devices.
+
+xref:attachment$windows-golden-images/windows-vm-from-golden.yaml[Download windows-vm-from-golden.yaml]
+
+[source,yaml]
+----
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: win2k25-vm-1
+  namespace: default
+spec:
+  dataVolumeTemplates:
+    - apiVersion: cdi.kubevirt.io/v1beta1
+      kind: DataVolume
+      metadata:
+        name: win2k25-vm-1-disk
+      spec:
+        sourceRef:
+          kind: DataSource
+          name: win2k25
+          namespace: default
+        storage:
+          resources:
+            requests:
+              storage: 60Gi
+  runStrategy: RerunOnFailure
+  template:
+    metadata:
+      labels:
+        kubevirt.io/domain: win2k25-vm-1
+    spec:
+      domain:
+        cpu:
+          cores: 2
+          sockets: 1
+          threads: 2
+        memory:
+          guest: 4Gi
+        devices:
+          disks:
+            - name: rootdisk
+              disk:
+                bus: virtio
+            - name: sysprep
+              cdrom:
+                bus: sata
+          interfaces:
+            - name: default
+              masquerade: {}
+              model: virtio
+          tpm: {}
+          rng: {}
+        clock:
+          utc: {}
+          timer:
+            hpet:
+              present: false
+            pit:
+              tickPolicy: delay
+            rtc:
+              tickPolicy: catchup
+            hyperv: {}
+        features:
+          acpi: {}
+          apic: {}
+          hyperv:
+            relaxed: {}
+            vapic: {}
+            spinlocks:
+              spinlocks: 8191
+            vpindex: {}
+            runtime: {}
+            synic: {}
+            stimer: {}
+            reset: {}
+            frequencies: {}
+            reenlightenment: {}
+            tlbflush: {}
+            ipi: {}
+          smm:
+            enabled: true
+        firmware:
+          bootloader:
+            efi:
+              secureBoot: true
+      networks:
+        - name: default
+          pod: {}
+      volumes:
+        - name: rootdisk
+          dataVolume:
+            name: win2k25-vm-1-disk
+        - name: sysprep
+          sysprep:
+            configMap:
+              name: win2k25-sysprep-unattend
+----
+
+Apply the VM manifest:
+
+[source,bash,role=execute]
+----
+oc apply -f windows-vm-from-golden.yaml
+----
+
+Wait for the disk to clone and the VM to start. The clone takes a few minutes, and Windows OOBE runs in the background for up to 5 minutes after the VM boots:
+
+[source,bash,role=execute]
+----
+oc get dv win2k25-vm-1-disk -n default -w
+----
+
+Once the DataVolume shows `Succeeded`, watch the VM status:
+
+[source,bash,role=execute]
+----
+oc get vmi win2k25-vm-1 -n default -w
+----
+
+Wait until the VM shows `PHASE=Running` and `READY=True`, then press `Ctrl+C`.
+
+== Step 7: Verify the Deployed VM
+
+Check the VM instance status:
+
+[source,bash,role=execute]
+----
+oc get vmi win2k25-vm-1 -n default
+----
+
+.Expected output
+[source,text]
+----
+NAME            AGE   PHASE     IP             NODENAME     READY
+win2k25-vm-1    8m    Running   10.128.1.155   worker-01    True
+----
+
+Query the guest OS information reported by the QEMU guest agent:
+
+[source,bash,role=execute]
+----
+oc get vmi win2k25-vm-1 -n default -o jsonpath='{.status.guestOSInfo}' | python3 -m json.tool
+----
+
+.Expected output
+[source,json]
+----
+{
+    "id": "mswindows",
+    "kernelRelease": "10.0.26100",
+    "name": "Microsoft Windows Server 2025 Datacenter",
+    "prettyName": "Windows Server 2025 Datacenter",
+    "version": "10.0",
+    "versionId": "10.0"
+}
+----
+
+If the `guestOSInfo` field is empty, wait a few more minutes. The QEMU guest agent starts after OOBE completes, which can take up to 5 minutes on first boot.
+
+To verify the hostname was set correctly, connect via the VNC console.
+On macOS, `virtctl` does not auto-detect VNC viewers, so you must specify the viewer type and path with `--vnc-type` and `--vnc-path`:
+
+[source,bash,role=execute]
+----
+virtctl vnc win2k25-vm-1 -n default --vnc-type=tiger --vnc-path=/usr/local/bin/vncviewer
+----
+
+Log in as `Administrator` with the password from the sysprep ConfigMap and confirm the hostname in **System Properties** or by running `hostname` in a command prompt.
+
+For RDP access, see xref:vm-configuration:remote-access-windows-vms.adoc[Remote Access to Windows VMs via RDP].
+
+== Updating the Golden Image
+
+To create an updated golden image:
+
+. Generate a new ISO download URL from the Microsoft Evaluation Center (or use an updated licensed ISO).
+. Modify the `autounattend.xml` if needed (for example, to add new software in the post-install script).
+. Re-run the pipeline with a different `baseDvName` value, such as `win2k25-v2`.
+. Update your VM manifests to reference the new DataSource name.
+
+Use versioned DataSource names (`win2k25-v1`, `win2k25-v2`, `win2k25-2025-07`) so you can roll back to a previous version if needed. Keep at least one previous version available.
+
+== Adapting for Other Windows Versions
+
+To build golden images for other Windows versions, adjust the PipelineRun parameters and the `autounattend.xml` driver paths. The table below lists the required changes:
+
+[cols="1,1,1,1"]
+|===
+|Version |`preferenceName` |`autounattendConfigMapName` |VirtIO driver paths
+
+|Windows 10
+|`windows.10.virtio`
+|`windows10-efi-autounattend`
+|`viostor/w10/amd64`, `NetKVM/w10/amd64`
+
+|Windows 11
+|_(default)_
+|`windows11-autounattend`
+|`viostor/w11/amd64`, `NetKVM/w11/amd64`
+
+|Server 2022
+|`windows.2k22.virtio`
+|`windows2k22-autounattend`
+|`viostor/2k22/amd64`, `NetKVM/2k22/amd64`
+
+|Server 2025
+|`windows.2k25.virtio`
+|`windows2k25-autounattend`
+|`viostor/2k25/amd64`, `NetKVM/2k25/amd64`
+|===
+
+You also need to change the `ImageInstall` section in `autounattend.xml` to match the edition string for the target OS. For example, Windows 11 Enterprise uses `Windows 11 Enterprise` instead of `Windows Server 2025 SERVERDATACENTER`.
+
+== Troubleshooting
+
+[cols="1,2"]
+|===
+|Problem |Solution
+
+|**Pipeline fails at `modify-windows-iso-file` with "file not found: efisys_noprompt.bin"**
+|The ISO may not contain the no-prompt EFI bootloader. This file is present in standard Microsoft ISOs but may be missing from custom or slimmed-down ISOs. Use an unmodified ISO from the Microsoft Evaluation Center.
+
+|**Permission denied when modifying ISO**
+|Add the `taskRunSpecs` section to the PipelineRun with `fsGroup: 107` and `runAsUser: 107` as shown in Step 4. Also confirm the `anyuid` SCC is granted to the `pipeline` service account.
+
+|**Pipeline times out**
+|Increase `timeouts.pipeline` in the PipelineRun manifest. Slow network connections or storage backends can cause the pipeline to exceed the default 1-hour timeout. Check DataVolume progress with `oc get dv -w`.
+
+|**Cloned VM boots to OOBE wizard instead of desktop**
+|The sysprep ConfigMap key must be `unattend.xml`, not `autounattend.xml`. Windows only reads `autounattend.xml` from removable media during a fresh install. After sysprep, it reads `unattend.xml`. Also verify the ConfigMap name in the VM's `volumes.sysprep.configMap.name` matches the ConfigMap you created.
+
+|**Sysprep fails with "rearm count exceeded"**
+|Evaluation ISOs have a limited number of sysprep rearm cycles. Rebuild the golden image from a fresh ISO rather than re-sysprepping an existing image. For production use, use a volume-licensed ISO that does not have rearm limits.
+
+|**Cloned VM slow to respond after boot**
+|Windows OOBE runs in the background for up to 5 minutes on first boot. Wait for the guest agent to report `guestOSInfo` before assuming the VM is unresponsive.
+
+|**Guest agent not reporting OS info**
+|Verify the QEMU guest agent was installed by the `post-install.ps1` script. Connect to the VM console and check that the `QEMU Guest Agent` service is running in `services.msc`.
+|===
+
+== Cleanup
+
+Remove all resources created in this tutorial:
+
+[source,bash,role=execute]
+----
+oc delete vm win2k25-vm-1 -n default
+oc delete configmap win2k25-sysprep-unattend -n default
+oc delete configmap windows2k25-autounattend -n default
+oc delete datasource win2k25 -n default
+oc delete dv win2k25 -n default
+----
+
+To also remove the PipelineRun resources:
+
+[source,bash,role=execute]
+----
+oc delete pipelinerun -l tekton.dev/pipeline=windows-efi-installer -n default
+----
+
+To revoke the SCC granted in Step 1:
+
+[source,bash,role=execute]
+----
+oc adm policy remove-scc-from-user anyuid -z pipeline -n default
+----
+
+== Summary
+
+In this tutorial, you:
+
+* Configured an `autounattend.xml` ConfigMap for unattended Windows Server 2025 installation with VirtIO driver injection and sysprep generalization
+* Ran the `windows-efi-installer` Tekton pipeline to build a golden image from a Windows ISO
+* Verified the resulting DataVolume and DataSource
+* Deployed a VM from the golden image with per-clone sysprep customization (hostname, admin password, RDP)
+* Verified the deployed VM using guest agent information
+* Learned how to update golden images and adapt the process for other Windows versions
+
+== See Also
+
+* xref:custom-golden-images.adoc[Creating Custom OS Images and Golden Images (Linux)]
+* xref:vm-configuration:windows-vm-virtio-drivers.adoc[Windows VMs with VirtIO Drivers]
+* xref:vm-configuration:remote-access-windows-vms.adoc[Remote Access to Windows VMs via RDP]
+* link:https://artifacthub.io/packages/tekton-pipeline/redhat-pipelines/windows-efi-installer[windows-efi-installer on ArtifactHub,window=_blank]
+* link:https://github.com/kubevirt/kubevirt-tekton-tasks/blob/main/release/pipelines/windows-efi-installer/README.md[windows-efi-installer Pipeline README,window=_blank]
+* link:https://developers.redhat.com/articles/2024/09/09/create-windows-golden-image-openshift-virtualization[Red Hat Developer: Create a Windows Golden Image,window=_blank]
+* link:https://kubevirt.io/user-guide/user_workloads/startup_scripts/[KubeVirt Sysprep Documentation,window=_blank]
+* link:https://developer.hashicorp.com/packer/integrations/hashicorp/kubevirt[Packer KubeVirt Plugin,window=_blank]
