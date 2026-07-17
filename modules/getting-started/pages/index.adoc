@@ -3,16 +3,78 @@
 
 == Overview
 
-This module covers the essential tools and basic configuration needed to start working with OpenShift Virtualization. Whether you're new to OpenShift Virtualization or looking to refresh your knowledge, these guides will help you get up and running quickly.
+This module covers the tools and configuration needed to start working with OpenShift Virtualization. Whether you are new to OpenShift Virtualization or refreshing your knowledge, these guides take you from initial setup to running your first virtual machine.
 
-== What You'll Learn
+== Learning Path
+
+The diagram below shows the recommended tutorial order. Start with the quick start if you want a running VM in minutes, or follow the full path for a complete understanding.
+
+....
+  FAST TRACK
+  ┌──────────────────────────────────────────────────────┐
+  │  Quick Start — Get a VM running in 5 minutes         │
+  └──────────────────────────────────────────────────────┘
+
+
+  FULL LEARNING PATH
+
+  ┌────────────────┐    ┌──────────────────┐    ┌─────────────────┐
+  │ Prerequisites  ├───►│ Install Operator ├───►│ Default Storage │
+  └────────────────┘    └──────────────────┘    └────────┬────────┘
+                                                         │
+                         ┌───────────────────────────────┤
+                         ▼                               ▼
+                  ┌──────────────┐              ┌────────────────┐
+                  │ Create VM    │              │ Create VM      │
+                  │ (Console)    │              │ (CLI & YAML)   │
+                  └──────┬───────┘              └───────┬────────┘
+                         │                              │
+                         └──────────────┬───────────────┘
+                                        ▼
+                              ┌──────────────────┐
+                              │  VM Lifecycle    │
+                              └────────┬─────────┘
+                                       ▼
+                              ┌──────────────────┐
+                              │  virtctl Basics  │
+                              └────────┬─────────┘
+                                       ▼
+                              ┌──────────────────┐
+                              │  Cloud-init      │
+                              │  Fundamentals    │
+                              └──────────────────┘
+....
+
+TIP: Already have the operator installed? Skip directly to xref:default-storage-class.adoc[Configure Storage].
+
+== Who Is This For?
+
+Different roles can take different paths through this module.
+
+VM administrator migrating from VMware or Hyper-V::
+Start with xref:prerequisites.adoc[] to understand the environment. Then follow xref:install-openshift-virtualization.adoc[] and xref:create-vm-web-console.adoc[] to create your first VM from the web console. Continue with xref:vm-lifecycle-states.adoc[] to learn how VMs are managed in OpenShift.
+
+Developer needing a test VM::
+Start with xref:vm-quick-start.adoc[] to get a VM running in minutes. Then read xref:virtctl-basics.adoc[] to manage VMs from the command line.
+
+Platform engineer::
+Follow the full learning path in order: xref:prerequisites.adoc[], xref:install-openshift-virtualization.adoc[], xref:default-storage-class.adoc[], and both VM creation tutorials. After completing this module, continue with the xref:networking:index.adoc[Networking] and xref:storage:index.adoc[Storage] modules.
+
+Evaluator or decision maker::
+Read xref:install-openshift-virtualization.adoc[] to understand what the operator provides. Then follow xref:create-vm-web-console.adoc[] to see a VM running in the console. The xref:vm-lifecycle-states.adoc[] page shows day-to-day management operations.
+
+== What You Will Learn
 
 In this section, you will learn:
 
 * Prerequisites and required tools for working with OpenShift Virtualization
 * The architecture of OpenShift Virtualization and how VMs run on Kubernetes
 * Basic usage of the virtctl command-line tool for managing virtual machines
+* How to install the OpenShift Virtualization operator
 * How to configure default storage for virtual machine deployments
+* How to create virtual machines from the web console and from the CLI
+* VM lifecycle states and management operations
+* Basic usage of the virtctl command-line tool for managing virtual machines
 * Cloud-init fundamentals and VM initialization patterns
 
 == Prerequisites
@@ -38,9 +100,6 @@ Understand how OpenShift Virtualization works: operator hierarchy, VM execution 
 xref:install-openshift-virtualization.adoc[]::
 Install and configure the OpenShift Virtualization operator on your cluster.
 
-xref:virtctl-basics.adoc[]::
-Learn the essential virtctl commands for managing virtual machines.
-
 xref:default-storage-class.adoc[]::
 Configure a default storage class for simplified VM deployment.
 
@@ -53,12 +112,15 @@ Create virtual machines using the CLI and YAML manifests for automation and GitO
 xref:vm-lifecycle-states.adoc[]::
 Understand VM lifecycle states and basic operations for effective VM management.
 
+xref:virtctl-basics.adoc[]::
+Learn the essential virtctl commands for managing virtual machines.
+
 xref:cloud-init-fundamentals.adoc[]::
 Learn cloud-init fundamentals, execution stages, common modules, and how to embed cloud-init configuration in VirtualMachine manifests.
 
 == Next Steps
 
-After completing this module, you'll be ready to explore:
+After completing this module, you will be ready to explore:
 
 * xref:storage:index.adoc[Storage Configuration] - Deep dive into storage options
 * xref:networking:index.adoc[Networking Configuration] - Network setup for VMs
