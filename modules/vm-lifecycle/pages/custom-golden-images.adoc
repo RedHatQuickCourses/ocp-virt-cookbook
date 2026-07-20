@@ -23,6 +23,16 @@ Benefits of using golden images:
 - Simplified maintenance and updates
 - Version control for VM configurations
 
+== Enterprise Use Cases
+
+Those benefits matter most at organizational scale, where the same base image is deployed repeatedly across teams and environments:
+
+* **Compliance-hardened images**: Maintain a CIS-benchmarked RHEL image with security agents pre-installed and make it the only approved base for production VMs. The image is audited once, rather than every VM being audited individually.
+* **Rapid provisioning for dev and test**: Deploy 50 identical VMs in five minutes from a golden image, rather than installing from an ISO each time.
+* **Version management**: Track image versions over time, for example a Q1 image built on RHEL 9.3 with January patches and a Q2 image built on RHEL 9.4 with April patches, so you always know which VMs are running which image. See <<version-management>>.
+* **Multi-team standardization**: A platform team maintains the golden images while development teams consume them. Every team starts from the same base without each one rebuilding it.
+* **Disaster recovery**: Keep pre-built golden images stored in a registry or object storage for rapid redeployment after a cluster rebuild.
+
 == Prerequisites
 
 - OpenShift 4.18+ with OpenShift Virtualization operator installed
@@ -41,6 +51,32 @@ The process involves these steps:
 . Stop the VM and capture its disk
 . Create a DataSource for the golden image
 . Deploy new VMs from the golden image
+
+The same pipeline, showing the resources this tutorial creates at each stage. Steps 1 through 5 are performed once to build the image; step 6 is repeated for every VM you deploy from it:
+
+....
+1  Base VM  — cloned from the fedora DataSource (or an imported qcow2)
+│            starts as base-fedora-vm
+│
+2  Customize  — dnf update, install nginx, configure the firewall
+│
+3  Generalize  — cloud-init clean, reset machine-id, clear logs and history
+│
+4  Stop  — virtctl stop, so the disk is no longer being written to
+│
+5  DataSource  — fedora-nginx-golden, pointing at the stopped VM's PVC
+│               the golden image is now reusable
+│
+6  Deploy clones  — each VM clones the golden PVC into its own disk
+   │
+   ├─ webserver-vm-1  — cloud-init sets its own hostname
+   ├─ webserver-vm-2  — cloud-init sets its own hostname
+   └─ ...             — any number of VMs, all from the same image
+....
+
+Two details are worth noting. The DataSource does not hold a copy of the image; it is a pointer to the PVC the base VM left behind, which is why the base VM's disk must be kept as long as the DataSource is in use. And each VM deployed in step 6 clones that PVC into a disk of its own, so the VMs are independent after creation, and each clone takes time proportional to the disk size.
+
+Steps 2 and 3 are what make the image reusable. Customization is what you want every VM to inherit; generalization removes the machine-specific identity that would otherwise be duplicated across every clone.
 
 == Step 1: Deploy Base VM
 
@@ -505,6 +541,7 @@ You should see the custom HTML page created during customization.
 
 Exit the console with `Ctrl+]`.
 
+[#version-management]
 == Version Management
 
 To create new versions of your golden image:
@@ -572,6 +609,8 @@ oc delete namespace golden-images
 
 In this tutorial, you learned how to:
 
+- Recognize the enterprise scenarios that justify a golden image workflow
+- Follow the pipeline from a base VM through to multiple deployed clones
 - Deploy and customize a base VM
 - Generalize a VM for reuse as a golden image
 - Create a DataSource for the golden image
