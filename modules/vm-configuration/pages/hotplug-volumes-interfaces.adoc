@@ -7,6 +7,54 @@ This tutorial demonstrates how to dynamically add and remove storage volumes to 
 
 You will use `virtctl addvolume` to attach a new PVC to a running VM, verify it appears as a new block device inside the guest, and then remove it with `virtctl removevolume`. The tutorial also covers network interface hotplugging concepts and requirements.
 
+== When to Use Hotplugging
+
+Hotplugging is useful whenever storage or network needs change after a VM is already serving traffic, and a restart would be disruptive:
+
+* **Database growth**: A production database VM is running out of disk space. Attach an additional storage volume without downtime.
+* **Debug and diagnostic volumes**: Attach a scratch volume to a running production VM, collect logs or a memory dump, then detach it. No restart, and the VM keeps serving requests.
+* **Dynamic network segments**: An application VM needs access to a new VLAN. Hotplug a secondary network interface instead of restarting the VM.
+* **Temporary scratch storage**: Attach extra storage for a batch job, then remove it when the job completes, so the capacity is not tied up permanently.
+* **Compliance data collection**: Attach an audit volume, collect the required data, and detach it, keeping the window in which the storage is attached as short as possible.
+
+TIP: The use case determines whether you want the `--persist` flag. Long-lived data disks should be persisted so they survive a restart; temporary volumes for diagnostics, batch jobs, or audits are usually attached without it. See <<persist-flag>>.
+
+== How Hotplugging Works
+
+Hotplugging changes the VM's device layout while the VM keeps running. The base VM in this tutorial boots with two virtio disks; adding a volume introduces a third device without interrupting the VM:
+
+....
+BEFORE  — hotplug-vm running
+│
+├─ rootdisk        — vda   (virtio)
+└─ cloudinitdisk   — vdb   (virtio)
+
+   virtctl addvolume hotplug-vm --volume-name=hotplug-disk --persist
+   the VM keeps running — no restart, no downtime
+
+AFTER   — the same hotplug-vm, still running
+│
+├─ rootdisk        — vda   (virtio)
+├─ cloudinitdisk   — vdb   (virtio)
+└─ hotplug-disk    — sda   (SCSI, hotplugged)
+....
+
+Note that the hotplugged volume appears as `sda`, not `vdc`. Hotplugged volumes are attached to the SCSI bus rather than the virtio PCI bus, because virtio disks cannot be added to the PCI bus after boot. This is why the device name changes prefix. See <<disk-bus-type>> for details.
+
+Behind that single `virtctl` command, the PVC reaches the guest through an attachment pod:
+
+....
+PersistentVolumeClaim (hotplug-disk)
+│
+└─ virtctl addvolume  — patches the running VM
+   │
+   └─ attachment pod  — makes the PVC available to the VM's launcher pod
+      │
+      └─ /dev/sda in the guest  — a new block device, ready to format
+....
+
+The attachment pod is visible in the VMI status as the `hotplugVolume` field, which you will see in Step 4.
+
 == Prerequisites
 
 * **OpenShift 4.18+** with OpenShift Virtualization operator installed
@@ -279,6 +327,7 @@ oc get pvc hotplug-disk -n hotplug-demo
 
 == Hotplug Volume Reference
 
+[#persist-flag]
 === The --persist Flag
 
 [cols="1,1",options="header"]
@@ -308,6 +357,7 @@ Hotplug does not support:
 * cloudInitNoCloud / cloudInitConfigDrive volumes
 * emptyDir volumes
 
+[#disk-bus-type]
 === Disk Bus Type
 
 Hotplugged volumes use the SCSI bus by default (appearing as `sda`, `sdb`, etc.), unlike virtio disks which appear as `vda`, `vdb`. This is because virtio disks cannot be hotplugged to the PCI bus after boot. SCSI provides hot-add capability.
@@ -329,6 +379,21 @@ Unlike volume hotplugging (which uses `virtctl addvolume`), network interface ho
 . Create a NetworkAttachmentDefinition (NAD) for the secondary network.
 . Edit the VM spec to add the new interface and network definitions.
 . The interface is attached to the running VM (if thick Multus is available) or after a live migration.
+
+The result is the same pattern as volume hotplug, the running VM gains a device it did not boot with:
+
+....
+BEFORE  — one interface
+│
+└─ default     — masquerade, pod network
+
+   edit the VM spec to add an interface backed by a NAD
+
+AFTER   — two interfaces
+│
+├─ default     — masquerade, pod network
+└─ dyniface1   — bridge, secondary network
+....
 
 === Removing an Interface
 
@@ -359,6 +424,8 @@ oc delete namespace hotplug-demo
 
 In this tutorial you learned how to:
 
+* Recognize the scenarios where hotplugging avoids a disruptive restart
+* Trace how a PVC reaches the guest as a new block device, and why it appears on the SCSI bus
 * Hotplug a PVC volume to a running VM using `virtctl addvolume`
 * Use the `--persist` flag to make hotplugged volumes survive restarts
 * Verify hotplugged volumes appear as new block devices inside the guest
