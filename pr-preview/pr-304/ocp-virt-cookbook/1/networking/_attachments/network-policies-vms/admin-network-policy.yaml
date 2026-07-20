@@ -1,0 +1,30 @@
+apiVersion: policy.networking.k8s.io/v1alpha1
+kind: AdminNetworkPolicy
+metadata:
+  name: cluster-deny-to-virt-infra
+spec:
+  priority: 50
+  subject:
+    namespaces:
+      matchExpressions:
+        - key: kubernetes.io/metadata.name
+          operator: NotIn
+          values:
+            - openshift-cnv
+            - openshift-virtualization-os-images
+  ingress:
+    - name: deny-ingress-to-virt-infra
+      action: Deny
+      from:
+        - namespaces:
+            matchExpressions:
+              - key: kubernetes.io/metadata.name
+                operator: NotIn
+                values:
+                  - openshift-cnv
+                  - openshift-virtualization-os-images
+      ports:
+        - portRange:
+            start: 1
+            end: 65535
+            protocol: TCP
