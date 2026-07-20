@@ -1,0 +1,17 @@
+apiVersion: k8s.cni.cncf.io/v1
+kind: NetworkAttachmentDefinition
+metadata:
+  name: lnbr0-nad
+  namespace: bridge-demo
+spec:
+  config: '{
+    "name": "lnbr0-nad",
+    "cniVersion": "0.3.1",
+    "type": "bridge",
+    "bridge": "lnbr0",
+    "ipam": {},
+    "vlan": 1,
+    "macspoofchk": false,
+    "disableContainerInterface": false,
+    "portIsolation": false
+  }'

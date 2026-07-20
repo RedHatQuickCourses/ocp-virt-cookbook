@@ -1,0 +1,27 @@
+apiVersion: machineconfiguration.openshift.io/v1
+kind: MachineConfig
+metadata:
+  name: 50-hpp-directory
+  labels:
+    machineconfiguration.openshift.io/role: worker
+spec:
+  config:
+    ignition:
+      version: 3.2.0
+    systemd:
+      units:
+      - name: create-hpp-directory.service
+        enabled: true
+        contents: |
+          [Unit]
+          Description=Create HostPath Provisioner directory
+          Before=kubelet.service
+
+          [Service]
+          Type=oneshot
+          ExecStart=/bin/mkdir -p /var/hpvolumes
+          ExecStart=/bin/chcon -Rt container_file_t /var/hpvolumes
+          RemainAfterExit=yes
+
+          [Install]
+          WantedBy=multi-user.target

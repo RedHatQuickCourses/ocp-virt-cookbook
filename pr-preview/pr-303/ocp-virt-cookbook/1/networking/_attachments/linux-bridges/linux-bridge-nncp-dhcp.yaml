@@ -1,0 +1,20 @@
+apiVersion: nmstate.io/v1
+kind: NodeNetworkConfigurationPolicy
+metadata:
+  name: lnbr0-policy
+spec:
+  desiredState:
+    interfaces:
+    - name: lnbr0
+      description: dhcp linux bridge with ens1 as a port
+      type: linux-bridge
+      state: up
+      ipv4:
+        dhcp: true
+        enabled: true
+      bridge:
+        options:
+          stp:
+            enabled: false
+        port:
+        - name: ens1

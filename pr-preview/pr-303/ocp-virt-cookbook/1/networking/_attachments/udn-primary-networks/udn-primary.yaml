@@ -1,0 +1,13 @@
+apiVersion: k8s.ovn.org/v1
+kind: UserDefinedNetwork
+metadata:
+  name: udn-primary
+  namespace: udn-primary-vm-guests
+spec:
+  topology: Layer2
+  layer2:
+    role: Primary
+    subnets: 
+    - "192.168.100.0/24"
+  ipam:
+    lifecycle: Persistent

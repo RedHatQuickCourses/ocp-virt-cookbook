@@ -1,0 +1,1349 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Creating Virtual Machines with Natural Language :: OpenShift Virtualization cookbook</title>
+    <link rel="prev" href="getting-started.html">
+    <link rel="next" href="ai-vm-lifecycle.html">
+    <meta name="generator" content="Antora 3.1.3">
+    <link rel="stylesheet" href="../../../_/css/site.css">
+    <script>var uiRootPath = '../../../_'</script>
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://www.redhat.com" target="_blank"><img src="../../../_/img/redhat-logo.png" height="40px" alt="Red Hat"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="../../..">OpenShift Virtualization cookbook</a>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues" target="_blank">Report Issues</a>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="ocp-virt-cookbook" data-version="1">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="../index.html">OpenShift Virtualization cookbook</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../index.html">Introduction</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../getting-started/index.html">Getting Started</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/vm-quick-start.html">Quick Start</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/prerequisites.html">Prerequisites</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/install-openshift-virtualization.html">Install OpenShift Virtualization</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/default-storage-class.html">Storage Setup</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/create-vm-web-console.html">Create VM from Web Console</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/create-vm-cli-yaml.html">Create VM from CLI</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/vm-lifecycle-states.html">VM Lifecycle States</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/virtctl-basics.html">Virtctl Basics</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/cloud-init-fundamentals.html">Cloud-init Fundamentals</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../storage/index.html">Storage Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/lvm-operator.html">LVM Operator Installation</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/lvm-troubleshooting.html">LVM Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/hostpath-provisioner.html">HostPath Provisioner</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/creating-managing-storage-class.html">Creating and Managing Storage Classes</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/multi-disk-configuration.html">Multi-Disk VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/expanding-vm-disk-size.html">Expanding VM Disk Size</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../networking/index.html">Networking Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/static-ip-configuration.html">Static IP Configuration</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/cloud-init-troubleshooting.html">Cloud-init Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/udn-primary-networks.html">UDN Primary Networks</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/localnet-secondary.html">Localnet Secondary Networks with CUDN</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/localnet-vlan.html">Localnet Secondary Networks with VLAN using NAD</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/cudn-localnet-vlan.html">Localnet VLAN with CUDN</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/layer2-secondary.html">Layer 2 Secondary Networks</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/linux-bridges.html">Linux Bridges</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/sriov-secondary.html">SR-IOV Secondary Networks</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/network-policies-vms.html">Network Policies for VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/metallb-loadbalancer.html">MetalLB Load Balancer for VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/dual-stack-vms.html">Dual-Stack IPv4/IPv6 VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/vm-ingress-routes.html">VM Ingress and Routes</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/ovs-bridge-troubleshooting.html">Troubleshooting Localnet Networks</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../vm-configuration/index.html">Virtual Machine Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/internal-dns-for-vms.html">Internal DNS for VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/remote-access-linux-vms.html">Remote Access to Linux VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/remote-access-linux-troubleshooting.html">Remote Access to Linux VMs Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/remote-access-windows-vms.html">Remote Access to Windows VMs via RDP</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/windows-vm-virtio-drivers.html">Windows VMs with VirtIO Drivers</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/infrastructure-node-placement.html">Infrastructure Node Placement</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/node-placement-affinity.html">Node Placement and Affinity</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/hotplug-volumes-interfaces.html">Hotplug Volumes and Interfaces</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/vm-templates.html">Virtual Machine Templates</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../performance/index.html">VM Performance Tuning</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/resource-limits-qos.html">Resource Limits and QoS</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/cpu-pinning.html">Dedicated CPU Placement</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/numa-hugepages.html">NUMA and Hugepages</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/realtime-vms.html">Real-Time VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/vm-monitoring-metrics.html">VM Monitoring and Metrics</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../vm-lifecycle/index.html">VM Lifecycle Management</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/import-qcow2-boot-volume.html">Import qcow2 Boot Volume</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/custom-golden-images.html">Custom Golden Images</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/golden-images-troubleshooting.html">Golden Images Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/cloning-vms.html">Cloning VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/vm-snapshots.html">VM Snapshots</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/boot-order-boot-sources.html">VM Boot Order and Boot Sources</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../manifests/index.html">Manifests</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../api/index.html">API Guide</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../api/api-component-overview.html">API Component Overview</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="index.html">Agentic VM Management</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="getting-started.html">Getting Started with rh-virt</a>
+  </li>
+  <li class="nav-item is-current-page" data-depth="2">
+    <a class="nav-link" href="natural-language-vm-create.html">Natural Language VM Creation</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="ai-vm-lifecycle.html">AI VM Lifecycle Operations</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="vm-clone.html">Cloning VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="ai-vm-snapshot-management.html">VM Snapshot Management</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="ai-skill-chaining.html">Day-2 Skill Chaining</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../appendix/glossary.html">Glossary</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">OpenShift Virtualization cookbook</span>
+    <span class="version">1</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <a class="title" href="../index.html">OpenShift Virtualization cookbook</a>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">1</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">OpenShift Virtualization cookbook</a></li>
+    <li><a href="index.html">Agentic VM Management</a></li>
+    <li><a href="natural-language-vm-create.html">Natural Language VM Creation</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">Creating Virtual Machines with Natural Language</h1>
+<div id="preamble">
+<div class="sectionbody">
+<div class="paragraph">
+<p>Versions tested:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>OpenShift 4.22</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This tutorial demonstrates how to create virtual machines using natural language commands through the <code>vm-create</code> agent skill. The agent interprets human-readable descriptions of VM requirements, gathers any missing parameters through interactive questions, and translates them into complete KubeVirt VirtualMachine resources with proper instance types, OS selection, storage configuration, and scheduling.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_prerequisites"><a class="anchor" href="#_prerequisites"></a>Prerequisites</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p>Completed the <a href="getting-started.html" class="xref page">Getting Started with Agentic VM Management</a> tutorial (skill pack installed, MCP server configured, cluster connectivity verified)</p>
+</li>
+<li>
+<p>OpenShift cluster with OpenShift Virtualization installed</p>
+</li>
+<li>
+<p><code>KUBECONFIG</code> environment variable set and pointing to a valid kubeconfig file</p>
+</li>
+<li>
+<p>A namespace where you have permissions to create VirtualMachine resources</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Create the namespaces used in this tutorial if they do not already exist:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc create namespace my-vms
+oc create namespace development</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_how_it_works"><a class="anchor" href="#_how_it_works"></a>How It Works</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The <code>vm-create</code> skill follows a six-step workflow:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p><strong>Gather requirements</strong> — The agent collects VM parameters through interactive questions. You can provide everything in a single prompt (e.g., "Create a Fedora VM named web-01 in namespace dev") or let the agent ask for missing details one at a time. Parameters you do not specify use sensible defaults.</p>
+</li>
+<li>
+<p><strong>Check for conflicts</strong> — The agent verifies that no VM with the same name already exists in the target namespace. If a conflict is found, you are given the option to choose a different name, delete the existing VM, or cancel.</p>
+</li>
+<li>
+<p><strong>Present configuration for confirmation</strong> — The agent displays a summary table showing every parameter that will be used. You can confirm, cancel, or modify individual values before anything is created.</p>
+</li>
+<li>
+<p><strong>Create the VM</strong> — After your explicit confirmation, the agent calls the <code>vm_create</code> MCP tool to create the VirtualMachine resource.</p>
+</li>
+<li>
+<p><strong>Verify and diagnose</strong> — The agent checks the VM status. If scheduling or storage errors occur (e.g., <code>ErrorUnschedulable</code>, <code>ErrorDataVolumeNotReady</code>), the agent automatically consults its troubleshooting knowledge base, diagnoses the root cause, and proposes a workaround for your approval.</p>
+</li>
+<li>
+<p><strong>Report status</strong> — The agent reports whether the VM was created successfully and provides access instructions including default credentials and connection methods.</p>
+</li>
+</ol>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_example_scenario_1_basic_fedora_vm"><a class="anchor" href="#_example_scenario_1_basic_fedora_vm"></a>Example Scenario 1: Basic Fedora VM</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>This example creates a simple Fedora virtual machine with default settings.</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>In your IDE chat, type:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">Create a Fedora VM in namespace my-vms</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>The agent gathers cluster information (available StorageClasses, namespaces) and assigns defaults for parameters you did not specify. It then presents a configuration summary for your approval:</p>
+<div class="listingblock">
+<div class="content">
+<pre>Here's the full configuration before I proceed:
+
+Virtual Machine Configuration
+
+┌──────────────┬───────────┬───────────────────────────────────┐
+│  Parameter   │   Value   │               Notes               │
+├──────────────┼───────────┼───────────────────────────────────┤
+│ VM Name      │ fedora-vm │ validated                         │
+├──────────────┼───────────┼───────────────────────────────────┤
+│ Namespace    │ my-vms    │ from request                      │
+├──────────────┼───────────┼───────────────────────────────────┤
+│ OS           │ fedora    │ Fedora Linux (latest)             │
+├──────────────┼───────────┼───────────────────────────────────┤
+│ Performance  │ u1        │ General Purpose                   │
+├──────────────┼───────────┼───────────────────────────────────┤
+│ Size         │ medium    │ 1 vCPU, 4Gi RAM                   │
+├──────────────┼───────────┼───────────────────────────────────┤
+│ Storage      │ 30Gi      │ root disk                         │
+├──────────────┼───────────┼───────────────────────────────────┤
+│ StorageClass │ lvms-vg1  │ cluster default (topolvm.io)      │
+├──────────────┼───────────┼───────────────────────────────────┤
+│ Autostart    │ no        │ start manually after creation     │
+└──────────────┴───────────┴───────────────────────────────────┘
+
+This will create a VirtualMachine and consume cluster resources.
+Confirm: yes / no / modify?</pre>
+</div>
+</div>
+</li>
+<li>
+<p>You review the table and confirm:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">yes</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>The agent creates the VM using the <code>vm_create</code> MCP tool. The underlying VirtualMachine resource it generates looks like this:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: fedora-vm
+  namespace: my-vms
+spec:
+  instancetype:
+    kind: VirtualMachineClusterInstancetype
+    name: u1.medium
+  preference:
+    kind: VirtualMachineClusterPreference
+    name: fedora
+  runStrategy: Always
+  dataVolumeTemplates:
+  - metadata:
+      name: fedora-vm-rootdisk
+    spec:
+      sourceRef:
+        kind: DataSource
+        name: fedora
+        namespace: openshift-virtualization-os-images
+      storage:
+        resources:
+          requests:
+            storage: 30Gi
+  template:
+    spec:
+      domain:
+        devices: {}
+        resources: {}
+      terminationGracePeriodSeconds: 180
+      volumes:
+      - dataVolume:
+          name: fedora-vm-rootdisk
+        name: fedora-vm-rootdisk</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>The agent monitors the DataVolume provisioning (cloning from the golden image takes approximately 2–5 minutes) and reports the result once the VM is ready:</p>
+<div class="listingblock">
+<div class="content">
+<pre>✓ Virtual Machine Created Successfully
+
+VM: fedora-vm (namespace: my-vms)
+OS: Fedora | Size: medium (u1) | Storage: 30Gi | Status: Running
+
+Accessing the VM
+1. Serial console: virtctl console fedora-vm -n my-vms
+2. VNC: OpenShift Console → Virtualization → VMs → fedora-vm → Console
+3. SSH: Get IP from VMI, ssh fedora@&lt;ip&gt;
+
+Default credentials: fedora</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>After creation you can verify the VM with:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vm fedora-vm -n my-vms</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Expected output:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>NAME        AGE   STATUS    READY
+fedora-vm   7m    Running   True</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>You can also inspect the DataVolume and PVC created for the root disk:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get datavolume -n my-vms</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>NAME                 PHASE       PROGRESS   RESTARTS   AGE
+fedora-vm-rootdisk   Succeeded   100.0%                7m</pre>
+</div>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get pvc -n my-vms</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>NAME                 STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS
+fedora-vm-rootdisk   Bound    pvc-ebfcfd3d-f865-4186-b306-08dfc1d60272   30Gi       RWO            lvms-vg1</pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_example_scenario_2_fedora_vm_with_custom_storage"><a class="anchor" href="#_example_scenario_2_fedora_vm_with_custom_storage"></a>Example Scenario 2: Fedora VM with Custom Storage</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>This example creates a Fedora VM with a larger root disk and more resources for a development workload.</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>In your IDE chat, type:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">Create a Fedora VM named fedora-dev with 2 vCPUs and 8GB RAM and a 50GB disk in the development namespace</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>The agent maps 2 vCPUs and 8Gi RAM to the <code>u1.large</code> instance type, queries the cluster for available StorageClasses, and presents the configuration:</p>
+<div class="listingblock">
+<div class="content">
+<pre>Virtual Machine Configuration
+
+┌──────────────┬──────────────┬───────────────────────────────────┐
+│  Parameter   │    Value     │               Notes               │
+├──────────────┼──────────────┼───────────────────────────────────┤
+│ VM Name      │ fedora-dev   │ validated                         │
+├──────────────┼──────────────┼───────────────────────────────────┤
+│ Namespace    │ development  │ from request                      │
+├──────────────┼──────────────┼───────────────────────────────────┤
+│ OS           │ fedora       │ Fedora Linux (latest)             │
+├──────────────┼──────────────┼───────────────────────────────────┤
+│ Performance  │ u1           │ General Purpose                   │
+├──────────────┼──────────────┼───────────────────────────────────┤
+│ Size         │ large        │ 2 vCPU, 8Gi RAM                   │
+├──────────────┼──────────────┼───────────────────────────────────┤
+│ Storage      │ 50Gi         │ root disk                         │
+├──────────────┼──────────────┼───────────────────────────────────┤
+│ StorageClass │ lvms-vg1     │ cluster default (topolvm.io)      │
+├──────────────┼──────────────┼───────────────────────────────────┤
+│ Autostart    │ no           │ start manually after creation     │
+└──────────────┴──────────────┴───────────────────────────────────┘
+
+This will create a VirtualMachine and consume cluster resources.
+Confirm: yes / no / modify?</pre>
+</div>
+</div>
+</li>
+<li>
+<p>You want to enable autostart so the VM starts immediately:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">modify: change autostart to yes</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>The agent displays the updated configuration with autostart changed and asks for confirmation again. After you confirm, it creates the VM and reports:</p>
+<div class="listingblock">
+<div class="content">
+<pre>✓ Virtual Machine Created and Starting
+
+VM: fedora-dev (namespace: development)
+OS: Fedora | Size: large (u1) | Storage: 50Gi | Status: Provisioning
+
+Provisioning: ~2-5 min (Provisioning → Running)
+
+Default credentials: fedora</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>After provisioning completes you can verify the VM:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vm fedora-dev -n development</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>NAME         AGE   STATUS    READY
+fedora-dev   7m    Running   True</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The PVC shows the larger disk size:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get pvc -n development</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>NAME                  STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS
+fedora-dev-rootdisk   Bound    pvc-35dbc583-8f54-47a8-8497-f941b72633e9   50Gi       RWO            lvms-vg1</pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_example_scenario_3_error_diagnosis_on_multi_node_clusters"><a class="anchor" href="#_example_scenario_3_error_diagnosis_on_multi_node_clusters"></a>Example Scenario 3: Error Diagnosis on Multi-Node Clusters</h2>
+<div class="sectionbody">
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+This scenario demonstrates the agent&#8217;s automatic error diagnosis capability. It requires a multi-node cluster where worker nodes have taints configured (e.g., <code>virtualization=true:NoSchedule</code>). On a single-node cluster without taints, VMs schedule successfully and this error will not occur.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>This example shows what happens when a VM creation triggers a scheduling error and how the agent diagnoses and resolves it.</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>In your IDE chat, type:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">Create a Fedora VM named fedora-db with 4 vCPUs and 16GB RAM in the production namespace, memory-optimized, with 100GB storage, and autostart</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>The agent maps the request to an <code>xlarge</code> size with <code>m1</code> (memory-optimized) performance profile and presents the confirmation table:</p>
+<div class="listingblock">
+<div class="content">
+<pre>Virtual Machine Configuration
+
+┌──────────────┬──────────────┬────────────────────────────────────┐
+│  Parameter   │    Value     │               Notes                │
+├──────────────┼──────────────┼────────────────────────────────────┤
+│ VM Name      │ fedora-db    │ validated                          │
+├──────────────┼──────────────┼────────────────────────────────────┤
+│ Namespace    │ production   │ from request                       │
+├──────────────┼──────────────┼────────────────────────────────────┤
+│ OS           │ fedora       │ Fedora Linux (latest)              │
+├──────────────┼──────────────┼────────────────────────────────────┤
+│ Performance  │ m1           │ Memory Optimized                   │
+├──────────────┼──────────────┼────────────────────────────────────┤
+│ Size         │ xlarge       │ 4 vCPU, 32Gi RAM                   │
+├──────────────┼──────────────┼────────────────────────────────────┤
+│ Storage      │ 100Gi        │ root disk                          │
+├──────────────┼──────────────┼────────────────────────────────────┤
+│ StorageClass │ lvms-vg1     │ cluster default (topolvm.io)       │
+├──────────────┼──────────────┼────────────────────────────────────┤
+│ Autostart    │ yes          │ starts immediately after creation  │
+└──────────────┴──────────────┴────────────────────────────────────┘
+
+This will create a VirtualMachine and consume cluster resources.
+Confirm: yes / no / modify?</pre>
+</div>
+</div>
+</li>
+<li>
+<p>After confirmation, the agent creates the VM but detects a scheduling error:</p>
+<div class="listingblock">
+<div class="content">
+<pre>⚠️ VM Scheduling Issue Detected
+
+Status: ErrorUnschedulable
+Root Cause: Node taints — 0/3 nodes are available: 3 node(s) had taints
+            that the pod didn't tolerate
+
+I consulted the scheduling-errors troubleshooting guide and found that
+the worker nodes have a "virtualization=true:NoSchedule" taint.
+
+The vm_create tool does not support tolerations directly, but I can apply
+a post-creation workaround:
+
+Recommended Solution
+  Action: Add toleration for "virtualization=true:NoSchedule" to the VM
+          spec using resources_create_or_update, then restart the VM
+  Impact: The VM will be able to schedule on nodes with the
+          virtualization=true taint
+
+Options:
+  1) Apply workaround (add toleration and restart)
+  2) Manual fix (I'll show you the oc patch command)
+  3) Cancel (delete the VM)</pre>
+</div>
+</div>
+</li>
+<li>
+<p>You confirm the workaround:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">apply workaround</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>The agent patches the VM spec to add tolerations, restarts it, and verifies:</p>
+<div class="listingblock">
+<div class="content">
+<pre>✓ Workaround Applied
+
+Action: Added toleration for virtualization=true:NoSchedule, restarted VM
+Status: Running
+
+VM: fedora-db (namespace: production)
+OS: Fedora | Size: xlarge (m1 - Memory) | Storage: 100Gi | Status: Running
+
+Accessing the VM
+1. Serial console: virtctl console fedora-db -n production
+2. VNC: OpenShift Console → Virtualization → VMs → fedora-db → Console
+3. SSH: Get IP from VMI, ssh fedora@&lt;ip&gt;
+
+Default credentials: fedora</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_instance_type_resolution"><a class="anchor" href="#_instance_type_resolution"></a>Instance Type Resolution</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The agent uses two dimensions to select the appropriate <code>VirtualMachineClusterInstancetype</code>: performance profile and size.</p>
+</div>
+<div class="sect2">
+<h3 id="_performance_profiles"><a class="anchor" href="#_performance_profiles"></a>Performance Profiles</h3>
+<div class="paragraph">
+<p>Performance profiles determine the workload optimization of the instance type:</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 16.6666%;">
+<col style="width: 33.3333%;">
+<col style="width: 50.0001%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Profile</th>
+<th class="tableblock halign-left valign-top">Name</th>
+<th class="tableblock halign-left valign-top">Best For</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>u1</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">General Purpose (default)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Balanced CPU and memory — suitable for most workloads</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>m1</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Memory Optimized</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Memory-intensive workloads like databases or caches</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>o1</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Overcommitted</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Development and testing — shares physical resources</p></td>
+</tr>
+</tbody>
+</table>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+Additional profiles may be available depending on your cluster configuration. Run <code>oc get VirtualMachineClusterInstancetype</code> to see all installed instance types on your cluster.
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_size_mappings"><a class="anchor" href="#_size_mappings"></a>Size Mappings</h3>
+<div class="paragraph">
+<p>The following table shows the actual CPU and memory allocation for each <code>u1</code> (General Purpose) size as installed on OpenShift 4.22:</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 50%;">
+<col style="width: 25%;">
+<col style="width: 25%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Size</th>
+<th class="tableblock halign-left valign-top">vCPUs</th>
+<th class="tableblock halign-left valign-top">RAM</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">nano</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">512Mi</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">micro</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1Gi</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">small</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">2Gi</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">medium (default)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">4Gi</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">large</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">2</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">8Gi</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">xlarge</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">4</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">16Gi</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">2xlarge</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">8</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">32Gi</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">4xlarge</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">16</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">64Gi</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">8xlarge</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">32</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">128Gi</p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>Memory-optimized (<code>m1</code>) sizes allocate more RAM per vCPU. For example, <code>m1.large</code> provides 2 vCPU and 16Gi RAM, while <code>u1.large</code> provides 2 vCPU and 8Gi RAM.</p>
+</div>
+<div class="paragraph">
+<p>The agent maps explicit resource requests like "2 vCPUs and 8GB RAM" to the closest matching instance type. You can verify the available instance types and their specs on your cluster:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get VirtualMachineClusterInstancetype -o custom-columns="NAME:.metadata.name,CPU:.spec.cpu.guest,MEMORY:.spec.memory.guest" | grep u1</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>u1.2xlarge    8    32Gi
+u1.2xmedium   2    4Gi
+u1.4xlarge    16   64Gi
+u1.8xlarge    32   128Gi
+u1.large      2    8Gi
+u1.medium     1    4Gi
+u1.micro      1    1Gi
+u1.nano       1    512Mi
+u1.small      1    2Gi
+u1.xlarge     4    16Gi</pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_os_selection"><a class="anchor" href="#_os_selection"></a>OS Selection</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The agent supports multiple Linux operating systems. When you specify an OS in natural language (e.g., "create a Fedora VM"), the agent selects the appropriate container disk image from the golden images in the <code>openshift-virtualization-os-images</code> namespace.</p>
+</div>
+<div class="paragraph">
+<p>You can check which OS images are available on your cluster:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get datasource -n openshift-virtualization-os-images</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>NAME              AGE
+centos-stream10   17d
+centos-stream9    17d
+fedora            17d
+rhel10            17d
+rhel7             17d
+rhel8             17d
+rhel9             17d</pre>
+</div>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 50%;">
+<col style="width: 50%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Operating System</th>
+<th class="tableblock halign-left valign-top">Default Username</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Fedora (default)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>fedora</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">RHEL</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>cloud-user</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">CentOS Stream</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>centos</code></p></td>
+</tr>
+</tbody>
+</table>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+The container disk images are resolved automatically by the <code>vm_create</code> tool from DataSource references. You can also provide a custom container disk image URL if needed, but the agent will warn you to verify the image source is trusted before proceeding.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_storage_configuration"><a class="anchor" href="#_storage_configuration"></a>Storage Configuration</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The <code>vm-create</code> skill supports the following storage options:</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 25%;">
+<col style="width: 75%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Disk Size</th>
+<th class="tableblock halign-left valign-top">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">30Gi (default)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Suitable for most workloads</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">50Gi</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Moderate storage needs</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">100Gi</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Large requirements — databases, application data</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Custom</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Specify any size (e.g., "200Gi")</p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>The agent automatically:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Queries the cluster for available StorageClasses</p>
+</li>
+<li>
+<p>Identifies the default StorageClass (annotated with <code>storageclass.kubernetes.io/is-default-class</code>)</p>
+</li>
+<li>
+<p>Analyzes the StorageClass capabilities (volume binding mode, CSI provisioner)</p>
+</li>
+<li>
+<p>Creates a DataVolume-backed PersistentVolumeClaim with the appropriate size</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>You can check your cluster&#8217;s available StorageClasses:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get sc</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>NAME               PROVISIONER   RECLAIMPOLICY   VOLUMEBINDINGMODE      ALLOWVOLUMEEXPANSION   AGE
+lvms-vg1 (default) topolvm.io    Delete          WaitForFirstConsumer   true                   17d</pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_network_setup"><a class="anchor" href="#_network_setup"></a>Network Setup</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>By default, the agent creates VMs connected to the cluster&#8217;s default pod network, which provides basic connectivity for most use cases.</p>
+</div>
+<div class="paragraph">
+<p>If your cluster has secondary network attachment definitions configured, you can request additional network interfaces in your natural language prompt (e.g., "create a VM with a secondary network on vlan-100"). The agent passes the network configuration to the <code>vm_create</code> tool.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_human_in_the_loop_confirmation"><a class="anchor" href="#_human_in_the_loop_confirmation"></a>Human-in-the-Loop Confirmation</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Every VM creation includes an explicit confirmation step. The agent will never create cluster resources without your approval:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>The agent gathers all parameters — from your prompt, interactive questions, and cluster defaults.</p>
+</li>
+<li>
+<p>A configuration table is displayed showing every value that will be used.</p>
+</li>
+<li>
+<p>You choose one of:</p>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>yes</strong> — proceed with creation</p>
+</li>
+<li>
+<p><strong>no</strong> — cancel the operation</p>
+</li>
+<li>
+<p><strong>modify</strong> — change specific parameters (e.g., "modify: change storage to 50Gi")</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>After modification, the updated table is shown and you confirm again.</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>This safety model prevents unintended resource consumption and gives you full visibility into what will be created.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_automatic_error_diagnosis"><a class="anchor" href="#_automatic_error_diagnosis"></a>Automatic Error Diagnosis</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>If the VM enters an error state after creation, the agent automatically diagnoses the issue using its built-in troubleshooting knowledge base.</p>
+</div>
+<div class="sect2">
+<h3 id="_scheduling_errors_errorunschedulable"><a class="anchor" href="#_scheduling_errors_errorunschedulable"></a>Scheduling Errors (ErrorUnschedulable)</h3>
+<div class="paragraph">
+<p>The three most common causes are:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p><strong>Node taints</strong> (most common) — Worker nodes have taints (e.g., <code>virtualization=true:NoSchedule</code>) that the VM does not tolerate. The agent can add the required tolerations to the VM spec and restart it.</p>
+</li>
+<li>
+<p><strong>Insufficient resources</strong> — The cluster does not have enough CPU, memory, or storage on any node for the requested VM size. The agent suggests reducing the VM size or checking node resource availability.</p>
+</li>
+<li>
+<p><strong>Node selector mismatch</strong> — The VM requires specific node labels that do not exist in the cluster. The agent can remove the selector or suggest adding labels to nodes.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_storage_errors_errordatavolumenotready"><a class="anchor" href="#_storage_errors_errordatavolumenotready"></a>Storage Errors (ErrorDataVolumeNotReady)</h3>
+<div class="paragraph">
+<p>Common storage issues include:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>DataVolume still provisioning</strong> — Large disk imports can take several minutes. The agent monitors progress and reports when provisioning completes.</p>
+</li>
+<li>
+<p><strong>StorageClass not found</strong> — The requested StorageClass does not exist. The agent lists available options and offers to recreate the VM with a valid StorageClass.</p>
+</li>
+<li>
+<p><strong>Insufficient storage quota</strong> — The namespace quota does not allow the requested disk size. The agent reports current quota usage and suggests alternatives.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>In all cases, the agent presents a clear diagnosis with recommended solutions and waits for your decision before taking any corrective action.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_accessing_your_vm"><a class="anchor" href="#_accessing_your_vm"></a>Accessing Your VM</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>After the VM is created and running, you can connect using several methods:</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 25%;">
+<col style="width: 75%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Method</th>
+<th class="tableblock halign-left valign-top">Command</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Serial console</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>virtctl console &lt;vm-name&gt; -n &lt;namespace&gt;</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">VNC console</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">OpenShift Console &#8594; Virtualization &#8594; VirtualMachines &#8594; select VM &#8594; Console tab</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">SSH</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Get the VM IP from the VirtualMachineInstance, then <code>ssh &lt;user&gt;@&lt;ip&gt;</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Port forwarding</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>virtctl port-forward vmi/&lt;vm-name&gt; -n &lt;namespace&gt; 8080:80</code></p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>To find the VM&#8217;s IP address:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vmi fedora-vm -n my-vms -o jsonpath='{.status.interfaces[0].ipAddress}'</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>10.128.0.102</pre>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_default_credentials"><a class="anchor" href="#_default_credentials"></a>Default Credentials</h3>
+<div class="paragraph">
+<p>Each OS image ships with a default user account. Console access is available immediately; for SSH, you need to set a password or inject an SSH key:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Connect via serial console and set a password
+virtctl console fedora-vm -n my-vms
+# Once logged in:
+sudo passwd fedora</code></pre>
+</div>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 66.6666%;">
+<col style="width: 33.3334%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Operating System</th>
+<th class="tableblock halign-left valign-top">Default Username</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Fedora</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>fedora</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">RHEL</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>cloud-user</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">CentOS Stream</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>centos</code></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_cleanup"><a class="anchor" href="#_cleanup"></a>Cleanup</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>To remove a VM and its associated storage:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc delete vm &lt;vm-name&gt; -n &lt;namespace&gt;</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Deleting the VirtualMachine resource also deletes the associated DataVolume and PersistentVolumeClaim. To remove all VMs created in this tutorial:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc delete vm fedora-vm -n my-vms
+oc delete vm fedora-dev -n development</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>You can also use natural language: type "Delete VM fedora-vm in namespace my-vms" and the agent will use the <code>vm-delete</code> skill, which includes a name-confirmation safety check before deletion.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_see_also"><a class="anchor" href="#_see_also"></a>See Also</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p><a href="getting-started.html" class="xref page">Getting Started with Agentic VM Management</a></p>
+</li>
+<li>
+<p><a href="https://github.com/RHEcosystemAppEng/agentic-plugins/tree/main/rh-virt" target="_blank" rel="noopener">rh-virt Skill Pack Repository</a></p>
+</li>
+<li>
+<p><a href="https://github.com/openshift/openshift-mcp-server" target="_blank" rel="noopener">OpenShift MCP Server</a></p>
+</li>
+<li>
+<p><a href="https://docs.openshift.com/container-platform/latest/virt/index.html" target="_blank" rel="noopener">OpenShift Virtualization Documentation</a></p>
+</li>
+<li>
+<p><a href="https://kubevirt.io/user-guide/" target="_blank" rel="noopener">KubeVirt User Guide</a></p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<nav class="pagination">
+  <span class="prev"><a href="getting-started.html">Getting Started with rh-virt</a></span>
+  <span class="next"><a href="ai-vm-lifecycle.html">AI VM Lifecycle Operations</a></span>
+</nav>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <img src="../../../_/img/rhl-logo-red.png" height="40px" alt="Red Hat"  href="https://redhat.com" >
+</footer><script id="site-script" src="../../../_/js/site.js" data-ui-root-path="../../../_"></script>
+<script async src="../../../_/js/vendor/highlight.js"></script>
+  </body>
+</html>
