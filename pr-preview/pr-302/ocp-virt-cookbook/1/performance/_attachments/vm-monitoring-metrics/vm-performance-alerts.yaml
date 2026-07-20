@@ -1,0 +1,38 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: vm-performance-alerts
+  namespace: vm-monitoring-demo
+  labels:
+    prometheus: kube-prometheus
+    role: alert-rules
+spec:
+  groups:
+  - name: vm-performance
+    rules:
+    - alert: VMHighCPUUsage
+      expr: rate(kubevirt_vmi_vcpu_seconds_total[5m]) * 100 > 80
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: "VM {{ $labels.name }} high CPU usage"
+        description: "VM {{ $labels.name }} in namespace {{ $labels.namespace }} has CPU usage above 80% for more than 5 minutes"
+
+    - alert: VMHighMemoryUsage
+      expr: (kubevirt_vmi_memory_resident_bytes / kubevirt_vmi_memory_domain_bytes) * 100 > 90
+      for: 2m
+      labels:
+        severity: warning
+      annotations:
+        summary: "VM {{ $labels.name }} high memory usage"
+        description: "VM {{ $labels.name }} in namespace {{ $labels.namespace }} has memory usage above 90% for more than 2 minutes"
+
+    - alert: VMNotRunning
+      expr: kubevirt_vmi_info{phase!="running"} == 1
+      for: 1m
+      labels:
+        severity: critical
+      annotations:
+        summary: "VM {{ $labels.name }} not running"
+        description: "VM {{ $labels.name }} in namespace {{ $labels.namespace }} is in {{ $labels.phase }} phase"
