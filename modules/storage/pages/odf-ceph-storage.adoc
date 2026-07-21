@@ -1,0 +1,663 @@
+= OpenShift Data Foundation (ODF) with Ceph Storage
+:navtitle: ODF/Ceph Storage
+
+== Overview
+
+This tutorial demonstrates how to install and configure OpenShift Data Foundation (ODF) with Ceph as a storage backend for OpenShift Virtualization virtual machines. ODF provides distributed block and file storage ideal for production multi-node clusters that require high availability and scalability.
+
+OpenShift Data Foundation delivers three primary storage types:
+
+* **Block Storage (Ceph RBD)**: High-performance ReadWriteOnce volumes for VM boot disks and databases
+* **File Storage (CephFS)**: Shared filesystem storage supporting ReadWriteMany access for live migration and shared data
+* **Object Storage**: S3-compatible storage for backups and artifacts
+
+== Prerequisites
+
+* **OpenShift 4.18+** (tested on 4.21)
+* **Minimum 3 worker nodes**: Required for Ceph quorum and high availability
+* **Cluster admin access**: Required to install operators and configure storage
+* **Storage backend**: Either a dynamic StorageClass (such as `gp3-csi` on AWS, `managed-csi` on Azure) or local raw block devices on bare-metal nodes
+* **16 GB RAM minimum** per worker node (32 GB recommended for production)
+* **8 CPU cores minimum** per worker node
+
+IMPORTANT: ODF requires exactly 3 or more worker nodes to maintain Ceph cluster quorum. Single-node or 2-node clusters are not supported.
+
+NOTE: If all worker nodes are in the same availability zone, you must set `flexibleScaling: true` on the StorageCluster to use `host` as the failure domain instead of `zone`.
+
+== Step 1: Prepare Worker Nodes
+
+Label the worker nodes that will host ODF storage components.
+
+First, identify your worker nodes:
+
+[source,bash,role=execute]
+----
+oc get nodes --selector='!node-role.kubernetes.io/master'
+----
+
+Label at least 3 worker nodes for storage:
+
+[source,bash,role=execute]
+----
+oc label node <worker-node-1> cluster.ocs.openshift.io/openshift-storage=''
+----
+
+[source,bash,role=execute]
+----
+oc label node <worker-node-2> cluster.ocs.openshift.io/openshift-storage=''
+----
+
+[source,bash,role=execute]
+----
+oc label node <worker-node-3> cluster.ocs.openshift.io/openshift-storage=''
+----
+
+Verify the labels:
+
+[source,bash,role=execute]
+----
+oc get nodes -l cluster.ocs.openshift.io/openshift-storage
+----
+
+== Step 2: Install OpenShift Data Foundation Operator
+
+Create the ODF namespace:
+
+[source,bash,role=execute]
+----
+oc apply -f - <<EOF
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: openshift-storage
+  labels:
+    openshift.io/cluster-monitoring: "true"
+EOF
+----
+
+Create the OperatorGroup:
+
+[source,bash,role=execute]
+----
+oc apply -f - <<EOF
+apiVersion: operators.coreos.com/v1
+kind: OperatorGroup
+metadata:
+  name: openshift-storage
+  namespace: openshift-storage
+spec:
+  targetNamespaces:
+    - openshift-storage
+EOF
+----
+
+Install the ODF operator. Replace `<version>` with the channel matching your OpenShift version (for example, `stable-4.21` for OpenShift 4.21):
+
+[source,bash,role=execute]
+----
+oc apply -f - <<EOF
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: odf-operator
+  namespace: openshift-storage
+spec:
+  channel: stable-4.21
+  name: odf-operator
+  source: redhat-operators
+  sourceNamespace: openshift-marketplace
+EOF
+----
+
+To find available channels for your cluster:
+
+[source,bash,role=execute]
+----
+oc get packagemanifest odf-operator -n openshift-marketplace -o jsonpath='{.status.channels[*].name}'
+----
+
+Wait for the operator installation to complete. All CSVs should reach `Succeeded`:
+
+[source,bash,role=execute]
+----
+oc get csv -n openshift-storage
+----
+
+== Step 3: Create StorageCluster
+
+Create the StorageCluster to deploy the Ceph cluster. This example uses a dynamic StorageClass (`gp3-csi`) as the backing storage for ODF. Replace `gp3-csi` with your cluster's available StorageClass if different.
+
+NOTE: For bare-metal clusters with local disks, install the Local Storage Operator first and use the local block StorageClass instead. See the link:https://docs.redhat.com/en/documentation/red_hat_openshift_data_foundation/4.18/html/deploying_openshift_data_foundation_using_bare_metal_infrastructure/[ODF bare-metal deployment guide,window=_blank] for details.
+
+[source,bash,role=execute]
+----
+oc apply -f - <<EOF
+apiVersion: ocs.openshift.io/v1
+kind: StorageCluster
+metadata:
+  name: ocs-storagecluster
+  namespace: openshift-storage
+spec:
+  flexibleScaling: true
+  enableCephTools: true
+  storageDeviceSets:
+    - name: ocs-deviceset-gp3-csi
+      count: 1
+      portable: true
+      replica: 3
+      resources:
+        requests:
+          cpu: "1"
+          memory: 5Gi
+        limits:
+          cpu: "2"
+          memory: 5Gi
+      placement:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: cluster.ocs.openshift.io/openshift-storage
+                    operator: In
+                    values:
+                      - ""
+        tolerations:
+          - effect: NoSchedule
+            key: node.ocs.openshift.io/storage
+            operator: Equal
+            value: "true"
+      dataPVCTemplate:
+        spec:
+          accessModes:
+            - ReadWriteOnce
+          resources:
+            requests:
+              storage: 512Gi
+          storageClassName: gp3-csi
+          volumeMode: Block
+  managedResources:
+    cephBlockPools: {}
+    cephFilesystems: {}
+    cephObjectStoreUsers: {}
+    cephObjectStores: {}
+EOF
+----
+
+IMPORTANT: Set `flexibleScaling: true` when all worker nodes are in the same availability zone. This configures Ceph to use `host` as the failure domain instead of `zone`, preventing placement groups from becoming stuck in `undersized+peered` state.
+
+Monitor the deployment progress:
+
+[source,bash,role=execute]
+----
+oc get storagecluster ocs-storagecluster -n openshift-storage -w
+----
+
+Wait for the status to show `Ready`. This process typically takes 5-10 minutes.
+
+== Step 4: Verify Storage Classes
+
+Check that ODF has created the required storage classes:
+
+[source,bash,role=execute]
+----
+oc get storageclass | grep ocs
+----
+
+Expected storage classes:
+
+----
+ocs-storagecluster-ceph-rbd                  Block storage (RBD) for VM boot disks
+ocs-storagecluster-ceph-rbd-virtualization   Block storage optimized for virtualization workloads
+ocs-storagecluster-cephfs                    File storage (CephFS) for shared access
+----
+
+The `ocs-storagecluster-ceph-rbd-virtualization` StorageClass is automatically created when OpenShift Virtualization is installed alongside ODF.
+
+== Step 5: Configure Default Storage Class
+
+Set the Ceph RBD storage class as default for VM boot disks:
+
+[source,bash,role=execute]
+----
+oc patch storageclass ocs-storagecluster-ceph-rbd -p '{"metadata": {"annotations": {"storageclass.kubernetes.io/is-default-class": "true"}}}'
+----
+
+Check which storage classes are currently marked as default:
+
+[source,bash,role=execute]
+----
+oc get storageclass -o jsonpath='{.items[?(@.metadata.annotations.storageclass\.kubernetes\.io/is-default-class=="true")].metadata.name}'
+----
+
+If another storage class is also marked as default, remove its default annotation:
+
+[source,bash,role=execute]
+----
+oc patch storageclass <existing-default-sc> -p '{"metadata": {"annotations": {"storageclass.kubernetes.io/is-default-class": null}}}'
+----
+
+Verify that only the Ceph RBD storage class is default:
+
+[source,bash,role=execute]
+----
+oc get storageclass | grep "(default)"
+----
+
+Expected output:
+
+----
+ocs-storagecluster-ceph-rbd (default)   openshift-storage.rbd.csi.ceph.com   Delete   Immediate   true
+----
+
+== Step 6: Test Storage Provisioning
+
+Create a test PVC using Ceph RBD block storage:
+
+[source,bash,role=execute]
+----
+oc apply -f - <<EOF
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: test-rbd-pvc
+  namespace: default
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+  storageClassName: ocs-storagecluster-ceph-rbd
+EOF
+----
+
+Verify PVC is bound:
+
+[source,bash,role=execute]
+----
+oc get pvc test-rbd-pvc
+----
+
+Create a test PVC using CephFS file storage:
+
+[source,bash,role=execute]
+----
+oc apply -f - <<EOF
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: test-cephfs-pvc
+  namespace: default
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 1Gi
+  storageClassName: ocs-storagecluster-cephfs
+EOF
+----
+
+Verify both PVCs are bound:
+
+[source,bash,role=execute]
+----
+oc get pvc test-rbd-pvc test-cephfs-pvc
+----
+
+== Step 7: Deploy Test Virtual Machine
+
+Create a simple VM to verify ODF storage integration:
+
+[source,bash,role=execute]
+----
+oc apply -f - <<EOF
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: test-vm-odf
+  namespace: default
+spec:
+  runStrategy: Halted
+  template:
+    metadata:
+      labels:
+        kubevirt.io/vm: test-vm-odf
+    spec:
+      domain:
+        devices:
+          disks:
+            - name: boot-disk
+              disk:
+                bus: virtio
+          interfaces:
+            - name: default
+              masquerade: {}
+        resources:
+          requests:
+            memory: 1Gi
+            cpu: 1
+      networks:
+        - name: default
+          pod: {}
+      volumes:
+        - name: boot-disk
+          dataVolume:
+            name: test-vm-odf-boot
+  dataVolumeTemplates:
+    - metadata:
+        name: test-vm-odf-boot
+      spec:
+        source:
+          registry:
+            url: docker://quay.io/containerdisks/fedora:latest
+        pvc:
+          accessModes:
+            - ReadWriteOnce
+          resources:
+            requests:
+              storage: 10Gi
+          storageClassName: ocs-storagecluster-ceph-rbd
+EOF
+----
+
+Monitor DataVolume import:
+
+[source,bash,role=execute]
+----
+oc get dv test-vm-odf-boot -w
+----
+
+Start the VM after the DataVolume is ready:
+
+[source,bash,role=execute]
+----
+virtctl start test-vm-odf
+----
+
+Verify the VM is running:
+
+[source,bash,role=execute]
+----
+oc get vm test-vm-odf
+----
+
+== Access Mode Implications
+
+Understanding access modes is crucial for VM storage design:
+
+=== ReadWriteOnce (RWO) - Ceph RBD
+
+* **Use case**: VM boot disks, databases, high-performance workloads
+* **Characteristics**: Can only be mounted by one node at a time
+* **Live Migration**: Supported with Ceph RBD because KubeVirt handles the block device handoff between nodes
+* **Performance**: Higher performance due to direct block access
+
+=== ReadWriteMany (RWX) - CephFS
+
+* **Use case**: Shared data volumes, logs, configuration files
+* **Characteristics**: Can be mounted by multiple nodes simultaneously
+* **Live Migration**: Seamless live migration support with no handoff required
+* **Performance**: Slightly lower performance due to filesystem overhead
+
+Example of a VM with both storage types:
+
+[source,bash,role=execute]
+----
+oc apply -f - <<EOF
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: vm-boot-rbd
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+  storageClassName: ocs-storagecluster-ceph-rbd
+EOF
+----
+
+[source,bash,role=execute]
+----
+oc apply -f - <<EOF
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: vm-shared-cephfs
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 5Gi
+  storageClassName: ocs-storagecluster-cephfs
+EOF
+----
+
+[source,bash,role=execute]
+----
+oc apply -f - <<EOF
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: multi-storage-vm
+spec:
+  runStrategy: Halted
+  template:
+    spec:
+      domain:
+        devices:
+          disks:
+            - name: boot-disk
+              disk:
+                bus: virtio
+            - name: shared-data
+              disk:
+                bus: virtio
+        resources:
+          requests:
+            memory: 2Gi
+      volumes:
+        - name: boot-disk
+          persistentVolumeClaim:
+            claimName: vm-boot-rbd
+        - name: shared-data
+          persistentVolumeClaim:
+            claimName: vm-shared-cephfs
+EOF
+----
+
+== Volume Mode Comparison
+
+=== Block Mode
+
+* **Storage Type**: Raw block devices (Ceph RBD)
+* **Performance**: Higher performance for databases and I/O intensive workloads
+* **Filesystems**: Guest OS manages filesystem directly
+* **Snapshots**: Block-level snapshots supported
+
+=== Filesystem Mode
+
+* **Storage Type**: Mounted filesystems (CephFS)
+* **Performance**: Good performance for general workloads
+* **Filesystems**: Storage layer manages filesystem
+* **Snapshots**: Filesystem-level snapshots
+
+== Monitoring ODF Storage
+
+Access the ODF dashboard to monitor Ceph cluster health:
+
+[source,bash,role=execute]
+----
+oc get route console -n openshift-console -o jsonpath='{.spec.host}'
+----
+
+Navigate to **Storage -> Data Foundation** in the OpenShift web console to view:
+
+* Ceph cluster health status
+* Storage capacity and utilization
+* Performance metrics
+* Alert notifications
+
+Monitor Ceph cluster status via CLI:
+
+[source,bash,role=execute]
+----
+oc get cephcluster -n openshift-storage -o jsonpath='{.items[0].status.ceph.health}'
+----
+
+The Ceph toolbox pod is enabled by setting `enableCephTools: true` on the StorageCluster. Verify it is running:
+
+[source,bash,role=execute]
+----
+oc get pods -n openshift-storage -l app=rook-ceph-tools
+----
+
+Check overall Ceph cluster health:
+
+[source,bash,role=execute]
+----
+oc rsh -n openshift-storage deployment/rook-ceph-tools ceph status
+----
+
+Check OSD status:
+
+[source,bash,role=execute]
+----
+oc rsh -n openshift-storage deployment/rook-ceph-tools ceph osd status
+----
+
+Check storage capacity:
+
+[source,bash,role=execute]
+----
+oc rsh -n openshift-storage deployment/rook-ceph-tools ceph df
+----
+
+== Troubleshooting
+
+=== Common Issues and Solutions
+
+==== PVC Stuck in Pending State
+
+Check PVC events for error details:
+
+[source,bash,role=execute]
+----
+oc describe pvc <pvc-name>
+----
+
+Verify the storage class exists and is configured:
+
+[source,bash,role=execute]
+----
+oc get storageclass ocs-storagecluster-ceph-rbd
+----
+
+==== Ceph Health Warnings
+
+Access the Ceph toolbox pod and check health details:
+
+[source,bash,role=execute]
+----
+oc rsh -n openshift-storage deployment/rook-ceph-tools ceph health detail
+----
+
+Check OSD tree to verify all OSDs are up:
+
+[source,bash,role=execute]
+----
+oc rsh -n openshift-storage deployment/rook-ceph-tools ceph osd tree
+----
+
+Check placement group status:
+
+[source,bash,role=execute]
+----
+oc rsh -n openshift-storage deployment/rook-ceph-tools ceph pg stat
+----
+
+==== Placement Groups Stuck in undersized+peered
+
+This typically occurs when all worker nodes are in the same availability zone but the CRUSH rules expect distribution across zones. Set `flexibleScaling: true` on the StorageCluster:
+
+[source,bash,role=execute]
+----
+oc patch storagecluster ocs-storagecluster -n openshift-storage --type merge -p '{"spec":{"flexibleScaling": true}}'
+----
+
+==== Slow OSD Performance
+
+List OSD pods:
+
+[source,bash,role=execute]
+----
+oc get pods -n openshift-storage | grep osd
+----
+
+Describe a specific OSD pod:
+
+[source,bash,role=execute]
+----
+oc describe pod <osd-pod-name> -n openshift-storage
+----
+
+==== Storage Cluster Not Ready
+
+Check StorageCluster status and events:
+
+[source,bash,role=execute]
+----
+oc describe storagecluster ocs-storagecluster -n openshift-storage
+----
+
+Verify all required pods are running:
+
+[source,bash,role=execute]
+----
+oc get pods -n openshift-storage
+----
+
+== Cleanup
+
+Remove test resources:
+
+[source,bash,role=execute]
+----
+oc delete vm test-vm-odf multi-storage-vm
+----
+
+[source,bash,role=execute]
+----
+oc delete dv test-vm-odf-boot
+----
+
+[source,bash,role=execute]
+----
+oc delete pvc test-rbd-pvc test-cephfs-pvc vm-boot-rbd vm-shared-cephfs
+----
+
+WARNING: Do not delete the ODF StorageCluster unless you want to completely remove all ODF storage. This will result in data loss for any VMs or applications using ODF storage.
+
+== Summary
+
+You have successfully configured OpenShift Data Foundation with Ceph storage for OpenShift Virtualization. Key accomplishments include:
+
+* Installed and configured ODF with Ceph storage backend
+* Created Ceph RBD and CephFS storage classes for different use cases
+* Set up default storage class for automatic VM provisioning
+* Deployed test VMs using ODF storage
+* Learned access mode implications for VM storage design
+* Configured monitoring and troubleshooting tools
+
+ODF provides enterprise-grade distributed storage with high availability, scalability, and data protection features essential for production virtual machine workloads.
+
+== See Also
+
+* xref:lvm-operator.adoc[Installing LVM Storage Operator]
+* xref:creating-managing-storage-class.adoc[Creating and Managing Storage Classes]
+* xref:multi-disk-configuration.adoc[Multi-Disk VM Configuration]
+* link:https://docs.redhat.com/en/documentation/red_hat_openshift_data_foundation/4.18/html-single/red_hat_openshift_data_foundation_architecture/index[OpenShift Data Foundation Architecture,window=_blank]
+* link:https://docs.redhat.com/en/documentation/red_hat_openshift_data_foundation/4.18/html/managing_and_allocating_storage_resources/[Managing and Allocating Storage Resources,window=_blank]

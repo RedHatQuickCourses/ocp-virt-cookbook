@@ -1,0 +1,46 @@
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: test-vm-odf
+  namespace: default
+spec:
+  runStrategy: Halted
+  template:
+    metadata:
+      labels:
+        kubevirt.io/vm: test-vm-odf
+    spec:
+      domain:
+        devices:
+          disks:
+            - name: boot-disk
+              disk:
+                bus: virtio
+          interfaces:
+            - name: default
+              masquerade: {}
+        resources:
+          requests:
+            memory: 1Gi
+            cpu: 1
+      networks:
+        - name: default
+          pod: {}
+      volumes:
+        - name: boot-disk
+          dataVolume:
+            name: test-vm-odf-boot
+  dataVolumeTemplates:
+    - metadata:
+        name: test-vm-odf-boot
+      spec:
+        source:
+          registry:
+            url: docker://quay.io/containerdisks/fedora:latest
+        pvc:
+          accessModes:
+            - ReadWriteOnce
+          resources:
+            requests:
+              storage: 10Gi
+          storageClassName: ocs-storagecluster-ceph-rbd
