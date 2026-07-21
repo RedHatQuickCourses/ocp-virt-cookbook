@@ -1,0 +1,16 @@
+apiVersion: cdi.kubevirt.io/v1beta1
+kind: DataVolume
+metadata:
+  name: fedora-clone
+  namespace: cdi-operations-demo
+  annotations:
+    cdi.kubevirt.io/storage.bind.immediate.requested: "true"
+spec:
+  source:
+    pvc:
+      name: fedora-http
+      namespace: cdi-operations-demo
+  storage:
+    resources:
+      requests:
+        storage: 10Gi

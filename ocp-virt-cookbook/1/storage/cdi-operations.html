@@ -1,0 +1,1443 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>CDI Operations: DataVolumes, Imports, and Upload :: OpenShift Virtualization cookbook</title>
+    <link rel="prev" href="expanding-vm-disk-size.html">
+    <link rel="next" href="../networking/index.html">
+    <meta name="generator" content="Antora 3.1.3">
+    <link rel="stylesheet" href="../../../_/css/site.css">
+    <script>var uiRootPath = '../../../_'</script>
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://www.redhat.com" target="_blank"><img src="../../../_/img/redhat-logo.png" height="40px" alt="Red Hat"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="../../..">OpenShift Virtualization cookbook</a>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues" target="_blank">Report Issues</a>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="ocp-virt-cookbook" data-version="1">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="../index.html">OpenShift Virtualization cookbook</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../index.html">Introduction</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../getting-started/index.html">Getting Started</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/vm-quick-start.html">Quick Start</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/prerequisites.html">Prerequisites</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/install-openshift-virtualization.html">Install OpenShift Virtualization</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/default-storage-class.html">Storage Setup</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/create-vm-web-console.html">Create VM from Web Console</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/create-vm-cli-yaml.html">Create VM from CLI</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/vm-lifecycle-states.html">VM Lifecycle States</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/virtctl-basics.html">Virtctl Basics</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/cloud-init-fundamentals.html">Cloud-init Fundamentals</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="index.html">Storage Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="lvm-operator.html">LVM Operator Installation</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="lvm-troubleshooting.html">LVM Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="odf-ceph-storage.html">ODF/Ceph Storage</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="hostpath-provisioner.html">HostPath Provisioner</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="creating-managing-storage-class.html">Creating and Managing Storage Classes</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="multi-disk-configuration.html">Multi-Disk VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="expanding-vm-disk-size.html">Expanding VM Disk Size</a>
+  </li>
+  <li class="nav-item is-current-page" data-depth="2">
+    <a class="nav-link" href="cdi-operations.html">CDI Operations</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../networking/index.html">Networking Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/static-ip-configuration.html">Static IP Configuration</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/cloud-init-troubleshooting.html">Cloud-init Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/udn-primary-networks.html">UDN Primary Networks</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/localnet-secondary.html">Localnet Secondary Networks with CUDN</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/localnet-vlan.html">Localnet Secondary Networks with VLAN using NAD</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/cudn-localnet-vlan.html">Localnet VLAN with CUDN</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/layer2-secondary.html">Layer 2 Secondary Networks</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/linux-bridges.html">Linux Bridges</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/sriov-secondary.html">SR-IOV Secondary Networks</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/network-policies-vms.html">Network Policies for VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/metallb-loadbalancer.html">MetalLB Load Balancer for VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/dual-stack-vms.html">Dual-Stack IPv4/IPv6 VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/vm-ingress-routes.html">VM Ingress and Routes</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/ovs-bridge-troubleshooting.html">Troubleshooting Localnet Networks</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../vm-configuration/index.html">Virtual Machine Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/internal-dns-for-vms.html">Internal DNS for VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/remote-access-linux-vms.html">Remote Access to Linux VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/remote-access-linux-troubleshooting.html">Remote Access to Linux VMs Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/remote-access-windows-vms.html">Remote Access to Windows VMs via RDP</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/windows-vm-virtio-drivers.html">Windows VMs with VirtIO Drivers</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/infrastructure-node-placement.html">Infrastructure Node Placement</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/node-placement-affinity.html">Node Placement and Affinity</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/hotplug-volumes-interfaces.html">Hotplug Volumes and Interfaces</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/vm-templates.html">Virtual Machine Templates</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../performance/index.html">VM Performance Tuning</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/resource-limits-qos.html">Resource Limits and QoS</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/cpu-pinning.html">Dedicated CPU Placement</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/numa-hugepages.html">NUMA and Hugepages</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/realtime-vms.html">Real-Time VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/vm-monitoring-metrics.html">VM Monitoring and Metrics</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../vm-lifecycle/index.html">VM Lifecycle Management</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/import-qcow2-boot-volume.html">Import qcow2 Boot Volume</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/custom-golden-images.html">Custom Golden Images</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/golden-images-troubleshooting.html">Golden Images Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/cloning-vms.html">Cloning VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/vm-snapshots.html">VM Snapshots</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/boot-order-boot-sources.html">VM Boot Order and Boot Sources</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../manifests/index.html">Manifests</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../api/index.html">API Guide</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../api/api-component-overview.html">API Component Overview</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../agentic-vm-management/index.html">Agentic VM Management</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/getting-started.html">Getting Started with rh-virt</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/natural-language-vm-create.html">Natural Language VM Creation</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/ai-vm-lifecycle.html">AI VM Lifecycle Operations</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/vm-clone.html">Cloning VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/ai-vm-snapshot-management.html">VM Snapshot Management</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/ai-skill-chaining.html">Day-2 Skill Chaining</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../appendix/glossary.html">Glossary</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">OpenShift Virtualization cookbook</span>
+    <span class="version">1</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <a class="title" href="../index.html">OpenShift Virtualization cookbook</a>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">1</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">OpenShift Virtualization cookbook</a></li>
+    <li><a href="index.html">Storage Configuration</a></li>
+    <li><a href="cdi-operations.html">CDI Operations</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">CDI Operations: DataVolumes, Imports, and Upload</h1>
+<div class="sect1">
+<h2 id="_overview"><a class="anchor" href="#_overview"></a>Overview</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The Containerized Data Importer (CDI) is the component responsible for all VM disk provisioning in OpenShift Virtualization. Every time you create a VM with a disk image&#8201;&#8212;&#8201;whether from an HTTP URL, a container registry, a local file upload, or a clone of an existing PVC&#8201;&#8212;&#8201;CDI handles the data transfer, format conversion, and PVC population behind the scenes.</p>
+</div>
+<div class="paragraph">
+<p>This tutorial explains CDI architecture, walks through each import source type, and covers operational topics like progress monitoring, automated boot source updates with DataImportCron, scratch space, resource limits, and troubleshooting stuck imports.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_what_you_will_learn"><a class="anchor" href="#_what_you_will_learn"></a>What You Will Learn</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p>How CDI fits into the OpenShift Virtualization stack</p>
+</li>
+<li>
+<p>How to import disk images from HTTP, registry, upload, and PVC clone sources</p>
+</li>
+<li>
+<p>How to monitor DataVolume progress and understand retry behavior</p>
+</li>
+<li>
+<p>How to automate boot source updates with DataImportCron</p>
+</li>
+<li>
+<p>How to configure CDI scratch space, resource limits, and filesystem overhead</p>
+</li>
+<li>
+<p>How to diagnose and fix common CDI failures</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_prerequisites"><a class="anchor" href="#_prerequisites"></a>Prerequisites</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p><strong>OpenShift 4.18+</strong> with OpenShift Virtualization operator installed</p>
+</li>
+<li>
+<p><strong>Cluster admin access</strong> (<code>system:admin</code> or equivalent)</p>
+</li>
+<li>
+<p><strong><code>oc</code> CLI</strong> and <strong><code>virtctl</code> CLI</strong> installed</p>
+</li>
+<li>
+<p><strong>Default StorageClass</strong> configured (e.g., <code>lvms-vg1</code>)</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Versions tested:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">OpenShift 4.20, 4.21</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_1_understand_cdi_architecture"><a class="anchor" href="#_step_1_understand_cdi_architecture"></a>Step 1: Understand CDI Architecture</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>CDI runs as a set of pods in the <code>openshift-cnv</code> namespace. The main components are:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>cdi-operator</strong>&#8201;&#8212;&#8201;manages the lifecycle of CDI itself (upgrades, configuration)</p>
+</li>
+<li>
+<p><strong>cdi-apiserver</strong>&#8201;&#8212;&#8201;validates DataVolume and DataImportCron resources</p>
+</li>
+<li>
+<p><strong>cdi-deployment (cdi-controller)</strong>&#8201;&#8212;&#8201;watches DataVolume objects and creates importer or cloner pods to populate PVCs</p>
+</li>
+<li>
+<p><strong>cdi-uploadproxy</strong>&#8201;&#8212;&#8201;accepts disk image uploads from <code>virtctl image-upload</code> and routes data to the target PVC</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>When you create a DataVolume, the CDI controller creates a short-lived worker pod (importer, cloner, or uploader) that mounts the target PVC, writes the disk data, and exits. Once the worker pod completes, the DataVolume transitions to <code>Succeeded</code> and the PVC is ready for a VM to use.</p>
+</div>
+<div class="paragraph">
+<p>Verify CDI pods are running on your cluster:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get pods -n openshift-cnv -l app.kubernetes.io/component=storage</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Expected output</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">NAME                               READY   STATUS    RESTARTS   AGE
+cdi-apiserver-7f9c7b5b4-xk2lm     1/1     Running   0          5d
+cdi-deployment-6b8c5d8f9-r4tnp     1/1     Running   0          5d
+cdi-operator-5f4c7d8b6-jh9wz       1/1     Running   0          5d
+cdi-uploadproxy-7d9f8c6b5-m3kpq    1/1     Running   0          5d</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Check the CDI custom resource for current configuration:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get cdi cdi-kubevirt-hyperconverged</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The CDI resource controls global settings like resource limits, scratch space overhead, and upload proxy configuration. You will modify some of these settings later in this tutorial.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_2_understand_datavolumes_and_their_lifecycle"><a class="anchor" href="#_step_2_understand_datavolumes_and_their_lifecycle"></a>Step 2: Understand DataVolumes and Their Lifecycle</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>A DataVolume is a CDI custom resource that wraps a PVC with instructions for populating it. When you create a DataVolume, CDI:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Creates a PVC with the requested size and access mode.</p>
+</li>
+<li>
+<p>Launches an importer (or cloner/uploader) pod that mounts the PVC.</p>
+</li>
+<li>
+<p>Streams data from the source, converting formats as needed (qcow2 to raw, gzip decompression, etc.).</p>
+</li>
+<li>
+<p>Reports progress through the DataVolume status.</p>
+</li>
+<li>
+<p>Marks the DataVolume as <code>Succeeded</code> when the data transfer completes.</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>DataVolumes go through these phases:</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 33.3333%;">
+<col style="width: 66.6667%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Phase</th>
+<th class="tableblock halign-left valign-top">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Pending</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">PVC is being created or waiting for storage provisioning.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">WaitForFirstConsumer</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">PVC uses <code>WaitForFirstConsumer</code> binding mode and no pod has claimed it yet.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ImportScheduled</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">CDI has scheduled the import but the worker pod is not running yet.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ImportInProgress</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Worker pod is actively transferring data. Progress percentage is updated.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">CloneScheduled / CloneInProgress</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Same as import phases, but for PVC-to-PVC clones.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">UploadScheduled / UploadReady</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">DataVolume is waiting for data to be uploaded via <code>virtctl image-upload</code>.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Succeeded</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Data transfer completed. PVC is ready to use.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Failed</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Data transfer failed. Check events and worker pod logs.</p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>Create a namespace for the exercises in this tutorial:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc create namespace cdi-operations-demo</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_3_import_from_an_http_source"><a class="anchor" href="#_step_3_import_from_an_http_source"></a>Step 3: Import from an HTTP Source</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>HTTP import is the most common method for pulling publicly available disk images. CDI downloads the file, detects its format (raw, qcow2, vmdk, gzip, xz), and converts it to raw format on the target PVC.</p>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/cdi-operations/dv-http-import.yaml" class="xref attachment">Download dv-http-import.yaml</a></p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f - &lt;&lt;EOF
+apiVersion: cdi.kubevirt.io/v1beta1
+kind: DataVolume
+metadata:
+  name: fedora-http
+  namespace: cdi-operations-demo
+  annotations:
+    cdi.kubevirt.io/storage.bind.immediate.requested: "true"
+spec:
+  source:
+    http:
+      url: "https://download.fedoraproject.org/pub/fedora/linux/releases/43/Cloud/x86_64/images/Fedora-Cloud-Base-Generic-43-1.6.x86_64.qcow2"
+  storage:
+    resources:
+      requests:
+        storage: 10Gi
+EOF</code></pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+The annotation <code>cdi.kubevirt.io/storage.bind.immediate.requested: "true"</code> forces the PVC to bind immediately. Without it, StorageClasses that use <code>WaitForFirstConsumer</code> binding mode will leave the PVC pending until a pod schedules on the node.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Monitor the import progress:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get dv fedora-http -n cdi-operations-demo -w</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Expected output</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">NAME         PHASE              PROGRESS   RESTARTS   AGE
+fedora-http  ImportScheduled    N/A                    5s
+fedora-http  ImportInProgress   0.00%                  15s
+fedora-http  ImportInProgress   22.45%                 30s
+fedora-http  ImportInProgress   67.89%                 60s
+fedora-http  Succeeded          100.0%                 90s</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Press <code>Ctrl+C</code> once the DataVolume shows <code>Succeeded</code>.</p>
+</div>
+<div class="paragraph">
+<p>You can also check the importer pod directly to see download speed and conversion activity:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get pods -n cdi-operations-demo -l cdi.kubevirt.io/storage.import.importPvcName=fedora-http</code></pre>
+</div>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc logs -n cdi-operations-demo -l cdi.kubevirt.io/storage.import.importPvcName=fedora-http</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Once succeeded, verify the resulting PVC:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get pvc fedora-http -n cdi-operations-demo</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Expected output</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">NAME         STATUS   VOLUME       CAPACITY   ACCESS MODES   STORAGECLASS   AGE
+fedora-http  Bound    pvc-xxxx     10Gi       RWO            lvms-vg1       2m</code></pre>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_http_import_with_authentication"><a class="anchor" href="#_http_import_with_authentication"></a>HTTP Import with Authentication</h3>
+<div class="paragraph">
+<p>For HTTP sources that require authentication, create a Secret with the credentials and reference it in the DataVolume:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc create secret generic http-auth-secret \
+  --from-literal=username=myuser \
+  --from-literal=password=mypassword \
+  -n cdi-operations-demo</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Then reference the Secret in the DataVolume spec:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">spec:
+  source:
+    http:
+      url: "https://private-server.example.com/images/rhel9.qcow2"
+      secretRef: http-auth-secret</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_http_import_with_custom_certificates"><a class="anchor" href="#_http_import_with_custom_certificates"></a>HTTP Import with Custom Certificates</h3>
+<div class="paragraph">
+<p>If the HTTP server uses a self-signed or internal CA certificate, create a ConfigMap with the CA bundle and reference it:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc create configmap http-ca-cert \
+  --from-file=ca-bundle.crt=/path/to/ca-bundle.crt \
+  -n cdi-operations-demo</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Then add it to the DataVolume:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">spec:
+  source:
+    http:
+      url: "https://internal-server.example.com/images/rhel9.qcow2"
+      certConfigMap: http-ca-cert</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_4_import_from_a_container_registry"><a class="anchor" href="#_step_4_import_from_a_container_registry"></a>Step 4: Import from a Container Registry</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Container registries can host disk images packaged as container images (ContainerDisks). CDI uses the node&#8217;s container runtime to pull the image and extract the disk file.</p>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/cdi-operations/dv-registry-import.yaml" class="xref attachment">Download dv-registry-import.yaml</a></p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f - &lt;&lt;EOF
+apiVersion: cdi.kubevirt.io/v1beta1
+kind: DataVolume
+metadata:
+  name: fedora-registry
+  namespace: cdi-operations-demo
+  annotations:
+    cdi.kubevirt.io/storage.bind.immediate.requested: "true"
+spec:
+  source:
+    registry:
+      url: "docker://quay.io/containerdisks/fedora:latest"
+      pullMethod: node
+  storage:
+    resources:
+      requests:
+        storage: 10Gi
+EOF</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The <code>pullMethod</code> field controls how CDI retrieves the image:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong><code>node</code></strong>&#8201;&#8212;&#8201;uses the node&#8217;s container runtime (CRI-O) to pull the image. This method reuses the node&#8217;s pull secrets and registry mirrors.</p>
+</li>
+<li>
+<p><strong><code>pod</code></strong>&#8201;&#8212;&#8201;CDI pulls the image directly from within the importer pod. Use this when the node does not have access to the registry.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Monitor until <code>Succeeded</code>:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get dv fedora-registry -n cdi-operations-demo -w</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Press <code>Ctrl+C</code> when the DataVolume reaches <code>Succeeded</code>.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_5_upload_a_disk_image_from_your_workstation"><a class="anchor" href="#_step_5_upload_a_disk_image_from_your_workstation"></a>Step 5: Upload a Disk Image from Your Workstation</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The <code>virtctl image-upload</code> command streams a local disk image file to the CDI upload proxy, which writes it to a PVC. This method is best for one-off imports where the image exists on your workstation and is not hosted on a web server or registry.</p>
+</div>
+<div class="paragraph">
+<p>To upload, you need a local qcow2 or raw image. For this example, download a small Fedora Cloud image first:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">curl -LO https://download.fedoraproject.org/pub/fedora/linux/releases/43/Cloud/x86_64/images/Fedora-Cloud-Base-Generic-43-1.6.x86_64.qcow2</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Then upload it:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">virtctl image-upload dv fedora-upload \
+  --image-path=./Fedora-Cloud-Base-Generic-43-1.6.x86_64.qcow2 \
+  --size=10Gi \
+  --namespace=cdi-operations-demo \
+  --insecure \
+  --force-bind</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Key flags:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong><code>dv fedora-upload</code></strong>&#8201;&#8212;&#8201;creates a DataVolume named <code>fedora-upload</code> (you can also use <code>pvc</code> instead of <code>dv</code> to create a bare PVC)</p>
+</li>
+<li>
+<p><strong><code>--size</code></strong>&#8201;&#8212;&#8201;PVC size, must be at least the virtual size of the image</p>
+</li>
+<li>
+<p><strong><code>--insecure</code></strong>&#8201;&#8212;&#8201;skip TLS verification for the upload proxy endpoint (required if using self-signed certificates)</p>
+</li>
+<li>
+<p><strong><code>--force-bind</code></strong>&#8201;&#8212;&#8201;force immediate PVC binding for <code>WaitForFirstConsumer</code> StorageClasses</p>
+</li>
+</ul>
+</div>
+<div class="listingblock">
+<div class="title">Expected output</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">PVC cdi-operations-demo/fedora-upload created
+Uploading data to https://cdi-uploadproxy-openshift-cnv.apps...
+
+ 420.00 MiB / 420.00 MiB [=================================] 100.00% 1m30s
+
+Uploading data completed successfully, waiting for processing to complete
+Processing completed successfully</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Verify:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get dv fedora-upload -n cdi-operations-demo</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_6_clone_an_existing_pvc"><a class="anchor" href="#_step_6_clone_an_existing_pvc"></a>Step 6: Clone an Existing PVC</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>PVC cloning creates a copy of an existing disk. CDI supports two cloning strategies:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Host-assisted cloning</strong>&#8201;&#8212;&#8201;CDI creates a source pod and a target pod, streaming data between them. This works with any storage backend.</p>
+</li>
+<li>
+<p><strong>Smart cloning</strong>&#8201;&#8212;&#8201;the CSI driver performs a snapshot-based clone, which is faster and does not require data streaming. CDI uses smart cloning automatically when the CSI driver supports volume snapshots.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Clone the <code>fedora-http</code> PVC created in Step 3:</p>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/cdi-operations/dv-pvc-clone.yaml" class="xref attachment">Download dv-pvc-clone.yaml</a></p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f - &lt;&lt;EOF
+apiVersion: cdi.kubevirt.io/v1beta1
+kind: DataVolume
+metadata:
+  name: fedora-clone
+  namespace: cdi-operations-demo
+  annotations:
+    cdi.kubevirt.io/storage.bind.immediate.requested: "true"
+spec:
+  source:
+    pvc:
+      name: fedora-http
+      namespace: cdi-operations-demo
+  storage:
+    resources:
+      requests:
+        storage: 10Gi
+EOF</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Monitor the clone:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get dv fedora-clone -n cdi-operations-demo -w</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Expected output</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">NAME           PHASE              PROGRESS   RESTARTS   AGE
+fedora-clone   CloneScheduled     N/A                    5s
+fedora-clone   CloneInProgress    10.00%                 15s
+fedora-clone   Succeeded          100.0%                 45s</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Press <code>Ctrl+C</code> when the clone reaches <code>Succeeded</code>.</p>
+</div>
+<div class="sect2">
+<h3 id="_cross_namespace_cloning"><a class="anchor" href="#_cross_namespace_cloning"></a>Cross-Namespace Cloning</h3>
+<div class="paragraph">
+<p>To clone a PVC from a different namespace, specify the source namespace in <code>spec.source.pvc.namespace</code>. The CDI service account needs permission to read PVCs in the source namespace. CDI creates the required RBAC automatically when the requesting user has <code>get</code> and <code>list</code> permissions on PVCs in the source namespace.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_7_monitor_datavolume_progress_and_handle_retries"><a class="anchor" href="#_step_7_monitor_datavolume_progress_and_handle_retries"></a>Step 7: Monitor DataVolume Progress and Handle Retries</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>CDI reports progress through the DataVolume <code>.status</code> fields. You can query these programmatically:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get dv -n cdi-operations-demo -o custom-columns=NAME:.metadata.name,PHASE:.status.phase,PROGRESS:.status.progress,CONDITIONS:.status.conditions[0].reason</code></pre>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_retry_behavior"><a class="anchor" href="#_retry_behavior"></a>Retry Behavior</h3>
+<div class="paragraph">
+<p>When an import fails (network timeout, HTTP 500, transient error), CDI retries automatically. The default retry count is 3. Between retries, CDI uses exponential backoff.</p>
+</div>
+<div class="paragraph">
+<p>You can see retry counts in the DataVolume status:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get dv -n cdi-operations-demo -o custom-columns=NAME:.metadata.name,PHASE:.status.phase,RESTARTS:.status.restartCount</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If all retries are exhausted, the DataVolume transitions to <code>Failed</code>. To retry a failed DataVolume, delete it and recreate it:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc delete dv &lt;failed-dv-name&gt; -n cdi-operations-demo</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Then re-apply the DataVolume manifest.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_checking_events"><a class="anchor" href="#_checking_events"></a>Checking Events</h3>
+<div class="paragraph">
+<p>DataVolume events provide detailed information about what CDI is doing:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc describe dv fedora-http -n cdi-operations-demo</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Look at the <code>Events</code> section at the bottom of the output for messages like <code>Import into PVC started</code>, <code>Import Complete</code>, or error messages.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_8_automate_boot_source_updates_with_dataimportcron"><a class="anchor" href="#_step_8_automate_boot_source_updates_with_dataimportcron"></a>Step 8: Automate Boot Source Updates with DataImportCron</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>DataImportCron automatically imports disk images on a schedule. This is how OpenShift Virtualization keeps boot source images (Fedora, RHEL, CentOS Stream, Windows) up to date in the <code>openshift-virtualization-os-images</code> namespace. You can create your own DataImportCron objects for custom images.</p>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/cdi-operations/dataimportcron-fedora.yaml" class="xref attachment">Download dataimportcron-fedora.yaml</a></p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f - &lt;&lt;EOF
+apiVersion: cdi.kubevirt.io/v1beta1
+kind: DataImportCron
+metadata:
+  name: fedora-image-cron
+  namespace: cdi-operations-demo
+spec:
+  schedule: "0 3 * * 1"
+  managedDataSource: fedora-latest
+  garbageCollect: Outdated
+  importsToKeep: 2
+  template:
+    spec:
+      source:
+        registry:
+          url: "docker://quay.io/containerdisks/fedora:latest"
+          pullMethod: node
+      storage:
+        resources:
+          requests:
+            storage: 10Gi
+EOF</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Key fields:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong><code>schedule</code></strong>&#8201;&#8212;&#8201;cron expression. <code>0 3 * * 1</code> runs every Monday at 03:00 UTC.</p>
+</li>
+<li>
+<p><strong><code>managedDataSource</code></strong>&#8201;&#8212;&#8201;name of the DataSource that DataImportCron manages. VMs reference this DataSource to get the latest image.</p>
+</li>
+<li>
+<p><strong><code>garbageCollect: Outdated</code></strong>&#8201;&#8212;&#8201;automatically deletes old DataVolumes when a new import completes.</p>
+</li>
+<li>
+<p><strong><code>importsToKeep: 2</code></strong>&#8201;&#8212;&#8201;retains the two most recent imports. This lets you roll back to a previous version if needed.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Verify the DataImportCron:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get dataimportcron -n cdi-operations-demo</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Expected output</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">NAME                LASTIMPORT   NEXTIMPORT           LASTIMPORTNAMESPACE
+fedora-image-cron                Mon, 21 Jul 03:00    cdi-operations-demo</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>DataImportCron creates a DataSource that always points to the latest imported PVC. VMs that reference this DataSource automatically get the newest image when they are created:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">spec:
+  dataVolumeTemplates:
+    - spec:
+        sourceRef:
+          kind: DataSource
+          name: fedora-latest
+          namespace: cdi-operations-demo
+        storage:
+          resources:
+            requests:
+              storage: 10Gi</code></pre>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_view_system_boot_source_crons"><a class="anchor" href="#_view_system_boot_source_crons"></a>View System Boot Source Crons</h3>
+<div class="paragraph">
+<p>OpenShift Virtualization creates DataImportCron objects in the <code>openshift-virtualization-os-images</code> namespace for the built-in boot sources. To see them:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get dataimportcron -n openshift-virtualization-os-images</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_9_configure_cdi_scratch_space_and_filesystem_overhead"><a class="anchor" href="#_step_9_configure_cdi_scratch_space_and_filesystem_overhead"></a>Step 9: Configure CDI Scratch Space and Filesystem Overhead</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_scratch_space"><a class="anchor" href="#_scratch_space"></a>Scratch Space</h3>
+<div class="paragraph">
+<p>CDI uses scratch space (a temporary PVC) during format conversions. When importing a qcow2 image, CDI first writes the qcow2 data to the scratch PVC, then converts it to raw format on the target PVC. Scratch space is also used for gzip and xz decompression.</p>
+</div>
+<div class="paragraph">
+<p>If the scratch space PVC fails to provision (no StorageClass, insufficient capacity), the import fails with an error about scratch space. To specify which StorageClass CDI should use for scratch space:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc patch cdi cdi-kubevirt-hyperconverged --type merge -p '{"spec":{"config":{"scratchSpaceStorageClass":"lvms-vg1"}}}'</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If you do not set this, CDI uses the default StorageClass for scratch PVCs.</p>
+</div>
+<div class="paragraph">
+<p>Verify the current scratch space configuration:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get cdi cdi-kubevirt-hyperconverged -o jsonpath='{.spec.config.scratchSpaceStorageClass}'
+echo</code></pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+Not all imports require scratch space. Raw image imports and PVC clones typically do not need scratch space. Scratch space is required for qcow2-to-raw conversion and decompression of compressed images.
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_filesystem_overhead"><a class="anchor" href="#_filesystem_overhead"></a>Filesystem Overhead</h3>
+<div class="paragraph">
+<p>When using <code>Filesystem</code> mode PVCs (the default for most StorageClasses), the underlying storage file system reserves a percentage of the volume for metadata. CDI accounts for this by requesting slightly more space than the image requires.</p>
+</div>
+<div class="paragraph">
+<p>The default filesystem overhead is 5.5%. You can adjust it globally or per StorageClass:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get cdi cdi-kubevirt-hyperconverged -o jsonpath='{.spec.config.filesystemOverhead}'
+echo</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>To change the global overhead percentage:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc patch cdi cdi-kubevirt-hyperconverged --type merge -p '{"spec":{"config":{"filesystemOverhead":{"global":"0.055"}}}}'</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>To set a per-StorageClass override:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc patch cdi cdi-kubevirt-hyperconverged --type merge -p '{"spec":{"config":{"filesystemOverhead":{"storageClass":{"lvms-vg1":"0.05"}}}}}'</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_10_configure_cdi_resource_limits"><a class="anchor" href="#_step_10_configure_cdi_resource_limits"></a>Step 10: Configure CDI Resource Limits</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>CDI importer and cloner pods consume CPU and memory during data transfer. On busy clusters, you may want to limit these resources to prevent import jobs from starving other workloads.</p>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/cdi-operations/cdi-resource-config.yaml" class="xref attachment">Download cdi-resource-config.yaml</a></p>
+</div>
+<div class="paragraph">
+<p>View the current resource configuration:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get cdi cdi-kubevirt-hyperconverged -o json | jq '.spec.config.podResourceRequirements'</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Set resource limits for CDI worker pods:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc patch cdi cdi-kubevirt-hyperconverged --type merge -p '{
+  "spec": {
+    "config": {
+      "podResourceRequirements": {
+        "limits": {
+          "cpu": "2",
+          "memory": "1Gi"
+        },
+        "requests": {
+          "cpu": "100m",
+          "memory": "60Mi"
+        }
+      }
+    }
+  }
+}'</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>These limits apply to all CDI worker pods (importers, cloners, uploaders). Setting the CPU limit too low slows down format conversion. Setting the memory limit too low can cause OOMKilled errors during decompression of large compressed images.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_11_troubleshoot_common_cdi_issues"><a class="anchor" href="#_step_11_troubleshoot_common_cdi_issues"></a>Step 11: Troubleshoot Common CDI Issues</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_datavolume_stuck_in_importscheduled"><a class="anchor" href="#_datavolume_stuck_in_importscheduled"></a>DataVolume Stuck in ImportScheduled</h3>
+<div class="paragraph">
+<p>The DataVolume stays in <code>ImportScheduled</code> and no importer pod appears.</p>
+</div>
+<div class="paragraph">
+<p>Check if the PVC is bound:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get pvc -n cdi-operations-demo</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If the PVC shows <code>Pending</code>, check events:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc describe pvc &lt;pvc-name&gt; -n cdi-operations-demo</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Common causes:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>No default StorageClass</strong>&#8201;&#8212;&#8201;set one with <code>oc patch storageclass &lt;name&gt; -p '{"metadata":{"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}'</code></p>
+</li>
+<li>
+<p><strong>WaitForFirstConsumer</strong>&#8201;&#8212;&#8201;add the <code>cdi.kubevirt.io/storage.bind.immediate.requested: "true"</code> annotation to the DataVolume</p>
+</li>
+<li>
+<p><strong>Insufficient storage capacity</strong>&#8201;&#8212;&#8201;check available space with <code>oc get pv</code></p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_datavolume_stuck_in_importinprogress_at_0"><a class="anchor" href="#_datavolume_stuck_in_importinprogress_at_0"></a>DataVolume Stuck in ImportInProgress at 0%</h3>
+<div class="paragraph">
+<p>The importer pod is running but progress stays at 0%.</p>
+</div>
+<div class="paragraph">
+<p>Check the importer pod logs:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc logs -n cdi-operations-demo -l cdi.kubevirt.io/storage.import.importPvcName=&lt;dv-name&gt;</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Common causes:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Slow or unreachable source URL</strong>&#8201;&#8212;&#8201;test the URL from within the cluster: <code>oc run curl-test --rm -it --image=curlimages/curl&#8201;&#8212;&#8201;curl -sI &lt;url&gt;</code></p>
+</li>
+<li>
+<p><strong>TLS certificate errors</strong>&#8201;&#8212;&#8201;add a CA certificate ConfigMap or use <code>certConfigMap</code> in the DataVolume spec</p>
+</li>
+<li>
+<p><strong>DNS resolution failure</strong>&#8201;&#8212;&#8201;check DNS from within the cluster</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_scratch_space_errors"><a class="anchor" href="#_scratch_space_errors"></a>Scratch Space Errors</h3>
+<div class="paragraph">
+<p>If the import fails with a message about scratch space:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">Unable to create scratch space PVC: no default storage class found</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Set the scratch space StorageClass:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc patch cdi cdi-kubevirt-hyperconverged --type merge -p '{"spec":{"config":{"scratchSpaceStorageClass":"lvms-vg1"}}}'</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Then delete and recreate the failed DataVolume.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_importer_pod_oomkilled"><a class="anchor" href="#_importer_pod_oomkilled"></a>Importer Pod OOMKilled</h3>
+<div class="paragraph">
+<p>If the importer pod is killed with <code>OOMKilled</code> status, the memory limit is too low for the decompression or conversion operation. Increase the memory limit:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc patch cdi cdi-kubevirt-hyperconverged --type merge -p '{"spec":{"config":{"podResourceRequirements":{"limits":{"memory":"2Gi"}}}}}'</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_slow_transfers"><a class="anchor" href="#_slow_transfers"></a>Slow Transfers</h3>
+<div class="paragraph">
+<p>If imports take longer than expected:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Check CDI worker pod resource limits. Low CPU limits slow down qcow2-to-raw conversion.</p>
+</li>
+<li>
+<p>Check network connectivity between the importer pod and the source.</p>
+</li>
+<li>
+<p>For HTTP sources, check if the server supports range requests. CDI can resume interrupted downloads if the server supports HTTP <code>Range</code> headers.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_checking_cdi_version_and_health"><a class="anchor" href="#_checking_cdi_version_and_health"></a>Checking CDI Version and Health</h3>
+<div class="paragraph">
+<p>Verify the CDI operator is healthy:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get cdi cdi-kubevirt-hyperconverged -o jsonpath='{.status.phase}'
+echo</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The output should be <code>Deployed</code>. If it shows <code>Error</code> or <code>Upgrading</code>, check the operator pod logs:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc logs -n openshift-cnv -l name=cdi-operator</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_cleanup"><a class="anchor" href="#_cleanup"></a>Cleanup</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Delete the namespace to remove all resources created in this tutorial:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc delete namespace cdi-operations-demo</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Verify:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get namespace cdi-operations-demo</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Expected output</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">Error from server (NotFound): namespaces "cdi-operations-demo" not found</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If you changed CDI global configuration (scratch space, resource limits, filesystem overhead) and want to revert, patch the CDI resource back to its defaults or remove the fields you added:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc patch cdi cdi-kubevirt-hyperconverged --type json -p '[
+  {"op": "remove", "path": "/spec/config/scratchSpaceStorageClass"},
+  {"op": "remove", "path": "/spec/config/podResourceRequirements"}
+]'</code></pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+Only run the cleanup patch above if you want to revert CDI configuration to defaults. If you set these values intentionally for your environment, leave them in place.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_summary"><a class="anchor" href="#_summary"></a>Summary</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>In this tutorial you learned how to:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Identify CDI components and verify they are running in the <code>openshift-cnv</code> namespace</p>
+</li>
+<li>
+<p>Understand the DataVolume lifecycle and its phases from Pending through Succeeded</p>
+</li>
+<li>
+<p>Import disk images from HTTP URLs, container registries, local uploads, and PVC clones</p>
+</li>
+<li>
+<p>Monitor import progress and understand CDI retry behavior</p>
+</li>
+<li>
+<p>Automate boot source updates with DataImportCron</p>
+</li>
+<li>
+<p>Configure scratch space, filesystem overhead, and CDI worker pod resource limits</p>
+</li>
+<li>
+<p>Diagnose and fix common CDI failures including stuck imports, scratch space errors, and OOMKilled pods</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_see_also"><a class="anchor" href="#_see_also"></a>See Also</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p><a href="https://github.com/kubevirt/containerized-data-importer" target="_blank" rel="noopener">Containerized Data Importer (CDI) Project</a></p>
+</li>
+<li>
+<p><a href="https://docs.redhat.com/en/documentation/openshift_container_platform/4.18/html/virtualization/storage#virt-configuring-storage-profile" target="_blank" rel="noopener">Configuring Storage Profiles - OpenShift Documentation</a></p>
+</li>
+<li>
+<p><a href="../vm-lifecycle/import-qcow2-boot-volume.html" class="xref page">Import qcow2 Boot Volume</a></p>
+</li>
+<li>
+<p><a href="../vm-lifecycle/custom-golden-images.html" class="xref page">Custom Golden Images</a></p>
+</li>
+<li>
+<p><a href="multi-disk-configuration.html" class="xref page">Multi-Disk VM Configuration</a></p>
+</li>
+<li>
+<p><a href="expanding-vm-disk-size.html" class="xref page">Expanding VM Disk Size</a></p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<nav class="pagination">
+  <span class="prev"><a href="expanding-vm-disk-size.html">Expanding VM Disk Size</a></span>
+  <span class="next"><a href="../networking/index.html">Networking Configuration</a></span>
+</nav>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <img src="../../../_/img/rhl-logo-red.png" height="40px" alt="Red Hat"  href="https://redhat.com" >
+</footer><script id="site-script" src="../../../_/js/site.js" data-ui-root-path="../../../_"></script>
+<script async src="../../../_/js/vendor/highlight.js"></script>
+  </body>
+</html>
