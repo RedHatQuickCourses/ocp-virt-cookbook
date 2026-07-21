@@ -132,7 +132,7 @@ For a detailed explanation of VM states and transitions, see xref:vm-lifecycle-s
 
 Virtual machines need disk images to boot from. In OpenShift Virtualization, a declarative storage pipeline handles the process of turning a source image into a running VM disk.
 
-A `DataSource` points to a boot image, such as a Fedora or RHEL cloud image maintained by the SSP Operator. When a VM is created, a `DataVolume` tells the CDI controller to import, clone, or upload that image into a new `PersistentVolumeClaim` (PVC). The CDI controller handles the data transfer automatically. The resulting PVC is mounted into the `virt-launcher` pod and presented to QEMU as a virtual disk.
+A `DataSource` points to a boot image, such as a Fedora or RHEL cloud image maintained by the SSP Operator. When a VM is created, a `DataVolume` tells the CDI controller to import, clone, or upload that image into a new `PersistentVolumeClaim` (PVC). The CDI controller handles the data transfer automatically. The resulting PVC is mounted into the `virt-launcher` pod and presented to QEMU as a virtual disk. Other approaches are also available: you can create a `DataVolume` directly to upload an image (including through the web console UI), or use container disks defined inline in the VM YAML for lightweight, ephemeral boot volumes.
 
 The PVC access mode determines what operations are available to the VM. `ReadWriteOnce` (RWO) is sufficient for VMs that stay on a single node. `ReadWriteMany` (RWX) is required for live migration, because the disk must be accessible from both the source and destination nodes at the same time.
 
@@ -148,7 +148,7 @@ To expose a VM to traffic outside the cluster, you create Kubernetes Services an
 
 For workloads that require direct Layer 2 access, VLAN tagging, or hardware-accelerated networking, VMs can attach secondary network interfaces.
 A `NetworkAttachmentDefinition` CR defines each additional network, and the Multus CNI meta-plugin attaches it to the VM's pod.
-Available options include Linux bridges, localnet, Layer 2 overlays, and SR-IOV for hardware-accelerated networking.
+Available options include User Defined Networks (UDNs), Linux bridges, localnet, Layer 2 overlays, and SR-IOV for hardware-accelerated networking. UDNs are the current default in recent OpenShift releases and the approach Red Hat is actively pushing forward.
 
 The NMState Operator manages node-level network configuration such as bridges, VLANs, and bonds declaratively through Kubernetes CRs.
 
