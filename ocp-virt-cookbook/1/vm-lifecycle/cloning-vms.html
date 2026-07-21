@@ -398,6 +398,33 @@
 </div>
 </div>
 <div class="sect1">
+<h2 id="_business_use_cases"><a class="anchor" href="#_business_use_cases"></a>Business Use Cases</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Cloning is most valuable when you need a VM that is already configured, rather than one built from scratch:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Environment provisioning</strong>: Clone a fully configured, production-like VM for QA testing. The result is both faster to produce and closer to production than a VM built from scratch.</p>
+</li>
+<li>
+<p><strong>Scale-out testing</strong>: Clone a web server VM ten times to simulate load across multiple identical instances.</p>
+</li>
+<li>
+<p><strong>Cross-namespace deployment</strong>: Promote a validated VM from a staging namespace to a production namespace, with RBAC controlling access to the source. See <a href="#cloning-across-namespaces">Cloning Across Namespaces</a>.</p>
+</li>
+<li>
+<p><strong>Disaster recovery testing</strong>: Clone production VMs into a DR namespace, exercise failover procedures against the clones, then delete them, with no impact on the running production VMs.</p>
+</li>
+<li>
+<p><strong>Developer sandboxes</strong>: Give each developer a clone of a reference VM that already has the required tools and configuration installed.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
 <h2 id="_cloning_vs_golden_images"><a class="anchor" href="#_cloning_vs_golden_images"></a>Cloning vs Golden Images</h2>
 <div class="sectionbody">
 <div class="paragraph">
@@ -518,6 +545,92 @@
 <p>Useful for cross-namespace cloning</p>
 </li>
 </ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_comparing_the_cloning_paths"><a class="anchor" href="#_comparing_the_cloning_paths"></a>Comparing the Cloning Paths</h3>
+<div class="paragraph">
+<p>The two methods above, together with the golden image pattern described in <a href="custom-golden-images.html" class="xref page">Custom Golden Images</a>, reach the same result through different resources:</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>Web console clone  — simplest, same namespace
+│
+└─ source VM
+   │
+   └─ Clone action in the console
+      │
+      └─ new VM, with a full copy of the source disks
+
+CLI DataVolume clone  — scriptable, works across namespaces
+│
+└─ source PVC
+   │
+   └─ DataVolume  — spec.source.pvc
+      │
+      └─ new PVC
+         │
+         └─ new VM referencing that PVC
+
+Clone from a golden image  — many VMs from one prepared image
+│
+└─ DataSource
+   │
+   └─ DataVolume  — spec.sourceRef
+      │
+      └─ new VM</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Use this to choose between them:</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 20%;">
+<col style="width: 40%;">
+<col style="width: 20%;">
+<col style="width: 20%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Method</th>
+<th class="tableblock halign-left valign-top">Best for</th>
+<th class="tableblock halign-left valign-top">Namespace</th>
+<th class="tableblock halign-left valign-top">RBAC</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Web console</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">One-off copies of a VM, done interactively</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Same namespace</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Not required</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">CLI DataVolume</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Automation, scripted or repeated clones</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Same or different</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Required for cross-namespace</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Golden image</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Many VMs from one standardized, generalized image</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Same or different</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Required for cross-namespace</p></td>
+</tr>
+</tbody>
+</table>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-important" title="Important"></i>
+</td>
+<td class="content">
+All three paths produce a full, independent copy of the disk. A clone is not a snapshot and not a reference to the source, so each one consumes storage equal to the source volume. Plan capacity as the number of clones multiplied by the source volume size. See <a href="#storage-space-requirements">Storage Space Requirements</a>.
+</td>
+</tr>
+</table>
 </div>
 </div>
 <div class="sect2">
@@ -1250,7 +1363,7 @@ curl localhost
 </div>
 </div>
 <div class="sect1">
-<h2 id="_cloning_across_namespaces"><a class="anchor" href="#_cloning_across_namespaces"></a>Cloning Across Namespaces</h2>
+<h2 id="cloning-across-namespaces"><a class="anchor" href="#cloning-across-namespaces"></a>Cloning Across Namespaces</h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>Clone VMs to different namespaces for environment separation (dev, test, prod).</p>
@@ -1519,7 +1632,7 @@ cdi.kubevirt.io/cloneType: copy      # Host-assisted cloning</code></pre>
 </div>
 </div>
 <div class="sect2">
-<h3 id="_storage_space_requirements"><a class="anchor" href="#_storage_space_requirements"></a>Storage Space Requirements</h3>
+<h3 id="storage-space-requirements"><a class="anchor" href="#storage-space-requirements"></a>Storage Space Requirements</h3>
 <div class="paragraph">
 <p>Each clone requires full storage allocation:</p>
 </div>
@@ -1879,6 +1992,12 @@ oc delete namespace vm-cloning-production</code></pre>
 <ul>
 <li>
 <p>How VM cloning works in OpenShift Virtualization</p>
+</li>
+<li>
+<p>The business scenarios where cloning is the right approach</p>
+</li>
+<li>
+<p>How the web console, CLI DataVolume, and golden image paths compare, and how to choose between them</p>
 </li>
 <li>
 <p>The difference between web console and CLI cloning methods</p>
