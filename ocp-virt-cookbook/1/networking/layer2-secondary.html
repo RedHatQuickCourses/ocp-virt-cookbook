@@ -875,6 +875,72 @@ oc delete namespace example-l2-secondary</code></pre>
 </div>
 </div>
 <div class="sect1">
+<h2 id="_network_topology"><a class="anchor" href="#_network_topology"></a>Network Topology</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The following diagram illustrates how two VMs on different worker nodes communicate over a Layer 2 secondary network. Traffic flows through the OVN overlay via a Geneve tunnel between nodes, without requiring any physical network access or node-level NIC configuration.</p>
+</div>
+<div class="imageblock text-center">
+<div class="content">
+<img src="_images/layer2-secondary-topology.png" alt="Layer 2 Secondary Network Topology">
+</div>
+</div>
+<div class="paragraph">
+<p>The <code>ovn-k8s-cni-overlay</code> CNI plugin with <code>layer2</code> topology creates a cluster-wide OVN logical switch. Multus attaches each VM&#8217;s secondary interface to this logical switch via a bridge connection. When VM-A on Node 1 sends traffic to VM-B on Node 2, OVN encapsulates the frames in a Geneve tunnel and delivers them through the cluster&#8217;s existing node-to-node network. The VMs see direct Layer 2 connectivity as if they were on the same physical switch, even though the underlying transport is an overlay.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+Because Layer 2 secondary networks operate entirely within the OVN overlay, no <code>NodeNetworkConfigurationPolicy</code> (NNCP), bridge setup, or VLAN configuration is required on the cluster nodes. This makes Layer 2 the simplest secondary network option to deploy.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_business_use_cases"><a class="anchor" href="#_business_use_cases"></a>Business Use Cases</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Layer 2 secondary networks are best suited for workloads that need simple, isolated VM-to-VM connectivity without external network access.</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 33.3333%;">
+<col style="width: 66.6667%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Use Case</th>
+<th class="tableblock halign-left valign-top">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Internal east-west communication</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Database replication, message queues, or application clustering between VMs that need direct Layer 2 connectivity without exposing traffic outside the cluster.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Development and test environments</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Isolated VM networks for testing multi-tier applications without requiring physical NIC access or network team involvement.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Simple VM-to-VM connectivity</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Workloads where VMs need to reach each other on a private subnet but do not require access to external networks or the internet.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Alternative to Linux bridges</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">When no physical network integration is needed, Layer 2 overlay is simpler than configuring Linux bridges, which require node-level NNCP resources and physical NIC access. Choose Linux bridges when VMs must join an existing physical network segment.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="sect1">
 <h2 id="_summary"><a class="anchor" href="#_summary"></a>Summary</h2>
 <div class="sectionbody">
 <div class="paragraph">
