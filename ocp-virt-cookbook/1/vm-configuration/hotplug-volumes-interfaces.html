@@ -361,6 +361,90 @@
 </div>
 </div>
 <div class="sect1">
+<h2 id="_when_to_use_hotplugging"><a class="anchor" href="#_when_to_use_hotplugging"></a>When to Use Hotplugging</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Hotplugging is useful whenever storage or network needs change after a VM is already serving traffic, and a restart would be disruptive:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Database growth</strong>: A production database VM is running out of disk space. Attach an additional storage volume without downtime.</p>
+</li>
+<li>
+<p><strong>Debug and diagnostic volumes</strong>: Attach a scratch volume to a running production VM, collect logs or a memory dump, then detach it. No restart, and the VM keeps serving requests.</p>
+</li>
+<li>
+<p><strong>Dynamic network segments</strong>: An application VM needs access to a new VLAN. Hotplug a secondary network interface instead of restarting the VM.</p>
+</li>
+<li>
+<p><strong>Temporary scratch storage</strong>: Attach extra storage for a batch job, then remove it when the job completes, so the capacity is not tied up permanently.</p>
+</li>
+<li>
+<p><strong>Compliance data collection</strong>: Attach an audit volume, collect the required data, and detach it, keeping the window in which the storage is attached as short as possible.</p>
+</li>
+</ul>
+</div>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+The use case determines whether you want the <code>--persist</code> flag. Long-lived data disks should be persisted so they survive a restart; temporary volumes for diagnostics, batch jobs, or audits are usually attached without it. See <a href="#persist-flag">The --persist Flag</a>.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_how_hotplugging_works"><a class="anchor" href="#_how_hotplugging_works"></a>How Hotplugging Works</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Hotplugging changes the VM&#8217;s device layout while the VM keeps running. The base VM in this tutorial boots with two virtio disks; adding a volume introduces a third device without interrupting the VM:</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>BEFORE  — hotplug-vm running
+│
+├─ rootdisk        — vda   (virtio)
+└─ cloudinitdisk   — vdb   (virtio)
+
+   virtctl addvolume hotplug-vm --volume-name=hotplug-disk --persist
+   the VM keeps running — no restart, no downtime
+
+AFTER   — the same hotplug-vm, still running
+│
+├─ rootdisk        — vda   (virtio)
+├─ cloudinitdisk   — vdb   (virtio)
+└─ hotplug-disk    — sda   (SCSI, hotplugged)</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Note that the hotplugged volume appears as <code>sda</code>, not <code>vdc</code>. Hotplugged volumes are attached to the SCSI bus rather than the virtio PCI bus, because virtio disks cannot be added to the PCI bus after boot. This is why the device name changes prefix. See <a href="#disk-bus-type">Disk Bus Type</a> for details.</p>
+</div>
+<div class="paragraph">
+<p>Behind that single <code>virtctl</code> command, the PVC reaches the guest through an attachment pod:</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>PersistentVolumeClaim (hotplug-disk)
+│
+└─ virtctl addvolume  — patches the running VM
+   │
+   └─ attachment pod  — makes the PVC available to the VM's launcher pod
+      │
+      └─ /dev/sda in the guest  — a new block device, ready to format</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The attachment pod is visible in the VMI status as the <code>hotplugVolume</code> field, which you will see in Step 4.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
 <h2 id="_prerequisites"><a class="anchor" href="#_prerequisites"></a>Prerequisites</h2>
 <div class="sectionbody">
 <div class="ulist">
@@ -744,7 +828,7 @@ cloudinitdisk: vdb</pre>
 <h2 id="_hotplug_volume_reference"><a class="anchor" href="#_hotplug_volume_reference"></a>Hotplug Volume Reference</h2>
 <div class="sectionbody">
 <div class="sect2">
-<h3 id="_the_persist_flag"><a class="anchor" href="#_the_persist_flag"></a>The --persist Flag</h3>
+<h3 id="persist-flag"><a class="anchor" href="#persist-flag"></a>The --persist Flag</h3>
 <table class="tableblock frame-all grid-all stretch">
 <colgroup>
 <col style="width: 50%;">
@@ -804,7 +888,7 @@ cloudinitdisk: vdb</pre>
 </div>
 </div>
 <div class="sect2">
-<h3 id="_disk_bus_type"><a class="anchor" href="#_disk_bus_type"></a>Disk Bus Type</h3>
+<h3 id="disk-bus-type"><a class="anchor" href="#disk-bus-type"></a>Disk Bus Type</h3>
 <div class="paragraph">
 <p>Hotplugged volumes use the SCSI bus by default (appearing as <code>sda</code>, <code>sdb</code>, etc.), unlike virtio disks which appear as <code>vda</code>, <code>vdb</code>. This is because virtio disks cannot be hotplugged to the PCI bus after boot. SCSI provides hot-add capability.</p>
 </div>
@@ -850,6 +934,23 @@ cloudinitdisk: vdb</pre>
 <p>The interface is attached to the running VM (if thick Multus is available) or after a live migration.</p>
 </li>
 </ol>
+</div>
+<div class="paragraph">
+<p>The result is the same pattern as volume hotplug, the running VM gains a device it did not boot with:</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>BEFORE  — one interface
+│
+└─ default     — masquerade, pod network
+
+   edit the VM spec to add an interface backed by a NAD
+
+AFTER   — two interfaces
+│
+├─ default     — masquerade, pod network
+└─ dyniface1   — bridge, secondary network</pre>
+</div>
 </div>
 </div>
 <div class="sect2">
@@ -904,6 +1005,12 @@ Hot-unplug is only supported for bridge-binding interfaces. SR-IOV interfaces ca
 </div>
 <div class="ulist">
 <ul>
+<li>
+<p>Recognize the scenarios where hotplugging avoids a disruptive restart</p>
+</li>
+<li>
+<p>Trace how a PVC reaches the guest as a new block device, and why it appears on the SCSI bus</p>
+</li>
 <li>
 <p>Hotplug a PVC volume to a running VM using <code>virtctl addvolume</code></p>
 </li>
