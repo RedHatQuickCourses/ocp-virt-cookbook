@@ -1,0 +1,16 @@
+apiVersion: cdi.kubevirt.io/v1beta1
+kind: DataVolume
+metadata:
+  name: fedora-registry
+  namespace: cdi-operations-demo
+  annotations:
+    cdi.kubevirt.io/storage.bind.immediate.requested: "true"
+spec:
+  source:
+    registry:
+      url: "docker://quay.io/containerdisks/fedora:latest"
+      pullMethod: node
+  storage:
+    resources:
+      requests:
+        storage: 10Gi

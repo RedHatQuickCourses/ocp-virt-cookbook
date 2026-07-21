@@ -1,0 +1,20 @@
+apiVersion: cdi.kubevirt.io/v1beta1
+kind: DataImportCron
+metadata:
+  name: fedora-image-cron
+  namespace: cdi-operations-demo
+spec:
+  schedule: "0 3 * * 1"
+  managedDataSource: fedora-latest
+  garbageCollect: Outdated
+  importsToKeep: 2
+  template:
+    spec:
+      source:
+        registry:
+          url: "docker://quay.io/containerdisks/fedora:latest"
+          pullMethod: node
+      storage:
+        resources:
+          requests:
+            storage: 10Gi
