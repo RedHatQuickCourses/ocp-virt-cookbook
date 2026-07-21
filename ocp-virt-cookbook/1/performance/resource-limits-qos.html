@@ -912,6 +912,22 @@ EOF</code></pre>
 </div>
 </div>
 <div class="sect1">
+<h2 id="_qos_tier_overview"><a class="anchor" href="#_qos_tier_overview"></a>QoS Tier Overview</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The following diagram illustrates how Kubernetes classifies VMs into three QoS tiers based on their resource configuration and the resulting eviction behavior under memory pressure.</p>
+</div>
+<div class="imageblock text-center">
+<div class="content">
+<img src="_images/qos-tiers.png" alt="QoS Tier Diagram">
+</div>
+</div>
+<div class="paragraph">
+<p>Kubernetes assigns the QoS class based on the resource requests and limits on the <code>virt-launcher</code> pod. KubeVirt translates the VM&#8217;s resource specification (CPU and memory defined in <code>spec.domain</code>) into container-level requests and limits, which Kubernetes evaluates for QoS classification. When a ResourceQuota with limits is present in the namespace, KubeVirt automatically sets memory limits using the <code>autoMemoryLimitsRatio</code> multiplier (default 1.0023, configurable per namespace via the <code>alpha.kubevirt.io/auto-memory-limits-ratio</code> label).</p>
+</div>
+</div>
+</div>
+<div class="sect1">
 <h2 id="_qos_classes_summary"><a class="anchor" href="#_qos_classes_summary"></a>QoS Classes Summary</h2>
 <div class="sectionbody">
 <table class="tableblock frame-all grid-all stretch">
@@ -950,6 +966,68 @@ EOF</code></pre>
 </tr>
 </tbody>
 </table>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_business_use_cases"><a class="anchor" href="#_business_use_cases"></a>Business Use Cases</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Choosing the right QoS class depends on the workload&#8217;s tolerance for eviction, performance requirements, and cluster density goals. The following table maps common workload types to the appropriate QoS configuration.</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 16.6666%;">
+<col style="width: 16.6666%;">
+<col style="width: 33.3333%;">
+<col style="width: 33.3335%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Workload Type</th>
+<th class="tableblock halign-left valign-top">QoS Class</th>
+<th class="tableblock halign-left valign-top">Configuration</th>
+<th class="tableblock halign-left valign-top">Rationale</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Production databases (PostgreSQL, Oracle, MongoDB)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Guaranteed</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Set requests equal to limits for both CPU and memory</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Database VMs must never be evicted under memory pressure. Predictable performance and data integrity take priority over VM density.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Application servers (web, API)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Burstable</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Set requests to expected steady-state usage, leave limits unset or set higher than requests</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Application servers benefit from bursting during traffic spikes. Eviction occurs only after all BestEffort pods, which is acceptable for workloads that can tolerate occasional restarts.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Development and test VMs</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">BestEffort</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Omit resource requests and limits</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Ephemeral VMs that can be recreated quickly if evicted. Maximizes VM density on the cluster for disposable workloads.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Batch processing (ETL, scheduled jobs)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Burstable (high limits)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Set requests to idle-state usage, limits to peak processing requirement</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Batch VMs need to burst during processing windows but can be throttled outside those windows. The scheduler packs nodes efficiently during off-peak hours.</p></td>
+</tr>
+</tbody>
+</table>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+These are starting recommendations. Use <code>oc adm top pods</code> to observe actual resource consumption before committing to a QoS class. Workloads that appear Burstable-appropriate may reveal memory patterns that require Guaranteed placement.
+</td>
+</tr>
+</table>
+</div>
 </div>
 </div>
 <div class="sect1">
