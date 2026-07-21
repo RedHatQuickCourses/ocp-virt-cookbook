@@ -410,6 +410,14 @@ Check namespace-level resource consumption against quotas:
 oc describe resourcequota vm-resource-quota -n resource-qos-demo
 ----
 
+== QoS Tier Overview
+
+The following diagram illustrates how Kubernetes classifies VMs into three QoS tiers based on their resource configuration and the resulting eviction behavior under memory pressure.
+
+image::qos-tiers.png[QoS Tier Diagram, align=center]
+
+Kubernetes assigns the QoS class based on the resource requests and limits on the `virt-launcher` pod. KubeVirt translates the VM's resource specification (CPU and memory defined in `spec.domain`) into container-level requests and limits, which Kubernetes evaluates for QoS classification. When a ResourceQuota with limits is present in the namespace, KubeVirt automatically sets memory limits using the `autoMemoryLimitsRatio` multiplier (default 1.0023, configurable per namespace via the `alpha.kubevirt.io/auto-memory-limits-ratio` label).
+
 == QoS Classes Summary
 
 [cols="1,1,1,1",options="header"]
@@ -434,6 +442,37 @@ oc describe resourcequota vm-resource-quota -n resource-qos-demo
 | First to be evicted
 | Temporary, expendable workloads
 |===
+
+== Business Use Cases
+
+Choosing the right QoS class depends on the workload's tolerance for eviction, performance requirements, and cluster density goals. The following table maps common workload types to the appropriate QoS configuration.
+
+[cols="1,1,2,2",options="header"]
+|===
+|Workload Type |QoS Class |Configuration |Rationale
+
+|Production databases (PostgreSQL, Oracle, MongoDB)
+|Guaranteed
+|Set requests equal to limits for both CPU and memory
+|Database VMs must never be evicted under memory pressure. Predictable performance and data integrity take priority over VM density.
+
+|Application servers (web, API)
+|Burstable
+|Set requests to expected steady-state usage, leave limits unset or set higher than requests
+|Application servers benefit from bursting during traffic spikes. Eviction occurs only after all BestEffort pods, which is acceptable for workloads that can tolerate occasional restarts.
+
+|Development and test VMs
+|BestEffort
+|Omit resource requests and limits
+|Ephemeral VMs that can be recreated quickly if evicted. Maximizes VM density on the cluster for disposable workloads.
+
+|Batch processing (ETL, scheduled jobs)
+|Burstable (high limits)
+|Set requests to idle-state usage, limits to peak processing requirement
+|Batch VMs need to burst during processing windows but can be throttled outside those windows. The scheduler packs nodes efficiently during off-peak hours.
+|===
+
+NOTE: These are starting recommendations. Use `oc adm top pods` to observe actual resource consumption before committing to a QoS class. Workloads that appear Burstable-appropriate may reveal memory patterns that require Guaranteed placement.
 
 == Right-Sizing Recommendations
 
