@@ -1,0 +1,1295 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>OpenShift Data Foundation (ODF) with Ceph Storage :: OpenShift Virtualization cookbook</title>
+    <link rel="prev" href="lvm-troubleshooting.html">
+    <link rel="next" href="hostpath-provisioner.html">
+    <meta name="generator" content="Antora 3.1.3">
+    <link rel="stylesheet" href="../../../_/css/site.css">
+    <script>var uiRootPath = '../../../_'</script>
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://www.redhat.com" target="_blank"><img src="../../../_/img/redhat-logo.png" height="40px" alt="Red Hat"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="../../..">OpenShift Virtualization cookbook</a>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues" target="_blank">Report Issues</a>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="ocp-virt-cookbook" data-version="1">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="../index.html">OpenShift Virtualization cookbook</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../index.html">Introduction</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../getting-started/index.html">Getting Started</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/vm-quick-start.html">Quick Start</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/prerequisites.html">Prerequisites</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/install-openshift-virtualization.html">Install OpenShift Virtualization</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/default-storage-class.html">Storage Setup</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/create-vm-web-console.html">Create VM from Web Console</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/create-vm-cli-yaml.html">Create VM from CLI</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/vm-lifecycle-states.html">VM Lifecycle States</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/virtctl-basics.html">Virtctl Basics</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/cloud-init-fundamentals.html">Cloud-init Fundamentals</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="index.html">Storage Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="lvm-operator.html">LVM Operator Installation</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="lvm-troubleshooting.html">LVM Troubleshooting</a>
+  </li>
+  <li class="nav-item is-current-page" data-depth="2">
+    <a class="nav-link" href="odf-ceph-storage.html">ODF/Ceph Storage</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="hostpath-provisioner.html">HostPath Provisioner</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="creating-managing-storage-class.html">Creating and Managing Storage Classes</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="multi-disk-configuration.html">Multi-Disk VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="expanding-vm-disk-size.html">Expanding VM Disk Size</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../networking/index.html">Networking Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/static-ip-configuration.html">Static IP Configuration</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/cloud-init-troubleshooting.html">Cloud-init Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/udn-primary-networks.html">UDN Primary Networks</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/localnet-secondary.html">Localnet Secondary Networks with CUDN</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/localnet-vlan.html">Localnet Secondary Networks with VLAN using NAD</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/cudn-localnet-vlan.html">Localnet VLAN with CUDN</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/layer2-secondary.html">Layer 2 Secondary Networks</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/linux-bridges.html">Linux Bridges</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/sriov-secondary.html">SR-IOV Secondary Networks</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/network-policies-vms.html">Network Policies for VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/metallb-loadbalancer.html">MetalLB Load Balancer for VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/dual-stack-vms.html">Dual-Stack IPv4/IPv6 VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/vm-ingress-routes.html">VM Ingress and Routes</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/ovs-bridge-troubleshooting.html">Troubleshooting Localnet Networks</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../vm-configuration/index.html">Virtual Machine Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/internal-dns-for-vms.html">Internal DNS for VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/remote-access-linux-vms.html">Remote Access to Linux VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/remote-access-linux-troubleshooting.html">Remote Access to Linux VMs Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/remote-access-windows-vms.html">Remote Access to Windows VMs via RDP</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/windows-vm-virtio-drivers.html">Windows VMs with VirtIO Drivers</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/infrastructure-node-placement.html">Infrastructure Node Placement</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/node-placement-affinity.html">Node Placement and Affinity</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/hotplug-volumes-interfaces.html">Hotplug Volumes and Interfaces</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/vm-templates.html">Virtual Machine Templates</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../performance/index.html">VM Performance Tuning</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/resource-limits-qos.html">Resource Limits and QoS</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/cpu-pinning.html">Dedicated CPU Placement</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/numa-hugepages.html">NUMA and Hugepages</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/realtime-vms.html">Real-Time VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/vm-monitoring-metrics.html">VM Monitoring and Metrics</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../vm-lifecycle/index.html">VM Lifecycle Management</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/import-qcow2-boot-volume.html">Import qcow2 Boot Volume</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/custom-golden-images.html">Custom Golden Images</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/golden-images-troubleshooting.html">Golden Images Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/cloning-vms.html">Cloning VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/vm-snapshots.html">VM Snapshots</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/boot-order-boot-sources.html">VM Boot Order and Boot Sources</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../manifests/index.html">Manifests</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../api/index.html">API Guide</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../api/api-component-overview.html">API Component Overview</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../agentic-vm-management/index.html">Agentic VM Management</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/getting-started.html">Getting Started with rh-virt</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/natural-language-vm-create.html">Natural Language VM Creation</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/ai-vm-lifecycle.html">AI VM Lifecycle Operations</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/vm-clone.html">Cloning VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/ai-vm-snapshot-management.html">VM Snapshot Management</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/ai-skill-chaining.html">Day-2 Skill Chaining</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../appendix/glossary.html">Glossary</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">OpenShift Virtualization cookbook</span>
+    <span class="version">1</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <a class="title" href="../index.html">OpenShift Virtualization cookbook</a>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">1</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">OpenShift Virtualization cookbook</a></li>
+    <li><a href="index.html">Storage Configuration</a></li>
+    <li><a href="odf-ceph-storage.html">ODF/Ceph Storage</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">OpenShift Data Foundation (ODF) with Ceph Storage</h1>
+<div class="sect1">
+<h2 id="_overview"><a class="anchor" href="#_overview"></a>Overview</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>This tutorial demonstrates how to install and configure OpenShift Data Foundation (ODF) with Ceph as a storage backend for OpenShift Virtualization virtual machines. ODF provides distributed block and file storage ideal for production multi-node clusters that require high availability and scalability.</p>
+</div>
+<div class="paragraph">
+<p>OpenShift Data Foundation delivers three primary storage types:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Block Storage (Ceph RBD)</strong>: High-performance ReadWriteOnce volumes for VM boot disks and databases</p>
+</li>
+<li>
+<p><strong>File Storage (CephFS)</strong>: Shared filesystem storage supporting ReadWriteMany access for live migration and shared data</p>
+</li>
+<li>
+<p><strong>Object Storage</strong>: S3-compatible storage for backups and artifacts</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_prerequisites"><a class="anchor" href="#_prerequisites"></a>Prerequisites</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p><strong>OpenShift 4.18+</strong> (tested on 4.21)</p>
+</li>
+<li>
+<p><strong>Minimum 3 worker nodes</strong>: Required for Ceph quorum and high availability</p>
+</li>
+<li>
+<p><strong>Cluster admin access</strong>: Required to install operators and configure storage</p>
+</li>
+<li>
+<p><strong>Storage backend</strong>: Either a dynamic StorageClass (such as <code>gp3-csi</code> on AWS, <code>managed-csi</code> on Azure) or local raw block devices on bare-metal nodes</p>
+</li>
+<li>
+<p><strong>16 GB RAM minimum</strong> per worker node (32 GB recommended for production)</p>
+</li>
+<li>
+<p><strong>8 CPU cores minimum</strong> per worker node</p>
+</li>
+</ul>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-important" title="Important"></i>
+</td>
+<td class="content">
+ODF requires exactly 3 or more worker nodes to maintain Ceph cluster quorum. Single-node or 2-node clusters are not supported.
+</td>
+</tr>
+</table>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+If all worker nodes are in the same availability zone, you must set <code>flexibleScaling: true</code> on the StorageCluster to use <code>host</code> as the failure domain instead of <code>zone</code>.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_1_prepare_worker_nodes"><a class="anchor" href="#_step_1_prepare_worker_nodes"></a>Step 1: Prepare Worker Nodes</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Label the worker nodes that will host ODF storage components.</p>
+</div>
+<div class="paragraph">
+<p>First, identify your worker nodes:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get nodes --selector='!node-role.kubernetes.io/master'</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Label at least 3 worker nodes for storage:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc label node &lt;worker-node-1&gt; cluster.ocs.openshift.io/openshift-storage=''</code></pre>
+</div>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc label node &lt;worker-node-2&gt; cluster.ocs.openshift.io/openshift-storage=''</code></pre>
+</div>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc label node &lt;worker-node-3&gt; cluster.ocs.openshift.io/openshift-storage=''</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Verify the labels:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get nodes -l cluster.ocs.openshift.io/openshift-storage</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_2_install_openshift_data_foundation_operator"><a class="anchor" href="#_step_2_install_openshift_data_foundation_operator"></a>Step 2: Install OpenShift Data Foundation Operator</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Create the ODF namespace:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f - &lt;&lt;EOF
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: openshift-storage
+  labels:
+    openshift.io/cluster-monitoring: "true"
+EOF</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Create the OperatorGroup:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f - &lt;&lt;EOF
+apiVersion: operators.coreos.com/v1
+kind: OperatorGroup
+metadata:
+  name: openshift-storage
+  namespace: openshift-storage
+spec:
+  targetNamespaces:
+    - openshift-storage
+EOF</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Install the ODF operator. Replace <code>&lt;version&gt;</code> with the channel matching your OpenShift version (for example, <code>stable-4.21</code> for OpenShift 4.21):</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f - &lt;&lt;EOF
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: odf-operator
+  namespace: openshift-storage
+spec:
+  channel: stable-4.21
+  name: odf-operator
+  source: redhat-operators
+  sourceNamespace: openshift-marketplace
+EOF</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>To find available channels for your cluster:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get packagemanifest odf-operator -n openshift-marketplace -o jsonpath='{.status.channels[*].name}'</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Wait for the operator installation to complete. All CSVs should reach <code>Succeeded</code>:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get csv -n openshift-storage</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_3_create_storagecluster"><a class="anchor" href="#_step_3_create_storagecluster"></a>Step 3: Create StorageCluster</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Create the StorageCluster to deploy the Ceph cluster. This example uses a dynamic StorageClass (<code>gp3-csi</code>) as the backing storage for ODF. Replace <code>gp3-csi</code> with your cluster&#8217;s available StorageClass if different.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+For bare-metal clusters with local disks, install the Local Storage Operator first and use the local block StorageClass instead. See the <a href="https://docs.redhat.com/en/documentation/red_hat_openshift_data_foundation/4.18/html/deploying_openshift_data_foundation_using_bare_metal_infrastructure/" target="_blank" rel="noopener">ODF bare-metal deployment guide</a> for details.
+</td>
+</tr>
+</table>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f - &lt;&lt;EOF
+apiVersion: ocs.openshift.io/v1
+kind: StorageCluster
+metadata:
+  name: ocs-storagecluster
+  namespace: openshift-storage
+spec:
+  flexibleScaling: true
+  enableCephTools: true
+  storageDeviceSets:
+    - name: ocs-deviceset-gp3-csi
+      count: 1
+      portable: true
+      replica: 3
+      resources:
+        requests:
+          cpu: "1"
+          memory: 5Gi
+        limits:
+          cpu: "2"
+          memory: 5Gi
+      placement:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: cluster.ocs.openshift.io/openshift-storage
+                    operator: In
+                    values:
+                      - ""
+        tolerations:
+          - effect: NoSchedule
+            key: node.ocs.openshift.io/storage
+            operator: Equal
+            value: "true"
+      dataPVCTemplate:
+        spec:
+          accessModes:
+            - ReadWriteOnce
+          resources:
+            requests:
+              storage: 512Gi
+          storageClassName: gp3-csi
+          volumeMode: Block
+  managedResources:
+    cephBlockPools: {}
+    cephFilesystems: {}
+    cephObjectStoreUsers: {}
+    cephObjectStores: {}
+EOF</code></pre>
+</div>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-important" title="Important"></i>
+</td>
+<td class="content">
+Set <code>flexibleScaling: true</code> when all worker nodes are in the same availability zone. This configures Ceph to use <code>host</code> as the failure domain instead of <code>zone</code>, preventing placement groups from becoming stuck in <code>undersized+peered</code> state.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Monitor the deployment progress:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get storagecluster ocs-storagecluster -n openshift-storage -w</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Wait for the status to show <code>Ready</code>. This process typically takes 5-10 minutes.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_4_verify_storage_classes"><a class="anchor" href="#_step_4_verify_storage_classes"></a>Step 4: Verify Storage Classes</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Check that ODF has created the required storage classes:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get storageclass | grep ocs</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Expected storage classes:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>ocs-storagecluster-ceph-rbd                  Block storage (RBD) for VM boot disks
+ocs-storagecluster-ceph-rbd-virtualization   Block storage optimized for virtualization workloads
+ocs-storagecluster-cephfs                    File storage (CephFS) for shared access</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The <code>ocs-storagecluster-ceph-rbd-virtualization</code> StorageClass is automatically created when OpenShift Virtualization is installed alongside ODF.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_5_configure_default_storage_class"><a class="anchor" href="#_step_5_configure_default_storage_class"></a>Step 5: Configure Default Storage Class</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Set the Ceph RBD storage class as default for VM boot disks:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc patch storageclass ocs-storagecluster-ceph-rbd -p '{"metadata": {"annotations": {"storageclass.kubernetes.io/is-default-class": "true"}}}'</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Check which storage classes are currently marked as default:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get storageclass -o jsonpath='{.items[?(@.metadata.annotations.storageclass\.kubernetes\.io/is-default-class=="true")].metadata.name}'</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If another storage class is also marked as default, remove its default annotation:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc patch storageclass &lt;existing-default-sc&gt; -p '{"metadata": {"annotations": {"storageclass.kubernetes.io/is-default-class": null}}}'</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Verify that only the Ceph RBD storage class is default:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get storageclass | grep "(default)"</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Expected output:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>ocs-storagecluster-ceph-rbd (default)   openshift-storage.rbd.csi.ceph.com   Delete   Immediate   true</pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_6_test_storage_provisioning"><a class="anchor" href="#_step_6_test_storage_provisioning"></a>Step 6: Test Storage Provisioning</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Create a test PVC using Ceph RBD block storage:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f - &lt;&lt;EOF
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: test-rbd-pvc
+  namespace: default
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+  storageClassName: ocs-storagecluster-ceph-rbd
+EOF</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Verify PVC is bound:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get pvc test-rbd-pvc</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Create a test PVC using CephFS file storage:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f - &lt;&lt;EOF
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: test-cephfs-pvc
+  namespace: default
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 1Gi
+  storageClassName: ocs-storagecluster-cephfs
+EOF</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Verify both PVCs are bound:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get pvc test-rbd-pvc test-cephfs-pvc</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_7_deploy_test_virtual_machine"><a class="anchor" href="#_step_7_deploy_test_virtual_machine"></a>Step 7: Deploy Test Virtual Machine</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Create a simple VM to verify ODF storage integration:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f - &lt;&lt;EOF
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: test-vm-odf
+  namespace: default
+spec:
+  runStrategy: Halted
+  template:
+    metadata:
+      labels:
+        kubevirt.io/vm: test-vm-odf
+    spec:
+      domain:
+        devices:
+          disks:
+            - name: boot-disk
+              disk:
+                bus: virtio
+          interfaces:
+            - name: default
+              masquerade: {}
+        resources:
+          requests:
+            memory: 1Gi
+            cpu: 1
+      networks:
+        - name: default
+          pod: {}
+      volumes:
+        - name: boot-disk
+          dataVolume:
+            name: test-vm-odf-boot
+  dataVolumeTemplates:
+    - metadata:
+        name: test-vm-odf-boot
+      spec:
+        source:
+          registry:
+            url: docker://quay.io/containerdisks/fedora:latest
+        pvc:
+          accessModes:
+            - ReadWriteOnce
+          resources:
+            requests:
+              storage: 10Gi
+          storageClassName: ocs-storagecluster-ceph-rbd
+EOF</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Monitor DataVolume import:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get dv test-vm-odf-boot -w</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Start the VM after the DataVolume is ready:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">virtctl start test-vm-odf</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Verify the VM is running:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vm test-vm-odf</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_access_mode_implications"><a class="anchor" href="#_access_mode_implications"></a>Access Mode Implications</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Understanding access modes is crucial for VM storage design:</p>
+</div>
+<div class="sect2">
+<h3 id="_readwriteonce_rwo_ceph_rbd"><a class="anchor" href="#_readwriteonce_rwo_ceph_rbd"></a>ReadWriteOnce (RWO) - Ceph RBD</h3>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Use case</strong>: VM boot disks, databases, high-performance workloads</p>
+</li>
+<li>
+<p><strong>Characteristics</strong>: Can only be mounted by one node at a time</p>
+</li>
+<li>
+<p><strong>Live Migration</strong>: Supported with Ceph RBD because KubeVirt handles the block device handoff between nodes</p>
+</li>
+<li>
+<p><strong>Performance</strong>: Higher performance due to direct block access</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_readwritemany_rwx_cephfs"><a class="anchor" href="#_readwritemany_rwx_cephfs"></a>ReadWriteMany (RWX) - CephFS</h3>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Use case</strong>: Shared data volumes, logs, configuration files</p>
+</li>
+<li>
+<p><strong>Characteristics</strong>: Can be mounted by multiple nodes simultaneously</p>
+</li>
+<li>
+<p><strong>Live Migration</strong>: Seamless live migration support with no handoff required</p>
+</li>
+<li>
+<p><strong>Performance</strong>: Slightly lower performance due to filesystem overhead</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Example of a VM with both storage types:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f - &lt;&lt;EOF
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: vm-boot-rbd
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+  storageClassName: ocs-storagecluster-ceph-rbd
+EOF</code></pre>
+</div>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f - &lt;&lt;EOF
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: vm-shared-cephfs
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 5Gi
+  storageClassName: ocs-storagecluster-cephfs
+EOF</code></pre>
+</div>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f - &lt;&lt;EOF
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: multi-storage-vm
+spec:
+  runStrategy: Halted
+  template:
+    spec:
+      domain:
+        devices:
+          disks:
+            - name: boot-disk
+              disk:
+                bus: virtio
+            - name: shared-data
+              disk:
+                bus: virtio
+        resources:
+          requests:
+            memory: 2Gi
+      volumes:
+        - name: boot-disk
+          persistentVolumeClaim:
+            claimName: vm-boot-rbd
+        - name: shared-data
+          persistentVolumeClaim:
+            claimName: vm-shared-cephfs
+EOF</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_volume_mode_comparison"><a class="anchor" href="#_volume_mode_comparison"></a>Volume Mode Comparison</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_block_mode"><a class="anchor" href="#_block_mode"></a>Block Mode</h3>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Storage Type</strong>: Raw block devices (Ceph RBD)</p>
+</li>
+<li>
+<p><strong>Performance</strong>: Higher performance for databases and I/O intensive workloads</p>
+</li>
+<li>
+<p><strong>Filesystems</strong>: Guest OS manages filesystem directly</p>
+</li>
+<li>
+<p><strong>Snapshots</strong>: Block-level snapshots supported</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_filesystem_mode"><a class="anchor" href="#_filesystem_mode"></a>Filesystem Mode</h3>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Storage Type</strong>: Mounted filesystems (CephFS)</p>
+</li>
+<li>
+<p><strong>Performance</strong>: Good performance for general workloads</p>
+</li>
+<li>
+<p><strong>Filesystems</strong>: Storage layer manages filesystem</p>
+</li>
+<li>
+<p><strong>Snapshots</strong>: Filesystem-level snapshots</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_monitoring_odf_storage"><a class="anchor" href="#_monitoring_odf_storage"></a>Monitoring ODF Storage</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Access the ODF dashboard to monitor Ceph cluster health:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get route console -n openshift-console -o jsonpath='{.spec.host}'</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Navigate to <strong>Storage &#8594; Data Foundation</strong> in the OpenShift web console to view:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Ceph cluster health status</p>
+</li>
+<li>
+<p>Storage capacity and utilization</p>
+</li>
+<li>
+<p>Performance metrics</p>
+</li>
+<li>
+<p>Alert notifications</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Monitor Ceph cluster status via CLI:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get cephcluster -n openshift-storage -o jsonpath='{.items[0].status.ceph.health}'</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The Ceph toolbox pod is enabled by setting <code>enableCephTools: true</code> on the StorageCluster. Verify it is running:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get pods -n openshift-storage -l app=rook-ceph-tools</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Check overall Ceph cluster health:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc rsh -n openshift-storage deployment/rook-ceph-tools ceph status</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Check OSD status:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc rsh -n openshift-storage deployment/rook-ceph-tools ceph osd status</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Check storage capacity:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc rsh -n openshift-storage deployment/rook-ceph-tools ceph df</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_troubleshooting"><a class="anchor" href="#_troubleshooting"></a>Troubleshooting</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_common_issues_and_solutions"><a class="anchor" href="#_common_issues_and_solutions"></a>Common Issues and Solutions</h3>
+<div class="sect3">
+<h4 id="_pvc_stuck_in_pending_state"><a class="anchor" href="#_pvc_stuck_in_pending_state"></a>PVC Stuck in Pending State</h4>
+<div class="paragraph">
+<p>Check PVC events for error details:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc describe pvc &lt;pvc-name&gt;</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Verify the storage class exists and is configured:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get storageclass ocs-storagecluster-ceph-rbd</code></pre>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_ceph_health_warnings"><a class="anchor" href="#_ceph_health_warnings"></a>Ceph Health Warnings</h4>
+<div class="paragraph">
+<p>Access the Ceph toolbox pod and check health details:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc rsh -n openshift-storage deployment/rook-ceph-tools ceph health detail</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Check OSD tree to verify all OSDs are up:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc rsh -n openshift-storage deployment/rook-ceph-tools ceph osd tree</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Check placement group status:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc rsh -n openshift-storage deployment/rook-ceph-tools ceph pg stat</code></pre>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_placement_groups_stuck_in_undersizedpeered"><a class="anchor" href="#_placement_groups_stuck_in_undersizedpeered"></a>Placement Groups Stuck in undersized+peered</h4>
+<div class="paragraph">
+<p>This typically occurs when all worker nodes are in the same availability zone but the CRUSH rules expect distribution across zones. Set <code>flexibleScaling: true</code> on the StorageCluster:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc patch storagecluster ocs-storagecluster -n openshift-storage --type merge -p '{"spec":{"flexibleScaling": true}}'</code></pre>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_slow_osd_performance"><a class="anchor" href="#_slow_osd_performance"></a>Slow OSD Performance</h4>
+<div class="paragraph">
+<p>List OSD pods:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get pods -n openshift-storage | grep osd</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Describe a specific OSD pod:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc describe pod &lt;osd-pod-name&gt; -n openshift-storage</code></pre>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_storage_cluster_not_ready"><a class="anchor" href="#_storage_cluster_not_ready"></a>Storage Cluster Not Ready</h4>
+<div class="paragraph">
+<p>Check StorageCluster status and events:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc describe storagecluster ocs-storagecluster -n openshift-storage</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Verify all required pods are running:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get pods -n openshift-storage</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_cleanup"><a class="anchor" href="#_cleanup"></a>Cleanup</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Remove test resources:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc delete vm test-vm-odf multi-storage-vm</code></pre>
+</div>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc delete dv test-vm-odf-boot</code></pre>
+</div>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc delete pvc test-rbd-pvc test-cephfs-pvc vm-boot-rbd vm-shared-cephfs</code></pre>
+</div>
+</div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+Do not delete the ODF StorageCluster unless you want to completely remove all ODF storage. This will result in data loss for any VMs or applications using ODF storage.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_summary"><a class="anchor" href="#_summary"></a>Summary</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>You have successfully configured OpenShift Data Foundation with Ceph storage for OpenShift Virtualization. Key accomplishments include:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Installed and configured ODF with Ceph storage backend</p>
+</li>
+<li>
+<p>Created Ceph RBD and CephFS storage classes for different use cases</p>
+</li>
+<li>
+<p>Set up default storage class for automatic VM provisioning</p>
+</li>
+<li>
+<p>Deployed test VMs using ODF storage</p>
+</li>
+<li>
+<p>Learned access mode implications for VM storage design</p>
+</li>
+<li>
+<p>Configured monitoring and troubleshooting tools</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>ODF provides enterprise-grade distributed storage with high availability, scalability, and data protection features essential for production virtual machine workloads.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_see_also"><a class="anchor" href="#_see_also"></a>See Also</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p><a href="lvm-operator.html" class="xref page">Installing LVM Storage Operator</a></p>
+</li>
+<li>
+<p><a href="creating-managing-storage-class.html" class="xref page">Creating and Managing Storage Classes</a></p>
+</li>
+<li>
+<p><a href="multi-disk-configuration.html" class="xref page">Multi-Disk VM Configuration</a></p>
+</li>
+<li>
+<p><a href="https://docs.redhat.com/en/documentation/red_hat_openshift_data_foundation/4.18/html-single/red_hat_openshift_data_foundation_architecture/index" target="_blank" rel="noopener">OpenShift Data Foundation Architecture</a></p>
+</li>
+<li>
+<p><a href="https://docs.redhat.com/en/documentation/red_hat_openshift_data_foundation/4.18/html/managing_and_allocating_storage_resources/" target="_blank" rel="noopener">Managing and Allocating Storage Resources</a></p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<nav class="pagination">
+  <span class="prev"><a href="lvm-troubleshooting.html">LVM Troubleshooting</a></span>
+  <span class="next"><a href="hostpath-provisioner.html">HostPath Provisioner</a></span>
+</nav>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <img src="../../../_/img/rhl-logo-red.png" height="40px" alt="Red Hat"  href="https://redhat.com" >
+</footer><script id="site-script" src="../../../_/js/site.js" data-ui-root-path="../../../_"></script>
+<script async src="../../../_/js/vendor/highlight.js"></script>
+  </body>
+</html>
