@@ -1,0 +1,1313 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>VM Disk I/O Performance Tuning :: OpenShift Virtualization cookbook</title>
+    <link rel="prev" href="cdi-operations.html">
+    <link rel="next" href="../networking/index.html">
+    <meta name="generator" content="Antora 3.1.3">
+    <link rel="stylesheet" href="../../../_/css/site.css">
+    <script>var uiRootPath = '../../../_'</script>
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://www.redhat.com" target="_blank"><img src="../../../_/img/redhat-logo.png" height="40px" alt="Red Hat"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="../../..">OpenShift Virtualization cookbook</a>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues" target="_blank">Report Issues</a>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="ocp-virt-cookbook" data-version="1">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="../index.html">OpenShift Virtualization cookbook</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../index.html">Introduction</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../getting-started/index.html">Getting Started</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/vm-quick-start.html">Quick Start</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/prerequisites.html">Prerequisites</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/install-openshift-virtualization.html">Install OpenShift Virtualization</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/default-storage-class.html">Storage Setup</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/create-vm-web-console.html">Create VM from Web Console</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/create-vm-cli-yaml.html">Create VM from CLI</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/vm-lifecycle-states.html">VM Lifecycle States</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/virtctl-basics.html">Virtctl Basics</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/cloud-init-fundamentals.html">Cloud-init Fundamentals</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="index.html">Storage Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="lvm-operator.html">LVM Operator Installation</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="lvm-troubleshooting.html">LVM Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="odf-ceph-storage.html">ODF/Ceph Storage</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="hostpath-provisioner.html">HostPath Provisioner</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="creating-managing-storage-class.html">Creating and Managing Storage Classes</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="multi-disk-configuration.html">Multi-Disk VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="expanding-vm-disk-size.html">Expanding VM Disk Size</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="cdi-operations.html">CDI Operations</a>
+  </li>
+  <li class="nav-item is-current-page" data-depth="2">
+    <a class="nav-link" href="disk-io-tuning.html">Disk I/O Tuning</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../networking/index.html">Networking Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/static-ip-configuration.html">Static IP Configuration</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/cloud-init-troubleshooting.html">Cloud-init Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/udn-primary-networks.html">UDN Primary Networks</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/localnet-secondary.html">Localnet Secondary Networks with CUDN</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/localnet-vlan.html">Localnet Secondary Networks with VLAN using NAD</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/cudn-localnet-vlan.html">Localnet VLAN with CUDN</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/layer2-secondary.html">Layer 2 Secondary Networks</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/linux-bridges.html">Linux Bridges</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/sriov-secondary.html">SR-IOV Secondary Networks</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/network-policies-vms.html">Network Policies for VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/metallb-loadbalancer.html">MetalLB Load Balancer for VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/dual-stack-vms.html">Dual-Stack IPv4/IPv6 VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/vm-ingress-routes.html">VM Ingress and Routes</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/ovs-bridge-troubleshooting.html">Troubleshooting Localnet Networks</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../vm-configuration/index.html">Virtual Machine Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/internal-dns-for-vms.html">Internal DNS for VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/remote-access-linux-vms.html">Remote Access to Linux VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/remote-access-linux-troubleshooting.html">Remote Access to Linux VMs Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/remote-access-windows-vms.html">Remote Access to Windows VMs via RDP</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/windows-vm-virtio-drivers.html">Windows VMs with VirtIO Drivers</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/infrastructure-node-placement.html">Infrastructure Node Placement</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/node-placement-affinity.html">Node Placement and Affinity</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/hotplug-volumes-interfaces.html">Hotplug Volumes and Interfaces</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/vm-templates.html">Virtual Machine Templates</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../performance/index.html">VM Performance Tuning</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/resource-limits-qos.html">Resource Limits and QoS</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/cpu-pinning.html">Dedicated CPU Placement</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/numa-hugepages.html">NUMA and Hugepages</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/realtime-vms.html">Real-Time VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/vm-monitoring-metrics.html">VM Monitoring and Metrics</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../vm-lifecycle/index.html">VM Lifecycle Management</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/import-qcow2-boot-volume.html">Import qcow2 Boot Volume</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/custom-golden-images.html">Custom Golden Images</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/golden-images-troubleshooting.html">Golden Images Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/cloning-vms.html">Cloning VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/vm-snapshots.html">VM Snapshots</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/boot-order-boot-sources.html">VM Boot Order and Boot Sources</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../manifests/index.html">Manifests</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../api/index.html">API Guide</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../api/api-component-overview.html">API Component Overview</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../agentic-vm-management/index.html">Agentic VM Management</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/getting-started.html">Getting Started with rh-virt</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/natural-language-vm-create.html">Natural Language VM Creation</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/ai-vm-lifecycle.html">AI VM Lifecycle Operations</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/vm-clone.html">Cloning VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/ai-vm-snapshot-management.html">VM Snapshot Management</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/ai-skill-chaining.html">Day-2 Skill Chaining</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../appendix/glossary.html">Glossary</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">OpenShift Virtualization cookbook</span>
+    <span class="version">1</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <a class="title" href="../index.html">OpenShift Virtualization cookbook</a>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">1</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">OpenShift Virtualization cookbook</a></li>
+    <li><a href="index.html">Storage Configuration</a></li>
+    <li><a href="disk-io-tuning.html">Disk I/O Tuning</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">VM Disk I/O Performance Tuning</h1>
+<div class="sect1">
+<h2 id="_overview"><a class="anchor" href="#_overview"></a>Overview</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Disk I/O performance is one of the most common concerns when running virtual machines on OpenShift Virtualization. Default VM configurations work for general workloads, but database servers, logging pipelines, and other I/O-heavy applications benefit from tuning disk bus type, cache mode, I/O threading, and volume mode.</p>
+</div>
+<div class="paragraph">
+<p>This tutorial walks you through each tuning option, deploys VMs with optimized settings, and uses <code>fio</code> inside the guest to measure the impact. You will also learn how to identify I/O bottlenecks from both the guest and host sides.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_what_you_will_learn"><a class="anchor" href="#_what_you_will_learn"></a>What You Will Learn</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p>How disk bus types (VirtIO, SCSI, SATA) affect I/O performance</p>
+</li>
+<li>
+<p>How volume modes (Block vs Filesystem) change the I/O path</p>
+</li>
+<li>
+<p>How to configure disk cache modes, I/O threads, and multi-queue</p>
+</li>
+<li>
+<p>How to benchmark VM disk I/O with <code>fio</code></p>
+</li>
+<li>
+<p>How to identify I/O bottlenecks using guest and host tools</p>
+</li>
+<li>
+<p>Which tuning options to apply for different workload types</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_prerequisites"><a class="anchor" href="#_prerequisites"></a>Prerequisites</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p><strong>OpenShift 4.18+</strong> with OpenShift Virtualization operator installed</p>
+</li>
+<li>
+<p><strong>Cluster admin access</strong> (<code>system:admin</code> or equivalent)</p>
+</li>
+<li>
+<p><strong><code>oc</code> CLI</strong> and <strong><code>virtctl</code> CLI</strong> installed</p>
+</li>
+<li>
+<p><strong>Default StorageClass</strong> configured (e.g., <code>lvms-vg1</code>)</p>
+</li>
+<li>
+<p>Familiarity with basic VM creation in OpenShift Virtualization</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Versions tested:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">OpenShift 4.20, 4.21</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_disk_bus_types"><a class="anchor" href="#_disk_bus_types"></a>Disk Bus Types</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The disk bus type determines how a virtual disk is presented to the guest operating system. Each type has different performance characteristics and compatibility trade-offs.</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 25%;">
+<col style="width: 25%;">
+<col style="width: 25%;">
+<col style="width: 25%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Bus Type</th>
+<th class="tableblock halign-left valign-top">Description</th>
+<th class="tableblock halign-left valign-top">Performance</th>
+<th class="tableblock halign-left valign-top">Use Case</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">VirtIO</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Paravirtualized disk driver</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Highest throughput and lowest latency</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Linux VMs, Windows VMs with VirtIO drivers installed</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">SCSI</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Emulated SCSI controller (via virtio-scsi)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Good performance with broader feature support</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">VMs that need SCSI features like TRIM/discard or persistent reservations</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">SATA</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Emulated SATA/AHCI controller</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Lowest performance due to full emulation overhead</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Legacy guest operating systems without VirtIO or SCSI driver support</p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>VirtIO is the default and recommended bus type for all Linux VMs. It bypasses device emulation and communicates directly with the hypervisor through a shared memory ring buffer, which reduces CPU overhead and latency per I/O operation.</p>
+</div>
+<div class="paragraph">
+<p>Use SCSI when you need features like TRIM/discard for thin-provisioned storage or when running guest workloads that expect a SCSI device. Use SATA only for legacy operating systems that lack VirtIO and SCSI drivers.</p>
+</div>
+<div class="sect2">
+<h3 id="_bus_type_in_the_vm_spec"><a class="anchor" href="#_bus_type_in_the_vm_spec"></a>Bus Type in the VM Spec</h3>
+<div class="paragraph">
+<p>You set the bus type under <code>spec.template.spec.domain.devices.disks</code>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">devices:
+  disks:
+  - name: rootdisk
+    disk:
+      bus: virtio</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_volume_modes_block_vs_filesystem"><a class="anchor" href="#_volume_modes_block_vs_filesystem"></a>Volume Modes: Block vs Filesystem</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The volume mode on the PersistentVolumeClaim controls how the storage backend presents the volume to the VM pod.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Filesystem</strong> (default): The storage backend provisions a filesystem (typically ext4) on the underlying device. QEMU stores the VM disk as a file on that filesystem. This adds a layer of filesystem overhead between QEMU and the raw storage.</p>
+</li>
+<li>
+<p><strong>Block</strong>: The storage backend exposes the raw block device directly to the VM pod. QEMU reads and writes to the block device without an intermediate filesystem. This eliminates filesystem overhead and reduces latency.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>For I/O-sensitive workloads, Block mode typically delivers 5-15% better IOPS and lower latency than Filesystem mode. The exact improvement depends on your storage backend.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+Not all StorageClasses support Block volume mode. Check your storage provider documentation. LVM Storage and ODF (Ceph RBD) both support Block mode.
+</td>
+</tr>
+</table>
+</div>
+<div class="sect2">
+<h3 id="_setting_volume_mode"><a class="anchor" href="#_setting_volume_mode"></a>Setting Volume Mode</h3>
+<div class="paragraph">
+<p>You set volume mode on the DataVolume or PVC:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">dataVolumeTemplates:
+- metadata:
+    name: my-disk
+  spec:
+    pvc:
+      accessModes:
+      - ReadWriteOnce
+      volumeMode: Block
+      resources:
+        requests:
+          storage: 30Gi
+    source:
+      registry:
+        pullMethod: node
+        url: docker://quay.io/containerdisks/fedora:latest</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_disk_cache_modes"><a class="anchor" href="#_disk_cache_modes"></a>Disk Cache Modes</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The cache mode controls how the host handles read and write caching for the VM disk. KubeVirt supports three cache modes:</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 25%;">
+<col style="width: 50%;">
+<col style="width: 25%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Cache Mode</th>
+<th class="tableblock halign-left valign-top">Behavior</th>
+<th class="tableblock halign-left valign-top">Recommended For</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>none</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">No host-side caching. Reads and writes go directly to the storage backend. Guest OS manages its own page cache.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Databases, shared storage, workloads that manage their own caching</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>writeback</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Host caches both reads and writes. Writes are acknowledged before they reach storage. Higher risk of data loss on host failure.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">General purpose VMs where performance matters more than write durability</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>writethrough</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Host caches reads but writes go directly to storage. Safe against host-side data loss but slower write performance.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Workloads that need write safety but can benefit from read caching</p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>When no cache mode is set, KubeVirt defaults to <code>none</code> for Block volumes and <code>writethrough</code> for Filesystem volumes.</p>
+</div>
+<div class="paragraph">
+<p>For database workloads, use <code>cache: none</code> so the database engine controls write ordering and fsync behavior without interference from host-side caching.</p>
+</div>
+<div class="sect2">
+<h3 id="_setting_cache_mode"><a class="anchor" href="#_setting_cache_mode"></a>Setting Cache Mode</h3>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">devices:
+  disks:
+  - name: rootdisk
+    cache: none
+    disk:
+      bus: virtio</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_io_threading_and_multi_queue"><a class="anchor" href="#_io_threading_and_multi_queue"></a>I/O Threading and Multi-Queue</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>By default, all VM disk I/O runs on the main QEMU thread. Under heavy I/O load, this single thread becomes a bottleneck. Two settings address this:</p>
+</div>
+<div class="sect2">
+<h3 id="_io_threads"><a class="anchor" href="#_io_threads"></a>I/O Threads</h3>
+<div class="paragraph">
+<p>The <code>ioThreadsPolicy</code> field creates dedicated threads for disk I/O, separate from the main QEMU emulation thread. Set <code>dedicatedIOThread: true</code> on individual disks to assign them to these threads.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>auto</code>: KubeVirt creates one I/O thread per disk that has <code>dedicatedIOThread: true</code>.</p>
+</li>
+<li>
+<p><code>shared</code>: All disks with <code>dedicatedIOThread: true</code> share a single I/O thread.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Use <code>auto</code> for VMs with multiple disks that each need maximum I/O throughput. Use <code>shared</code> when you want to reduce thread count on the host.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_block_multi_queue"><a class="anchor" href="#_block_multi_queue"></a>Block Multi-Queue</h3>
+<div class="paragraph">
+<p>The <code>blockMultiQueue</code> setting creates multiple virtqueues for VirtIO block devices. Each vCPU gets its own I/O submission queue, which allows parallel I/O processing across CPU cores. This helps workloads with high I/O concurrency, such as databases running many parallel queries.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+Block multi-queue only applies to VirtIO disk bus. It has no effect on SCSI or SATA disks.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_1_create_a_namespace"><a class="anchor" href="#_step_1_create_a_namespace"></a>Step 1: Create a Namespace</h2>
+<div class="sectionbody">
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc create namespace disk-io-tuning</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_2_deploy_a_baseline_vm"><a class="anchor" href="#_step_2_deploy_a_baseline_vm"></a>Step 2: Deploy a Baseline VM</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>First, deploy a VM with default disk settings to establish a performance baseline.</p>
+</div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+The cloud-init password in this example is for demo purposes only. Always use a strong, unique password or SSH key authentication in production environments.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/disk-io-tuning/vm-baseline.yaml" class="xref attachment">Download vm-baseline.yaml</a></p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f - &lt;&lt;EOF
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: vm-baseline
+  namespace: disk-io-tuning
+spec:
+  runStrategy: Always
+  template:
+    metadata:
+      labels:
+        kubevirt.io/domain: vm-baseline
+    spec:
+      domain:
+        cpu:
+          cores: 2
+        memory:
+          guest: 2Gi
+        devices:
+          disks:
+          - name: rootdisk
+            disk:
+              bus: virtio
+            bootOrder: 1
+          - name: cloudinitdisk
+            disk:
+              bus: virtio
+          interfaces:
+          - name: default
+            masquerade: {}
+        resources:
+          requests:
+            memory: 2Gi
+      networks:
+      - name: default
+        pod: {}
+      volumes:
+      - name: rootdisk
+        dataVolume:
+          name: baseline-rootdisk
+      - name: cloudinitdisk
+        cloudInitNoCloud:
+          userData: |
+            #cloud-config
+            password: redhat
+            chpasswd:
+              expire: false
+            packages:
+            - fio
+  dataVolumeTemplates:
+  - metadata:
+      name: baseline-rootdisk
+    spec:
+      pvc:
+        accessModes:
+        - ReadWriteOnce
+        resources:
+          requests:
+            storage: 30Gi
+      source:
+        registry:
+          pullMethod: node
+          url: docker://quay.io/containerdisks/fedora:latest
+EOF</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Wait for the VM to start:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vm -n disk-io-tuning -w</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Once the STATUS shows <code>Running</code>, proceed to the next step.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_3_deploy_a_tuned_vm"><a class="anchor" href="#_step_3_deploy_a_tuned_vm"></a>Step 3: Deploy a Tuned VM</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Deploy a second VM with all I/O tuning options enabled: VirtIO bus, <code>cache: none</code>, I/O threads, and block multi-queue.</p>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/disk-io-tuning/vm-tuned.yaml" class="xref attachment">Download vm-tuned.yaml</a></p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f - &lt;&lt;EOF
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: vm-tuned
+  namespace: disk-io-tuning
+spec:
+  runStrategy: Always
+  template:
+    metadata:
+      labels:
+        kubevirt.io/domain: vm-tuned
+    spec:
+      domain:
+        ioThreadsPolicy: auto
+        cpu:
+          cores: 2
+        memory:
+          guest: 2Gi
+        devices:
+          blockMultiQueue: true
+          disks:
+          - name: rootdisk
+            disk:
+              bus: virtio
+            bootOrder: 1
+            cache: none
+            io: native
+            dedicatedIOThread: true
+          - name: cloudinitdisk
+            disk:
+              bus: virtio
+          interfaces:
+          - name: default
+            masquerade: {}
+        resources:
+          requests:
+            memory: 2Gi
+      networks:
+      - name: default
+        pod: {}
+      volumes:
+      - name: rootdisk
+        dataVolume:
+          name: tuned-rootdisk
+      - name: cloudinitdisk
+        cloudInitNoCloud:
+          userData: |
+            #cloud-config
+            password: redhat
+            chpasswd:
+              expire: false
+            packages:
+            - fio
+  dataVolumeTemplates:
+  - metadata:
+      name: tuned-rootdisk
+    spec:
+      pvc:
+        accessModes:
+        - ReadWriteOnce
+        volumeMode: Block
+        resources:
+          requests:
+            storage: 30Gi
+      source:
+        registry:
+          pullMethod: node
+          url: docker://quay.io/containerdisks/fedora:latest
+EOF</code></pre>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_key_tuning_settings_in_this_vm"><a class="anchor" href="#_key_tuning_settings_in_this_vm"></a>Key Tuning Settings in This VM</h3>
+<div class="ulist">
+<ul>
+<li>
+<p><strong><code>ioThreadsPolicy: auto</code></strong>: Creates a dedicated I/O thread for each disk that requests one.</p>
+</li>
+<li>
+<p><strong><code>blockMultiQueue: true</code></strong>: Enables per-vCPU I/O queues on all VirtIO block devices.</p>
+</li>
+<li>
+<p><strong><code>cache: none</code></strong>: Bypasses host-side caching so the guest OS controls its own cache.</p>
+</li>
+<li>
+<p><strong><code>io: native</code></strong>: Uses Linux native asynchronous I/O (io_uring/libaio) instead of QEMU&#8217;s threaded I/O. This reduces context switches under high I/O load.</p>
+</li>
+<li>
+<p><strong><code>dedicatedIOThread: true</code></strong>: Assigns this disk to its own I/O thread instead of sharing the main QEMU thread.</p>
+</li>
+<li>
+<p><strong><code>volumeMode: Block</code></strong>: Exposes the raw block device to QEMU, bypassing filesystem overhead.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Wait for both VMs to be running:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vm -n disk-io-tuning</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Expected output</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">NAME          AGE   STATUS    READY
+vm-baseline   5m    Running   True
+vm-tuned      2m    Running   True</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_4_benchmark_with_fio_baseline_vm"><a class="anchor" href="#_step_4_benchmark_with_fio_baseline_vm"></a>Step 4: Benchmark with fio (Baseline VM)</h2>
+<div class="sectionbody">
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+The fio write tests generate sustained I/O load that bypasses the page cache and hits the storage backend directly. On production clusters with shared storage (Ceph, ODF, NFS), this can saturate storage bandwidth and degrade performance for other VMs and workloads. Run these benchmarks on a dedicated test cluster or during a maintenance window.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Connect to the baseline VM and run <code>fio</code> benchmarks. The <code>fio</code> tool was installed by cloud-init during boot.</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">virtctl console vm-baseline -n disk-io-tuning</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Log in with username <code>fedora</code> and password <code>redhat</code>.</p>
+</div>
+<div class="paragraph">
+<p>Wait for cloud-init to finish installing <code>fio</code>. You can check the status:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">cloud-init status --wait</code></pre>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_random_read_iops_test"><a class="anchor" href="#_random_read_iops_test"></a>Random Read IOPS Test</h3>
+<div class="paragraph">
+<p>Run a 4K random read test with 16 concurrent I/O operations:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">sudo fio --name=randread --ioengine=libaio --direct=1 --bs=4k \
+  --iodepth=16 --numjobs=1 --size=1G --runtime=30 --time_based \
+  --rw=randread --filename=/tmp/fio-test --output-format=terse \
+  | awk -F';' '{print "Random Read IOPS:", $8, "| Avg Latency (usec):", $40}'</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_random_write_iops_test"><a class="anchor" href="#_random_write_iops_test"></a>Random Write IOPS Test</h3>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">sudo fio --name=randwrite --ioengine=libaio --direct=1 --bs=4k \
+  --iodepth=16 --numjobs=1 --size=1G --runtime=30 --time_based \
+  --rw=randwrite --filename=/tmp/fio-test --output-format=terse \
+  | awk -F';' '{print "Random Write IOPS:", $49, "| Avg Latency (usec):", $81}'</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_sequential_read_throughput_test"><a class="anchor" href="#_sequential_read_throughput_test"></a>Sequential Read Throughput Test</h3>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">sudo fio --name=seqread --ioengine=libaio --direct=1 --bs=128k \
+  --iodepth=16 --numjobs=1 --size=1G --runtime=30 --time_based \
+  --rw=read --filename=/tmp/fio-test --output-format=terse \
+  | awk -F';' '{print "Sequential Read BW (KiB/s):", $7}'</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_sequential_write_throughput_test"><a class="anchor" href="#_sequential_write_throughput_test"></a>Sequential Write Throughput Test</h3>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">sudo fio --name=seqwrite --ioengine=libaio --direct=1 --bs=128k \
+  --iodepth=16 --numjobs=1 --size=1G --runtime=30 --time_based \
+  --rw=write --filename=/tmp/fio-test --output-format=terse \
+  | awk -F';' '{print "Sequential Write BW (KiB/s):", $48}'</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Record the results from each test. Press <code>Ctrl+]</code> to exit the console.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_5_benchmark_with_fio_tuned_vm"><a class="anchor" href="#_step_5_benchmark_with_fio_tuned_vm"></a>Step 5: Benchmark with fio (Tuned VM)</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Connect to the tuned VM and run the same benchmarks:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">virtctl console vm-tuned -n disk-io-tuning</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Log in with username <code>fedora</code> and password <code>redhat</code>. Wait for cloud-init to finish:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">cloud-init status --wait</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Run the same four fio tests:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">sudo fio --name=randread --ioengine=libaio --direct=1 --bs=4k \
+  --iodepth=16 --numjobs=1 --size=1G --runtime=30 --time_based \
+  --rw=randread --filename=/tmp/fio-test --output-format=terse \
+  | awk -F';' '{print "Random Read IOPS:", $8, "| Avg Latency (usec):", $40}'</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">sudo fio --name=randwrite --ioengine=libaio --direct=1 --bs=4k \
+  --iodepth=16 --numjobs=1 --size=1G --runtime=30 --time_based \
+  --rw=randwrite --filename=/tmp/fio-test --output-format=terse \
+  | awk -F';' '{print "Random Write IOPS:", $49, "| Avg Latency (usec):", $81}'</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">sudo fio --name=seqread --ioengine=libaio --direct=1 --bs=128k \
+  --iodepth=16 --numjobs=1 --size=1G --runtime=30 --time_based \
+  --rw=read --filename=/tmp/fio-test --output-format=terse \
+  | awk -F';' '{print "Sequential Read BW (KiB/s):", $7}'</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">sudo fio --name=seqwrite --ioengine=libaio --direct=1 --bs=128k \
+  --iodepth=16 --numjobs=1 --size=1G --runtime=30 --time_based \
+  --rw=write --filename=/tmp/fio-test --output-format=terse \
+  | awk -F';' '{print "Sequential Write BW (KiB/s):", $48}'</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Compare the IOPS, throughput, and latency numbers between the baseline and tuned VMs. The tuned VM should show improved IOPS and lower latency, particularly on random I/O workloads where I/O threading and direct block access have the most impact.</p>
+</div>
+<div class="paragraph">
+<p>Press <code>Ctrl+]</code> to exit the console.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_6_verify_tuning_settings_from_the_host_side"><a class="anchor" href="#_step_6_verify_tuning_settings_from_the_host_side"></a>Step 6: Verify Tuning Settings from the Host Side</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>You can confirm that the tuning options are applied by inspecting the virt-launcher pod and the QEMU process.</p>
+</div>
+<div class="paragraph">
+<p>Check I/O thread allocation on the tuned VM:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vmi vm-tuned -n disk-io-tuning -o jsonpath='{.status.launcherContainerImageVersion}{"\n"}'</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Inspect the QEMU command-line arguments for the tuned VM to confirm the I/O thread and cache settings:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">TUNED_POD=$(oc get pod -n disk-io-tuning -l kubevirt.io/domain=vm-tuned -o jsonpath='{.items[0].metadata.name}')
+oc exec -n disk-io-tuning "$TUNED_POD" -- ps aux | grep -o '\-drive [^ ]*' | head -5</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Look for <code>cache=none</code>, <code>aio=native</code>, and <code>iothread</code> in the drive parameters. These confirm the tuning is active at the QEMU level.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_7_identify_io_bottlenecks"><a class="anchor" href="#_step_7_identify_io_bottlenecks"></a>Step 7: Identify I/O Bottlenecks</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>When I/O performance is not meeting expectations, use these tools to find the bottleneck.</p>
+</div>
+<div class="sect2">
+<h3 id="_guest_side_tools"><a class="anchor" href="#_guest_side_tools"></a>Guest-Side Tools</h3>
+<div class="paragraph">
+<p>Connect to the VM console and use <code>iostat</code> to monitor per-device I/O statistics:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">sudo dnf install -y sysstat
+iostat -xz 2</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Key columns to watch:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong><code>%util</code></strong>: Percentage of time the device is busy. Values near 100% indicate the device is saturated.</p>
+</li>
+<li>
+<p><strong><code>await</code></strong>: Average time (ms) for I/O requests to complete, including queue time. High values indicate congestion.</p>
+</li>
+<li>
+<p><strong><code>r_await</code> / <code>w_await</code></strong>: Separate read and write wait times. A large difference suggests asymmetric workload patterns.</p>
+</li>
+<li>
+<p><strong><code>avgqu-sz</code></strong>: Average I/O queue depth. Values consistently above 1 for a single-spindle device indicate queuing.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_host_side_tools"><a class="anchor" href="#_host_side_tools"></a>Host-Side Tools</h3>
+<div class="paragraph">
+<p>From the OpenShift node, check the virt-launcher pod resource consumption:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc adm top pod -n disk-io-tuning -l kubevirt.io/domain=vm-tuned</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Check node-level disk I/O pressure using OpenShift monitoring. High <code>iowait</code> CPU values on the node indicate that host-level storage is the bottleneck, not the VM configuration.</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc adm top node</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If the node hosting the VM shows high CPU usage with significant <code>iowait</code>, the storage backend itself may be the limiting factor rather than the VM disk configuration.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_storage_backend_impact"><a class="anchor" href="#_storage_backend_impact"></a>Storage Backend Impact</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The storage backend has a larger effect on I/O performance than most VM-level tuning options. Here is how common backends compare:</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 25%;">
+<col style="width: 25%;">
+<col style="width: 25%;">
+<col style="width: 25%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Backend</th>
+<th class="tableblock halign-left valign-top">Random IOPS (typical)</th>
+<th class="tableblock halign-left valign-top">Latency</th>
+<th class="tableblock halign-left valign-top">Best For</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">LVM thin pool (local NVMe)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">50,000-200,000+</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Sub-millisecond</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">High-performance databases, latency-sensitive workloads</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ODF / Ceph RBD</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">10,000-50,000</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1-5 ms</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">General purpose, workloads that need replication and snapshots</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">NFS</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1,000-10,000</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">2-10 ms</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Shared storage, read-heavy workloads, non-latency-sensitive applications</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Cloud provider disks (gp3, managed SSD)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">3,000-16,000 (provisioned)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1-3 ms</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Cloud-hosted OpenShift clusters</p></td>
+</tr>
+</tbody>
+</table>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+These numbers are rough ranges that vary by hardware, network, and configuration. Always benchmark your own environment.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_tuning_recommendations_by_workload_type"><a class="anchor" href="#_tuning_recommendations_by_workload_type"></a>Tuning Recommendations by Workload Type</h2>
+<div class="sectionbody">
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 25%;">
+<col style="width: 75%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Workload</th>
+<th class="tableblock halign-left valign-top">Recommended Settings</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Database (PostgreSQL, MySQL)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">VirtIO bus, <code>cache: none</code>, <code>io: native</code>, <code>dedicatedIOThread: true</code>, Block volume mode, <code>blockMultiQueue: true</code>. Databases manage their own write caching and need predictable fsync behavior.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Web server / application server</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">VirtIO bus, default cache mode, Filesystem volume mode. Web servers are not typically I/O-bound. Default settings are sufficient.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Log aggregation / streaming</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">VirtIO bus, <code>cache: writeback</code>, <code>dedicatedIOThread: true</code>. Sequential write workloads benefit from write caching. Data loss risk is acceptable since logs can be re-collected.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">General purpose / desktop</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">VirtIO bus, default cache and I/O settings. Tuning provides minimal benefit for mixed, light I/O workloads.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Data analytics / batch processing</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">VirtIO bus, <code>io: native</code>, Block volume mode, <code>blockMultiQueue: true</code>. Large sequential reads benefit from native I/O and block access.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_cleanup"><a class="anchor" href="#_cleanup"></a>Cleanup</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Delete all resources created in this tutorial:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc delete namespace disk-io-tuning</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_summary"><a class="anchor" href="#_summary"></a>Summary</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>In this tutorial you learned how to:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Choose the right disk bus type (VirtIO, SCSI, SATA) based on guest OS compatibility and performance needs</p>
+</li>
+<li>
+<p>Select Block vs Filesystem volume mode for your PVCs</p>
+</li>
+<li>
+<p>Configure disk cache modes (<code>none</code>, <code>writeback</code>, <code>writethrough</code>) to match workload requirements</p>
+</li>
+<li>
+<p>Enable I/O threading and block multi-queue for higher I/O concurrency</p>
+</li>
+<li>
+<p>Benchmark VM disk performance with <code>fio</code> inside the guest</p>
+</li>
+<li>
+<p>Identify I/O bottlenecks using guest-side <code>iostat</code> and host-side monitoring</p>
+</li>
+<li>
+<p>Apply tuning recommendations based on workload type</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_see_also"><a class="anchor" href="#_see_also"></a>See Also</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p><a href="multi-disk-configuration.html" class="xref page">Multi-Disk VM Configuration</a></p>
+</li>
+<li>
+<p><a href="../performance/resource-limits-qos.html" class="xref page">VM Resource Limits and QoS</a></p>
+</li>
+<li>
+<p><a href="https://kubevirt.io/user-guide/storage/disks_and_volumes/" target="_blank" rel="noopener">KubeVirt Disks and Volumes</a></p>
+</li>
+<li>
+<p><a href="https://docs.redhat.com/en/documentation/openshift_container_platform/4.18/html/virtualization/storage" target="_blank" rel="noopener">OpenShift Virtualization Storage</a></p>
+</li>
+<li>
+<p><a href="https://fio.readthedocs.io/en/latest/" target="_blank" rel="noopener">fio Documentation</a></p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<nav class="pagination">
+  <span class="prev"><a href="cdi-operations.html">CDI Operations</a></span>
+  <span class="next"><a href="../networking/index.html">Networking Configuration</a></span>
+</nav>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <img src="../../../_/img/rhl-logo-red.png" height="40px" alt="Red Hat"  href="https://redhat.com" >
+</footer><script id="site-script" src="../../../_/js/site.js" data-ui-root-path="../../../_"></script>
+<script async src="../../../_/js/vendor/highlight.js"></script>
+  </body>
+</html>
