@@ -30,6 +30,75 @@ OpenShift Virtualization supports various storage backends:
 
 This module covers local storage options (LVM Storage, HostPath Provisioner) for single-node deployments and distributed storage (ODF/Ceph) for production multi-node clusters.
 
+== Choosing the Right Storage Backend
+
+Use the following diagram to determine which storage backend fits your cluster topology and workload requirements.
+
+image::storage-decision-diagram.png[Storage Decision Diagram, align=center]
+
+The decision depends on three factors: cluster topology (single-node vs multi-node), whether live migration is required (which needs RWX access mode), and what existing storage infrastructure is available. The comparison table below summarizes the capabilities of each backend.
+
+[cols="1,1,1,1,1,1,1,2",options="header"]
+|===
+|Storage Backend |Access Modes |Volume Mode |Snapshots |Live Migration |Thin Provisioning |Performance |Use Case
+
+|LVM Storage
+|RWO
+|Block
+|Yes
+|No (RWO only)
+|Yes
+|High (local disk)
+|Single-node or bare-metal production with local disks
+
+|HostPath Provisioner
+|RWO
+|Filesystem
+|No
+|No (RWO only)
+|No
+|Moderate
+|Dev/test, prototyping, edge, single-node
+
+|ODF/Ceph (RBD)
+|RWO, RWX
+|Block
+|Yes
+|Yes (RWX multi-attach)
+|Yes
+|High (distributed)
+|Production multi-node, recommended for VM workloads with live migration
+
+|ODF/Ceph (CephFS)
+|RWO, RWX
+|Filesystem
+|Yes
+|Yes (RWX)
+|Yes
+|High (distributed)
+|Production multi-node with live migration
+
+|NFS
+|RWO, RWX
+|Filesystem
+|No
+|Yes (RWX)
+|Varies
+|Moderate (network)
+|Shared storage with existing NFS infrastructure
+
+|External CSI
+|Varies
+|Varies
+|Varies
+|Varies
+|Varies
+|Varies
+|Cloud deployments (AWS EBS, Azure Disk, etc.)
+|===
+
+NOTE: Live migration requires the VM disk to be accessible from both the source and destination nodes during migration. ODF supports this through two paths: Ceph RBD in Block mode (RWX multi-attach, recommended for VM workloads due to higher I/O performance) which allows concurrent access from multiple nodes, and CephFS in Filesystem mode (RWX) which provides shared filesystem access. NFS also provides RWX access. For production clusters requiring live migration, ODF with Ceph RBD is the recommended solution.
+
 == Prerequisites
 
 Before proceeding with the tutorials in this section, ensure you have:
@@ -52,8 +121,21 @@ Install and configure OpenShift Data Foundation with Ceph storage for production
 
 xref:hostpath-provisioner.adoc[]::
 Configure local storage using the HostPath Provisioner for development, testing, and single-node cluster scenarios.
+
+xref:creating-managing-storage-class.adoc[]::
+Create and configure StorageClasses for different storage backends and provisioning policies.
+
 xref:multi-disk-configuration.adoc[]::
 Configure VMs with multiple disks using different StorageClasses for storage tiering.
+
+xref:expanding-vm-disk-size.adoc[]::
+Expand VM disk size via PVC volume expansion for both offline and online scenarios.
+
+xref:cdi-operations.adoc[]::
+Manage disk image imports, clones, and uploads using the Containerized Data Importer (CDI).
+
+xref:disk-io-tuning.adoc[]::
+Tune disk I/O performance for VM workloads with cache modes, I/O threads, and queue settings.
 
 == Why Default Storage Class Matters
 
