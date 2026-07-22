@@ -1347,6 +1347,80 @@ ping -c 3 192.168.100.100</code></pre>
 </div>
 </div>
 <div class="sect1">
+<h2 id="_choosing_the_right_access_method"><a class="anchor" href="#_choosing_the_right_access_method"></a>Choosing the Right Access Method</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The following diagram guides you through selecting the appropriate access method based on your requirements.</p>
+</div>
+<div class="imageblock text-center">
+<div class="content">
+<img src="_images/remote-access-decision.png" alt="Remote Access Decision Diagram">
+</div>
+</div>
+<div class="paragraph">
+<p>Each decision point narrows the options based on whether you need network access, whether the access is temporary, and what infrastructure is available. The table below maps common roles and scenarios to the recommended method.</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 25%;">
+<col style="width: 25%;">
+<col style="width: 50%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Scenario</th>
+<th class="tableblock halign-left valign-top">Recommended Method</th>
+<th class="tableblock halign-left valign-top">Rationale</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Developer debugging a VM that won&#8217;t boot</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Console (<code>virtctl console</code>)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Works without any network connectivity. The only option when SSH is broken or the VM has no network.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Developer testing an application on a VM</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Port-forward (<code>virtctl port-forward</code> or <code>oc port-forward</code>)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Temporary access without creating Services. Stops when the terminal session ends.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Operations/SRE regular admin access</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">virtctl SSH (<code>virtctl ssh</code>)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Simplest authenticated access for users with cluster credentials. Audit-logged through the API server.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">CI/CD pipeline deploying to a VM</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">virtctl SSH with service account</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Automated SSH access using cluster credentials. No external endpoint needed.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">External monitoring tools (Nagios, Zabbix, Prometheus)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">NodePort or LoadBalancer Service</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Stable external endpoint that persists across VM restarts. Use LoadBalancer with MetalLB if available.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">VMs integrated with existing corporate network</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Secondary network (direct SSH)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Direct L2/L3 access from the corporate network without NAT or port-forwarding. Standard SSH tooling works.</p></td>
+</tr>
+</tbody>
+</table>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+Start with the simplest method that meets your needs. Most users only need <code>virtctl console</code> for troubleshooting and <code>virtctl ssh</code> for regular access. Only use NodePort/LoadBalancer when external systems must reach the VM without cluster credentials.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
 <h2 id="_cleanup"><a class="anchor" href="#_cleanup"></a>Cleanup</h2>
 <div class="sectionbody">
 <div class="paragraph">
