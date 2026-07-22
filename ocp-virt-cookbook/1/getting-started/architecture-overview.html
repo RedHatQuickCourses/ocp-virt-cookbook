@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>OpenShift Virtualization Architecture Overview :: OpenShift Virtualization cookbook</title>
+    <link rel="prev" href="prerequisites.html">
+    <link rel="next" href="install-openshift-virtualization.html">
+    <meta name="generator" content="Antora 3.1.3">
+    <link rel="stylesheet" href="../../../_/css/site.css">
+    <script>var uiRootPath = '../../../_'</script>
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://www.redhat.com" target="_blank"><img src="../../../_/img/redhat-logo.png" height="40px" alt="Red Hat"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="../../..">OpenShift Virtualization cookbook</a>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues" target="_blank">Report Issues</a>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="ocp-virt-cookbook" data-version="1">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="../index.html">OpenShift Virtualization cookbook</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../index.html">Introduction</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="index.html">Getting Started</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="vm-quick-start.html">Quick Start</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="prerequisites.html">Prerequisites</a>
+  </li>
+  <li class="nav-item is-current-page" data-depth="2">
+    <a class="nav-link" href="architecture-overview.html">Architecture Overview</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="install-openshift-virtualization.html">Install OpenShift Virtualization</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="default-storage-class.html">Storage Setup</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="create-vm-web-console.html">Create VM from Web Console</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="create-vm-cli-yaml.html">Create VM from CLI</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="vm-lifecycle-states.html">VM Lifecycle States</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="virtctl-basics.html">Virtctl Basics</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="cloud-init-fundamentals.html">Cloud-init Fundamentals</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../storage/index.html">Storage Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/lvm-operator.html">LVM Operator Installation</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/lvm-troubleshooting.html">LVM Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/odf-ceph-storage.html">ODF/Ceph Storage</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/hostpath-provisioner.html">HostPath Provisioner</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/creating-managing-storage-class.html">Creating and Managing Storage Classes</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/multi-disk-configuration.html">Multi-Disk VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/expanding-vm-disk-size.html">Expanding VM Disk Size</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/cdi-operations.html">CDI Operations</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/disk-io-tuning.html">Disk I/O Tuning</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../networking/index.html">Networking Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/static-ip-configuration.html">Static IP Configuration</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/cloud-init-troubleshooting.html">Cloud-init Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/udn-primary-networks.html">UDN Primary Networks</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/localnet-secondary.html">Localnet Secondary Networks with CUDN</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/localnet-vlan.html">Localnet Secondary Networks with VLAN using NAD</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/cudn-localnet-vlan.html">Localnet VLAN with CUDN</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/layer2-secondary.html">Layer 2 Secondary Networks</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/linux-bridges.html">Linux Bridges</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/sriov-secondary.html">SR-IOV Secondary Networks</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/network-policies-vms.html">Network Policies for VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/metallb-loadbalancer.html">MetalLB Load Balancer for VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/dual-stack-vms.html">Dual-Stack IPv4/IPv6 VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/vm-ingress-routes.html">VM Ingress and Routes</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/ovs-bridge-troubleshooting.html">Troubleshooting Localnet Networks</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../vm-configuration/index.html">Virtual Machine Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/internal-dns-for-vms.html">Internal DNS for VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/remote-access-linux-vms.html">Remote Access to Linux VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/remote-access-linux-troubleshooting.html">Remote Access to Linux VMs Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/remote-access-windows-vms.html">Remote Access to Windows VMs via RDP</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/windows-vm-virtio-drivers.html">Windows VMs with VirtIO Drivers</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/infrastructure-node-placement.html">Infrastructure Node Placement</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/node-placement-affinity.html">Node Placement and Affinity</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/hotplug-volumes-interfaces.html">Hotplug Volumes and Interfaces</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/vm-templates.html">Virtual Machine Templates</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../performance/index.html">VM Performance Tuning</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/resource-limits-qos.html">Resource Limits and QoS</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/cpu-pinning.html">Dedicated CPU Placement</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/numa-hugepages.html">NUMA and Hugepages</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/realtime-vms.html">Real-Time VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/vm-monitoring-metrics.html">VM Monitoring and Metrics</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../vm-lifecycle/index.html">VM Lifecycle Management</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/import-qcow2-boot-volume.html">Import qcow2 Boot Volume</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/custom-golden-images.html">Custom Golden Images</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/golden-images-troubleshooting.html">Golden Images Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/cloning-vms.html">Cloning VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/vm-snapshots.html">VM Snapshots</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/boot-order-boot-sources.html">VM Boot Order and Boot Sources</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../manifests/index.html">Manifests</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../api/index.html">API Guide</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../api/api-component-overview.html">API Component Overview</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../agentic-vm-management/index.html">Agentic VM Management</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/getting-started.html">Getting Started with rh-virt</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/natural-language-vm-create.html">Natural Language VM Creation</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/ai-vm-lifecycle.html">AI VM Lifecycle Operations</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/vm-clone.html">Cloning VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/ai-vm-snapshot-management.html">VM Snapshot Management</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/ai-skill-chaining.html">Day-2 Skill Chaining</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../appendix/glossary.html">Glossary</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">OpenShift Virtualization cookbook</span>
+    <span class="version">1</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <a class="title" href="../index.html">OpenShift Virtualization cookbook</a>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">1</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">OpenShift Virtualization cookbook</a></li>
+    <li><a href="index.html">Getting Started</a></li>
+    <li><a href="architecture-overview.html">Architecture Overview</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">OpenShift Virtualization Architecture Overview</h1>
+<div class="sect1">
+<h2 id="_overview"><a class="anchor" href="#_overview"></a>Overview</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>OpenShift Virtualization extends an OpenShift cluster with the ability to run virtual machines alongside container workloads on the same nodes.
+Built on the upstream KubeVirt project, it uses standard Kubernetes resources like custom resource definitions, persistent volume claims, and pods to manage the full VM lifecycle.
+This guide explains the architecture behind OpenShift Virtualization so you can understand how VMs run on Kubernetes before installing the operator or creating your first virtual machine.</p>
+</div>
+<div class="sect2">
+<h3 id="_what_youll_learn"><a class="anchor" href="#_what_youll_learn"></a>What You&#8217;ll Learn</h3>
+<div class="ulist">
+<ul>
+<li>
+<p>How VMs and containers share the same cluster infrastructure</p>
+</li>
+<li>
+<p>The operator hierarchy from the HyperConverged CR to its sub-operators</p>
+</li>
+<li>
+<p>The execution flow that takes a VirtualMachine CR through to a running QEMU/KVM process</p>
+</li>
+<li>
+<p>How disk images become running VM disks through the storage pipeline</p>
+</li>
+<li>
+<p>How VMs connect to networks using pod networking and secondary interfaces</p>
+</li>
+<li>
+<p>How OpenShift Virtualization compares to VMware vSphere, Microsoft Hyper-V, and other traditional hypervisors</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Applies to:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>OpenShift Virtualization 4.18+</pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_prerequisites"><a class="anchor" href="#_prerequisites"></a>Prerequisites</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Basic Kubernetes knowledge</strong>&#8201;&#8212;&#8201;familiarity with pods, namespaces, and custom resources</p>
+</li>
+<li>
+<p><strong>No cluster access required</strong>&#8201;&#8212;&#8201;this is a conceptual guide</p>
+</li>
+<li>
+<p>For installation steps, see <a href="install-openshift-virtualization.html" class="xref page">Installing and Configuring OpenShift Virtualization Operator</a></p>
+</li>
+<li>
+<p>For detailed environment setup, see <a href="prerequisites.html" class="xref page">Prerequisites and Setup</a></p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_vms_and_containers_shared_infrastructure"><a class="anchor" href="#_vms_and_containers_shared_infrastructure"></a>VMs and Containers: Shared Infrastructure</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>OpenShift Virtualization does not replace the Kubernetes platform&#8201;&#8212;&#8201;it extends it.
+Virtual machines are defined using custom resource definitions (CRDs) and managed through the same Kubernetes API that handles pods, deployments, and services.
+The upstream project behind this capability is KubeVirt.</p>
+</div>
+<div class="paragraph">
+<p>VMs and containers run on the same worker nodes, use the same storage backends, and share the same network infrastructure.
+A single OpenShift cluster manages both workload types.
+This means that existing Kubernetes capabilities like scheduling, RBAC, monitoring, and GitOps workflows apply to virtual machines without any additional tooling.</p>
+</div>
+<div class="paragraph">
+<p>Each VM runs inside a <code>virt-launcher</code> pod.
+From the perspective of the Kubernetes scheduler, a virtual machine is a pod with a QEMU/KVM process running inside it.
+This is what allows VMs to share node resources with containers and benefit from the same cluster-level policies.</p>
+</div>
+<div class="paragraph">
+<p>The following diagram shows the complete architecture&#8201;&#8212;&#8201;each component is explained in the sections that follow.</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="_images/architecture-overview/high-level-architecture.png" alt="High-level architecture showing an OpenShift cluster with worker nodes running both container pods and virt-launcher pods">
+</div>
+</div>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+If you are coming from VMware vSphere, the OpenShift cluster is analogous to vCenter managing ESXi hosts. The HyperConverged CR configures the virtualization stack in a similar role to a vSphere cluster configuration. Each <code>virt-launcher</code> pod is comparable to a VM running on an ESXi host.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_operator_hierarchy"><a class="anchor" href="#_operator_hierarchy"></a>Operator Hierarchy</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The entire OpenShift Virtualization stack is managed through a single <code>HyperConverged</code> custom resource in the <code>openshift-cnv</code> namespace.
+Creating this CR activates four sub-operators, each responsible for a distinct area of functionality.</p>
+</div>
+<div class="paragraph">
+<p>The <strong>KubeVirt Operator</strong> owns the core virtualization lifecycle.
+It manages the API layer (<code>virt-api</code>) that validates VM requests, the controller (<code>virt-controller</code>) that orchestrates VM scheduling and state transitions, and the node-level agents (<code>virt-handler</code>) that configure host resources for each VM.</p>
+</div>
+<div class="paragraph">
+<p>The <strong>CDI Operator</strong> (Containerized Data Importer) handles disk image management.
+It imports images from container registries, HTTP sources, or S3 buckets, uploads local images, and clones existing volumes&#8201;&#8212;&#8201;all into PersistentVolumeClaims that VMs use as their disks.</p>
+</div>
+<div class="paragraph">
+<p>The <strong>SSP Operator</strong> (Scheduling, Scale, and Performance) manages VM templates and boot sources.
+It maintains a set of default templates for common operating systems and keeps their boot source images up to date automatically.</p>
+</div>
+<div class="paragraph">
+<p>The <strong>Network Addons Operator</strong> deploys the networking components needed for secondary network interfaces.
+It installs Multus CNI and related plugins so that VMs can attach to additional networks beyond the default pod network.</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 33.3333%;">
+<col style="width: 66.6667%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Namespace</th>
+<th class="tableblock halign-left valign-top">Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>openshift-cnv</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Operators and control plane components</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>openshift-virtualization-os-images</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Default boot source images for VM templates</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">User namespaces</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Where VMs and their resources run</p></td>
+</tr>
+</tbody>
+</table>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+For the full component breakdown including pod-level details and the deployment tree, see the <a href="install-openshift-virtualization.html#_what_gets_deployed" class="xref page">What Gets Deployed</a> section of the install guide.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_how_a_vm_runs"><a class="anchor" href="#_how_a_vm_runs"></a>How a VM Runs</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_the_execution_flow"><a class="anchor" href="#_the_execution_flow"></a>The Execution Flow</h3>
+<div class="paragraph">
+<p>When a virtual machine is started, the following sequence occurs:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>A user creates or starts a <code>VirtualMachine</code> CR, which defines the desired VM specification.</p>
+</li>
+<li>
+<p><code>virt-controller</code> detects the CR and creates a <code>VirtualMachineInstance</code> (VMI) to represent the running state.</p>
+</li>
+<li>
+<p>The VMI triggers the creation of a <code>virt-launcher</code> pod. The Kubernetes scheduler places this pod on a suitable worker node.</p>
+</li>
+<li>
+<p><code>virt-handler</code> on the target node configures host-level resources including network bridges and device passthrough.</p>
+</li>
+<li>
+<p>Inside the <code>virt-launcher</code> pod, <code>libvirtd</code> runs in session mode and starts a QEMU/KVM process.</p>
+</li>
+<li>
+<p>The guest operating system boots from the PVC-backed virtual disk.</p>
+</li>
+</ol>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="_images/architecture-overview/vm-execution-flow.png" alt="VM execution flow from VirtualMachine CR through virt-controller and virt-launcher to QEMU/KVM guest OS">
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_resource_relationships"><a class="anchor" href="#_resource_relationships"></a>Resource Relationships</h3>
+<div class="paragraph">
+<p>OpenShift Virtualization uses three layers of resources to represent a virtual machine:</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 25%;">
+<col style="width: 25%;">
+<col style="width: 50%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Resource</th>
+<th class="tableblock halign-left valign-top">Lifetime</th>
+<th class="tableblock halign-left valign-top">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>VirtualMachine</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Persistent</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The desired-state definition. Exists whether the VM is running or stopped.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>VirtualMachineInstance</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">While running</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Created at startup, deleted at shutdown. Holds runtime information like IP address and node placement.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Pod (<code>virt-launcher</code>)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">While running</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The Kubernetes pod that hosts the libvirtd and QEMU/KVM processes for the VM.</p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>When a VM is stopped, only the <code>VirtualMachine</code> resource exists. Starting the VM creates both a <code>VirtualMachineInstance</code> and a <code>virt-launcher</code> pod. Stopping it removes both.</p>
+</div>
+<div class="paragraph">
+<p>You can see all three resources for a running VM with a single command:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vm,vmi,pods -n &lt;namespace&gt;</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>For a detailed explanation of VM states and transitions, see <a href="vm-lifecycle-states.html" class="xref page">Understanding VM Lifecycle States and Basic Operations</a>. For the full API field specifications, see <a href="../api/api-component-overview.html" class="xref page">OpenShift Virtualization API Component Overview</a>.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_storage_from_image_to_running_disk"><a class="anchor" href="#_storage_from_image_to_running_disk"></a>Storage: From Image to Running Disk</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Virtual machines need disk images to boot from. In OpenShift Virtualization, a declarative storage pipeline handles the process of turning a source image into a running VM disk.</p>
+</div>
+<div class="paragraph">
+<p>A <code>DataSource</code> points to a boot image, such as a Fedora or RHEL cloud image maintained by the SSP Operator. When a VM is created, a <code>DataVolume</code> tells the CDI controller to import, clone, or upload that image into a new <code>PersistentVolumeClaim</code> (PVC). The CDI controller handles the data transfer automatically. The resulting PVC is mounted into the <code>virt-launcher</code> pod and presented to QEMU as a virtual disk. Other approaches are also available: you can create a <code>DataVolume</code> directly to upload an image (including through the web console UI), or use container disks defined inline in the VM YAML for lightweight, ephemeral boot volumes.</p>
+</div>
+<div class="paragraph">
+<p>The PVC access mode determines what operations are available to the VM. <code>ReadWriteOnce</code> (RWO) is sufficient for VMs that stay on a single node. <code>ReadWriteMany</code> (RWX) is required for live migration, because the disk must be accessible from both the source and destination nodes at the same time.</p>
+</div>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+If you are coming from VMware vSphere, a <code>DataSource</code> is similar to a content library template, a <code>DataVolume</code> is comparable to a clone operation, CDI is the engine that performs the clone, and the resulting <code>PVC</code> is the equivalent of a vmdk file.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>For storage configuration details, see <a href="default-storage-class.html" class="xref page">Configuring Default Storage Class</a> and the <a href="../storage/index.html" class="xref page">Storage module</a>.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_networking_how_vms_connect"><a class="anchor" href="#_networking_how_vms_connect"></a>Networking: How VMs Connect</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Every VM automatically receives a pod IP address through the cluster&#8217;s default OVN-Kubernetes network.
+In masquerade mode, outbound network access works immediately.
+To expose a VM to traffic outside the cluster, you create Kubernetes Services and Routes the same way you would for a containerized application.</p>
+</div>
+<div class="paragraph">
+<p>For workloads that require direct Layer 2 access, VLAN tagging, or hardware-accelerated networking, VMs can attach secondary network interfaces.
+A <code>NetworkAttachmentDefinition</code> CR defines each additional network, and the Multus CNI meta-plugin attaches it to the VM&#8217;s pod.
+Available options include User Defined Networks (UDNs), Linux bridges, localnet, Layer 2 overlays, and SR-IOV for hardware-accelerated networking. UDNs are the current default in recent OpenShift releases and the approach Red Hat is actively pushing forward.</p>
+</div>
+<div class="paragraph">
+<p>The NMState Operator manages node-level network configuration such as bridges, VLANs, and bonds declaratively through Kubernetes CRs.</p>
+</div>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+If you are coming from VMware vSphere, the default pod network is similar to a NAT network in VMware Workstation. Multus secondary networks are comparable to adding vNICs attached to different port groups or virtual switches.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>For networking tutorials and topology options, see the <a href="../networking/index.html" class="xref page">Networking module</a>.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_comparing_with_traditional_hypervisors"><a class="anchor" href="#_comparing_with_traditional_hypervisors"></a>Comparing with Traditional Hypervisors</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The following table maps common virtualization concepts across platforms:</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 18.1818%;">
+<col style="width: 27.2727%;">
+<col style="width: 27.2727%;">
+<col style="width: 27.2728%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Concept</th>
+<th class="tableblock halign-left valign-top">OpenShift Virtualization</th>
+<th class="tableblock halign-left valign-top">VMware vSphere</th>
+<th class="tableblock halign-left valign-top">Microsoft Hyper-V</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">VM definition</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">YAML custom resource (<code>VirtualMachine</code> CR)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">.vmx file + vSphere inventory</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">XML config + PowerShell / SCVMM</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Hypervisor</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">QEMU/KVM (in virt-launcher pod)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ESXi (bare-metal)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Hyper-V (Type 1, bare-metal or Windows Server role)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Management layer</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>oc</code> / <code>kubectl</code> / <code>virtctl</code> / web console</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vCenter Server / vSphere Client</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">SCVMM / Windows Admin Center / PowerShell</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Storage</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">PVCs backed by CSI drivers</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">VMFS / vSAN / NFS datastores</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">CSV / SMB / local storage</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Networking</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">OVN-Kubernetes + Multus secondary networks</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vSwitch / dvSwitch / NSX</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Hyper-V Virtual Switch / SDN</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">HA / Live migration</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Pod rescheduling + live migration (requires RWX storage)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vMotion / vSphere HA / DRS</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Live Migration / Failover Clustering</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Declarative API</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Native (Kubernetes API, GitOps-compatible)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Partial (PowerCLI, REST API)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Partial (PowerShell / DSC)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Container co-location</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Native&#8201;&#8212;&#8201;VMs and containers share the same nodes</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Separate infrastructure (Tanzu for containers)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Separate infrastructure (AKS for containers)</p></td>
+</tr>
+</tbody>
+</table>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+Red Hat Virtualization (RHV), formerly RHEV, also used KVM as its hypervisor through the oVirt management platform. OpenShift Virtualization is the successor platform for running KVM-based workloads within Red Hat&#8217;s product portfolio.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>The most significant difference between OpenShift Virtualization and traditional hypervisors is the management model. Traditional platforms are primarily imperative&#8201;&#8212;&#8201;you create and modify VMs through UI clicks, scripts, or API calls that describe actions to take. OpenShift Virtualization is declarative&#8201;&#8212;&#8201;you define the desired state of a VM in a YAML manifest, and the platform continuously reconciles toward that state. This makes VMs compatible with GitOps workflows, Helm charts, and CI/CD pipelines.</p>
+</div>
+<div class="paragraph">
+<p>The other distinction is convergence. Traditional hypervisors manage VMs in isolation from container workloads, requiring separate infrastructure and tooling for each. OpenShift Virtualization runs both on the same cluster, managed by the same tools and governed by the same policies.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_summary"><a class="anchor" href="#_summary"></a>Summary</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>In this guide you learned:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>How OpenShift Virtualization extends Kubernetes to run VMs as first-class objects alongside containers</p>
+</li>
+<li>
+<p>The operator hierarchy from the HyperConverged CR through its four sub-operators</p>
+</li>
+<li>
+<p>The execution flow from a VirtualMachine CR through virt-controller and virt-launcher to a running QEMU/KVM process</p>
+</li>
+<li>
+<p>How the storage pipeline turns disk images into PVC-backed virtual disks</p>
+</li>
+<li>
+<p>How VMs connect through the default pod network and optional Multus secondary interfaces</p>
+</li>
+<li>
+<p>How OpenShift Virtualization compares to VMware vSphere, Microsoft Hyper-V, and other traditional hypervisors</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_see_also"><a class="anchor" href="#_see_also"></a>See Also</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p><a href="install-openshift-virtualization.html" class="xref page">Installing and Configuring OpenShift Virtualization Operator</a> - Install and configure the operator</p>
+</li>
+<li>
+<p><a href="vm-lifecycle-states.html" class="xref page">Understanding VM Lifecycle States and Basic Operations</a> - VM states, transitions, and management operations</p>
+</li>
+<li>
+<p><a href="../api/api-component-overview.html" class="xref page">OpenShift Virtualization API Component Overview</a> - API component reference for all virtualization objects</p>
+</li>
+<li>
+<p><a href="../storage/index.html" class="xref page">Storage module</a> - Storage configuration tutorials</p>
+</li>
+<li>
+<p><a href="../networking/index.html" class="xref page">Networking module</a> - Networking topology options and tutorials</p>
+</li>
+<li>
+<p><a href="https://kubevirt.io/user-guide/architecture/" target="_blank" rel="noopener">KubeVirt Architecture</a></p>
+</li>
+<li>
+<p><a href="https://docs.redhat.com/en/documentation/openshift_container_platform/latest/html/virtualization/index" target="_blank" rel="noopener">OpenShift Virtualization Documentation</a></p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<nav class="pagination">
+  <span class="prev"><a href="prerequisites.html">Prerequisites</a></span>
+  <span class="next"><a href="install-openshift-virtualization.html">Install OpenShift Virtualization</a></span>
+</nav>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <img src="../../../_/img/rhl-logo-red.png" height="40px" alt="Red Hat"  href="https://redhat.com" >
+</footer><script id="site-script" src="../../../_/js/site.js" data-ui-root-path="../../../_"></script>
+<script async src="../../../_/js/vendor/highlight.js"></script>
+  </body>
+</html>
