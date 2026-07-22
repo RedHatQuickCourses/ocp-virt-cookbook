@@ -626,6 +626,45 @@ For troubleshooting of all access methods, see xref:remote-access-linux-troubles
 * Document who has access to what VMs
 * Regular access audits
 
+== Choosing the Right Access Method
+
+The following diagram guides you through selecting the appropriate access method based on your requirements.
+
+image::remote-access-decision.png[Remote Access Decision Diagram, align=center]
+
+Each decision point narrows the options based on whether you need network access, whether the access is temporary, and what infrastructure is available. The table below maps common roles and scenarios to the recommended method.
+
+[cols="1,1,2",options="header"]
+|===
+|Scenario |Recommended Method |Rationale
+
+|Developer debugging a VM that won't boot
+|Console (`virtctl console`)
+|Works without any network connectivity. The only option when SSH is broken or the VM has no network.
+
+|Developer testing an application on a VM
+|Port-forward (`virtctl port-forward` or `oc port-forward`)
+|Temporary access without creating Services. Stops when the terminal session ends.
+
+|Operations/SRE regular admin access
+|virtctl SSH (`virtctl ssh`)
+|Simplest authenticated access for users with cluster credentials. Audit-logged through the API server.
+
+|CI/CD pipeline deploying to a VM
+|virtctl SSH with service account
+|Automated SSH access using cluster credentials. No external endpoint needed.
+
+|External monitoring tools (Nagios, Zabbix, Prometheus)
+|NodePort or LoadBalancer Service
+|Stable external endpoint that persists across VM restarts. Use LoadBalancer with MetalLB if available.
+
+|VMs integrated with existing corporate network
+|Secondary network (direct SSH)
+|Direct L2/L3 access from the corporate network without NAT or port-forwarding. Standard SSH tooling works.
+|===
+
+NOTE: Start with the simplest method that meets your needs. Most users only need `virtctl console` for troubleshooting and `virtctl ssh` for regular access. Only use NodePort/LoadBalancer when external systems must reach the VM without cluster credentials.
+
 == Cleanup
 
 Remove all resources created in this tutorial:
