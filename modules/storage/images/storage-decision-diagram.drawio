@@ -1,0 +1,155 @@
+<mxfile host="app.diagrams.net" modified="2026-07-22T00:00:00.000Z" agent="draw.io" version="24.0.0" type="device">
+  <diagram id="storage-decision" name="Storage Decision Diagram">
+    <mxGraphModel dx="1400" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1300" pageHeight="800" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- Title -->
+        <mxCell id="title" value="Storage Backend Decision Guide" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=16;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="430" y="15" width="300" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- Start -->
+        <mxCell id="start" value="Choose a storage backend" style="ellipse;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="505" y="55" width="180" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- Q1: Single or multi-node? -->
+        <mxCell id="q1" value="Single-node or&#xa;multi-node cluster?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="500" y="135" width="190" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="start-to-q1" value="" style="endArrow=classic;html=1;strokeWidth=2;" edge="1" parent="1" source="start" target="q1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Single-node branch -->
+        <!-- Q2: Need snapshots? -->
+        <mxCell id="q2" value="Need snapshots or&#xa;thin provisioning?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=10;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="130" y="270" width="180" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="q1-to-q2" value="Single-node" style="endArrow=classic;html=1;strokeWidth=2;fontStyle=1;fontSize=10;" edge="1" parent="1" source="q1" target="q2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- LVM (single-node, snapshots) -->
+        <mxCell id="lvm1" value="LVM Storage" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="60" y="400" width="130" height="45" as="geometry" />
+        </mxCell>
+        <mxCell id="q2-to-lvm1" value="Yes" style="endArrow=classic;html=1;strokeWidth=2;fontSize=10;fontStyle=1;" edge="1" parent="1" source="q2" target="lvm1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- HPP (single-node, no snapshots) -->
+        <mxCell id="hpp" value="HostPath Provisioner&#xa;(simplest)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="230" y="400" width="150" height="45" as="geometry" />
+        </mxCell>
+        <mxCell id="q2-to-hpp" value="No" style="endArrow=classic;html=1;strokeWidth=2;fontSize=10;fontStyle=1;" edge="1" parent="1" source="q2" target="hpp">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Multi-node branch -->
+        <!-- Q3: Need live migration? -->
+        <mxCell id="q3" value="Need live migration?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=10;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="770" y="270" width="180" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="q1-to-q3" value="Multi-node" style="endArrow=classic;html=1;strokeWidth=2;fontStyle=1;fontSize=10;" edge="1" parent="1" source="q1" target="q3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Live migration YES branch -->
+        <!-- Q4: Existing NFS? -->
+        <mxCell id="q4" value="Existing NFS&#xa;infrastructure?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=10;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="950" y="400" width="170" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="q3-to-q4" value="Yes (requires RWX)" style="endArrow=classic;html=1;strokeWidth=2;fontSize=9;fontStyle=1;" edge="1" parent="1" source="q3" target="q4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- ODF CephFS -->
+        <mxCell id="odf-cephfs" value="ODF/Ceph&#xa;(Recommended)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="890" y="520" width="160" height="45" as="geometry" />
+        </mxCell>
+        <mxCell id="q4-to-odf" value="No" style="endArrow=classic;html=1;strokeWidth=2;fontSize=10;fontStyle=1;" edge="1" parent="1" source="q4" target="odf-cephfs">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- NFS -->
+        <mxCell id="nfs" value="NFS" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1090" y="520" width="100" height="45" as="geometry" />
+        </mxCell>
+        <mxCell id="q4-to-nfs" value="Yes" style="endArrow=classic;html=1;strokeWidth=2;fontSize=10;fontStyle=1;" edge="1" parent="1" source="q4" target="nfs">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Live migration NO branch -->
+        <!-- Q5: Need distributed/HA? -->
+        <mxCell id="q5" value="Need distributed&#xa;or HA storage?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=10;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="590" y="400" width="170" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="q3-to-q5" value="No" style="endArrow=classic;html=1;strokeWidth=2;fontSize=10;fontStyle=1;" edge="1" parent="1" source="q3" target="q5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- ODF RBD -->
+        <mxCell id="odf-rbd" value="ODF/Ceph (RBD)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="520" y="520" width="140" height="45" as="geometry" />
+        </mxCell>
+        <mxCell id="q5-to-odf-rbd" value="Yes" style="endArrow=classic;html=1;strokeWidth=2;fontSize=10;fontStyle=1;" edge="1" parent="1" source="q5" target="odf-rbd">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Q6: Cloud or on-prem? -->
+        <mxCell id="q6" value="Cloud or&#xa;on-prem?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=10;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="700" y="520" width="140" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="q5-to-q6" value="No" style="endArrow=classic;html=1;strokeWidth=2;fontSize=10;fontStyle=1;" edge="1" parent="1" source="q5" target="q6">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- External CSI -->
+        <mxCell id="ext-csi" value="External CSI&#xa;(EBS, Azure Disk)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="640" y="630" width="130" height="45" as="geometry" />
+        </mxCell>
+        <mxCell id="q6-to-ext" value="Cloud" style="endArrow=classic;html=1;strokeWidth=2;fontSize=10;fontStyle=1;" edge="1" parent="1" source="q6" target="ext-csi">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- LVM (multi-node, on-prem, no HA needed) -->
+        <mxCell id="lvm2" value="LVM Storage" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="800" y="630" width="130" height="45" as="geometry" />
+        </mxCell>
+        <mxCell id="q6-to-lvm2" value="On-prem" style="endArrow=classic;html=1;strokeWidth=2;fontSize=10;fontStyle=1;" edge="1" parent="1" source="q6" target="lvm2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Legend -->
+        <mxCell id="legend-box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#999999;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="30" y="530" width="230" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="legend-title" value="Legend" style="text;html=1;align=left;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="535" width="55" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="legend-q" value="" style="rhombus;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="45" y="560" width="20" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="legend-q-text" value="Decision point" style="text;html=1;align=left;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="75" y="555" width="95" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="legend-r" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="45" y="585" width="20" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="legend-r-text" value="Recommended backend" style="text;html=1;align=left;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="75" y="580" width="140" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="legend-v" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="45" y="610" width="20" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="legend-v-text" value="Capabilities vary by provider" style="text;html=1;align=left;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="75" y="605" width="170" height="20" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
