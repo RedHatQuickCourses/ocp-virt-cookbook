@@ -426,6 +426,120 @@
 </div>
 </div>
 <div class="sect1">
+<h2 id="_choosing_the_right_storage_backend"><a class="anchor" href="#_choosing_the_right_storage_backend"></a>Choosing the Right Storage Backend</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Use the following diagram to determine which storage backend fits your cluster topology and workload requirements.</p>
+</div>
+<div class="imageblock text-center">
+<div class="content">
+<img src="_images/storage-decision-diagram.png" alt="Storage Decision Diagram">
+</div>
+</div>
+<div class="paragraph">
+<p>The decision depends on three factors: cluster topology (single-node vs multi-node), whether live migration is required (which needs RWX access mode), and what existing storage infrastructure is available. The comparison table below summarizes the capabilities of each backend.</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 11.1111%;">
+<col style="width: 11.1111%;">
+<col style="width: 11.1111%;">
+<col style="width: 11.1111%;">
+<col style="width: 11.1111%;">
+<col style="width: 11.1111%;">
+<col style="width: 11.1111%;">
+<col style="width: 22.2223%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Storage Backend</th>
+<th class="tableblock halign-left valign-top">Access Modes</th>
+<th class="tableblock halign-left valign-top">Volume Mode</th>
+<th class="tableblock halign-left valign-top">Snapshots</th>
+<th class="tableblock halign-left valign-top">Live Migration</th>
+<th class="tableblock halign-left valign-top">Thin Provisioning</th>
+<th class="tableblock halign-left valign-top">Performance</th>
+<th class="tableblock halign-left valign-top">Use Case</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">LVM Storage</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">RWO</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Block</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Yes</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">No (RWO only)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Yes</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">High (local disk)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Single-node or bare-metal production with local disks</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">HostPath Provisioner</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">RWO</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Filesystem</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">No</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">No (RWO only)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">No</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Moderate</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Dev/test, prototyping, edge, single-node</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ODF/Ceph (RBD)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">RWO, RWX</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Block</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Yes</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Yes (RWX multi-attach)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Yes</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">High (distributed)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Production multi-node, recommended for VM workloads with live migration</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ODF/Ceph (CephFS)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">RWO, RWX</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Filesystem</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Yes</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Yes (RWX)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Yes</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">High (distributed)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Production multi-node with live migration</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">NFS</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">RWO, RWX</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Filesystem</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">No</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Yes (RWX)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Varies</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Moderate (network)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Shared storage with existing NFS infrastructure</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">External CSI</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Varies</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Varies</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Varies</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Varies</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Varies</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Varies</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Cloud deployments (AWS EBS, Azure Disk, etc.)</p></td>
+</tr>
+</tbody>
+</table>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+Live migration requires the VM disk to be accessible from both the source and destination nodes during migration. ODF supports this through two paths: Ceph RBD in Block mode (RWX multi-attach, recommended for VM workloads due to higher I/O performance) which allows concurrent access from multiple nodes, and CephFS in Filesystem mode (RWX) which provides shared filesystem access. NFS also provides RWX access. For production clusters requiring live migration, ODF with Ceph RBD is the recommended solution.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
 <h2 id="_prerequisites"><a class="anchor" href="#_prerequisites"></a>Prerequisites</h2>
 <div class="sectionbody">
 <div class="paragraph">
@@ -470,9 +584,25 @@
 <dd>
 <p>Configure local storage using the HostPath Provisioner for development, testing, and single-node cluster scenarios.</p>
 </dd>
+<dt class="hdlist1"><a href="creating-managing-storage-class.html" class="xref page">Creating and Managing Storage Classes</a></dt>
+<dd>
+<p>Create and configure StorageClasses for different storage backends and provisioning policies.</p>
+</dd>
 <dt class="hdlist1"><a href="multi-disk-configuration.html" class="xref page">Multi-Disk VM Configuration with Different Storage Classes</a></dt>
 <dd>
 <p>Configure VMs with multiple disks using different StorageClasses for storage tiering.</p>
+</dd>
+<dt class="hdlist1"><a href="expanding-vm-disk-size.html" class="xref page">Expanding VM Disk Size (PVC Volume Expansion)</a></dt>
+<dd>
+<p>Expand VM disk size via PVC volume expansion for both offline and online scenarios.</p>
+</dd>
+<dt class="hdlist1"><a href="cdi-operations.html" class="xref page">CDI Operations: DataVolumes, Imports, and Upload</a></dt>
+<dd>
+<p>Manage disk image imports, clones, and uploads using the Containerized Data Importer (CDI).</p>
+</dd>
+<dt class="hdlist1"><a href="disk-io-tuning.html" class="xref page">VM Disk I/O Performance Tuning</a></dt>
+<dd>
+<p>Tune disk I/O performance for VM workloads with cache modes, I/O threads, and queue settings.</p>
 </dd>
 </dl>
 </div>
