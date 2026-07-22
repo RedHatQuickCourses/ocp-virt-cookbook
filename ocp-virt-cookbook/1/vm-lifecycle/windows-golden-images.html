@@ -1,0 +1,1473 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Creating Windows Golden Images :: OpenShift Virtualization cookbook</title>
+    <link rel="prev" href="custom-golden-images.html">
+    <link rel="next" href="golden-images-troubleshooting.html">
+    <meta name="generator" content="Antora 3.1.3">
+    <link rel="stylesheet" href="../../../_/css/site.css">
+    <script>var uiRootPath = '../../../_'</script>
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://www.redhat.com" target="_blank"><img src="../../../_/img/redhat-logo.png" height="40px" alt="Red Hat"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="../../..">OpenShift Virtualization cookbook</a>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues" target="_blank">Report Issues</a>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="ocp-virt-cookbook" data-version="1">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="../index.html">OpenShift Virtualization cookbook</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../index.html">Introduction</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../getting-started/index.html">Getting Started</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/vm-quick-start.html">Quick Start</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/prerequisites.html">Prerequisites</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/architecture-overview.html">Architecture Overview</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/install-openshift-virtualization.html">Install OpenShift Virtualization</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/default-storage-class.html">Storage Setup</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/create-vm-web-console.html">Create VM from Web Console</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/create-vm-cli-yaml.html">Create VM from CLI</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/vm-lifecycle-states.html">VM Lifecycle States</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/virtctl-basics.html">Virtctl Basics</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/cloud-init-fundamentals.html">Cloud-init Fundamentals</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../storage/index.html">Storage Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/lvm-operator.html">LVM Operator Installation</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/lvm-troubleshooting.html">LVM Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/odf-ceph-storage.html">ODF/Ceph Storage</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/hostpath-provisioner.html">HostPath Provisioner</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/creating-managing-storage-class.html">Creating and Managing Storage Classes</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/multi-disk-configuration.html">Multi-Disk VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/expanding-vm-disk-size.html">Expanding VM Disk Size</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/cdi-operations.html">CDI Operations</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/disk-io-tuning.html">Disk I/O Tuning</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../networking/index.html">Networking Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/static-ip-configuration.html">Static IP Configuration</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/cloud-init-troubleshooting.html">Cloud-init Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/udn-primary-networks.html">UDN Primary Networks</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/localnet-secondary.html">Localnet Secondary Networks with CUDN</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/localnet-vlan.html">Localnet Secondary Networks with VLAN using NAD</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/cudn-localnet-vlan.html">Localnet VLAN with CUDN</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/layer2-secondary.html">Layer 2 Secondary Networks</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/linux-bridges.html">Linux Bridges</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/sriov-secondary.html">SR-IOV Secondary Networks</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/network-policies-vms.html">Network Policies for VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/metallb-loadbalancer.html">MetalLB Load Balancer for VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/dual-stack-vms.html">Dual-Stack IPv4/IPv6 VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/vm-ingress-routes.html">VM Ingress and Routes</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/ovs-bridge-troubleshooting.html">Troubleshooting Localnet Networks</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../vm-configuration/index.html">Virtual Machine Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/internal-dns-for-vms.html">Internal DNS for VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/remote-access-linux-vms.html">Remote Access to Linux VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/remote-access-linux-troubleshooting.html">Remote Access to Linux VMs Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/remote-access-windows-vms.html">Remote Access to Windows VMs via RDP</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/windows-vm-virtio-drivers.html">Windows VMs with VirtIO Drivers</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/infrastructure-node-placement.html">Infrastructure Node Placement</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/node-placement-affinity.html">Node Placement and Affinity</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/hotplug-volumes-interfaces.html">Hotplug Volumes and Interfaces</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/vm-templates.html">Virtual Machine Templates</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../performance/index.html">VM Performance Tuning</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/resource-limits-qos.html">Resource Limits and QoS</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/cpu-pinning.html">Dedicated CPU Placement</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/numa-hugepages.html">NUMA and Hugepages</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/realtime-vms.html">Real-Time VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/vm-monitoring-metrics.html">VM Monitoring and Metrics</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="index.html">VM Lifecycle Management</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="import-qcow2-boot-volume.html">Import qcow2 Boot Volume</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="custom-golden-images.html">Custom Golden Images</a>
+  </li>
+  <li class="nav-item is-current-page" data-depth="2">
+    <a class="nav-link" href="windows-golden-images.html">Windows Golden Images</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="golden-images-troubleshooting.html">Golden Images Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="cloning-vms.html">Cloning VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="vm-snapshots.html">VM Snapshots</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="boot-order-boot-sources.html">VM Boot Order and Boot Sources</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../manifests/index.html">Manifests</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../api/index.html">API Guide</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../api/api-component-overview.html">API Component Overview</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../agentic-vm-management/index.html">Agentic VM Management</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/getting-started.html">Getting Started with rh-virt</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/natural-language-vm-create.html">Natural Language VM Creation</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/ai-vm-lifecycle.html">AI VM Lifecycle Operations</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/vm-clone.html">Cloning VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/ai-vm-snapshot-management.html">VM Snapshot Management</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/ai-skill-chaining.html">Day-2 Skill Chaining</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../appendix/glossary.html">Glossary</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">OpenShift Virtualization cookbook</span>
+    <span class="version">1</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <a class="title" href="../index.html">OpenShift Virtualization cookbook</a>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">1</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">OpenShift Virtualization cookbook</a></li>
+    <li><a href="index.html">VM Lifecycle Management</a></li>
+    <li><a href="windows-golden-images.html">Windows Golden Images</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">Creating Windows Golden Images</h1>
+<div class="sect1">
+<h2 id="_overview"><a class="anchor" href="#_overview"></a>Overview</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>This tutorial walks you through creating a Windows Server 2025 golden image on OpenShift Virtualization using the <code>windows-efi-installer</code> Tekton pipeline. The pipeline automates the full workflow: downloading the ISO, modifying it for unattended boot, running a silent installation with VirtIO drivers, and generalizing the image with sysprep. Once complete, you can deploy new Windows VMs from this golden image, with per-clone customization handled through a sysprep <code>unattend.xml</code> file.</p>
+</div>
+<div class="paragraph">
+<p>The pipeline approach is necessary for Windows because Windows lacks an equivalent to Linux&#8217;s cloud-init. Instead, Windows uses <code>autounattend.xml</code> for unattended installation and sysprep for generalization. Automating these steps by hand is error-prone, so the pipeline handles it end to end.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_what_you_will_learn"><a class="anchor" href="#_what_you_will_learn"></a>What You Will Learn</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p>How Windows golden images differ from Linux golden images</p>
+</li>
+<li>
+<p>How to configure an <code>autounattend.xml</code> for unattended Windows Server 2025 installation</p>
+</li>
+<li>
+<p>How to run the <code>windows-efi-installer</code> Tekton pipeline to build a golden image</p>
+</li>
+<li>
+<p>How to deploy VMs from the golden image with per-clone sysprep customization</p>
+</li>
+<li>
+<p>How to adapt the process for other Windows versions (10, 11, Server 2022)</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_how_windows_golden_images_differ_from_linux"><a class="anchor" href="#_how_windows_golden_images_differ_from_linux"></a>How Windows Golden Images Differ from Linux</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Linux and Windows use different mechanisms at each stage of the golden image workflow:</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 33.3333%;">
+<col style="width: 33.3333%;">
+<col style="width: 33.3334%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Stage</th>
+<th class="tableblock halign-left valign-top">Linux</th>
+<th class="tableblock halign-left valign-top">Windows</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Unattended install</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Kickstart or preseed</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>autounattend.xml</code> (Windows Setup answer file)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Post-install customization</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">cloud-init on first boot</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>unattend.xml</code> via sysprep on first boot (OOBE pass)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Generalization</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Remove <code>/etc/machine-id</code>, run <code>cloud-init clean</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Run <code>sysprep /generalize /oobe /shutdown</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Per-clone identity</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">cloud-init <code>userData</code> (hostname, SSH keys, packages)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Sysprep <code>unattend.xml</code> volume (hostname, admin password, RDP)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Driver injection</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Drivers typically included in kernel</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">VirtIO drivers must be loaded during installation</p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>The <code>windows-efi-installer</code> pipeline automates all of these steps. It downloads the ISO, patches the bootloader for unattended boot, creates a blank disk, boots an installer VM with the <code>autounattend.xml</code> ConfigMap and the VirtIO driver container disk, waits for installation and sysprep to finish, and publishes the resulting disk as a DataSource.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_prerequisites"><a class="anchor" href="#_prerequisites"></a>Prerequisites</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p>OpenShift 4.18+ with OpenShift Virtualization operator installed</p>
+</li>
+<li>
+<p>OpenShift Pipelines operator installed (provides Tekton)</p>
+</li>
+<li>
+<p>CLI tools: <code>oc</code> and <code>kubectl</code></p>
+</li>
+<li>
+<p>A Windows Server 2025 evaluation ISO download URL from the <a href="https://www.microsoft.com/en-us/evalcenter/evaluate-windows-server-2025" target="_blank" rel="noopener">Microsoft Evaluation Center</a></p>
+</li>
+<li>
+<p>A storage class with at least 60 GiB available for the root disk</p>
+</li>
+<li>
+<p>Network access from the cluster to <code>go.microsoft.com</code> (or an internal ISO mirror)</p>
+</li>
+<li>
+<p>Familiarity with the <a href="custom-golden-images.html" class="xref page">Linux golden image workflow</a></p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_1_prepare_the_namespace_and_service_account"><a class="anchor" href="#_step_1_prepare_the_namespace_and_service_account"></a>Step 1: Prepare the Namespace and Service Account</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The pipeline runs in the <code>default</code> namespace. The <code>modify-windows-iso-file</code> pipeline task requires specific user and group IDs to write to its workspace volume. Grant the <code>anyuid</code> Security Context Constraint (SCC) to the <code>pipeline</code> service account:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc adm policy add-scc-to-user anyuid -z pipeline -n default</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This allows the task pod to run with <code>runAsUser: 107</code> and <code>fsGroup: 107</code>, which the ISO modification tool requires.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_2_obtain_the_windows_iso_url"><a class="anchor" href="#_step_2_obtain_the_windows_iso_url"></a>Step 2: Obtain the Windows ISO URL</h2>
+<div class="sectionbody">
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Visit the <a href="https://www.microsoft.com/en-us/evalcenter/evaluate-windows-server-2025" target="_blank" rel="noopener">Microsoft Evaluation Center for Windows Server 2025</a>.</p>
+</li>
+<li>
+<p>Sign in with a Microsoft account (free registration).</p>
+</li>
+<li>
+<p>Select <strong>64-bit edition</strong>, language <strong>English (United States)</strong>, and fill in the registration form.</p>
+</li>
+<li>
+<p>On the download page, right-click the <strong>Download</strong> button and copy the link address. Do not click the button directly.</p>
+</li>
+<li>
+<p>Save this URL. You will use it in the PipelineRun manifest.</p>
+</li>
+</ol>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+The download URL is temporary and expires after approximately 24 hours. If the pipeline fails to download the ISO, generate a new URL from the Evaluation Center.
+</td>
+</tr>
+</table>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+Evaluation ISOs have a 180-day trial limit. For production use, use a licensed ISO from your volume licensing portal.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>For other Windows versions, use these download pages:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><a href="https://www.microsoft.com/en-us/evalcenter/evaluate-windows-10-enterprise" target="_blank" rel="noopener">Windows 10 Enterprise</a></p>
+</li>
+<li>
+<p><a href="https://www.microsoft.com/en-us/evalcenter/evaluate-windows-11-enterprise" target="_blank" rel="noopener">Windows 11 Enterprise</a></p>
+</li>
+<li>
+<p><a href="https://www.microsoft.com/en-us/evalcenter/evaluate-windows-server-2022" target="_blank" rel="noopener">Windows Server 2022</a></p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_3_create_the_autounattend_configmap"><a class="anchor" href="#_step_3_create_the_autounattend_configmap"></a>Step 3: Create the Autounattend ConfigMap</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The <code>autounattend.xml</code> file tells Windows Setup how to install unattended, and the <code>post-install.ps1</code> script runs after installation to install drivers and prepare the image for sysprep. Both files are stored in a single ConfigMap with two keys.</p>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/windows-golden-images/configmap-windows2k25-autounattend.yaml" class="xref attachment">Download configmap-windows2k25-autounattend.yaml</a></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: windows2k25-autounattend
+  namespace: default
+data:
+  autounattend.xml: |
+    &lt;?xml version="1.0" encoding="utf-8"?&gt;
+    &lt;unattend xmlns="urn:schemas-microsoft-com:unattend"&gt;
+      &lt;settings pass="windowsPE"&gt;
+        &lt;component name="Microsoft-Windows-PnpCustomizationsWinPE" processorArchitecture="amd64"
+                   publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS"
+                   xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State"&gt;
+          &lt;DriverPaths&gt;
+            &lt;PathAndCredentials wcm:action="add" wcm:keyValue="1"&gt;
+              &lt;Path&gt;E:\viostor\2k25\amd64&lt;/Path&gt;
+            &lt;/PathAndCredentials&gt;
+            &lt;PathAndCredentials wcm:action="add" wcm:keyValue="2"&gt;
+              &lt;Path&gt;E:\NetKVM\2k25\amd64&lt;/Path&gt;
+            &lt;/PathAndCredentials&gt;
+          &lt;/DriverPaths&gt;
+        &lt;/component&gt;
+        &lt;component name="Microsoft-Windows-International-Core-WinPE" processorArchitecture="amd64"
+                   publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS"&gt;
+          &lt;SetupUILanguage&gt;
+            &lt;UILanguage&gt;en-US&lt;/UILanguage&gt;
+          &lt;/SetupUILanguage&gt;
+          &lt;InputLocale&gt;en-US&lt;/InputLocale&gt;
+          &lt;SystemLocale&gt;en-US&lt;/SystemLocale&gt;
+          &lt;UILanguage&gt;en-US&lt;/UILanguage&gt;
+          &lt;UserLocale&gt;en-US&lt;/UserLocale&gt;
+        &lt;/component&gt;
+        &lt;component name="Microsoft-Windows-Setup" processorArchitecture="amd64"
+                   publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS"
+                   xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State"&gt;
+          &lt;UserData&gt;
+            &lt;AcceptEula&gt;true&lt;/AcceptEula&gt;
+          &lt;/UserData&gt;
+          &lt;DiskConfiguration&gt;
+            &lt;Disk wcm:action="add"&gt;
+              &lt;DiskID&gt;0&lt;/DiskID&gt;
+              &lt;WillWipeDisk&gt;true&lt;/WillWipeDisk&gt;
+              &lt;CreatePartitions&gt;
+                &lt;CreatePartition wcm:action="add"&gt;
+                  &lt;Order&gt;1&lt;/Order&gt;
+                  &lt;Type&gt;EFI&lt;/Type&gt;
+                  &lt;Size&gt;100&lt;/Size&gt;
+                &lt;/CreatePartition&gt;
+                &lt;CreatePartition wcm:action="add"&gt;
+                  &lt;Order&gt;2&lt;/Order&gt;
+                  &lt;Type&gt;MSR&lt;/Type&gt;
+                  &lt;Size&gt;16&lt;/Size&gt;
+                &lt;/CreatePartition&gt;
+                &lt;CreatePartition wcm:action="add"&gt;
+                  &lt;Order&gt;3&lt;/Order&gt;
+                  &lt;Type&gt;Primary&lt;/Type&gt;
+                  &lt;Extend&gt;true&lt;/Extend&gt;
+                &lt;/CreatePartition&gt;
+              &lt;/CreatePartitions&gt;
+              &lt;ModifyPartitions&gt;
+                &lt;ModifyPartition wcm:action="add"&gt;
+                  &lt;Order&gt;1&lt;/Order&gt;
+                  &lt;PartitionID&gt;1&lt;/PartitionID&gt;
+                  &lt;Format&gt;FAT32&lt;/Format&gt;
+                  &lt;Label&gt;System&lt;/Label&gt;
+                &lt;/ModifyPartition&gt;
+                &lt;ModifyPartition wcm:action="add"&gt;
+                  &lt;Order&gt;2&lt;/Order&gt;
+                  &lt;PartitionID&gt;2&lt;/PartitionID&gt;
+                &lt;/ModifyPartition&gt;
+                &lt;ModifyPartition wcm:action="add"&gt;
+                  &lt;Order&gt;3&lt;/Order&gt;
+                  &lt;PartitionID&gt;3&lt;/PartitionID&gt;
+                  &lt;Format&gt;NTFS&lt;/Format&gt;
+                  &lt;Label&gt;Windows&lt;/Label&gt;
+                  &lt;Letter&gt;C&lt;/Letter&gt;
+                &lt;/ModifyPartition&gt;
+              &lt;/ModifyPartitions&gt;
+            &lt;/Disk&gt;
+          &lt;/DiskConfiguration&gt;
+          &lt;ImageInstall&gt;
+            &lt;OSImage&gt;
+              &lt;InstallFrom&gt;
+                &lt;MetaData wcm:action="add"&gt;
+                  &lt;Key&gt;/Image/Description&lt;/Key&gt;
+                  &lt;Value&gt;Windows Server 2025 SERVERDATACENTER&lt;/Value&gt;
+                &lt;/MetaData&gt;
+              &lt;/InstallFrom&gt;
+              &lt;InstallTo&gt;
+                &lt;DiskID&gt;0&lt;/DiskID&gt;
+                &lt;PartitionID&gt;3&lt;/PartitionID&gt;
+              &lt;/InstallTo&gt;
+            &lt;/OSImage&gt;
+          &lt;/ImageInstall&gt;
+        &lt;/component&gt;
+      &lt;/settings&gt;
+      &lt;settings pass="specialize"&gt;
+        &lt;component name="Microsoft-Windows-International-Core" processorArchitecture="amd64"
+                   publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS"&gt;
+          &lt;InputLocale&gt;en-US&lt;/InputLocale&gt;
+          &lt;SystemLocale&gt;en-US&lt;/SystemLocale&gt;
+          &lt;UILanguage&gt;en-US&lt;/UILanguage&gt;
+          &lt;UserLocale&gt;en-US&lt;/UserLocale&gt;
+        &lt;/component&gt;
+      &lt;/settings&gt;
+      &lt;settings pass="oobeSystem"&gt;
+        &lt;component name="Microsoft-Windows-Deployment" processorArchitecture="amd64"
+                   publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS"&gt;
+          &lt;Reseal&gt;
+            &lt;Mode&gt;Audit&lt;/Mode&gt;
+          &lt;/Reseal&gt;
+        &lt;/component&gt;
+      &lt;/settings&gt;
+      &lt;settings pass="auditUser"&gt;
+        &lt;component name="Microsoft-Windows-Deployment" processorArchitecture="amd64"
+                   publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS"
+                   xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State"&gt;
+          &lt;RunSynchronous&gt;
+            &lt;RunSynchronousCommand wcm:action="add"&gt;
+              &lt;Order&gt;1&lt;/Order&gt;
+              &lt;Path&gt;PowerShell -ExecutionPolicy Bypass -NoProfile F:\post-install.ps1&lt;/Path&gt;
+              &lt;Description&gt;Run post-install script&lt;/Description&gt;
+            &lt;/RunSynchronousCommand&gt;
+          &lt;/RunSynchronous&gt;
+          &lt;Generalize&gt;
+            &lt;ForceShutdownNow&gt;true&lt;/ForceShutdownNow&gt;
+            &lt;Mode&gt;OOBE&lt;/Mode&gt;
+          &lt;/Generalize&gt;
+        &lt;/component&gt;
+      &lt;/settings&gt;
+    &lt;/unattend&gt;
+  post-install.ps1: |
+    # Install VirtIO guest drivers
+    Start-Process msiexec -Wait -ArgumentList "/i E:\virtio-win-gt-x64.msi /qn /passive /norestart"
+
+    # Install QEMU guest agent
+    Start-Process msiexec -Wait -ArgumentList "/i E:\guest-agent\qemu-ga-x86_64.msi /qn /passive /norestart"
+
+    # Rename cached unattend.xml to prevent sysprep from reusing the install-time answer file
+    mv C:\Windows\Panther\unattend.xml C:\Windows\Panther\unattend.install.xml
+
+    # Eject CD to prevent autounattend.xml on CD from being picked up by sysprep
+    (New-Object -COMObject Shell.Application).NameSpace(17).ParseName("F:").InvokeVerb("Eject")</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Apply the ConfigMap:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f configmap-windows2k25-autounattend.yaml</code></pre>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_what_the_autounattend_xml_does"><a class="anchor" href="#_what_the_autounattend_xml_does"></a>What the autounattend.xml does</h3>
+<div class="paragraph">
+<p>The file contains four Windows Setup passes:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p><strong>windowsPE</strong>&#8201;&#8212;&#8201;Runs during the Windows Preinstallation Environment before files are copied to disk. It loads VirtIO storage (<code>viostor</code>) and network (<code>NetKVM</code>) drivers so the installer can see the VirtIO SCSI disk and NIC. It also partitions the disk with GPT layout (EFI, MSR, and primary partitions), selects the Windows Server 2025 Datacenter (Desktop Experience) edition, and accepts the EULA.</p>
+</li>
+<li>
+<p><strong>specialize</strong>&#8201;&#8212;&#8201;Runs after files are copied to disk. Sets regional and language preferences to <code>en-US</code>.</p>
+</li>
+<li>
+<p><strong>oobeSystem</strong>&#8201;&#8212;&#8201;Normally this pass runs the Out-Of-Box Experience (OOBE) wizard. Here it is configured to reseal into Audit mode instead, which skips OOBE and boots directly to the desktop as the built-in Administrator so the post-install script can run.</p>
+</li>
+<li>
+<p><strong>auditUser</strong>&#8201;&#8212;&#8201;Runs in Audit mode. It executes <code>post-install.ps1</code>, then calls <code>sysprep /generalize /oobe /shutdown</code> to strip machine-specific identifiers and shut down the VM. The resulting disk is a clean, generalized golden image.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_what_the_post_install_ps1_does"><a class="anchor" href="#_what_the_post_install_ps1_does"></a>What the post-install.ps1 does</h3>
+<div class="paragraph">
+<p>The PowerShell script runs as SYSTEM in Audit mode and performs four tasks:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Installs the VirtIO guest driver package (<code>virtio-win-gt-x64.msi</code>) from the VirtIO container disk mounted at <code>E:\</code>.</p>
+</li>
+<li>
+<p>Installs the QEMU guest agent (<code>qemu-ga-x86_64.msi</code>) so that OpenShift can communicate with the VM after deployment.</p>
+</li>
+<li>
+<p>Renames the cached <code>C:\Windows\Panther\unattend.xml</code> to <code>unattend.install.xml</code>. This prevents sysprep from picking up the install-time answer file when a cloned VM boots for the first time.</p>
+</li>
+<li>
+<p>Ejects the CD-ROM drive to prevent the <code>autounattend.xml</code> on the CD from being reused on subsequent boots.</p>
+</li>
+</ol>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_4_run_the_pipeline"><a class="anchor" href="#_step_4_run_the_pipeline"></a>Step 4: Run the Pipeline</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Replace <code>REPLACE_WITH_YOUR_ISO_URL</code> in the following manifest with the URL you copied in Step 2.</p>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/windows-golden-images/pipelinerun-windows2k25.yaml" class="xref attachment">Download pipelinerun-windows2k25.yaml</a></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: tekton.dev/v1
+kind: PipelineRun
+metadata:
+  generateName: windows2k25-installer-run-
+  namespace: default
+spec:
+  params:
+    - name: winImageDownloadURL
+      value: "REPLACE_WITH_YOUR_ISO_URL"
+    - name: acceptEula
+      value: "true"
+    - name: preferenceName
+      value: windows.2k25.virtio
+    - name: autounattendConfigMapName
+      value: windows2k25-autounattend
+    - name: baseDvName
+      value: win2k25
+    - name: isoDVName
+      value: win2k25
+  pipelineRef:
+    params:
+      - name: catalog
+        value: redhat-pipelines
+      - name: type
+        value: artifact
+      - name: kind
+        value: pipeline
+      - name: name
+        value: windows-efi-installer
+      - name: version
+        value: v4.21.0
+    resolver: hub
+  taskRunSpecs:
+    - pipelineTaskName: modify-windows-iso-file
+      podTemplate:
+        securityContext:
+          fsGroup: 107
+          runAsUser: 107
+  timeouts:
+    pipeline: 1h0m0s</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Create the PipelineRun. Use <code>oc create</code> instead of <code>oc apply</code> because the manifest uses <code>generateName</code>:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc create -f pipelinerun-windows2k25.yaml</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Monitor the pipeline progress:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get pipelinerun -n default -w</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Press <code>Ctrl+C</code> to exit the watch once the PipelineRun shows <code>Succeeded</code>.</p>
+</div>
+<div class="paragraph">
+<p>You can also monitor the DataVolumes created by the pipeline:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get dv -n default -w</code></pre>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_what_the_pipeline_does"><a class="anchor" href="#_what_the_pipeline_does"></a>What the pipeline does</h3>
+<div class="paragraph">
+<p>The <code>windows-efi-installer</code> pipeline runs the following stages:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p><strong>Import autounattend ConfigMap</strong>&#8201;&#8212;&#8201;Reads the <code>autounattend.xml</code> and <code>post-install.ps1</code> from the ConfigMap you created.</p>
+</li>
+<li>
+<p><strong>Download Windows ISO</strong>&#8201;&#8212;&#8201;Downloads the ISO into a DataVolume.</p>
+</li>
+<li>
+<p><strong>Modify ISO</strong>&#8201;&#8212;&#8201;Replaces the interactive EFI bootloader (<code>efisys.bin</code>) with a no-prompt bootloader (<code>efisys_noprompt.bin</code>) so the installer boots without waiting for "Press any key."</p>
+</li>
+<li>
+<p><strong>Create blank root disk</strong>&#8201;&#8212;&#8201;Creates a 60 GiB DataVolume for the Windows installation target.</p>
+</li>
+<li>
+<p><strong>Boot installer VM</strong>&#8201;&#8212;&#8201;Starts a VM with the modified ISO, the blank root disk, and the VirtIO driver container disk. The <code>autounattend.xml</code> drives the entire installation without user interaction.</p>
+</li>
+<li>
+<p><strong>Wait for shutdown</strong>&#8201;&#8212;&#8201;The pipeline waits for the VM to shut down, which happens after sysprep generalize completes in the <code>auditUser</code> pass.</p>
+</li>
+<li>
+<p><strong>Create DataSource</strong>&#8201;&#8212;&#8201;Creates a DataSource pointing to the installed root disk, making it available as a clone source.</p>
+</li>
+<li>
+<p><strong>Clean up</strong>&#8201;&#8212;&#8201;Removes the installer VM and temporary DataVolumes (ISO, modified ISO).</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>The full pipeline takes 30 to 60 minutes depending on network speed (ISO download) and storage performance (disk cloning).</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_5_verify_the_golden_image"><a class="anchor" href="#_step_5_verify_the_golden_image"></a>Step 5: Verify the Golden Image</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>After the pipeline completes, verify the golden image DataVolume and DataSource exist:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get dv win2k25 -n default</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Expected output</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">NAME      PHASE       PROGRESS   RESTARTS   AGE
+win2k25   Succeeded   100.0%                45m</code></pre>
+</div>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get datasource win2k25 -n default</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Expected output</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">NAME      AGE
+win2k25   45m</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Confirm the PipelineRun completed successfully:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get pipelinerun -n default</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Expected output</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">NAME                              SUCCEEDED   REASON      STARTTIME   COMPLETIONTIME
+windows2k25-installer-run-abcde   True        Succeeded   50m         5m</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_6_deploy_a_vm_from_the_golden_image"><a class="anchor" href="#_step_6_deploy_a_vm_from_the_golden_image"></a>Step 6: Deploy a VM from the Golden Image</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Each VM cloned from the golden image needs its own sysprep <code>unattend.xml</code> to configure machine-specific settings during the first boot OOBE pass. This file is stored in a ConfigMap and attached to the VM as a sysprep volume. KubeVirt mounts it as a floppy or CD and Windows Setup reads it automatically during OOBE.</p>
+</div>
+<div class="sect2">
+<h3 id="_create_the_sysprep_configmap"><a class="anchor" href="#_create_the_sysprep_configmap"></a>Create the sysprep ConfigMap</h3>
+<div class="paragraph">
+<p>The <code>unattend.xml</code> below sets the hostname to <code>WIN-SERVER-01</code>, sets the Administrator password, enables auto-logon, extends the OS partition to fill the disk, enables Remote Desktop, and skips all OOBE screens.</p>
+</div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+The password in this example is for demo purposes only. Use a strong, unique password in production environments.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/windows-golden-images/sysprep-unattend-configmap.yaml" class="xref attachment">Download sysprep-unattend-configmap.yaml</a></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: win2k25-sysprep-unattend
+  namespace: default
+data:
+  unattend.xml: |
+    &lt;?xml version="1.0" encoding="utf-8"?&gt;
+    &lt;unattend xmlns="urn:schemas-microsoft-com:unattend"&gt;
+      &lt;settings pass="specialize"&gt;
+        &lt;component name="Microsoft-Windows-Shell-Setup" processorArchitecture="amd64"
+                   publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS"&gt;
+          &lt;ComputerName&gt;WIN-SERVER-01&lt;/ComputerName&gt;
+        &lt;/component&gt;
+        &lt;component name="Microsoft-Windows-Deployment" processorArchitecture="amd64"
+                   publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS"&gt;
+          &lt;ExtendOSPartition&gt;
+            &lt;Extend&gt;true&lt;/Extend&gt;
+          &lt;/ExtendOSPartition&gt;
+        &lt;/component&gt;
+        &lt;component name="Microsoft-Windows-TerminalServices-LocalSessionManager"
+                   processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35"
+                   language="neutral" versionScope="nonSxS"&gt;
+          &lt;fDenyTSConnections&gt;false&lt;/fDenyTSConnections&gt;
+        &lt;/component&gt;
+        &lt;component xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State"
+                   name="Networking-MPSSVC-Svc" processorArchitecture="amd64"
+                   publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS"&gt;
+          &lt;FirewallGroups&gt;
+            &lt;FirewallGroup wcm:action="add" wcm:keyValue="RemoteDesktop"&gt;
+              &lt;Active&gt;true&lt;/Active&gt;
+              &lt;Group&gt;Remote Desktop&lt;/Group&gt;
+              &lt;Profile&gt;all&lt;/Profile&gt;
+            &lt;/FirewallGroup&gt;
+          &lt;/FirewallGroups&gt;
+        &lt;/component&gt;
+      &lt;/settings&gt;
+      &lt;settings pass="oobeSystem"&gt;
+        &lt;component xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State"
+                   name="Microsoft-Windows-Shell-Setup" processorArchitecture="amd64"
+                   publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS"&gt;
+          &lt;OOBE&gt;
+            &lt;HideEULAPage&gt;true&lt;/HideEULAPage&gt;
+            &lt;HideOEMRegistrationScreen&gt;true&lt;/HideOEMRegistrationScreen&gt;
+            &lt;HideOnlineAccountScreens&gt;true&lt;/HideOnlineAccountScreens&gt;
+            &lt;HideWirelessSetupInOOBE&gt;true&lt;/HideWirelessSetupInOOBE&gt;
+            &lt;NetworkLocation&gt;Work&lt;/NetworkLocation&gt;
+            &lt;SkipUserOOBE&gt;true&lt;/SkipUserOOBE&gt;
+            &lt;SkipMachineOOBE&gt;true&lt;/SkipMachineOOBE&gt;
+            &lt;ProtectYourPC&gt;3&lt;/ProtectYourPC&gt;
+          &lt;/OOBE&gt;
+          &lt;AutoLogon&gt;
+            &lt;Password&gt;
+              &lt;Value&gt;R3dH4t1!&lt;/Value&gt;
+              &lt;PlainText&gt;true&lt;/PlainText&gt;
+            &lt;/Password&gt;
+            &lt;Enabled&gt;true&lt;/Enabled&gt;
+            &lt;Username&gt;Administrator&lt;/Username&gt;
+          &lt;/AutoLogon&gt;
+          &lt;UserAccounts&gt;
+            &lt;AdministratorPassword&gt;
+              &lt;Value&gt;R3dH4t1!&lt;/Value&gt;
+              &lt;PlainText&gt;true&lt;/PlainText&gt;
+            &lt;/AdministratorPassword&gt;
+          &lt;/UserAccounts&gt;
+          &lt;TimeZone&gt;UTC&lt;/TimeZone&gt;
+        &lt;/component&gt;
+      &lt;/settings&gt;
+    &lt;/unattend&gt;</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Apply the ConfigMap:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f sysprep-unattend-configmap.yaml</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_create_the_vm"><a class="anchor" href="#_create_the_vm"></a>Create the VM</h3>
+<div class="paragraph">
+<p>The VM below clones its root disk from the <code>win2k25</code> DataSource and attaches the sysprep ConfigMap as a volume. The hardware configuration includes Hyper-V enlightenments, EFI with Secure Boot, TPM, and VirtIO devices.</p>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/windows-golden-images/windows-vm-from-golden.yaml" class="xref attachment">Download windows-vm-from-golden.yaml</a></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: win2k25-vm-1
+  namespace: default
+spec:
+  dataVolumeTemplates:
+    - apiVersion: cdi.kubevirt.io/v1beta1
+      kind: DataVolume
+      metadata:
+        name: win2k25-vm-1-disk
+      spec:
+        sourceRef:
+          kind: DataSource
+          name: win2k25
+          namespace: default
+        storage:
+          resources:
+            requests:
+              storage: 60Gi
+  runStrategy: RerunOnFailure
+  template:
+    metadata:
+      labels:
+        kubevirt.io/domain: win2k25-vm-1
+    spec:
+      domain:
+        cpu:
+          cores: 2
+          sockets: 1
+          threads: 2
+        memory:
+          guest: 4Gi
+        devices:
+          disks:
+            - name: rootdisk
+              disk:
+                bus: virtio
+            - name: sysprep
+              cdrom:
+                bus: sata
+          interfaces:
+            - name: default
+              masquerade: {}
+              model: virtio
+          tpm: {}
+          rng: {}
+        clock:
+          utc: {}
+          timer:
+            hpet:
+              present: false
+            pit:
+              tickPolicy: delay
+            rtc:
+              tickPolicy: catchup
+            hyperv: {}
+        features:
+          acpi: {}
+          apic: {}
+          hyperv:
+            relaxed: {}
+            vapic: {}
+            spinlocks:
+              spinlocks: 8191
+            vpindex: {}
+            runtime: {}
+            synic: {}
+            stimer: {}
+            reset: {}
+            frequencies: {}
+            reenlightenment: {}
+            tlbflush: {}
+            ipi: {}
+          smm:
+            enabled: true
+        firmware:
+          bootloader:
+            efi:
+              secureBoot: true
+      networks:
+        - name: default
+          pod: {}
+      volumes:
+        - name: rootdisk
+          dataVolume:
+            name: win2k25-vm-1-disk
+        - name: sysprep
+          sysprep:
+            configMap:
+              name: win2k25-sysprep-unattend</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Apply the VM manifest:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f windows-vm-from-golden.yaml</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Wait for the disk to clone and the VM to start. The clone takes a few minutes, and Windows OOBE runs in the background for up to 5 minutes after the VM boots:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get dv win2k25-vm-1-disk -n default -w</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Once the DataVolume shows <code>Succeeded</code>, watch the VM status:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vmi win2k25-vm-1 -n default -w</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Wait until the VM shows <code>PHASE=Running</code> and <code>READY=True</code>, then press <code>Ctrl+C</code>.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_7_verify_the_deployed_vm"><a class="anchor" href="#_step_7_verify_the_deployed_vm"></a>Step 7: Verify the Deployed VM</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Check the VM instance status:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vmi win2k25-vm-1 -n default</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Expected output</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">NAME            AGE   PHASE     IP             NODENAME     READY
+win2k25-vm-1    8m    Running   10.128.1.155   worker-01    True</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Query the guest OS information reported by the QEMU guest agent:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vmi win2k25-vm-1 -n default -o jsonpath='{.status.guestOSInfo}' | python3 -m json.tool</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Expected output</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-json hljs" data-lang="json">{
+    "id": "mswindows",
+    "kernelRelease": "10.0.26100",
+    "name": "Microsoft Windows Server 2025 Datacenter",
+    "prettyName": "Windows Server 2025 Datacenter",
+    "version": "10.0",
+    "versionId": "10.0"
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If the <code>guestOSInfo</code> field is empty, wait a few more minutes. The QEMU guest agent starts after OOBE completes, which can take up to 5 minutes on first boot.</p>
+</div>
+<div class="paragraph">
+<p>To verify the hostname was set correctly, connect via the VNC console.
+On macOS, <code>virtctl</code> does not auto-detect VNC viewers, so you must specify the viewer type and path with <code>--vnc-type</code> and <code>--vnc-path</code>:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">virtctl vnc win2k25-vm-1 -n default --vnc-type=tiger --vnc-path=/usr/local/bin/vncviewer</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Log in as <code>Administrator</code> with the password from the sysprep ConfigMap and confirm the hostname in <strong>System Properties</strong> or by running <code>hostname</code> in a command prompt.</p>
+</div>
+<div class="paragraph">
+<p>For RDP access, see <a href="../vm-configuration/remote-access-windows-vms.html" class="xref page">Remote Access to Windows VMs via RDP</a>.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_updating_the_golden_image"><a class="anchor" href="#_updating_the_golden_image"></a>Updating the Golden Image</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>To create an updated golden image:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Generate a new ISO download URL from the Microsoft Evaluation Center (or use an updated licensed ISO).</p>
+</li>
+<li>
+<p>Modify the <code>autounattend.xml</code> if needed (for example, to add new software in the post-install script).</p>
+</li>
+<li>
+<p>Re-run the pipeline with a different <code>baseDvName</code> value, such as <code>win2k25-v2</code>.</p>
+</li>
+<li>
+<p>Update your VM manifests to reference the new DataSource name.</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>Use versioned DataSource names (<code>win2k25-v1</code>, <code>win2k25-v2</code>, <code>win2k25-2025-07</code>) so you can roll back to a previous version if needed. Keep at least one previous version available.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_adapting_for_other_windows_versions"><a class="anchor" href="#_adapting_for_other_windows_versions"></a>Adapting for Other Windows Versions</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>To build golden images for other Windows versions, adjust the PipelineRun parameters and the <code>autounattend.xml</code> driver paths. The table below lists the required changes:</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 25%;">
+<col style="width: 25%;">
+<col style="width: 25%;">
+<col style="width: 25%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Version</th>
+<th class="tableblock halign-left valign-top"><code>preferenceName</code></th>
+<th class="tableblock halign-left valign-top"><code>autounattendConfigMapName</code></th>
+<th class="tableblock halign-left valign-top">VirtIO driver paths</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Windows 10</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>windows.10.virtio</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>windows10-efi-autounattend</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>viostor/w10/amd64</code>, <code>NetKVM/w10/amd64</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Windows 11</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>(default)</em></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>windows11-autounattend</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>viostor/w11/amd64</code>, <code>NetKVM/w11/amd64</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Server 2022</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>windows.2k22.virtio</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>windows2k22-autounattend</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>viostor/2k22/amd64</code>, <code>NetKVM/2k22/amd64</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Server 2025</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>windows.2k25.virtio</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>windows2k25-autounattend</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>viostor/2k25/amd64</code>, <code>NetKVM/2k25/amd64</code></p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>You also need to change the <code>ImageInstall</code> section in <code>autounattend.xml</code> to match the edition string for the target OS. For example, Windows 11 Enterprise uses <code>Windows 11 Enterprise</code> instead of <code>Windows Server 2025 SERVERDATACENTER</code>.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_troubleshooting"><a class="anchor" href="#_troubleshooting"></a>Troubleshooting</h2>
+<div class="sectionbody">
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 33.3333%;">
+<col style="width: 66.6667%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Problem</th>
+<th class="tableblock halign-left valign-top">Solution</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Pipeline fails at <code>modify-windows-iso-file</code> with "file not found: efisys_noprompt.bin"</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The ISO may not contain the no-prompt EFI bootloader. This file is present in standard Microsoft ISOs but may be missing from custom or slimmed-down ISOs. Use an unmodified ISO from the Microsoft Evaluation Center.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Permission denied when modifying ISO</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Add the <code>taskRunSpecs</code> section to the PipelineRun with <code>fsGroup: 107</code> and <code>runAsUser: 107</code> as shown in Step 4. Also confirm the <code>anyuid</code> SCC is granted to the <code>pipeline</code> service account.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Pipeline times out</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Increase <code>timeouts.pipeline</code> in the PipelineRun manifest. Slow network connections or storage backends can cause the pipeline to exceed the default 1-hour timeout. Check DataVolume progress with <code>oc get dv -w</code>.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Cloned VM boots to OOBE wizard instead of desktop</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The sysprep ConfigMap key must be <code>unattend.xml</code>, not <code>autounattend.xml</code>. Windows only reads <code>autounattend.xml</code> from removable media during a fresh install. After sysprep, it reads <code>unattend.xml</code>. Also verify the ConfigMap name in the VM&#8217;s <code>volumes.sysprep.configMap.name</code> matches the ConfigMap you created.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Sysprep fails with "rearm count exceeded"</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Evaluation ISOs have a limited number of sysprep rearm cycles. Rebuild the golden image from a fresh ISO rather than re-sysprepping an existing image. For production use, use a volume-licensed ISO that does not have rearm limits.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Cloned VM slow to respond after boot</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Windows OOBE runs in the background for up to 5 minutes on first boot. Wait for the guest agent to report <code>guestOSInfo</code> before assuming the VM is unresponsive.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Guest agent not reporting OS info</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Verify the QEMU guest agent was installed by the <code>post-install.ps1</code> script. Connect to the VM console and check that the <code>QEMU Guest Agent</code> service is running in <code>services.msc</code>.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_cleanup"><a class="anchor" href="#_cleanup"></a>Cleanup</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Remove all resources created in this tutorial:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc delete vm win2k25-vm-1 -n default
+oc delete configmap win2k25-sysprep-unattend -n default
+oc delete configmap windows2k25-autounattend -n default
+oc delete datasource win2k25 -n default
+oc delete dv win2k25 -n default</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>To also remove the PipelineRun resources:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc delete pipelinerun -l tekton.dev/pipeline=windows-efi-installer -n default</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>To revoke the SCC granted in Step 1:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc adm policy remove-scc-from-user anyuid -z pipeline -n default</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_summary"><a class="anchor" href="#_summary"></a>Summary</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>In this tutorial, you:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Configured an <code>autounattend.xml</code> ConfigMap for unattended Windows Server 2025 installation with VirtIO driver injection and sysprep generalization</p>
+</li>
+<li>
+<p>Ran the <code>windows-efi-installer</code> Tekton pipeline to build a golden image from a Windows ISO</p>
+</li>
+<li>
+<p>Verified the resulting DataVolume and DataSource</p>
+</li>
+<li>
+<p>Deployed a VM from the golden image with per-clone sysprep customization (hostname, admin password, RDP)</p>
+</li>
+<li>
+<p>Verified the deployed VM using guest agent information</p>
+</li>
+<li>
+<p>Learned how to update golden images and adapt the process for other Windows versions</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_see_also"><a class="anchor" href="#_see_also"></a>See Also</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p><a href="custom-golden-images.html" class="xref page">Creating Custom OS Images and Golden Images (Linux)</a></p>
+</li>
+<li>
+<p><a href="../vm-configuration/windows-vm-virtio-drivers.html" class="xref page">Windows VMs with VirtIO Drivers</a></p>
+</li>
+<li>
+<p><a href="../vm-configuration/remote-access-windows-vms.html" class="xref page">Remote Access to Windows VMs via RDP</a></p>
+</li>
+<li>
+<p><a href="https://artifacthub.io/packages/tekton-pipeline/redhat-pipelines/windows-efi-installer" target="_blank" rel="noopener">windows-efi-installer on ArtifactHub</a></p>
+</li>
+<li>
+<p><a href="https://github.com/kubevirt/kubevirt-tekton-tasks/blob/main/release/pipelines/windows-efi-installer/README.md" target="_blank" rel="noopener">windows-efi-installer Pipeline README</a></p>
+</li>
+<li>
+<p><a href="https://developers.redhat.com/articles/2024/09/09/create-windows-golden-image-openshift-virtualization" target="_blank" rel="noopener">Red Hat Developer: Create a Windows Golden Image</a></p>
+</li>
+<li>
+<p><a href="https://kubevirt.io/user-guide/user_workloads/startup_scripts/" target="_blank" rel="noopener">KubeVirt Sysprep Documentation</a></p>
+</li>
+<li>
+<p><a href="https://developer.hashicorp.com/packer/integrations/hashicorp/kubevirt" target="_blank" rel="noopener">Packer KubeVirt Plugin</a></p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<nav class="pagination">
+  <span class="prev"><a href="custom-golden-images.html">Custom Golden Images</a></span>
+  <span class="next"><a href="golden-images-troubleshooting.html">Golden Images Troubleshooting</a></span>
+</nav>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <img src="../../../_/img/rhl-logo-red.png" height="40px" alt="Red Hat"  href="https://redhat.com" >
+</footer><script id="site-script" src="../../../_/js/site.js" data-ui-root-path="../../../_"></script>
+<script async src="../../../_/js/vendor/highlight.js"></script>
+  </body>
+</html>
