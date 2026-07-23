@@ -364,12 +364,97 @@
 <h2 id="_overview"><a class="anchor" href="#_overview"></a>Overview</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>This module covers the essential tools and basic configuration needed to start working with OpenShift Virtualization. Whether you&#8217;re new to OpenShift Virtualization or looking to refresh your knowledge, these guides will help you get up and running quickly.</p>
+<p>This module covers the tools and configuration needed to start working with OpenShift Virtualization. Whether you are new to OpenShift Virtualization or refreshing your knowledge, these guides take you from initial setup to running your first virtual machine.</p>
 </div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="_what_youll_learn"><a class="anchor" href="#_what_youll_learn"></a>What You&#8217;ll Learn</h2>
+<h2 id="_learning_path"><a class="anchor" href="#_learning_path"></a>Learning Path</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The diagram below shows the recommended tutorial order. Start with the quick start if you want a running VM in minutes, or follow the full path for a complete understanding.</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>  FAST TRACK
+  ┌──────────────────────────────────────────────────────┐
+  │  Quick Start — Get a VM running in 5 minutes         │
+  └──────────────────────────────────────────────────────┘
+
+
+  FULL LEARNING PATH
+
+  ┌────────────────┐    ┌──────────────────┐    ┌─────────────────┐
+  │ Prerequisites  ├───►│ Install Operator ├───►│ Default Storage │
+  └────────────────┘    └──────────────────┘    └────────┬────────┘
+                                                         │
+                         ┌───────────────────────────────┤
+                         ▼                               ▼
+                  ┌──────────────┐              ┌────────────────┐
+                  │ Create VM    │              │ Create VM      │
+                  │ (Console)    │              │ (CLI &amp; YAML)   │
+                  └──────┬───────┘              └───────┬────────┘
+                         │                              │
+                         └──────────────┬───────────────┘
+                                        ▼
+                              ┌──────────────────┐
+                              │  VM Lifecycle    │
+                              └────────┬─────────┘
+                                       ▼
+                              ┌──────────────────┐
+                              │  virtctl Basics  │
+                              └────────┬─────────┘
+                                       ▼
+                              ┌──────────────────┐
+                              │  Cloud-init      │
+                              │  Fundamentals    │
+                              └──────────────────┘</pre>
+</div>
+</div>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+Already have the operator installed? Skip directly to <a href="default-storage-class.html" class="xref page">Configure Storage</a>.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_who_is_this_for"><a class="anchor" href="#_who_is_this_for"></a>Who Is This For?</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Different roles can take different paths through this module.</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">VM administrator migrating from VMware or Hyper-V</dt>
+<dd>
+<p>Start with <a href="prerequisites.html" class="xref page">Prerequisites and Setup</a> to understand the environment. Then follow <a href="install-openshift-virtualization.html" class="xref page">Installing and Configuring OpenShift Virtualization Operator</a> and <a href="create-vm-web-console.html" class="xref page">Creating VMs from Web Console Using Templates</a> to create your first VM from the web console. Continue with <a href="vm-lifecycle-states.html" class="xref page">Understanding VM Lifecycle States and Basic Operations</a> to learn how VMs are managed in OpenShift.</p>
+</dd>
+<dt class="hdlist1">Developer needing a test VM</dt>
+<dd>
+<p>Start with <a href="vm-quick-start.html" class="xref page">Quick Start: Your First VM in 5 Minutes</a> to get a VM running in minutes. Then read <a href="virtctl-basics.html" class="xref page">Using virtctl for VM Management</a> to manage VMs from the command line.</p>
+</dd>
+<dt class="hdlist1">Platform engineer</dt>
+<dd>
+<p>Follow the full learning path in order: <a href="prerequisites.html" class="xref page">Prerequisites and Setup</a>, <a href="install-openshift-virtualization.html" class="xref page">Installing and Configuring OpenShift Virtualization Operator</a>, <a href="default-storage-class.html" class="xref page">Configuring Default Storage Class</a>, and both VM creation tutorials. After completing this module, continue with the <a href="../networking/index.html" class="xref page">Networking</a> and <a href="../storage/index.html" class="xref page">Storage</a> modules.</p>
+</dd>
+<dt class="hdlist1">Evaluator or decision maker</dt>
+<dd>
+<p>Read <a href="install-openshift-virtualization.html" class="xref page">Installing and Configuring OpenShift Virtualization Operator</a> to understand what the operator provides. Then follow <a href="create-vm-web-console.html" class="xref page">Creating VMs from Web Console Using Templates</a> to see a VM running in the console. The <a href="vm-lifecycle-states.html" class="xref page">Understanding VM Lifecycle States and Basic Operations</a> page shows day-to-day management operations.</p>
+</dd>
+</dl>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_what_you_will_learn"><a class="anchor" href="#_what_you_will_learn"></a>What You Will Learn</h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>In this section, you will learn:</p>
@@ -386,7 +471,19 @@
 <p>Basic usage of the virtctl command-line tool for managing virtual machines</p>
 </li>
 <li>
+<p>How to install the OpenShift Virtualization operator</p>
+</li>
+<li>
 <p>How to configure default storage for virtual machine deployments</p>
+</li>
+<li>
+<p>How to create virtual machines from the web console and from the CLI</p>
+</li>
+<li>
+<p>VM lifecycle states and management operations</p>
+</li>
+<li>
+<p>Basic usage of the virtctl command-line tool for managing virtual machines</p>
 </li>
 <li>
 <p>Cloud-init fundamentals and VM initialization patterns</p>
@@ -440,10 +537,6 @@
 <dd>
 <p>Install and configure the OpenShift Virtualization operator on your cluster.</p>
 </dd>
-<dt class="hdlist1"><a href="virtctl-basics.html" class="xref page">Using virtctl for VM Management</a></dt>
-<dd>
-<p>Learn the essential virtctl commands for managing virtual machines.</p>
-</dd>
 <dt class="hdlist1"><a href="default-storage-class.html" class="xref page">Configuring Default Storage Class</a></dt>
 <dd>
 <p>Configure a default storage class for simplified VM deployment.</p>
@@ -460,6 +553,10 @@
 <dd>
 <p>Understand VM lifecycle states and basic operations for effective VM management.</p>
 </dd>
+<dt class="hdlist1"><a href="virtctl-basics.html" class="xref page">Using virtctl for VM Management</a></dt>
+<dd>
+<p>Learn the essential virtctl commands for managing virtual machines.</p>
+</dd>
 <dt class="hdlist1"><a href="cloud-init-fundamentals.html" class="xref page">Cloud-init Fundamentals for OpenShift Virtualization VMs</a></dt>
 <dd>
 <p>Learn cloud-init fundamentals, execution stages, common modules, and how to embed cloud-init configuration in VirtualMachine manifests.</p>
@@ -472,7 +569,7 @@
 <h2 id="_next_steps"><a class="anchor" href="#_next_steps"></a>Next Steps</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>After completing this module, you&#8217;ll be ready to explore:</p>
+<p>After completing this module, you will be ready to explore:</p>
 </div>
 <div class="ulist">
 <ul>
