@@ -132,6 +132,15 @@ spec:
 oc apply -f rdp-service.yaml
 ----
 
+===== Option C: Using virtctl
+
+[source,bash,role=execute]
+----
+virtctl expose vm <your-vm-name> --port=3389 --name=<your-vm-name>-rdp-service --type=LoadBalancer
+----
+
+Replace `<your-vm-name>` with your VM's actual name. For NodePort instead of LoadBalancer, use `--type=NodePort`.
+
 ==== Step 3: Obtain Connection Details
 
 ===== For LoadBalancer Service:
