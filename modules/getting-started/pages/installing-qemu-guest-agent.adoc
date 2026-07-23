@@ -6,17 +6,25 @@
 
 This tutorial demonstrates how to install the qemu-guest-agent in various Linux distributions. The QEMU guest agent is a daemon that runs inside the guest OS. It enables application-consistent snapshots, guest OS and filesystem reporting, dynamic SSH-key and password injection, IP address reporting, and exec/ping health probes.
 
+=== What You'll Learn
+
+* How to install and enable `qemu-guest-agent` manually via `virtctl console` on Fedora, Debian, and openSUSE Leap
+* How to install `qemu-guest-agent` automatically using cloud-init `packages` and `runcmd` modules
+* How to verify the agent is connected and reporting guest OS information to OpenShift Virtualization
+
 == Prerequisites
 
-* **OpenShift 4.18+** with OpenShift Virtualization operator installed (see xref:create-vm-web-console.adoc[Installing OpenShift Virtualization])
-*  CLI tools: `oc`, `virtctl`
+* **OpenShift 4.18+** with OpenShift Virtualization operator installed (see xref:install-openshift-virtualization.adoc[Installing OpenShift Virtualization])
+* CLI tools: `oc`, `virtctl`, `yq`
 
 
 Versions tested:
-[source,bash]
+[source,text]
 ----
 OpenShift 4.21, 4.22
 ----
+
+== Setting Up the Namespace
 
 Create a namespace where all the virtual machines for this tutorial will live.
 [source,bash,role=execute]
@@ -39,9 +47,15 @@ WARNING: The cloud-init passwords in the following examples are for demo purpose
 
 ==== Step 1: Create the Fedora virtual machine
 
+Create the virtual machine from the CLI: (click <<fedora-create-web-console,here>> to create via the web console)
+
+NOTE: We are using a datavolume instead of containerdisk, which increases time-to-first-boot but has the benefit of saving the root volume onto a PVC making the changes in the following steps persistent even if virt-launcher crashes or if the virtual machine is stopped and then started again.
+
 xref:attachment$installing-qemu-guest-agent/fedora-no-qga.yaml[Download fedora-no-qga.yaml]
-[source,yaml,role=execute]
+
+[source,bash,role=execute]
 ----
+oc apply -f - <<EOF
 apiVersion: kubevirt.io/v1
 kind: VirtualMachine
 metadata:
@@ -91,23 +105,17 @@ spec:
               user: fedora
               password: fedora
               chpasswd: { expire: false }
-----
-
-NOTE: We are using a datavolume instead of containerdisk, which increases time-to-first-boot but has the benefit of saving the root volume onto a PVC making the changes in the following steps persistent even if virt-launcher crashes or if the virtual machine is stopped and then started again.
-
-Create the virtual machine from the CLI: (click <<fedora-create-web-console,here>> to create via the web console)
-
-[source,bash,role=execute]
-----
-oc create -f fedora-no-qga.yaml
+EOF
 ----
 
 Wait for the virtual machine's STATUS to be `Running`:
 
 [source,bash,role=execute]
 ----
-oc get vm fedora-virtctl -w 
+oc get vm fedora-virtctl -w
 ----
+
+TIP: The `-w` flag watches continuously. Press `Ctrl+C` once the STATUS shows `Running`.
 
 [source,bash]
 ----
@@ -154,7 +162,7 @@ From the Web console:
 
 [#fedora-step-2-2]
 Verify that `qemu-guest-agent` is not installed.
-[source,bash,role=execute]
+[source,bash]
 ----
 systemctl status qemu-guest-agent
 ----
@@ -165,13 +173,13 @@ Unit qemu-guest-agent.service could not be found.
 ----
 
 Install and enable `qemu-guest-agent` using dnf:
-[source,bash,role=execute]
+[source,bash]
 ----
 sudo dnf install -y qemu-guest-agent && sudo systemctl enable --now qemu-guest-agent
 ----
 
 Verify `qemu-guest-agent` is now installed, enabled and running:
-[source,bash,role=execute]
+[source,bash]
 ----
 systemctl status qemu-guest-agent
 ----
@@ -210,9 +218,13 @@ Proceed to <<verify-qga-reporting>> to confirm the agent is connected and report
 
 ==== Step 1: Create the Debian virtual machine
 
+Create the virtual machine from the CLI: (click <<debian-create-web-console,here>> to create via the web console)
+
 xref:attachment$installing-qemu-guest-agent/debian-no-qga.yaml[Download debian-no-qga.yaml]
-[source,yaml,role=execute]
+
+[source,bash,role=execute]
 ----
+oc apply -f - <<EOF
 apiVersion: kubevirt.io/v1
 kind: VirtualMachine
 metadata:
@@ -262,13 +274,7 @@ spec:
               user: debian
               password: debian
               chpasswd: { expire: false }
-----
-
-Create the virtual machine from the CLI: (click <<debian-create-web-console,here>> to create via the web console)
-
-[source,bash,role=execute]
-----
-oc create -f debian-no-qga.yaml 
+EOF
 ----
 
 Wait for the virtual machine's STATUS to be `Running`:
@@ -276,6 +282,8 @@ Wait for the virtual machine's STATUS to be `Running`:
 ----
 oc get vm debian-virtctl -w
 ----
+
+TIP: The `-w` flag watches continuously. Press `Ctrl+C` once the STATUS shows `Running`.
 
 [source,bash]
 ----
@@ -322,31 +330,31 @@ From the Web console:
 
 [#debian-step-2-2]
 Verify that `qemu-guest-agent` is not installed.
-[source,bash,role=execute]
+[source,bash]
 ----
 systemctl status qemu-guest-agent
 ----
 
 [source,bash]
 ----
-# example output 
+# example output
 Unit qemu-guest-agent.service could not be found.
 ----
 
 Update the apt package index:
-[source,bash,role=execute]
+[source,bash]
 ----
 sudo apt update
 ----
 
 Once apt has been updated, install and enable `qemu-guest-agent`:
-[source,bash,role=execute]
+[source,bash]
 ----
 sudo apt install -y qemu-guest-agent && sudo systemctl enable --now qemu-guest-agent
 ----
 
 Verify `qemu-guest-agent` is now installed, enabled and running:
-[source,bash,role=execute]
+[source,bash]
 ----
 systemctl status qemu-guest-agent
 ----
@@ -382,9 +390,13 @@ Installing `qemu-guest-agent` in openSUSE is slightly different than in the prev
 
 ==== Step 1: Create the openSUSE Leap virtual machine
 
+Create the virtual machine from the CLI: (click <<opensuse-create-web-console,here>> to create via the web console)
+
 xref:attachment$installing-qemu-guest-agent/opensuse-leap-no-qga.yaml[Download opensuse-leap-no-qga.yaml]
-[source,yaml,role=execute]
+
+[source,bash,role=execute]
 ----
+oc apply -f - <<EOF
 apiVersion: kubevirt.io/v1
 kind: VirtualMachine
 metadata:
@@ -434,13 +446,7 @@ spec:
               user: opensuse
               password: opensuse
               chpasswd: { expire: false }
-----
-
-Create the virtual machine from the CLI: (click <<opensuse-create-web-console,here>> to create via the web console)
-
-[source,bash,role=execute]
-----
-oc create -f opensuse-leap-no-qga.yaml
+EOF
 ----
 
 Wait for the virtual machine's STATUS to be `Running`:
@@ -448,6 +454,8 @@ Wait for the virtual machine's STATUS to be `Running`:
 ----
 oc get vm suse-virtctl -w
 ----
+
+TIP: The `-w` flag watches continuously. Press `Ctrl+C` once the STATUS shows `Running`.
 
 [source,bash]
 ----
@@ -495,7 +503,7 @@ From the Web console:
 [#opensuse-step-2-2]
 Verify that `qemu-guest-agent` is not installed.
 
-[source,bash,role=execute]
+[source,bash]
 ----
 systemctl list-units | grep qemu
 ----
@@ -503,19 +511,19 @@ systemctl list-units | grep qemu
 The previous command should produce no output.
 
 Update the Zypper packages:
-[source,bash,role=execute]
+[source,bash]
 ----
 sudo zypper up
 ----
 
 Once Zypper is done updating, install `qemu-guest-agent`:
-[source,bash,role=execute]
+[source,bash]
 ----
 sudo zypper install qemu-guest-agent
 ----
 
 Verify `qemu-guest-agent` is now installed and running:
-[source,bash,role=execute]
+[source,bash]
 ----
 systemctl list-units | grep qemu
 ----
@@ -529,9 +537,9 @@ system-qemu\x2dga.slice                                   loaded active active  
 
 Copy the full service name from the first column (e.g., `qemu-ga@virtio\x2dports-org.qemu.guest_agent.0.service`) for use in the next command.
 
-[source,bash,role=execute]
+[source,bash]
 ----
-systemctl status \ 
+systemctl status \
 "qemu-ga@virtio\x2dports-org.qemu.guest_agent.0.service" <.>
 ----
 <.> make sure the name of the service is wrapped in quotes
@@ -574,10 +582,13 @@ WARNING: The cloud-init passwords in the following examples are for demo purpose
 
 === Fedora/RHEL
 
+Create the virtual machine:
+
 xref:attachment$installing-qemu-guest-agent/fedora-qga-package.yaml[Download fedora-qga-package.yaml]
 
-[source,yaml,role=execute]
+[source,bash,role=execute]
 ----
+oc apply -f - <<EOF
 apiVersion: kubevirt.io/v1
 kind: VirtualMachine
 metadata:
@@ -631,24 +642,20 @@ spec:
                 - qemu-guest-agent
               runcmd: # <.>
                 - systemctl enable --now qemu-guest-agent # <.>
+EOF
 ----
 <.> Use the **packages** cloud-init module to install `qemu-guest-agent`
 <.> Use the **runcmd** cloud-init module to run any command during boot
 <.> Run `systemctl enable --now qemu-guest-agent` after the package has been installed to start the service
 
-Create the virtual machine:
-
-[source,bash,role=execute]
-----
-oc create -f fedora-qga-package.yaml
-----
-
 Wait for the virtual machine's STATUS to be `Running`:
 
 [source,bash,role=execute]
 ----
-oc get vm fedora-cloudinit -w 
+oc get vm fedora-cloudinit -w
 ----
+
+TIP: The `-w` flag watches continuously. Press `Ctrl+C` once the STATUS shows `Running`.
 
 [source,bash]
 ----
@@ -670,10 +677,13 @@ Proceed to <<verify-qga-reporting>> to confirm the agent is connected and report
 
 The cloud-init `packages` and `runcmd` configuration is identical to the Fedora example above. The only differences are the container image, username, and VM name.
 
+Create the virtual machine:
+
 xref:attachment$installing-qemu-guest-agent/debian-qga-package.yaml[Download debian-qga-package.yaml]
 
-[source,yaml,role=execute]
+[source,bash,role=execute]
 ----
+oc apply -f - <<EOF
 apiVersion: kubevirt.io/v1
 kind: VirtualMachine
 metadata:
@@ -727,13 +737,7 @@ spec:
                 - qemu-guest-agent
               runcmd:
                 - systemctl enable --now qemu-guest-agent
-----
-
-Create the virtual machine:
-
-[source,bash,role=execute]
-----
-oc create -f debian-qga-package.yaml
+EOF
 ----
 
 Wait for the virtual machine's STATUS to be `Running`:
@@ -742,6 +746,8 @@ Wait for the virtual machine's STATUS to be `Running`:
 ----
 oc get vm debian-cloudinit -w
 ----
+
+TIP: The `-w` flag watches continuously. Press `Ctrl+C` once the STATUS shows `Running`.
 
 [source,bash]
 ----
@@ -763,10 +769,13 @@ Proceed to <<verify-qga-reporting>> to confirm the agent is connected and report
 
 The cloud-init `packages` configuration is identical to the Fedora and Debian examples above. `runcmd` is omitted since the service will run automatically. The container image, user, and VM name are also different.
 
+Create the virtual machine:
+
 xref:attachment$installing-qemu-guest-agent/opensuse-leap-qga-package.yaml[Download opensuse-leap-qga-package.yaml]
 
-[source,yaml,role=execute]
+[source,bash,role=execute]
 ----
+oc apply -f - <<EOF
 apiVersion: kubevirt.io/v1
 kind: VirtualMachine
 metadata:
@@ -816,15 +825,9 @@ spec:
               user: opensuse
               password: opensuse
               chpasswd: { expire: false }
-              packages: 
-                - qemu-guest-agent 
-----
-
-Create the virtual machine:
-
-[source,bash,role=execute]
-----
-oc create -f opensuse-leap-qga-package.yaml
+              packages:
+                - qemu-guest-agent
+EOF
 ----
 
 Wait for the virtual machine's STATUS to be `Running`:
@@ -832,6 +835,8 @@ Wait for the virtual machine's STATUS to be `Running`:
 ----
 oc get vm suse-cloudinit -w
 ----
+
+TIP: The `-w` flag watches continuously. Press `Ctrl+C` once the STATUS shows `Running`.
 
 [source,bash]
 ----
