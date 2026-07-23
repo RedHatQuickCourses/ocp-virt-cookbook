@@ -5,31 +5,17 @@ metadata:
   namespace: default
 spec:
   runStrategy: Always
+  instancetype:
+    name: u1.medium
+  preference:
+    name: fedora
   template:
     metadata:
       labels:
         kubevirt.io/vm: hpp-test-vm
     spec:
       domain:
-        cpu:
-          cores: 1
-        devices:
-          disks:
-          - name: rootdisk
-            disk:
-              bus: virtio
-          - name: cloudinitdisk
-            disk:
-              bus: virtio
-          interfaces:
-          - name: default
-            masquerade: {}
-        resources:
-          requests:
-            memory: 1Gi
-      networks:
-      - name: default
-        pod: {}
+        devices: {}
       volumes:
       - name: rootdisk
         dataVolume:

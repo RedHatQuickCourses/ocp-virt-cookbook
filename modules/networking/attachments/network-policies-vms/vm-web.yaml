@@ -8,6 +8,10 @@ metadata:
     role: frontend
 spec:
   runStrategy: Always
+  instancetype:
+    name: u1.medium
+  preference:
+    name: fedora
   template:
     metadata:
       labels:
@@ -15,23 +19,7 @@ spec:
         role: frontend
     spec:
       domain:
-        resources:
-          requests:
-            memory: 2Gi
-        devices:
-          disks:
-            - name: containerdisk
-              disk:
-                bus: virtio
-            - name: cloudinitdisk
-              disk:
-                bus: virtio
-          interfaces:
-            - name: default
-              masquerade: {}
-      networks:
-        - name: default
-          pod: {}
+        devices: {}
       volumes:
         - name: containerdisk
           containerDisk:

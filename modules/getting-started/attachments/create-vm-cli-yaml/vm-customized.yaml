@@ -5,36 +5,14 @@ metadata:
   namespace: demo
 spec:
   runStrategy: Always
+  instancetype:
+    name: u1.medium
+  preference:
+    name: fedora
   template:
-    metadata:
-      labels:
-        kubevirt.io/domain: vm-customized
     spec:
       domain:
-        cpu:
-          cores: 2
-        devices:
-          disks:
-            - name: rootdisk
-              disk:
-                bus: virtio
-            - name: cloudinitdisk
-              disk:
-                bus: virtio
-          interfaces:
-            - name: default
-              masquerade: {}
-        machine:
-          type: pc-q35-rhel9.4.0
-        memory:
-          guest: 4Gi
-        resources:
-          requests:
-            memory: 4Gi
-            cpu: 2
-      networks:
-        - name: default
-          pod: {}
+        devices: {}
       volumes:
         - name: rootdisk
           dataVolume:

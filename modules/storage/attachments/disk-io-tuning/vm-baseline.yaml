@@ -5,34 +5,20 @@ metadata:
   namespace: disk-io-tuning
 spec:
   runStrategy: Always
+  instancetype:
+    name: u1.medium
+  preference:
+    name: fedora
   template:
-    metadata:
-      labels:
-        kubevirt.io/domain: vm-baseline
     spec:
       domain:
-        cpu:
-          cores: 2
-        memory:
-          guest: 2Gi
         devices:
           disks:
           - name: rootdisk
-            disk:
-              bus: virtio
+            disk: {}
             bootOrder: 1
           - name: cloudinitdisk
-            disk:
-              bus: virtio
-          interfaces:
-          - name: default
-            masquerade: {}
-        resources:
-          requests:
-            memory: 2Gi
-      networks:
-      - name: default
-        pod: {}
+            disk: {}
       volumes:
       - name: rootdisk
         dataVolume:

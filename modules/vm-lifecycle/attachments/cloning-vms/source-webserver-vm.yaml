@@ -19,33 +19,14 @@ spec:
             requests:
               storage: 30Gi
   runStrategy: RerunOnFailure
+  instancetype:
+    name: u1.medium
+  preference:
+    name: fedora
   template:
-    metadata:
-      labels:
-        kubevirt.io/domain: source-webserver
     spec:
       domain:
-        cpu:
-          cores: 2
-        devices:
-          disks:
-            - disk:
-                bus: virtio
-              name: rootdisk
-            - disk:
-                bus: virtio
-              name: cloudinitdisk
-          interfaces:
-            - masquerade: {}
-              name: default
-          rng: {}
-        machine:
-          type: pc-q35-rhel9.4.0
-        memory:
-          guest: 4Gi
-      networks:
-        - name: default
-          pod: {}
+        devices: {}
       volumes:
         - dataVolume:
             name: source-webserver-disk

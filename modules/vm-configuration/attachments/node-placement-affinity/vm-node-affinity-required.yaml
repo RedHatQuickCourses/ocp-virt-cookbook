@@ -5,6 +5,10 @@ metadata:
   namespace: vm-placement
 spec:
   runStrategy: Manual
+  instancetype:
+    name: u1.medium
+  preference:
+    name: fedora
   template:
     metadata:
       labels:
@@ -25,18 +29,7 @@ spec:
                 values:
                 - production
       domain:
-        cpu:
-          cores: 4
-        memory:
-          guest: 8Gi
-        devices:
-          disks:
-          - name: rootdisk
-            disk:
-              bus: virtio
-          - name: cloudinitdisk
-            disk:
-              bus: virtio
+        devices: {}
       volumes:
       - name: rootdisk
         containerDisk:

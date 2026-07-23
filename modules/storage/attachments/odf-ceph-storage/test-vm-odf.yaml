@@ -5,27 +5,17 @@ metadata:
   namespace: default
 spec:
   runStrategy: Halted
+  instancetype:
+    name: u1.medium
+  preference:
+    name: fedora
   template:
     metadata:
       labels:
         kubevirt.io/vm: test-vm-odf
     spec:
       domain:
-        devices:
-          disks:
-            - name: boot-disk
-              disk:
-                bus: virtio
-          interfaces:
-            - name: default
-              masquerade: {}
-        resources:
-          requests:
-            memory: 1Gi
-            cpu: 1
-      networks:
-        - name: default
-          pod: {}
+        devices: {}
       volumes:
         - name: boot-disk
           dataVolume:

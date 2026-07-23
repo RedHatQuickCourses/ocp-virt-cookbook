@@ -5,24 +5,17 @@ metadata:
   namespace: default
 spec:
   runStrategy: Always
+  instancetype:
+    name: u1.medium
+  preference:
+    name: fedora
   template:
     metadata:
       labels:
         kubevirt.io/vm: fedora-quickstart
     spec:
       domain:
-        cpu:
-          cores: 1
-        memory:
-          guest: 2Gi
-        devices:
-          disks:
-          - name: containerdisk
-            disk:
-              bus: virtio
-          - name: cloudinitdisk
-            disk:
-              bus: virtio
+        devices: {}
       volumes:
       - name: containerdisk
         containerDisk:

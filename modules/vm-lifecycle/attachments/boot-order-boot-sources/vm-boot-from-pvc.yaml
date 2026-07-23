@@ -19,34 +19,20 @@ spec:
             requests:
               storage: 30Gi
   runStrategy: RerunOnFailure
+  instancetype:
+    name: u1.medium
+  preference:
+    name: fedora
   template:
-    metadata:
-      labels:
-        kubevirt.io/domain: vm-boot-pvc
     spec:
       domain:
-        cpu:
-          cores: 2
         devices:
           disks:
-            - disk:
-                bus: virtio
+            - disk: {}
               name: rootdisk
               bootOrder: 1
-            - disk:
-                bus: virtio
+            - disk: {}
               name: cloudinitdisk
-          interfaces:
-            - masquerade: {}
-              name: default
-          rng: {}
-        machine:
-          type: pc-q35-rhel9.4.0
-        memory:
-          guest: 4Gi
-      networks:
-        - name: default
-          pod: {}
       volumes:
         - dataVolume:
             name: vm-boot-pvc-disk

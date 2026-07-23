@@ -7,29 +7,17 @@ metadata:
     app: fedora-cloud-init-demo
 spec:
   runStrategy: Always
+  instancetype:
+    name: u1.medium
+  preference:
+    name: fedora
   template:
     metadata:
       labels:
         app: fedora-cloud-init-demo
     spec:
       domain:
-        devices:
-          disks:
-            - disk:
-                bus: virtio
-              name: rootdisk
-            - disk:
-                bus: virtio
-              name: cloudinitdisk
-          interfaces:
-            - masquerade: {}
-              name: default
-        resources:
-          requests:
-            memory: 2Gi
-      networks:
-        - name: default
-          pod: {}
+        devices: {}
       volumes:
         - dataVolume:
             name: fedora-cloud-init-demo

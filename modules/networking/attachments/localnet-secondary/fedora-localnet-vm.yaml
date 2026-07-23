@@ -7,6 +7,10 @@ metadata:
     app: fedora-localnet-vm
 spec:
   runStrategy: Always
+  instancetype:
+    name: u1.medium
+  preference:
+    name: fedora
   dataVolumeTemplates:
   - metadata:
       name: fedora-localnet-volume
@@ -28,22 +32,11 @@ spec:
     spec:
       domain:
         devices:
-          disks:
-          - name: datavolumedisk
-            disk:
-              bus: virtio
-          - name: cloudinitdisk
-            disk:
-              bus: virtio
           interfaces:
           - name: default
             bridge: {}
           - name: secondary_localnet
             bridge: {}
-        resources:
-          requests:
-            memory: 2Gi
-            cpu: 1
       networks:
       - name: default
         pod: {}
