@@ -5,23 +5,17 @@ metadata:
   namespace: dualstack-demo
 spec:
   runStrategy: Always
+  instancetype:
+    name: u1.medium
+  preference:
+    name: fedora
   template:
     metadata:
       labels:
         app: dualstack-vm
     spec:
       domain:
-        resources:
-          requests:
-            memory: 2Gi
         devices:
-          disks:
-            - name: containerdisk
-              disk:
-                bus: virtio
-            - name: cloudinitdisk
-              disk:
-                bus: virtio
           interfaces:
             - name: default
               masquerade: {}

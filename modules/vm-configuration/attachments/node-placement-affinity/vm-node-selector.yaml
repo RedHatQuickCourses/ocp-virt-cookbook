@@ -5,6 +5,10 @@ metadata:
   namespace: vm-placement
 spec:
   runStrategy: Manual
+  instancetype:
+    name: u1.medium
+  preference:
+    name: fedora
   template:
     metadata:
       labels:
@@ -13,18 +17,7 @@ spec:
       nodeSelector:
         storage: ssd  # VM will only run on nodes with storage=ssd label
       domain:
-        cpu:
-          cores: 2
-        memory:
-          guest: 4Gi
-        devices:
-          disks:
-          - name: rootdisk
-            disk:
-              bus: virtio
-          - name: cloudinitdisk
-            disk:
-              bus: virtio
+        devices: {}
       volumes:
       - name: rootdisk
         containerDisk:

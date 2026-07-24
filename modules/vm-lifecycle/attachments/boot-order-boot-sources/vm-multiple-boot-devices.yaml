@@ -30,42 +30,26 @@ spec:
             requests:
               storage: 20Gi
   runStrategy: RerunOnFailure
+  instancetype:
+    name: u1.medium
+  preference:
+    name: fedora
   template:
-    metadata:
-      labels:
-        kubevirt.io/domain: vm-multi-boot
     spec:
       domain:
-        cpu:
-          cores: 2
         devices:
           disks:
-            - disk:
-                bus: virtio
+            - disk: {}
               name: primarydisk
               bootOrder: 1
-            - disk:
-                bus: virtio
+            - disk: {}
               name: secondarydisk
               bootOrder: 2
-            - cdrom:
-                bus: sata
+            - cdrom: {}
               name: installcdrom
               bootOrder: 3
-            - disk:
-                bus: virtio
+            - disk: {}
               name: cloudinitdisk
-          interfaces:
-            - masquerade: {}
-              name: default
-          rng: {}
-        machine:
-          type: pc-q35-rhel9.4.0
-        memory:
-          guest: 4Gi
-      networks:
-        - name: default
-          pod: {}
       volumes:
         - dataVolume:
             name: vm-multi-boot-primary

@@ -7,6 +7,10 @@ metadata:
     app: myapp
 spec:
   runStrategy: Always
+  instancetype:
+    name: u1.medium
+  preference:
+    name: fedora
   dataVolumeTemplates:
     - metadata:
         name: fedora-app-vm-volume
@@ -22,27 +26,10 @@ spec:
   template:
     metadata:
       labels:
-        kubevirt.io/domain: fedora-app-vm
         app: myapp
     spec:
       domain:
-        devices:
-          disks:
-            - disk:
-                bus: virtio
-              name: rootdisk
-            - disk:
-                bus: virtio
-              name: cloudinitdisk
-          interfaces:
-            - name: default
-              masquerade: {}
-        resources:
-          requests:
-            memory: 2Gi
-      networks:
-        - name: default
-          pod: {}
+        devices: {}
       volumes:
         - dataVolume:
             name: fedora-app-vm-volume

@@ -7,6 +7,10 @@ metadata:
     app: bridge-demo-vm
 spec:
   runStrategy: Always
+  instancetype:
+    name: u1.medium
+  preference:
+    name: fedora
   dataVolumeTemplates:
   - metadata:
       name: bridge-demo-volume
@@ -28,23 +32,11 @@ spec:
     spec:
       domain:
         devices:
-          disks:
-          - name: datavolumedisk
-            disk:
-              bus: virtio
-          - name: cloudinitdisk
-            disk:
-              bus: virtio
           interfaces:
           - masquerade: {}
             name: default
           - bridge: {}
-            model: virtio
             name: nic-linux-bridge
-        resources:
-          requests:
-            memory: 2Gi
-            cpu: 1
       networks:
       - name: default
         pod: {}
