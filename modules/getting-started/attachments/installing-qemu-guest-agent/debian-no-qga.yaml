@@ -1,0 +1,50 @@
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: debian-virtctl
+  namespace: qemu-ga-demo
+spec:
+  runStrategy: Always
+  dataVolumeTemplates:
+    - metadata:
+        name: debian-virtctl-rootdisk
+      spec:
+        storage:
+          resources:
+            requests:
+              storage: 10Gi
+          accessModes:
+            - ReadWriteOnce
+        source:
+          registry:
+            url: docker://quay.io/ocpv_cookbook/debian-no-qga:latest
+  template:
+    metadata:
+      labels:
+        app: debian-virtctl
+    spec:
+      domain:
+        cpu:
+          cores: 2
+        memory:
+          guest: 4Gi
+        devices:
+          disks:
+            - name: rootdisk
+              disk:
+                bus: virtio
+            - name: cloudinitdisk
+              disk:
+                bus: virtio
+      volumes:
+        - name: rootdisk
+          dataVolume:
+            name: debian-virtctl-rootdisk
+        - name: cloudinitdisk
+          cloudInitNoCloud:
+            userData: |-
+              #cloud-config
+              user: debian
+              password: debian
+              chpasswd: { expire: false }
+
