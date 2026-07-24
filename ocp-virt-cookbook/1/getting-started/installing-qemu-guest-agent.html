@@ -1,0 +1,1707 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Installing QEMU Guest Agent :: OpenShift Virtualization cookbook</title>
+    <link rel="prev" href="install-openshift-virtualization.html">
+    <link rel="next" href="default-storage-class.html">
+    <meta name="generator" content="Antora 3.1.3">
+    <link rel="stylesheet" href="../../../_/css/site.css">
+    <script>var uiRootPath = '../../../_'</script>
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://www.redhat.com" target="_blank"><img src="../../../_/img/redhat-logo.png" height="40px" alt="Red Hat"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="../../..">OpenShift Virtualization cookbook</a>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues" target="_blank">Report Issues</a>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="ocp-virt-cookbook" data-version="1">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="../index.html">OpenShift Virtualization cookbook</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../index.html">Introduction</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="index.html">Getting Started</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="vm-quick-start.html">Quick Start</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="prerequisites.html">Prerequisites</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="architecture-overview.html">Architecture Overview</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="install-openshift-virtualization.html">Install OpenShift Virtualization</a>
+  </li>
+  <li class="nav-item is-current-page" data-depth="2">
+    <a class="nav-link" href="installing-qemu-guest-agent.html">Installing QEMU Guest Agent</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="default-storage-class.html">Storage Setup</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="create-vm-web-console.html">Create VM from Web Console</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="create-vm-cli-yaml.html">Create VM from CLI</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="vm-lifecycle-states.html">VM Lifecycle States</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="virtctl-basics.html">Virtctl Basics</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="cloud-init-fundamentals.html">Cloud-init Fundamentals</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../storage/index.html">Storage Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/lvm-operator.html">LVM Operator Installation</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/lvm-troubleshooting.html">LVM Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/odf-ceph-storage.html">ODF/Ceph Storage</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/hostpath-provisioner.html">HostPath Provisioner</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/creating-managing-storage-class.html">Creating and Managing Storage Classes</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/multi-disk-configuration.html">Multi-Disk VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/expanding-vm-disk-size.html">Expanding VM Disk Size</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/cdi-operations.html">CDI Operations</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/disk-io-tuning.html">Disk I/O Tuning</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../networking/index.html">Networking Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/static-ip-configuration.html">Static IP Configuration</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/cloud-init-troubleshooting.html">Cloud-init Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/udn-primary-networks.html">UDN Primary Networks</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/localnet-secondary.html">Localnet Secondary Networks with CUDN</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/localnet-vlan.html">Localnet Secondary Networks with VLAN using NAD</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/cudn-localnet-vlan.html">Localnet VLAN with CUDN</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/layer2-secondary.html">Layer 2 Secondary Networks</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/linux-bridges.html">Linux Bridges</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/sriov-secondary.html">SR-IOV Secondary Networks</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/network-policies-vms.html">Network Policies for VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/metallb-loadbalancer.html">MetalLB Load Balancer for VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/dual-stack-vms.html">Dual-Stack IPv4/IPv6 VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/vm-ingress-routes.html">VM Ingress and Routes</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/ovs-bridge-troubleshooting.html">Troubleshooting Localnet Networks</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../vm-configuration/index.html">Virtual Machine Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/internal-dns-for-vms.html">Internal DNS for VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/remote-access-linux-vms.html">Remote Access to Linux VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/remote-access-linux-troubleshooting.html">Remote Access to Linux VMs Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/remote-access-windows-vms.html">Remote Access to Windows VMs via RDP</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/windows-vm-virtio-drivers.html">Windows VMs with VirtIO Drivers</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/infrastructure-node-placement.html">Infrastructure Node Placement</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/node-placement-affinity.html">Node Placement and Affinity</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/hotplug-volumes-interfaces.html">Hotplug Volumes and Interfaces</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/vm-templates.html">Virtual Machine Templates</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../performance/index.html">VM Performance Tuning</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/resource-limits-qos.html">Resource Limits and QoS</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/cpu-pinning.html">Dedicated CPU Placement</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/numa-hugepages.html">NUMA and Hugepages</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/realtime-vms.html">Real-Time VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/vm-monitoring-metrics.html">VM Monitoring and Metrics</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../vm-lifecycle/index.html">VM Lifecycle Management</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/import-qcow2-boot-volume.html">Import qcow2 Boot Volume</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/custom-golden-images.html">Custom Golden Images</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/windows-golden-images.html">Windows Golden Images</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/golden-images-troubleshooting.html">Golden Images Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/cloning-vms.html">Cloning VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/vm-snapshots.html">VM Snapshots</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/boot-order-boot-sources.html">VM Boot Order and Boot Sources</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../manifests/index.html">Manifests</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../api/index.html">API Guide</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../api/api-component-overview.html">API Component Overview</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../agentic-vm-management/index.html">Agentic VM Management</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/getting-started.html">Getting Started with rh-virt</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/natural-language-vm-create.html">Natural Language VM Creation</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/ai-vm-lifecycle.html">AI VM Lifecycle Operations</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/vm-clone.html">Cloning VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/ai-vm-snapshot-management.html">VM Snapshot Management</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/ai-skill-chaining.html">Day-2 Skill Chaining</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../appendix/glossary.html">Glossary</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">OpenShift Virtualization cookbook</span>
+    <span class="version">1</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <a class="title" href="../index.html">OpenShift Virtualization cookbook</a>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">1</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">OpenShift Virtualization cookbook</a></li>
+    <li><a href="index.html">Getting Started</a></li>
+    <li><a href="installing-qemu-guest-agent.html">Installing QEMU Guest Agent</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="3">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">Installing QEMU Guest Agent</h1>
+<div class="sect1">
+<h2 id="_overview"><a class="anchor" href="#_overview"></a>Overview</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>This tutorial demonstrates how to install the qemu-guest-agent in various Linux distributions. The QEMU guest agent is a daemon that runs inside the guest OS. It enables application-consistent snapshots, guest OS and filesystem reporting, dynamic SSH-key and password injection, IP address reporting, and exec/ping health probes.</p>
+</div>
+<div class="sect2">
+<h3 id="_what_youll_learn"><a class="anchor" href="#_what_youll_learn"></a>What You&#8217;ll Learn</h3>
+<div class="ulist">
+<ul>
+<li>
+<p>How to install and enable <code>qemu-guest-agent</code> manually via <code>virtctl console</code> on Fedora, Debian, and openSUSE Leap</p>
+</li>
+<li>
+<p>How to install <code>qemu-guest-agent</code> automatically using cloud-init <code>packages</code> and <code>runcmd</code> modules</p>
+</li>
+<li>
+<p>How to verify the agent is connected and reporting guest OS information to OpenShift Virtualization</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_prerequisites"><a class="anchor" href="#_prerequisites"></a>Prerequisites</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p><strong>OpenShift 4.18+</strong> with OpenShift Virtualization operator installed (see <a href="install-openshift-virtualization.html" class="xref page">Installing OpenShift Virtualization</a>)</p>
+</li>
+<li>
+<p>CLI tools: <code>oc</code>, <code>virtctl</code>, <code>yq</code></p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Versions tested:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">OpenShift 4.21, 4.22</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_setting_up_the_namespace"><a class="anchor" href="#_setting_up_the_namespace"></a>Setting Up the Namespace</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Create a namespace where all the virtual machines for this tutorial will live.</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc create namespace qemu-ga-demo</code></pre>
+</div>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc project qemu-ga-demo</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_install_via_virtctl_console"><a class="anchor" href="#_install_via_virtctl_console"></a>Install via <code>virtctl console</code></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>In this section we use <code>virtctl console &lt;vm-name&gt;</code> to connect to the console of a virtual machine, log in as the user created by cloud-init, install <code>qemu-guest-agent</code> using the distribution&#8217;s package manager, and enable the service with <code>systemctl enable --now qemu-guest-agent</code> to start it and persist it across reboots.</p>
+</div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+The cloud-init passwords in the following examples are for demo purposes only. Always use a strong, unique password or SSH key authentication in production environments.
+</td>
+</tr>
+</table>
+</div>
+<div class="sect2">
+<h3 id="_fedorarhel"><a class="anchor" href="#_fedorarhel"></a>Fedora/RHEL</h3>
+<div class="sect3">
+<h4 id="_step_1_create_the_fedora_virtual_machine"><a class="anchor" href="#_step_1_create_the_fedora_virtual_machine"></a>Step 1: Create the Fedora virtual machine</h4>
+<div class="paragraph">
+<p>Create the virtual machine from the CLI: (click <a href="#fedora-create-web-console">here</a> to create via the web console)</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+We are using a datavolume instead of containerdisk, which increases time-to-first-boot but has the benefit of saving the root volume onto a PVC making the changes in the following steps persistent even if virt-launcher crashes or if the virtual machine is stopped and then started again.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/installing-qemu-guest-agent/fedora-no-qga.yaml" class="xref attachment">Download fedora-no-qga.yaml</a></p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f - &lt;&lt;EOF
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: fedora-virtctl
+  namespace: qemu-ga-demo
+spec:
+  runStrategy: Always
+  dataVolumeTemplates:
+    - metadata:
+        name: fedora-virtctl-rootdisk
+      spec:
+        storage:
+          resources:
+            requests:
+              storage: 10Gi
+          accessModes:
+            - ReadWriteOnce
+        source:
+          registry:
+            url: docker://quay.io/ocpv_cookbook/fedora-no-qga:latest
+  template:
+    metadata:
+      labels:
+        app: fedora-virtctl
+    spec:
+      domain:
+        cpu:
+          cores: 2
+        memory:
+          guest: 4Gi
+        devices:
+          disks:
+            - name: rootdisk
+              disk:
+                bus: virtio
+            - name: cloudinitdisk
+              disk:
+                bus: virtio
+      volumes:
+        - name: rootdisk
+          dataVolume:
+            name: fedora-virtctl-rootdisk
+        - name: cloudinitdisk
+          cloudInitNoCloud:
+            userData: |-
+              #cloud-config
+              user: fedora
+              password: fedora
+              chpasswd: { expire: false }
+EOF</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Wait for the virtual machine&#8217;s STATUS to be <code>Running</code>:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vm fedora-virtctl -w</code></pre>
+</div>
+</div>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+The <code>-w</code> flag watches continuously. Press <code>Ctrl+C</code> once the STATUS shows <code>Running</code>.
+</td>
+</tr>
+</table>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># example output
+NAME                AGE    STATUS    READY
+fedora-virtctl           6h8m   Running   True</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Continue to <a href="#fedora-step-2">step 2</a></p>
+</div>
+<div id="fedora-create-web-console" class="paragraph">
+<p>Create the virtual machine from the web console:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Navigate to <strong>Virtualization</strong> &#8594; <strong>VirtualMachines</strong></p>
+</li>
+<li>
+<p>Click on the dropdown next to the <code>Create</code> button on the top right</p>
+</li>
+<li>
+<p>Select <code>With YAML</code></p>
+</li>
+<li>
+<p>Select all in the text editor window and delete</p>
+</li>
+<li>
+<p>Paste the YAML provided above</p>
+</li>
+<li>
+<p>Click <code>Create</code> on the bottom left</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>You will be redirected to the "Overview tab" of your newly created VM. Wait for the Status to be <code>Running</code>.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="fedora-step-2"><a class="anchor" href="#fedora-step-2"></a>Step 2: Install and enable <code>qemu-guest-agent</code></h4>
+<div class="paragraph">
+<p>From the CLI: (click <a href="#fedora-step-2-web-console">here</a> for Web console steps)</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">virtctl console fedora-virtctl</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>You might have to press ENTER to get the log-in prompt to print out. Once it appears enter <code>fedora</code> for <strong>both</strong> the username and password.</p>
+</div>
+<div class="paragraph">
+<p><a href="#fedora-step-2-2">continue to the next step</a></p>
+</div>
+<div id="fedora-step-2-web-console" class="paragraph">
+<p>From the Web console:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Navigate to <strong>Virtualization</strong> &#8594; <strong>VirtualMachines</strong></p>
+</li>
+<li>
+<p>Click on the name of virtual machine</p>
+</li>
+<li>
+<p>In the <code>Details</code> panel of <code>overview</code> tab click "Open Web Console" (this will open a new browser window)</p>
+</li>
+<li>
+<p>Type in <code>fedora</code> for your username, press enter</p>
+</li>
+<li>
+<p>Type in <code>fedora</code> for your password, press enter</p>
+</li>
+</ol>
+</div>
+<div id="fedora-step-2-2" class="paragraph">
+<p>Verify that <code>qemu-guest-agent</code> is not installed.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">systemctl status qemu-guest-agent</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># example output
+Unit qemu-guest-agent.service could not be found.</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Install and enable <code>qemu-guest-agent</code> using dnf:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">sudo dnf install -y qemu-guest-agent &amp;&amp; sudo systemctl enable --now qemu-guest-agent</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Verify <code>qemu-guest-agent</code> is now installed, enabled and running:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">systemctl status qemu-guest-agent</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># example output
+[fedora@fedora-virtctl ~]$ systemctl status qemu-guest-agent
+● qemu-guest-agent.service - QEMU Guest Agent
+     Loaded: loaded (/usr/lib/systemd/system/qemu-guest-agent.service; enabled; preset: enabled)
+    Drop-In: /usr/lib/systemd/system/service.d
+             └─10-timeout-abort.conf
+     Active: active (running) since Tue 2026-06-02 21:49:02 UTC; 8s ago # &lt;-- notice Active (running)
+ Invocation: e1d60262b0cc499b967d42561a6e59ff
+    Process: 1436 ExecStartPre=&lt;&lt;truncated&gt;&gt;
+   Main PID: 1438 (qemu-ga)
+      Tasks: 2 (limit: 4618)
+     Memory: 996K (peak: 1.4M)
+        CPU: 21ms
+     CGroup: /system.slice/qemu-guest-agent.service
+             └─1438 /usr/bin/qemu-ga --method=virtio-serial --path=/dev/virtio-ports/org.qemu.guest_agent.0 &lt;&lt;truncated&gt;&gt;</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Use <code>ctrl+]</code> or <code>ctrl+5</code> to exit the VM console.</p>
+</div>
+<div class="paragraph">
+<p>Set the <code>VM_NAME</code> variable so the verification commands work for this VM:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">VM_NAME=fedora-virtctl</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Proceed to <a href="#verify-qga-reporting">Verifying <code>qemu-guest-agent</code> is Reporting to OCP-Virt</a> to confirm the agent is connected and reporting to OCP-Virt.</p>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_debian"><a class="anchor" href="#_debian"></a>Debian</h3>
+<div class="sect3">
+<h4 id="_step_1_create_the_debian_virtual_machine"><a class="anchor" href="#_step_1_create_the_debian_virtual_machine"></a>Step 1: Create the Debian virtual machine</h4>
+<div class="paragraph">
+<p>Create the virtual machine from the CLI: (click <a href="#debian-create-web-console">here</a> to create via the web console)</p>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/installing-qemu-guest-agent/debian-no-qga.yaml" class="xref attachment">Download debian-no-qga.yaml</a></p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f - &lt;&lt;EOF
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: debian-virtctl
+  namespace: qemu-ga-demo
+spec:
+  runStrategy: Always
+  dataVolumeTemplates:
+    - metadata:
+        name: debian-virtctl-rootdisk
+      spec:
+        storage:
+          resources:
+            requests:
+              storage: 10Gi
+          accessModes:
+            - ReadWriteOnce
+        source:
+          registry:
+            url: docker://quay.io/ocpv_cookbook/debian-no-qga:latest
+  template:
+    metadata:
+      labels:
+        app: debian-virtctl
+    spec:
+      domain:
+        cpu:
+          cores: 2
+        memory:
+          guest: 4Gi
+        devices:
+          disks:
+            - name: rootdisk
+              disk:
+                bus: virtio
+            - name: cloudinitdisk
+              disk:
+                bus: virtio
+      volumes:
+        - name: rootdisk
+          dataVolume:
+            name: debian-virtctl-rootdisk
+        - name: cloudinitdisk
+          cloudInitNoCloud:
+            userData: |-
+              #cloud-config
+              user: debian
+              password: debian
+              chpasswd: { expire: false }
+EOF</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Wait for the virtual machine&#8217;s STATUS to be <code>Running</code>:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vm debian-virtctl -w</code></pre>
+</div>
+</div>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+The <code>-w</code> flag watches continuously. Press <code>Ctrl+C</code> once the STATUS shows <code>Running</code>.
+</td>
+</tr>
+</table>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># example output
+NAME               AGE     STATUS    READY
+debian-virtctl          5m31s   Running   True</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Continue to <a href="#debian-step-2">step 2</a></p>
+</div>
+<div id="debian-create-web-console" class="paragraph">
+<p>Create the virtual machine from the web console:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Navigate to <strong>Virtualization</strong> &#8594; <strong>VirtualMachines</strong></p>
+</li>
+<li>
+<p>Click on the dropdown next to the <code>Create</code> button on the top right</p>
+</li>
+<li>
+<p>Select <code>With YAML</code></p>
+</li>
+<li>
+<p>Select all in the text editor window and delete</p>
+</li>
+<li>
+<p>Paste the YAML provided above</p>
+</li>
+<li>
+<p>Click <code>Create</code> on the bottom left</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>You will be redirected to the "Overview tab" of your newly created VM. Wait for the Status to be <code>Running</code>.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="debian-step-2"><a class="anchor" href="#debian-step-2"></a>Step 2: Install and enable <code>qemu-guest-agent</code></h4>
+<div class="paragraph">
+<p>From the CLI: (click <a href="#debian-step-2-web-console">here</a> for Web console steps)</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">virtctl console debian-virtctl</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>You might have to press ENTER to get the log-in prompt to print out. Once it appears enter <code>debian</code> for <strong>both</strong> the username and password.</p>
+</div>
+<div class="paragraph">
+<p><a href="#debian-step-2-2">continue to the next step</a></p>
+</div>
+<div id="debian-step-2-web-console" class="paragraph">
+<p>From the Web console:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Navigate to <strong>Virtualization</strong> &#8594; <strong>VirtualMachines</strong></p>
+</li>
+<li>
+<p>Click on the name of virtual machine</p>
+</li>
+<li>
+<p>In the <code>Details</code> panel of <code>overview</code> tab click "Open Web Console" (this will open a new browser window)</p>
+</li>
+<li>
+<p>Type in <code>debian</code> for your username, press enter</p>
+</li>
+<li>
+<p>Type in <code>debian</code> for your password, press enter</p>
+</li>
+</ol>
+</div>
+<div id="debian-step-2-2" class="paragraph">
+<p>Verify that <code>qemu-guest-agent</code> is not installed.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">systemctl status qemu-guest-agent</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># example output
+Unit qemu-guest-agent.service could not be found.</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Update the apt package index:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">sudo apt update</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Once apt has been updated, install and enable <code>qemu-guest-agent</code>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">sudo apt install -y qemu-guest-agent &amp;&amp; sudo systemctl enable --now qemu-guest-agent</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Verify <code>qemu-guest-agent</code> is now installed, enabled and running:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">systemctl status qemu-guest-agent</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># example output
+● qemu-guest-agent.service - QEMU Guest Agent
+     Loaded: loaded (/lib/systemd/system/qemu-guest-agent.service; static)
+     Active: active (running) since Mon 2026-06-08 19:37:00 UTC; 2s ago
+   Main PID: 1013 (qemu-ga)
+      Tasks: 2 (limit: 4657)
+     Memory: 724.0K
+        CPU: 7ms
+     CGroup: /system.slice/qemu-guest-agent.service
+             └─1013 /usr/sbin/qemu-ga</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Use <code>ctrl+]</code> or <code>ctrl+5</code> to exit the VM console.</p>
+</div>
+<div class="paragraph">
+<p>Set the <code>VM_NAME</code> variable so the verification commands work for this VM:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">VM_NAME=debian-virtctl</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Proceed to <a href="#verify-qga-reporting">Verifying <code>qemu-guest-agent</code> is Reporting to OCP-Virt</a> to confirm the agent is connected and reporting to OCP-Virt.</p>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_opensuse_leap"><a class="anchor" href="#_opensuse_leap"></a>openSUSE Leap</h3>
+<div class="paragraph">
+<p>Installing <code>qemu-guest-agent</code> in openSUSE is slightly different than in the previous distros. openSUSE Leap uses the upstream qemu-ga template approach, which binds the agent to a specific virtio-port device. Systemd starts an instance automatically when that device appears via udev, so there is no need to manually enable the service.</p>
+</div>
+<div class="sect3">
+<h4 id="_step_1_create_the_opensuse_leap_virtual_machine"><a class="anchor" href="#_step_1_create_the_opensuse_leap_virtual_machine"></a>Step 1: Create the openSUSE Leap virtual machine</h4>
+<div class="paragraph">
+<p>Create the virtual machine from the CLI: (click <a href="#opensuse-create-web-console">here</a> to create via the web console)</p>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/installing-qemu-guest-agent/opensuse-leap-no-qga.yaml" class="xref attachment">Download opensuse-leap-no-qga.yaml</a></p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f - &lt;&lt;EOF
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: suse-virtctl
+  namespace: qemu-ga-demo
+spec:
+  runStrategy: Always
+  dataVolumeTemplates:
+    - metadata:
+        name: suse-virtctl-rootdisk
+      spec:
+        storage:
+          resources:
+            requests:
+              storage: 10Gi
+          accessModes:
+            - ReadWriteOnce
+        source:
+          registry:
+            url: docker://quay.io/ocpv_cookbook/opensuse-leap-15-no-qga:latest
+  template:
+    metadata:
+      labels:
+        app: suse-virtctl
+    spec:
+      domain:
+        cpu:
+          cores: 2
+        memory:
+          guest: 4Gi
+        devices:
+          disks:
+            - name: rootdisk
+              disk:
+                bus: virtio
+            - name: cloudinitdisk
+              disk:
+                bus: virtio
+      volumes:
+        - name: rootdisk
+          dataVolume:
+            name: suse-virtctl-rootdisk
+        - name: cloudinitdisk
+          cloudInitNoCloud:
+            userData: |-
+              #cloud-config
+              user: opensuse
+              password: opensuse
+              chpasswd: { expire: false }
+EOF</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Wait for the virtual machine&#8217;s STATUS to be <code>Running</code>:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vm suse-virtctl -w</code></pre>
+</div>
+</div>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+The <code>-w</code> flag watches continuously. Press <code>Ctrl+C</code> once the STATUS shows <code>Running</code>.
+</td>
+</tr>
+</table>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># example output
+NAME                      AGE     STATUS    READY
+suse-virtctl   5m31s   Running   True</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Continue to <a href="#opensuse-step-2">step 2</a></p>
+</div>
+<div id="opensuse-create-web-console" class="paragraph">
+<p>Create the virtual machine from the web console:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Navigate to <strong>Virtualization</strong> &#8594; <strong>VirtualMachines</strong></p>
+</li>
+<li>
+<p>Click on the dropdown next to the <code>Create</code> button on the top right</p>
+</li>
+<li>
+<p>Select <code>With YAML</code></p>
+</li>
+<li>
+<p>Select all in the text editor window and delete</p>
+</li>
+<li>
+<p>Paste the YAML provided above</p>
+</li>
+<li>
+<p>Click <code>Create</code> on the bottom left</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>You will be redirected to the "Overview tab" of your newly created VM. Wait for the Status to be <code>Running</code>.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="opensuse-step-2"><a class="anchor" href="#opensuse-step-2"></a>Step 2: Install <code>qemu-guest-agent</code></h4>
+<div class="paragraph">
+<p>From the CLI: (click <a href="#opensuse-step-2-web-console">here</a> for Web console steps)</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">virtctl console suse-virtctl</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>You might have to press ENTER to get the log-in prompt to print out. Once it appears enter <code>opensuse</code> for <strong>both</strong> the username and password.</p>
+</div>
+<div class="paragraph">
+<p><a href="#opensuse-step-2-2">continue to the next step</a></p>
+</div>
+<div id="opensuse-step-2-web-console" class="paragraph">
+<p>From the Web console:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Navigate to <strong>Virtualization</strong> &#8594; <strong>VirtualMachines</strong></p>
+</li>
+<li>
+<p>Click on the name of virtual machine</p>
+</li>
+<li>
+<p>In the <code>Details</code> panel of <code>overview</code> tab click "Open Web Console" (this will open a new browser window)</p>
+</li>
+<li>
+<p>Type in <code>opensuse</code> for your username, press enter</p>
+</li>
+<li>
+<p>Type in <code>opensuse</code> for your password, press enter</p>
+</li>
+</ol>
+</div>
+<div id="opensuse-step-2-2" class="paragraph">
+<p>Verify that <code>qemu-guest-agent</code> is not installed.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">systemctl list-units | grep qemu</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The previous command should produce no output.</p>
+</div>
+<div class="paragraph">
+<p>Update the Zypper packages:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">sudo zypper up</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Once Zypper is done updating, install <code>qemu-guest-agent</code>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">sudo zypper install qemu-guest-agent</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Verify <code>qemu-guest-agent</code> is now installed and running:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">systemctl list-units | grep qemu</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># example output
+qemu-ga@virtio\x2dports-org.qemu.guest_agent.0.service    loaded active running   QEMU Guest Agent
+system-qemu\x2dga.slice                                   loaded active active    system-qemu\x2dga.slice</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Copy the full service name from the first column (e.g., <code>qemu-ga@virtio\x2dports-org.qemu.guest_agent.0.service</code>) for use in the next command.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">systemctl status \
+"qemu-ga@virtio\x2dports-org.qemu.guest_agent.0.service" <i class="conum" data-value="1"></i><b>(1)</b></code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>make sure the name of the service is wrapped in quotes</td>
+</tr>
+</table>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># example output
+&gt; "qemu-ga@virtio\x2dports-org.qemu.guest_agent.0.service"
+● qemu-ga@virtio\x2dports-org.qemu.guest_agent.0.service - QEMU Guest Agent
+   Loaded: loaded (/usr/lib/systemd/system/qemu-ga@.service; disabled; vendor p&gt;
+   Active: active (running) since Wed 2026-07-08 18:37:41 UTC; 20h ago <i class="conum" data-value="1"></i><b>(1)</b>
+     Docs: http://wiki.qemu.org/Features/GuestAgent
+ Main PID: 2042 (qemu-ga)
+    Tasks: 1
+   CGroup: /system.slice/system-qemu\x2dga.slice/qemu-ga@virtio\x2dports-org.qe&gt;
+           └─2042 /usr/bin/qemu-ga -p /dev/virtio-ports/org.qemu.guest_agent.0
+
+Jul 08 18:37:41 suse-virtctl systemd[1]: Started QEMU Guest Agent.</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>Here we see that the guest-agent is active and running.</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Use <code>ctrl+]</code> or <code>ctrl+5</code> to exit the VM console.</p>
+</div>
+<div class="paragraph">
+<p>Set the <code>VM_NAME</code> variable so that the verification commands work for this VM:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">VM_NAME=suse-virtctl</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Proceed to <a href="#verify-qga-reporting">Verifying <code>qemu-guest-agent</code> is Reporting to OCP-Virt</a> to confirm the agent is connected and reporting to OCP-Virt.</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="cloud-init-ga-install"><a class="anchor" href="#cloud-init-ga-install"></a>Install via cloud-init <code>packages</code> and <code>runcmd</code> modules</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The <code>packages</code> module from cloud-init allows you to install packages during the boot process. In this section we use it to install the <code>qemu-guest-agent</code> package. Once installed, the cloud-init <code>runcmd</code> module runs <code>systemctl enable --now qemu-guest-agent</code> to start and enable the service during boot.</p>
+</div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+The cloud-init passwords in the following examples are for demo purposes only. Always use a strong, unique password or SSH key authentication in production environments.
+</td>
+</tr>
+</table>
+</div>
+<div class="sect2">
+<h3 id="_fedorarhel_2"><a class="anchor" href="#_fedorarhel_2"></a>Fedora/RHEL</h3>
+<div class="paragraph">
+<p>Create the virtual machine:</p>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/installing-qemu-guest-agent/fedora-qga-package.yaml" class="xref attachment">Download fedora-qga-package.yaml</a></p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f - &lt;&lt;EOF
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: fedora-cloudinit
+  namespace: qemu-ga-demo
+spec:
+  runStrategy: Always
+  dataVolumeTemplates:
+    - metadata:
+        name: fedora-cloudinit-rootdisk
+      spec:
+        storage:
+          resources:
+            requests:
+              storage: 10Gi
+          accessModes:
+            - ReadWriteOnce
+        source:
+          registry:
+            url: docker://quay.io/ocpv_cookbook/fedora-no-qga:latest
+  template:
+    metadata:
+      labels:
+        app: fedora-cloudinit
+    spec:
+      domain:
+        cpu:
+          cores: 2
+        memory:
+          guest: 4Gi
+        devices:
+          disks:
+            - name: rootdisk
+              disk:
+                bus: virtio
+            - name: cloudinitdisk
+              disk:
+                bus: virtio
+      volumes:
+        - name: rootdisk
+          dataVolume:
+            name: fedora-cloudinit-rootdisk
+        - name: cloudinitdisk
+          cloudInitNoCloud:
+            userData: |-
+              #cloud-config
+              user: fedora
+              password: fedora
+              chpasswd: { expire: false }
+              packages: <i class="conum" data-value="1"></i><b>(1)</b>
+                - qemu-guest-agent
+              runcmd: <i class="conum" data-value="2"></i><b>(2)</b>
+                - systemctl enable --now qemu-guest-agent <i class="conum" data-value="3"></i><b>(3)</b>
+EOF</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>Use the <strong>packages</strong> cloud-init module to install <code>qemu-guest-agent</code></td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>Use the <strong>runcmd</strong> cloud-init module to run any command during boot</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="3"></i><b>3</b></td>
+<td>Run <code>systemctl enable --now qemu-guest-agent</code> after the package has been installed to start the service</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Wait for the virtual machine&#8217;s STATUS to be <code>Running</code>:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vm fedora-cloudinit -w</code></pre>
+</div>
+</div>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+The <code>-w</code> flag watches continuously. Press <code>Ctrl+C</code> once the STATUS shows <code>Running</code>.
+</td>
+</tr>
+</table>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># example output
+NAME                     AGE     STATUS    READY
+fedora-cloudinit   8m23s   Running   True</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Set the <code>VM_NAME</code> variable so the verification commands work for this VM:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">VM_NAME=fedora-cloudinit</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Proceed to <a href="#verify-qga-reporting">Verifying <code>qemu-guest-agent</code> is Reporting to OCP-Virt</a> to confirm the agent is connected and reporting to OCP-Virt.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_debian_2"><a class="anchor" href="#_debian_2"></a>Debian</h3>
+<div class="paragraph">
+<p>The cloud-init <code>packages</code> and <code>runcmd</code> configuration is identical to the Fedora example above. The only differences are the container image, username, and VM name.</p>
+</div>
+<div class="paragraph">
+<p>Create the virtual machine:</p>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/installing-qemu-guest-agent/debian-qga-package.yaml" class="xref attachment">Download debian-qga-package.yaml</a></p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f - &lt;&lt;EOF
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: debian-cloudinit
+  namespace: qemu-ga-demo
+spec:
+  runStrategy: Always
+  dataVolumeTemplates:
+    - metadata:
+        name: debian-cloudinit-rootdisk
+      spec:
+        storage:
+          resources:
+            requests:
+              storage: 10Gi
+          accessModes:
+            - ReadWriteOnce
+        source:
+          registry:
+            url: docker://quay.io/ocpv_cookbook/debian-no-qga:latest
+  template:
+    metadata:
+      labels:
+        app: debian-cloudinit
+    spec:
+      domain:
+        cpu:
+          cores: 2
+        memory:
+          guest: 4Gi
+        devices:
+          disks:
+            - name: rootdisk
+              disk:
+                bus: virtio
+            - name: cloudinitdisk
+              disk:
+                bus: virtio
+      volumes:
+        - name: rootdisk
+          dataVolume:
+            name: debian-cloudinit-rootdisk
+        - name: cloudinitdisk
+          cloudInitNoCloud:
+            userData: |-
+              #cloud-config
+              user: debian
+              password: debian
+              chpasswd: { expire: false }
+              packages:
+                - qemu-guest-agent
+              runcmd:
+                - systemctl enable --now qemu-guest-agent
+EOF</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Wait for the virtual machine&#8217;s STATUS to be <code>Running</code>:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vm debian-cloudinit -w</code></pre>
+</div>
+</div>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+The <code>-w</code> flag watches continuously. Press <code>Ctrl+C</code> once the STATUS shows <code>Running</code>.
+</td>
+</tr>
+</table>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># example output
+NAME              AGE     STATUS    READY
+debian-cloudinit  5m31s   Running   True</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Set the <code>VM_NAME</code> variable so the verification commands work for this VM:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">VM_NAME=debian-cloudinit</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Proceed to <a href="#verify-qga-reporting">Verifying <code>qemu-guest-agent</code> is Reporting to OCP-Virt</a> to confirm the agent is connected and reporting to OCP-Virt.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_opensuse_leap_2"><a class="anchor" href="#_opensuse_leap_2"></a>openSUSE Leap</h3>
+<div class="paragraph">
+<p>The cloud-init <code>packages</code> configuration is identical to the Fedora and Debian examples above. <code>runcmd</code> is omitted since the service will run automatically. The container image, user, and VM name are also different.</p>
+</div>
+<div class="paragraph">
+<p>Create the virtual machine:</p>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/installing-qemu-guest-agent/opensuse-leap-qga-package.yaml" class="xref attachment">Download opensuse-leap-qga-package.yaml</a></p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f - &lt;&lt;EOF
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: suse-cloudinit
+  namespace: qemu-ga-demo
+spec:
+  runStrategy: Always
+  dataVolumeTemplates:
+    - metadata:
+        name: suse-cloudinit-rootdisk
+      spec:
+        storage:
+          resources:
+            requests:
+              storage: 10Gi
+          accessModes:
+            - ReadWriteOnce
+        source:
+          registry:
+            url: docker://quay.io/ocpv_cookbook/opensuse-leap-15-no-qga:latest
+  template:
+    metadata:
+      labels:
+        app: suse-cloudinit
+    spec:
+      domain:
+        cpu:
+          cores: 2
+        memory:
+          guest: 4Gi
+        devices:
+          disks:
+            - name: rootdisk
+              disk:
+                bus: virtio
+            - name: cloudinitdisk
+              disk:
+                bus: virtio
+      volumes:
+        - name: rootdisk
+          dataVolume:
+            name: suse-cloudinit-rootdisk
+        - name: cloudinitdisk
+          cloudInitNoCloud:
+            userData: |-
+              #cloud-config
+              user: opensuse
+              password: opensuse
+              chpasswd: { expire: false }
+              packages:
+                - qemu-guest-agent
+EOF</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Wait for the virtual machine&#8217;s STATUS to be <code>Running</code>:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vm suse-cloudinit -w</code></pre>
+</div>
+</div>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+The <code>-w</code> flag watches continuously. Press <code>Ctrl+C</code> once the STATUS shows <code>Running</code>.
+</td>
+</tr>
+</table>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># example output
+NAME                           AGE   STATUS    READY
+suse-cloudinit   39m   Running   True</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Set the <code>VM_NAME</code> variable so the verification commands work for this VM:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">VM_NAME=suse-cloudinit</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Proceed to <a href="#verify-qga-reporting">Verifying <code>qemu-guest-agent</code> is Reporting to OCP-Virt</a> to confirm the agent is connected and reporting to OCP-Virt.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="verify-qga-reporting"><a class="anchor" href="#verify-qga-reporting"></a>Verifying <code>qemu-guest-agent</code> is Reporting to OCP-Virt</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>There are several ways to verify if the qemu-guest-agent is working and properly reporting information about the guest OS to OCP-Virt through the web console or through the terminal using the <code>oc</code> and <code>virtctl</code> CLI tools.</p>
+</div>
+<div class="sect2">
+<h3 id="_verifying_through_the_terminal"><a class="anchor" href="#_verifying_through_the_terminal"></a>Verifying through the terminal</h3>
+<div class="paragraph">
+<p>Check that the <code>AgentConnected</code> condition is <code>True</code>:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vm $VM_NAME -oyaml | yq -e '.status.conditions[] | select(.type == "AgentConnected")'</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>A successful output would look something like this:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml"># example output
+lastProbeTime: "2026-06-04T13:33:28Z"
+lastTransitionTime: null
+status: "True"
+type: AgentConnected</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Check that the guest-agent is reporting the VM&#8217;s IP Address:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vmi $VM_NAME -oyaml | yq -e '.status.interfaces[]'</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># example output
+infoSource: domain, guest-agent <i class="conum" data-value="1"></i><b>(1)</b>
+interfaceName: enp1s0
+ipAddress: 10.130.0.22
+ipAddresses:
+  - 10.130.0.22
+linkState: up
+mac: 0a:58:0a:82:00:16
+name: default
+podInterfaceName: eth0
+queueCount: 1</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>When <code>guest-agent</code> is present as an infoSource, it indicates that the IP Address is being reported by the qemu-guest-agent.</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Retrieve detailed guest OS information:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">virtctl guestosinfo $VM_NAME</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_verifying_through_the_ocp_virt_web_console"><a class="anchor" href="#_verifying_through_the_ocp_virt_web_console"></a>Verifying through the OCP-Virt web console</h3>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Navigate to <strong>Virtualization</strong> &#8594; <strong>VirtualMachines</strong></p>
+</li>
+<li>
+<p>Click on your virtual machine</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>In the <strong>Overview</strong> tab you can see the qemu-guest-agent reporting the guest OS information:</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="_images/qemu-guest-agent/Web-console-OS-report.png" alt="web console os reporting">
+</div>
+</div>
+<div class="paragraph">
+<p>In the <strong>Diagnostics</strong> tab you can see the virtual machine has <code>AgentConnected</code> with a <strong>status</strong> of <code>True</code>:</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="_images/qemu-guest-agent/Web-console-AgentConnected.png" alt="AgentConnected">
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_cleanup"><a class="anchor" href="#_cleanup"></a>Cleanup</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Remove all resources created in this tutorial:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc delete namespace qemu-ga-demo</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_summary"><a class="anchor" href="#_summary"></a>Summary</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>In this tutorial you learned how to:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Install and enable <code>qemu-guest-agent</code> manually via <code>virtctl console</code> on Fedora, Debian, and openSUSE Leap</p>
+</li>
+<li>
+<p>Install <code>qemu-guest-agent</code> automatically using cloud-init <code>packages</code> and <code>runcmd</code> modules</p>
+</li>
+<li>
+<p>Verify the agent is connected and reporting guest OS information to OpenShift Virtualization</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_see_also"><a class="anchor" href="#_see_also"></a>See Also</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p><a href="https://kubevirt.io/user-guide/user_workloads/guest_agent_information/" target="_blank" rel="noopener">QEMU Guest Agent - KubeVirt User Guide</a></p>
+</li>
+<li>
+<p><a href="https://cloudinit.readthedocs.io/en/latest/reference/modules.html" target="_blank" rel="noopener">Cloud-init Modules Reference</a></p>
+</li>
+<li>
+<p><a href="https://docs.redhat.com/en/documentation/openshift_container_platform/" target="_blank" rel="noopener">OpenShift Container Platform Documentation</a></p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<nav class="pagination">
+  <span class="prev"><a href="install-openshift-virtualization.html">Install OpenShift Virtualization</a></span>
+  <span class="next"><a href="default-storage-class.html">Storage Setup</a></span>
+</nav>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <img src="../../../_/img/rhl-logo-red.png" height="40px" alt="Red Hat"  href="https://redhat.com" >
+</footer><script id="site-script" src="../../../_/js/site.js" data-ui-root-path="../../../_"></script>
+<script async src="../../../_/js/vendor/highlight.js"></script>
+  </body>
+</html>
