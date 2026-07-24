@@ -373,6 +373,11 @@
 <div class="paragraph">
 <p>The HostPath Provisioner (HPP) provides a simple way to use local node storage for OpenShift Virtualization workloads. It&#8217;s included as part of the OpenShift Virtualization operator and creates persistent volumes backed by directories on the host filesystem.</p>
 </div>
+<div class="imageblock text-center">
+<div class="content">
+<img src="_images/hpp-architecture.drawio.svg" alt="HPP CSI Architecture - Host filesystem to VM disk data flow">
+</div>
+</div>
 <div class="sect2">
 <h3 id="_when_to_use_hostpath_provisioner"><a class="anchor" href="#_when_to_use_hostpath_provisioner"></a>When to Use HostPath Provisioner</h3>
 <div class="paragraph">
@@ -390,9 +395,24 @@
 <p><strong>Prototyping</strong>: Rapid iteration before production storage deployment</p>
 </li>
 <li>
+<p><strong>Proof-of-concept and demo environments</strong>: Simpler solution to allow audiences to focus on the demo</p>
+</li>
+<li>
+<p><strong>CI/CD and ephemeral environments</strong>: Where storage is frequently provisioned and destroyed</p>
+</li>
+<li>
+<p><strong>Training and workshop environments</strong>: Short-term, shared use of storage without needing additional infrastructure</p>
+</li>
+<li>
 <p><strong>Edge deployments</strong>: Minimal infrastructure requirements</p>
 </li>
 </ul>
+</div>
+<div class="paragraph">
+<p>HPP is not a good fit for:
+* <strong>Production workloads</strong>: Lacks native replication, high availability, and backup/snapshot features
+* <strong>Scenarios requiring resource isolation</strong>: No support for thin provisioning or usage quotas
+* <strong>Scenarios requiring workload mobility</strong>: Data is tied to a single node and cannot be moved</p>
 </div>
 </div>
 <div class="sect2">
@@ -563,6 +583,20 @@ spec:
           WantedBy=multi-user.target
 EOF</code></pre>
 </div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+In single node clusters, the node may be placed in a different MachineConfigPool due to the node taking on multiple node roles.
+You can confirm which MachineConfigPool the node is a member of by checking the node count of the MachineConfigPools with <code>oc get mcp</code>.
+Adjust the <code>machineconfiguration.openshift.io/role: worker</code> label in the example above to match accordingly.
+</td>
+</tr>
+</table>
 </div>
 <div class="admonitionblock note">
 <table>

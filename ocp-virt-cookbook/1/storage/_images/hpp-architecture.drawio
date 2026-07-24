@@ -1,0 +1,225 @@
+<mxfile host="app.diagrams.net" agent="draw.io">
+  <diagram id="hpp-architecture" name="HPP CSI Architecture">
+    <mxGraphModel dx="987" dy="1111" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" parent="1" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=16;fontStyle=1;" value="HostPath Provisioner (HPP) CSI Architecture" vertex="1">
+          <mxGeometry height="30" width="420" x="175" y="15" as="geometry" />
+        </mxCell>
+        <mxCell id="node-box" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#6c8ebf;strokeWidth=2;dashed=1;dashPattern=8 4;arcSize=5;" value="" vertex="1">
+          <mxGeometry height="940" width="770" x="30" y="50" as="geometry" />
+        </mxCell>
+        <mxCell id="node-label" parent="1" style="text;html=1;align=left;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=14;fontStyle=1;fontColor=#6c8ebf;" value="Worker Node" vertex="1">
+          <mxGeometry height="25" width="110" x="45" y="55" as="geometry" />
+        </mxCell>
+        <mxCell id="vm-box" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;strokeWidth=2;" value="" vertex="1">
+          <mxGeometry height="185" width="710" x="60" y="90" as="geometry" />
+        </mxCell>
+        <mxCell id="vm-label" parent="1" style="text;html=1;align=left;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=14;fontStyle=1;fontColor=#b85450;" value="VirtualMachine: my-vm" vertex="1">
+          <mxGeometry height="25" width="185" x="75" y="95" as="geometry" />
+        </mxCell>
+        <mxCell id="vm-icon" parent="1" style="shape=image;verticalLabelPosition=bottom;labelBackgroundColor=default;verticalAlign=top;aspect=fixed;imageAspect=0;image=data:image/svg+xml,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0Ij48cmVjdCB4PSIyIiB5PSIzIiB3aWR0aD0iMjAiIGhlaWdodD0iMTQiIHJ4PSIyIiByeT0iMiIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjYjg1NDUwIiBzdHJva2Utd2lkdGg9IjIiLz48bGluZSB4MT0iOCIgeTE9IjIxIiB4Mj0iMTYiIHkyPSIyMSIgc3Ryb2tlPSIjYjg1NDUwIiBzdHJva2Utd2lkdGg9IjIiLz48bGluZSB4MT0iMTIiIHkxPSIxNyIgeDI9IjEyIiB5Mj0iMjEiIHN0cm9rZT0iI2I4NTQ1MCIgc3Ryb2tlLXdpZHRoPSIyIi8+PC9zdmc+;" value="" vertex="1">
+          <mxGeometry height="28" width="28" x="730" y="98" as="geometry" />
+        </mxCell>
+        <mxCell id="vmi-spec" parent="1" style="text;html=1;align=left;verticalAlign=top;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=11;fontStyle=2;fontColor=#666666;" value="spec.template.spec.domain.devices.disks:" vertex="1">
+          <mxGeometry height="22" width="280" x="85" y="120" as="geometry" />
+        </mxCell>
+        <mxCell id="disk1" parent="1" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=8;fillColor=#f8cecc;strokeColor=#b85450;fontSize=11;fontStyle=1;" value="disk: rootdisk&lt;br&gt;&lt;font style=&quot;font-size:11px&quot;&gt;bus: virtio&lt;/font&gt;" vertex="1">
+          <mxGeometry height="55" width="130" x="105" y="148" as="geometry" />
+        </mxCell>
+        <mxCell id="disk2" parent="1" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=8;fillColor=#f8cecc;strokeColor=#b85450;fontSize=11;fontStyle=1;" value="disk: datadisk&lt;br&gt;&lt;font style=&quot;font-size:11px&quot;&gt;bus: virtio&lt;/font&gt;" vertex="1">
+          <mxGeometry height="55" width="130" x="485" y="148" as="geometry" />
+        </mxCell>
+        <mxCell id="vol1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=11;" value="volume: rootdisk&lt;br&gt;&lt;font style=&quot;font-size:11px&quot;&gt;persistentVolumeClaim:&lt;br&gt;claimName: vm-rootdisk&lt;/font&gt;" vertex="1">
+          <mxGeometry height="55" width="185" x="262" y="148" as="geometry" />
+        </mxCell>
+        <mxCell id="vol2" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=11;" value="volume: datadisk&lt;br&gt;&lt;font style=&quot;font-size:11px&quot;&gt;persistentVolumeClaim:&lt;br&gt;claimName: vm-datadisk&lt;/font&gt;" vertex="1">
+          <mxGeometry height="55" width="185" x="533" y="210" as="geometry" />
+        </mxCell>
+        <mxCell id="disk1-to-vol1" edge="1" parent="1" source="disk1" style="endArrow=classic;html=1;strokeWidth=1;strokeColor=#b85450;" target="vol1" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="disk2-to-vol2" edge="1" parent="1" source="disk2" style="endArrow=classic;html=1;strokeWidth=1;strokeColor=#b85450;" target="vol2" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="pvc1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;strokeWidth=2;" value="PVC&lt;br&gt;&lt;b&gt;vm-rootdisk&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:11px&quot;&gt;storageClassName: hostpath-csi&lt;br&gt;accessModes: ReadWriteOnce&lt;/font&gt;" vertex="1">
+          <mxGeometry height="70" width="310" x="75" y="300" as="geometry" />
+        </mxCell>
+        <mxCell id="pvc2" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;strokeWidth=2;" value="PVC&lt;br&gt;&lt;b&gt;vm-datadisk&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:11px&quot;&gt;storageClassName: hostpath-csi&lt;br&gt;accessModes: ReadWriteOnce&lt;/font&gt;" vertex="1">
+          <mxGeometry height="70" width="310" x="440" y="300" as="geometry" />
+        </mxCell>
+        <mxCell id="vol1-to-pvc1" edge="1" parent="1" source="vol1" style="endArrow=classic;html=1;strokeWidth=2;strokeColor=#b85450;fontSize=10;fontStyle=1;fontColor=#b85450;" target="pvc1" value="references">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="vol2-to-pvc2" edge="1" parent="1" source="vol2" style="endArrow=classic;html=1;strokeWidth=2;strokeColor=#b85450;fontSize=10;fontStyle=1;fontColor=#b85450;" target="pvc2" value="references">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="notes-box" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF9E6;strokeColor=#d6b656;strokeWidth=1;dashed=1;" value="" vertex="1">
+          <mxGeometry height="35" width="710" x="60" y="385" as="geometry" />
+        </mxCell>
+        <mxCell id="notes-text" parent="1" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=11;fontStyle=1;fontColor=#886600;" value="Each PV = one subdirectory under /var/hpvolumes/csi.  Data is local to the node (no live migration).  RWO access only." vertex="1">
+          <mxGeometry height="28" width="640" x="95" y="389" as="geometry" />
+        </mxCell>
+        <mxCell id="sc-box" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;strokeWidth=2;" value="" vertex="1">
+          <mxGeometry height="110" width="710" x="60" y="440" as="geometry" />
+        </mxCell>
+        <mxCell id="sc-label" parent="1" style="text;html=1;align=left;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=13;fontStyle=1;fontColor=#7a3e9d;" value="Kubernetes Storage Layer" vertex="1">
+          <mxGeometry height="25" width="185" x="75" y="445" as="geometry" />
+        </mxCell>
+        <mxCell id="pv1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=11;" value="PV&lt;br&gt;&lt;b&gt;pvc-aaa-111&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:11px&quot;&gt;hostPath:&lt;br&gt;/var/hpvolumes/csi/pvc-aaa-111&lt;/font&gt;" vertex="1">
+          <mxGeometry height="75" width="185" x="75" y="470" as="geometry" />
+        </mxCell>
+        <mxCell id="storageclass" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=11;" value="StorageClass&lt;br&gt;&lt;b&gt;hostpath-csi&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:11px&quot;&gt;provisioner:&lt;br&gt;kubevirt.io.hostpath-provisioner&lt;/font&gt;" vertex="1">
+          <mxGeometry height="75" width="160" x="330" y="470" as="geometry" />
+        </mxCell>
+        <mxCell id="pv2" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=11;" value="PV&lt;br&gt;&lt;b&gt;pvc-bbb-222&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:11px&quot;&gt;hostPath:&lt;br&gt;/var/hpvolumes/csi/pvc-bbb-222&lt;/font&gt;" vertex="1">
+          <mxGeometry height="75" width="185" x="560" y="470" as="geometry" />
+        </mxCell>
+        <mxCell id="pvc1-to-pv1" edge="1" parent="1" source="pvc1" style="endArrow=classic;startArrow=classic;html=1;strokeWidth=2;strokeColor=#82b366;fontSize=10;fontStyle=1;fontColor=#82b366;rounded=1;arcSize=10;exitX=0;exitY=1;exitDx=0;exitDy=0;entryX=0;entryY=0;entryDx=0;entryDy=0;" target="pv1" value="bound to">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="50" y="375" />
+              <mxPoint x="50" y="465" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="pvc2-to-pv2" edge="1" parent="1" source="pvc2" style="endArrow=classic;startArrow=classic;html=1;strokeWidth=2;strokeColor=#82b366;fontSize=10;fontStyle=1;fontColor=#82b366;rounded=1;arcSize=10;exitX=1;exitY=1;exitDx=0;exitDy=0;entryX=1;entryY=0;entryDx=0;entryDy=0;" target="pv2" value="bound to">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="780" y="375" />
+              <mxPoint x="780" y="465" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="sc-to-pv1" edge="1" parent="1" source="storageclass" style="endArrow=classic;html=1;strokeWidth=1;strokeColor=#9673a6;fontSize=10;fontStyle=2;fontColor=#9673a6;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" target="pv1" value="creates">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="sc-to-pv2" edge="1" parent="1" source="storageclass" style="endArrow=classic;html=1;strokeWidth=1;strokeColor=#9673a6;fontSize=10;fontStyle=2;fontColor=#9673a6;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="pv2" value="creates">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="sc-to-csi" edge="1" parent="1" source="sc-box" style="endArrow=classic;html=1;strokeWidth=2;strokeColor=#6c8ebf;fontStyle=1;fontSize=10;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" target="csi-box" value="provisions via">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="csi-box" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;strokeWidth=2;" value="" vertex="1">
+          <mxGeometry height="110" width="710" x="60" y="575" as="geometry" />
+        </mxCell>
+        <mxCell id="csi-label" parent="1" style="text;html=1;align=left;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=13;fontStyle=1;fontColor=#333399;" value="HostPath Provisioner CSI Driver (DaemonSet)" vertex="1">
+          <mxGeometry height="25" width="290" x="75" y="578" as="geometry" />
+        </mxCell>
+        <mxCell id="csi-node" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;fontStyle=1;" value="csi-node&lt;br&gt;(NodePublishVolume)" vertex="1">
+          <mxGeometry height="50" width="175" x="80" y="608" as="geometry" />
+        </mxCell>
+        <mxCell id="csi-controller" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;fontStyle=1;" value="csi-controller&lt;br&gt;(CreateVolume)" vertex="1">
+          <mxGeometry height="50" width="175" x="280" y="608" as="geometry" />
+        </mxCell>
+        <mxCell id="csi-action" parent="1" style="text;html=1;align=left;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=11;fontStyle=2;fontColor=#666666;" value="Creates subdirectory under&lt;br&gt;/var/hpvolumes/csi/&lt;pvc-uuid&gt;&lt;br&gt;and bind-mounts into Pod" vertex="1">
+          <mxGeometry height="50" width="195" x="480" y="608" as="geometry" />
+        </mxCell>
+        <mxCell id="csi-to-hostfs" edge="1" parent="1" source="csi-box" style="endArrow=classic;html=1;strokeWidth=2;strokeColor=#d6b656;fontStyle=1;fontSize=10;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" target="host-fs-box" value="bind-mount">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="host-fs-box" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;strokeWidth=2;" value="" vertex="1">
+          <mxGeometry height="155" width="710" x="60" y="710" as="geometry" />
+        </mxCell>
+        <mxCell id="host-fs-label" parent="1" style="text;html=1;align=left;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=13;fontStyle=1;fontColor=#333333;" value="Host Filesystem" vertex="1">
+          <mxGeometry height="25" width="120" x="75" y="715" as="geometry" />
+        </mxCell>
+        <mxCell id="subdir1" parent="1" style="shape=folder;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;verticalAlign=bottom;spacingBottom=6;tabWidth=80;tabHeight=18;tabPosition=left;" value="/var/hpvolumes/csi/&lt;br&gt;pvc-aaa-111" vertex="1">
+          <mxGeometry height="58" width="195" x="75" y="745" as="geometry" />
+        </mxCell>
+        <mxCell id="subdir2" parent="1" style="shape=folder;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;verticalAlign=bottom;spacingBottom=6;tabWidth=80;tabHeight=18;tabPosition=left;" value="/var/hpvolumes/csi/&lt;br&gt;pvc-bbb-222" vertex="1">
+          <mxGeometry height="58" width="195" x="545" y="745" as="geometry" />
+        </mxCell>
+        <mxCell id="hpvol-root" parent="1" style="shape=folder;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;fontStyle=1;verticalAlign=bottom;spacingBottom=8;tabWidth=110;tabHeight=18;tabPosition=left;" value="/var/hpvolumes/csi" vertex="1">
+          <mxGeometry height="55" width="190" x="290" y="738" as="geometry" />
+        </mxCell>
+        <mxCell id="subdir3" parent="1" style="shape=folder;whiteSpace=wrap;html=1;fillColor=#e6e6e6;strokeColor=#999999;fontSize=11;fontStyle=2;verticalAlign=bottom;spacingBottom=6;tabWidth=80;tabHeight=18;tabPosition=left;" value="/var/hpvolumes/csi/&lt;br&gt;pvc-ccc-333" vertex="1">
+          <mxGeometry height="52" width="250" x="260" y="805" as="geometry" />
+        </mxCell>
+        <mxCell id="subdir3-note" parent="1" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=11;fontStyle=2;fontColor=#999999;" value="(additional PVs)" vertex="1">
+          <mxGeometry height="22" width="115" x="511.5" y="830" as="geometry" />
+        </mxCell>
+        <mxCell id="root-to-sub1" edge="1" parent="1" source="hpvol-root" style="endArrow=classic;html=1;strokeWidth=1;strokeColor=#d6b656;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" target="subdir1" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="root-to-sub2" edge="1" parent="1" source="hpvol-root" style="endArrow=classic;html=1;strokeWidth=1;strokeColor=#d6b656;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="subdir2" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="root-to-sub3" edge="1" parent="1" source="hpvol-root" style="endArrow=classic;html=1;strokeWidth=1;strokeColor=#999999;dashed=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.504;entryY=0.4;entryDx=0;entryDy=0;entryPerimeter=0;" target="subdir3" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="pv1-to-subdir1" edge="1" parent="1" source="pv1" style="endArrow=classic;html=1;strokeWidth=2;strokeColor=#b85450;dashed=1;dashPattern=5 3;fontSize=10;fontStyle=2;fontColor=#b85450;rounded=1;arcSize=10;exitX=0;exitY=1;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="subdir1" value="maps to">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="45" y="550" />
+              <mxPoint x="45" y="772" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="pv2-to-subdir2" edge="1" parent="1" source="pv2" style="endArrow=classic;html=1;strokeWidth=2;strokeColor=#b85450;dashed=1;dashPattern=5 3;fontSize=10;fontStyle=2;fontColor=#b85450;rounded=1;arcSize=10;exitX=1;exitY=1;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" target="subdir2" value="maps to">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="785" y="550" />
+              <mxPoint x="785" y="772" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="legend-box" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#999999;dashed=1;" value="" vertex="1">
+          <mxGeometry height="75" width="710" x="60" y="890" as="geometry" />
+        </mxCell>
+        <mxCell id="legend-title" parent="1" style="text;html=1;align=left;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=12;fontStyle=1;" value="Legend" vertex="1">
+          <mxGeometry height="20" width="55" x="75" y="893" as="geometry" />
+        </mxCell>
+        <mxCell id="leg-vm" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" value="" vertex="1">
+          <mxGeometry height="12" width="18" x="75" y="918" as="geometry" />
+        </mxCell>
+        <mxCell id="leg-vm-t" parent="1" style="text;html=1;align=left;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=11;" value="VM / Disk" vertex="1">
+          <mxGeometry height="22" width="70" x="98" y="914" as="geometry" />
+        </mxCell>
+        <mxCell id="leg-pvc" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" value="" vertex="1">
+          <mxGeometry height="12" width="18" x="185" y="918" as="geometry" />
+        </mxCell>
+        <mxCell id="leg-pvc-t" parent="1" style="text;html=1;align=left;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=11;" value="PVC" vertex="1">
+          <mxGeometry height="20" width="35" x="208" y="914" as="geometry" />
+        </mxCell>
+        <mxCell id="leg-sc" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" value="" vertex="1">
+          <mxGeometry height="12" width="18" x="265" y="918" as="geometry" />
+        </mxCell>
+        <mxCell id="leg-sc-t" parent="1" style="text;html=1;align=left;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=11;" value="StorageClass / PV" vertex="1">
+          <mxGeometry height="20" width="110" x="288" y="914" as="geometry" />
+        </mxCell>
+        <mxCell id="leg-csi" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="" vertex="1">
+          <mxGeometry height="12" width="18" x="420" y="918" as="geometry" />
+        </mxCell>
+        <mxCell id="leg-csi-t" parent="1" style="text;html=1;align=left;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=11;" value="HPP CSI Driver" vertex="1">
+          <mxGeometry height="20" width="95" x="443" y="914" as="geometry" />
+        </mxCell>
+        <mxCell id="leg-fs" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" value="" vertex="1">
+          <mxGeometry height="12" width="18" x="560" y="918" as="geometry" />
+        </mxCell>
+        <mxCell id="leg-fs-t" parent="1" style="text;html=1;align=left;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=11;" value="Host Filesystem" vertex="1">
+          <mxGeometry height="20" width="100" x="583" y="914" as="geometry" />
+        </mxCell>
+        <mxCell id="leg-map" edge="1" parent="1" style="endArrow=classic;html=1;strokeWidth=2;strokeColor=#b85450;dashed=1;dashPattern=5 3;" value="">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="75" y="948" as="sourcePoint" />
+            <mxPoint x="100" y="948" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="leg-map-t" parent="1" style="text;html=1;align=left;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=11;" value="PV-to-directory mapping" vertex="1">
+          <mxGeometry height="20" width="140" x="105" y="938" as="geometry" />
+        </mxCell>
+        <mxCell id="leg-bound" edge="1" parent="1" style="endArrow=classic;startArrow=classic;html=1;strokeWidth=2;strokeColor=#82b366;" value="">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="290" y="948" as="sourcePoint" />
+            <mxPoint x="315" y="948" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="leg-bound-t" parent="1" style="text;html=1;align=left;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=11;" value="PVC-PV binding" vertex="1">
+          <mxGeometry height="20" width="100" x="320" y="938" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
