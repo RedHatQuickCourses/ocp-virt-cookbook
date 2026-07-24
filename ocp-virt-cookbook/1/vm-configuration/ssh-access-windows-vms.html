@@ -1,0 +1,1033 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Connecting to a Windows VM via SSH :: OpenShift Virtualization cookbook</title>
+    <link rel="prev" href="remote-access-windows-vms.html">
+    <link rel="next" href="windows-vm-virtio-drivers.html">
+    <meta name="generator" content="Antora 3.1.3">
+    <link rel="stylesheet" href="../../../_/css/site.css">
+    <script>var uiRootPath = '../../../_'</script>
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://www.redhat.com" target="_blank"><img src="../../../_/img/redhat-logo.png" height="40px" alt="Red Hat"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="../../..">OpenShift Virtualization cookbook</a>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues" target="_blank">Report Issues</a>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="ocp-virt-cookbook" data-version="1">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="../index.html">OpenShift Virtualization cookbook</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../index.html">Introduction</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../getting-started/index.html">Getting Started</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/vm-quick-start.html">Quick Start</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/prerequisites.html">Prerequisites</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/architecture-overview.html">Architecture Overview</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/install-openshift-virtualization.html">Install OpenShift Virtualization</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/installing-qemu-guest-agent.html">Installing QEMU Guest Agent</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/default-storage-class.html">Storage Setup</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/create-vm-web-console.html">Create VM from Web Console</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/create-vm-cli-yaml.html">Create VM from CLI</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/vm-lifecycle-states.html">VM Lifecycle States</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/virtctl-basics.html">Virtctl Basics</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/cloud-init-fundamentals.html">Cloud-init Fundamentals</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../storage/index.html">Storage Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/lvm-operator.html">LVM Operator Installation</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/lvm-troubleshooting.html">LVM Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/odf-ceph-storage.html">ODF/Ceph Storage</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/hostpath-provisioner.html">HostPath Provisioner</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/creating-managing-storage-class.html">Creating and Managing Storage Classes</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/multi-disk-configuration.html">Multi-Disk VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/expanding-vm-disk-size.html">Expanding VM Disk Size</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/cdi-operations.html">CDI Operations</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/disk-io-tuning.html">Disk I/O Tuning</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../networking/index.html">Networking Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/static-ip-configuration.html">Static IP Configuration</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/cloud-init-troubleshooting.html">Cloud-init Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/udn-primary-networks.html">UDN Primary Networks</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/localnet-secondary.html">Localnet Secondary Networks with CUDN</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/localnet-vlan.html">Localnet Secondary Networks with VLAN using NAD</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/cudn-localnet-vlan.html">Localnet VLAN with CUDN</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/layer2-secondary.html">Layer 2 Secondary Networks</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/linux-bridges.html">Linux Bridges</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/sriov-secondary.html">SR-IOV Secondary Networks</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/network-policies-vms.html">Network Policies for VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/metallb-loadbalancer.html">MetalLB Load Balancer for VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/dual-stack-vms.html">Dual-Stack IPv4/IPv6 VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/vm-ingress-routes.html">VM Ingress and Routes</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/ovs-bridge-troubleshooting.html">Troubleshooting Localnet Networks</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="index.html">Virtual Machine Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="internal-dns-for-vms.html">Internal DNS for VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="remote-access-linux-vms.html">Remote Access to Linux VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="remote-access-linux-troubleshooting.html">Remote Access to Linux VMs Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="remote-access-windows-vms.html">Remote Access to Windows VMs via RDP</a>
+  </li>
+  <li class="nav-item is-current-page" data-depth="2">
+    <a class="nav-link" href="ssh-access-windows-vms.html">Remote Access to Windows VMs via SSH</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="windows-vm-virtio-drivers.html">Windows VMs with VirtIO Drivers</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="infrastructure-node-placement.html">Infrastructure Node Placement</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="node-placement-affinity.html">Node Placement and Affinity</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="hotplug-volumes-interfaces.html">Hotplug Volumes and Interfaces</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="vm-templates.html">Virtual Machine Templates</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../performance/index.html">VM Performance Tuning</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/resource-limits-qos.html">Resource Limits and QoS</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/cpu-pinning.html">Dedicated CPU Placement</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/numa-hugepages.html">NUMA and Hugepages</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/realtime-vms.html">Real-Time VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/vm-monitoring-metrics.html">VM Monitoring and Metrics</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../vm-lifecycle/index.html">VM Lifecycle Management</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/import-qcow2-boot-volume.html">Import qcow2 Boot Volume</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/custom-golden-images.html">Custom Golden Images</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/windows-golden-images.html">Windows Golden Images</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/golden-images-troubleshooting.html">Golden Images Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/cloning-vms.html">Cloning VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/vm-snapshots.html">VM Snapshots</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/boot-order-boot-sources.html">VM Boot Order and Boot Sources</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../manifests/index.html">Manifests</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../api/index.html">API Guide</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../api/api-component-overview.html">API Component Overview</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../agentic-vm-management/index.html">Agentic VM Management</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/getting-started.html">Getting Started with rh-virt</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/natural-language-vm-create.html">Natural Language VM Creation</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/ai-vm-lifecycle.html">AI VM Lifecycle Operations</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/vm-clone.html">Cloning VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/ai-vm-snapshot-management.html">VM Snapshot Management</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/ai-skill-chaining.html">Day-2 Skill Chaining</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../appendix/glossary.html">Glossary</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">OpenShift Virtualization cookbook</span>
+    <span class="version">1</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <a class="title" href="../index.html">OpenShift Virtualization cookbook</a>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">1</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">OpenShift Virtualization cookbook</a></li>
+    <li><a href="index.html">Virtual Machine Configuration</a></li>
+    <li><a href="ssh-access-windows-vms.html">Remote Access to Windows VMs via SSH</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">Connecting to a Windows VM via SSH</h1>
+<div class="sect1">
+<h2 id="_overview"><a class="anchor" href="#_overview"></a>Overview</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Windows 10 (version 1809+) and Windows Server 2019+ include OpenSSH Server as an optional feature. Enabling SSH on a Windows VM gives you a command-line interface you can script against, without requiring Remote Desktop or a graphical session.</p>
+</div>
+<div class="paragraph">
+<p>This is useful for automation workflows, CI/CD pipelines, and configuration management tools like Ansible that can manage Windows hosts over SSH.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_what_you_will_learn"><a class="anchor" href="#_what_you_will_learn"></a>What You Will Learn</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p>How to install and configure OpenSSH Server on a Windows VM running in OpenShift Virtualization</p>
+</li>
+<li>
+<p>How to expose the Windows VM SSH port outside the cluster using a Kubernetes Service</p>
+</li>
+<li>
+<p>How to connect to the Windows VM via SSH using password and key-based authentication</p>
+</li>
+<li>
+<p>How to change the default SSH shell to PowerShell</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_prerequisites"><a class="anchor" href="#_prerequisites"></a>Prerequisites</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p>OpenShift 4.18+ with OpenShift Virtualization operator installed</p>
+</li>
+<li>
+<p>A running Windows VM (Windows 10 1809+, Windows 11, or Windows Server 2019/2022/2025) on the cluster</p>
+</li>
+<li>
+<p>VNC or RDP console access to the Windows VM for initial setup</p>
+</li>
+<li>
+<p>CLI tools installed: <code>oc</code> and <code>virtctl</code></p>
+</li>
+<li>
+<p>The Windows VM must use the <code>masquerade</code> network binding on the pod network (default configuration)</p>
+</li>
+<li>
+<p>The VM spec must declare port 22 on the masquerade interface so the virt-launcher pod creates the NAT forwarding rule (see below)</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_declare_port_22_on_the_vm_interface"><a class="anchor" href="#_declare_port_22_on_the_vm_interface"></a>Declare Port 22 on the VM Interface</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>When using masquerade networking, the virt-launcher pod only forwards traffic for ports explicitly listed in the VM spec. If port 22 is not declared, traffic from the Kubernetes Service never reaches the guest, even if sshd is running inside the VM.</p>
+</div>
+<div class="paragraph">
+<p>Verify that your VirtualMachine spec includes port 22 on the masquerade interface:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">spec:
+  template:
+    spec:
+      domain:
+        devices:
+          interfaces:
+            - masquerade: {}
+              name: default
+              ports:
+                - port: 22
+      networks:
+        - name: default
+          pod: {}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If the <code>ports</code> section is missing, edit your VirtualMachine to add it:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc edit vm &lt;your-windows-vm-name&gt;</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Add the <code>ports</code> array under the masquerade interface. After saving, restart the VM for the change to take effect:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">virtctl restart &lt;your-windows-vm-name&gt;</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_install_openssh_server_on_the_windows_vm"><a class="anchor" href="#_install_openssh_server_on_the_windows_vm"></a>Install OpenSSH Server on the Windows VM</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Connect to your Windows VM through the OpenShift console or VNC to run the initial setup commands.</p>
+</div>
+<div class="sect2">
+<h3 id="_access_the_vm_console"><a class="anchor" href="#_access_the_vm_console"></a>Access the VM Console</h3>
+<div class="paragraph">
+<p>Open the VM console from the OpenShift web console: <strong>Virtualization</strong> &gt; <strong>VirtualMachines</strong> &gt; select your VM &gt; <strong>Console</strong> tab.</p>
+</div>
+<div class="paragraph">
+<p>Alternatively, use <code>virtctl</code>:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">virtctl vnc &lt;your-windows-vm-name&gt;</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_check_openssh_availability"><a class="anchor" href="#_check_openssh_availability"></a>Check OpenSSH Availability</h3>
+<div class="paragraph">
+<p>Open PowerShell as Administrator on the Windows VM and check whether OpenSSH Server is available:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-powershell hljs" data-lang="powershell">Get-WindowsCapability -Online | Where-Object Name -like 'OpenSSH.Server*'</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Expected output</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">Name  : OpenSSH.Server~~~~0.0.1.0
+State : NotPresent</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If the state shows <code>Installed</code>, skip to the next section.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_install_openssh_server"><a class="anchor" href="#_install_openssh_server"></a>Install OpenSSH Server</h3>
+<div class="paragraph">
+<p>Install the OpenSSH Server feature:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-powershell hljs" data-lang="powershell">Add-WindowsCapability -Online -Name OpenSSH.Server~~~~0.0.1.0</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Expected output</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">Path          :
+Online        : True
+RestartNeeded : False</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_configure_the_ssh_service"><a class="anchor" href="#_configure_the_ssh_service"></a>Configure the SSH Service</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_start_the_ssh_service"><a class="anchor" href="#_start_the_ssh_service"></a>Start the SSH Service</h3>
+<div class="paragraph">
+<p>Start the <code>sshd</code> service and set it to start automatically on boot:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-powershell hljs" data-lang="powershell">Start-Service sshd
+Set-Service -Name sshd -StartupType Automatic</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_verify_the_service_is_running"><a class="anchor" href="#_verify_the_service_is_running"></a>Verify the Service Is Running</h3>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-powershell hljs" data-lang="powershell">Get-Service sshd</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Expected output</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">Status   Name    DisplayName
+Running  sshd    OpenSSH SSH Server</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_verify_the_firewall_rule"><a class="anchor" href="#_verify_the_firewall_rule"></a>Verify the Firewall Rule</h3>
+<div class="paragraph">
+<p>The OpenSSH Server installer creates a Windows Firewall rule automatically. Confirm it exists:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-powershell hljs" data-lang="powershell">Get-NetFirewallRule -Name *OpenSSH-Server* | Select-Object Name, Enabled, Direction, Action</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Expected output</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">Name                  Enabled Direction  Action
+OpenSSH-Server-In-TCP    True   Inbound  Allow</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If the rule is missing, create it:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-powershell hljs" data-lang="powershell">New-NetFirewallRule -Name 'OpenSSH-Server-In-TCP' -DisplayName 'OpenSSH Server (sshd)' -Enabled True -Direction Inbound -Protocol TCP -Action Allow -LocalPort 22</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_fix_the_firewall_rule_profile"><a class="anchor" href="#_fix_the_firewall_rule_profile"></a>Fix the Firewall Rule Profile</h3>
+<div class="paragraph">
+<p>By default, the OpenSSH firewall rule applies only to the <strong>Private</strong> network profile. However, Windows classifies the KubeVirt masquerade bridge as a <strong>Public</strong> network because it does not recognize the virtual adapter. This mismatch causes Windows Firewall to silently block all inbound SSH connections, even though sshd is running and the rule appears enabled.</p>
+</div>
+<div class="paragraph">
+<p>Check which profile the rule applies to:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-powershell hljs" data-lang="powershell">Get-NetFirewallRule -DisplayName "OpenSSH SSH Server (sshd)" | Select-Object DisplayName, Profile</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Check the active network profile:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-powershell hljs" data-lang="powershell">Get-NetConnectionProfile | Select-Object InterfaceAlias, NetworkCategory</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If the rule profile is <code>Private</code> but the network category is <code>Public</code>, update the rule to apply to all profiles:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-powershell hljs" data-lang="powershell">Set-NetFirewallRule -DisplayName "OpenSSH SSH Server (sshd)" -Profile Any</code></pre>
+</div>
+</div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+Without this step, SSH connections to the VM will time out even though sshd is running and the firewall rule exists. This is the most common cause of SSH connectivity failures on Windows VMs in OpenShift Virtualization.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_set_powershell_as_the_default_shell"><a class="anchor" href="#_set_powershell_as_the_default_shell"></a>Set PowerShell as the Default Shell</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>By default, Windows SSH sessions open <code>cmd.exe</code>. To use PowerShell instead, run:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-powershell hljs" data-lang="powershell">New-ItemProperty -Path "HKLM:\SOFTWARE\OpenSSH" -Name DefaultShell -Value "C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe" -PropertyType String -Force</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This change takes effect for new SSH sessions. Existing sessions keep their current shell.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_expose_the_ssh_port_outside_the_cluster"><a class="anchor" href="#_expose_the_ssh_port_outside_the_cluster"></a>Expose the SSH Port Outside the Cluster</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The Windows VM pod network is internal to the cluster. To reach port 22 from outside, create a Kubernetes Service.</p>
+</div>
+<div class="sect2">
+<h3 id="_option_a_nodeport_service"><a class="anchor" href="#_option_a_nodeport_service"></a>Option A: NodePort Service</h3>
+<div class="paragraph">
+<p>A NodePort Service maps a high-numbered port on every cluster node to port 22 on the VM.</p>
+</div>
+<div class="paragraph">
+<p>Create the Service manifest:</p>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/ssh-access-windows-vms/windows-ssh-nodeport-service.yaml" class="xref attachment">Download windows-ssh-nodeport-service.yaml</a></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: v1
+kind: Service
+metadata:
+  name: windows-ssh-nodeport
+spec:
+  type: NodePort
+  selector:
+    vm.kubevirt.io/name: &lt;your-windows-vm-name&gt;
+  ports:
+    - protocol: TCP
+      port: 22
+      targetPort: 22
+      nodePort: 30022</code></pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+Replace <code>&lt;your-windows-vm-name&gt;</code> with the actual name of your Windows VirtualMachine resource.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Apply the Service:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f windows-ssh-nodeport-service.yaml</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Verify the Service:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get svc windows-ssh-nodeport</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Expected output</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">NAME                   TYPE       CLUSTER-IP      EXTERNAL-IP   PORT(S)        AGE
+windows-ssh-nodeport   NodePort   172.30.x.x      &lt;none&gt;        22:30022/TCP   5s</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Get a node IP address to use for the connection:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">NODE_IP=$(oc get nodes -o jsonpath='{.items[0].status.addresses[?(@.type=="InternalIP")].address}')
+echo $NODE_IP</code></pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+The node&#8217;s <code>InternalIP</code> is the routable IP address of the cluster node. Despite the name, this is the address you use to reach NodePort services from outside the cluster. The <code>ExternalIP</code> field in <code>oc get nodes -o wide</code> is only populated when an external cloud provider assigns one.
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_option_b_loadbalancer_service"><a class="anchor" href="#_option_b_loadbalancer_service"></a>Option B: LoadBalancer Service</h3>
+<div class="paragraph">
+<p>If your cluster has a load balancer provider (such as MetalLB), use a LoadBalancer Service to get a dedicated external IP:</p>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/ssh-access-windows-vms/windows-ssh-lb-service.yaml" class="xref attachment">Download windows-ssh-lb-service.yaml</a></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: v1
+kind: Service
+metadata:
+  name: windows-ssh-lb
+spec:
+  type: LoadBalancer
+  selector:
+    vm.kubevirt.io/name: &lt;your-windows-vm-name&gt;
+  ports:
+    - protocol: TCP
+      port: 22
+      targetPort: 22</code></pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+Replace <code>&lt;your-windows-vm-name&gt;</code> with the actual name of your Windows VirtualMachine resource.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Apply the Service:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f windows-ssh-lb-service.yaml</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Wait for the external IP to be assigned:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get svc windows-ssh-lb -w</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Once the <code>EXTERNAL-IP</code> column shows an IP address, press <code>Ctrl+C</code> and use that IP to connect.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_connect_to_the_windows_vm_via_ssh"><a class="anchor" href="#_connect_to_the_windows_vm_via_ssh"></a>Connect to the Windows VM via SSH</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_connect_using_password_authentication"><a class="anchor" href="#_connect_using_password_authentication"></a>Connect Using Password Authentication</h3>
+<div class="paragraph">
+<p>For a NodePort Service, connect with:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">ssh &lt;windows-username&gt;@$NODE_IP -p 30022</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>For a LoadBalancer Service, connect with:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">ssh &lt;windows-username&gt;@&lt;external-ip&gt;</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Replace <code>&lt;windows-username&gt;</code> with your Windows account name (for example, <code>Administrator</code>) and use the corresponding password when prompted.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_connect_using_virtctl_ssh"><a class="anchor" href="#_connect_using_virtctl_ssh"></a>Connect Using virtctl SSH</h3>
+<div class="paragraph">
+<p>If you have cluster access and do not need external exposure, use <code>virtctl</code> to SSH through the Kubernetes API server:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">virtctl ssh &lt;windows-username&gt;@&lt;your-windows-vm-name&gt;</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This method does not require a Service. It uses API server port-forwarding to reach port 22 on the VM.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_configure_ssh_key_authentication"><a class="anchor" href="#_configure_ssh_key_authentication"></a>Configure SSH Key Authentication</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Password authentication works but is less secure. SSH keys remove the need for interactive password entry and are required for automation tools like Ansible.</p>
+</div>
+<div class="sect2">
+<h3 id="_generate_an_ssh_key_pair"><a class="anchor" href="#_generate_an_ssh_key_pair"></a>Generate an SSH Key Pair</h3>
+<div class="paragraph">
+<p>On your local machine, generate a key pair if you do not already have one:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">ssh-keygen -t ed25519 -f ~/.ssh/windows-vm-key -N ""</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_copy_the_public_key_to_the_windows_vm"><a class="anchor" href="#_copy_the_public_key_to_the_windows_vm"></a>Copy the Public Key to the Windows VM</h3>
+<div class="paragraph">
+<p>SSH into the Windows VM using password authentication (as described above), then run the following commands in the SSH session.</p>
+</div>
+<div class="paragraph">
+<p>For a standard (non-administrator) user, add your public key to the <code>authorized_keys</code> file:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-powershell hljs" data-lang="powershell">mkdir -Force $env:USERPROFILE\.ssh
+# Paste your public key content into the authorized_keys file
+Set-Content -Path "$env:USERPROFILE\.ssh\authorized_keys" -Value "ssh-ed25519 AAAA... your-key-here"</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>For an Administrator account, Windows uses a separate file. Add the key to <code>administrators_authorized_keys</code>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-powershell hljs" data-lang="powershell">Set-Content -Path "C:\ProgramData\ssh\administrators_authorized_keys" -Value "ssh-ed25519 AAAA... your-key-here"
+
+# Fix permissions so only Administrators and SYSTEM can read the file
+icacls "C:\ProgramData\ssh\administrators_authorized_keys" /inheritance:r /grant "Administrators:F" /grant "SYSTEM:F"</code></pre>
+</div>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-important" title="Important"></i>
+</td>
+<td class="content">
+The <code>administrators_authorized_keys</code> file must have restricted permissions. If the permissions are too open, the SSH server ignores the file and falls back to password authentication.
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_test_key_based_login"><a class="anchor" href="#_test_key_based_login"></a>Test Key-Based Login</h3>
+<div class="paragraph">
+<p>From your local machine, connect using the key:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">ssh -i ~/.ssh/windows-vm-key &lt;windows-username&gt;@$NODE_IP -p 30022</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If the connection succeeds without a password prompt, key authentication is working.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_use_with_ansible"><a class="anchor" href="#_use_with_ansible"></a>Use with Ansible</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>With SSH configured, you can manage the Windows VM using Ansible over SSH instead of WinRM. Add the host to your inventory:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-ini hljs" data-lang="ini">[windows]
+windows-vm ansible_host=&lt;NODE_IP&gt; ansible_port=30022
+
+[windows:vars]
+ansible_user=Administrator
+ansible_ssh_private_key_file=~/.ssh/windows-vm-key
+ansible_shell_type=powershell
+ansible_become_method=runas</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Test the connection:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">ansible windows -m ansible.windows.win_ping</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>For more details on managing Windows with Ansible over SSH, see the <a href="https://docs.ansible.com/ansible/latest/os_guide/intro_windows.html#windows-ssh-setup" target="_blank" rel="noopener">Ansible Windows SSH documentation</a>.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_cleanup"><a class="anchor" href="#_cleanup"></a>Cleanup</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Remove the resources created in this tutorial:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc delete svc windows-ssh-nodeport windows-ssh-lb</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>To remove OpenSSH Server from the Windows VM, open PowerShell as Administrator on the VM and run:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-powershell hljs" data-lang="powershell">Stop-Service sshd
+Remove-WindowsCapability -Online -Name OpenSSH.Server~~~~0.0.1.0</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_summary"><a class="anchor" href="#_summary"></a>Summary</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p>You declared port 22 on the masquerade interface so the virt-launcher pod forwards SSH traffic.</p>
+</li>
+<li>
+<p>You installed OpenSSH Server on a Windows VM running in OpenShift Virtualization.</p>
+</li>
+<li>
+<p>You configured the SSH service to start automatically and fixed the firewall rule to apply to all network profiles.</p>
+</li>
+<li>
+<p>You changed the default SSH shell to PowerShell.</p>
+</li>
+<li>
+<p>You exposed the VM SSH port outside the cluster using a NodePort or LoadBalancer Service.</p>
+</li>
+<li>
+<p>You connected to the Windows VM via SSH using both password and key-based authentication.</p>
+</li>
+<li>
+<p>You saw how to integrate the Windows VM with Ansible over SSH.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_see_also"><a class="anchor" href="#_see_also"></a>See Also</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p><a href="remote-access-windows-vms.html" class="xref page">Remote Access to Windows VMs via RDP</a></p>
+</li>
+<li>
+<p><a href="remote-access-linux-vms.html" class="xref page">Remote Access to Linux VMs</a></p>
+</li>
+<li>
+<p><a href="https://docs.ansible.com/ansible/latest/os_guide/intro_windows.html#windows-ssh-setup" target="_blank" rel="noopener">Ansible Windows SSH Setup</a></p>
+</li>
+<li>
+<p><a href="https://learn.microsoft.com/en-us/windows-server/administration/openssh/openssh_install_firstuse" target="_blank" rel="noopener">Microsoft OpenSSH Installation Guide</a></p>
+</li>
+<li>
+<p><a href="https://docs.redhat.com/en/documentation/openshift_container_platform/4.19/html/virtualization/managing-vms" target="_blank" rel="noopener">OpenShift Virtualization - Managing VMs</a></p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<nav class="pagination">
+  <span class="prev"><a href="remote-access-windows-vms.html">Remote Access to Windows VMs via RDP</a></span>
+  <span class="next"><a href="windows-vm-virtio-drivers.html">Windows VMs with VirtIO Drivers</a></span>
+</nav>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <img src="../../../_/img/rhl-logo-red.png" height="40px" alt="Red Hat"  href="https://redhat.com" >
+</footer><script id="site-script" src="../../../_/js/site.js" data-ui-root-path="../../../_"></script>
+<script async src="../../../_/js/vendor/highlight.js"></script>
+  </body>
+</html>
