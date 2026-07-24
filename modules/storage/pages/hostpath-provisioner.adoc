@@ -5,6 +5,8 @@
 
 The HostPath Provisioner (HPP) provides a simple way to use local node storage for OpenShift Virtualization workloads. It's included as part of the OpenShift Virtualization operator and creates persistent volumes backed by directories on the host filesystem.
 
+image::hpp-architecture.drawio.svg[HPP CSI Architecture - Host filesystem to VM disk data flow, align=center]
+
 === When to Use HostPath Provisioner
 
 HPP is ideal for:
@@ -12,7 +14,15 @@ HPP is ideal for:
 * **Development and testing environments**: Quick setup without complex storage infrastructure
 * **Single-node clusters**: Where distributed storage isn't necessary
 * **Prototyping**: Rapid iteration before production storage deployment
+* **Proof-of-concept and demo environments**: Simpler solution to allow audiences to focus on the demo
+* **CI/CD and ephemeral environments**: Where storage is frequently provisioned and destroyed
+* **Training and workshop environments**: Short-term, shared use of storage without needing additional infrastructure
 * **Edge deployments**: Minimal infrastructure requirements
+
+HPP is not a good fit for:
+* **Production workloads**: Lacks native replication, high availability, and backup/snapshot features
+* **Scenarios requiring resource isolation**: No support for thin provisioning or usage quotas
+* **Scenarios requiring workload mobility**: Data is tied to a single node and cannot be moved
 
 === Comparison with LVM Storage
 
@@ -123,6 +133,10 @@ spec:
           WantedBy=multi-user.target
 EOF
 ----
+
+NOTE: In single node clusters, the node may be placed in a different MachineConfigPool due to the node taking on multiple node roles.
+You can confirm which MachineConfigPool the node is a member of by checking the node count of the MachineConfigPools with `oc get mcp`.
+Adjust the `machineconfiguration.openshift.io/role: worker` label in the example above to match accordingly.
 
 NOTE: Applying a MachineConfig will trigger a rolling reboot of worker nodes. Allow time for all nodes to update before proceeding.
 
