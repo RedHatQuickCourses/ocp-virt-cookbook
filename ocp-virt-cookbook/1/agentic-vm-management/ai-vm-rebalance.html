@@ -1,0 +1,1286 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Live Migration and Cluster Rebalancing :: OpenShift Virtualization cookbook</title>
+    <link rel="prev" href="ai-skill-chaining.html">
+    <link rel="next" href="../appendix/glossary.html">
+    <meta name="generator" content="Antora 3.1.3">
+    <link rel="stylesheet" href="../../../_/css/site.css">
+    <script>var uiRootPath = '../../../_'</script>
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://www.redhat.com" target="_blank"><img src="../../../_/img/redhat-logo.png" height="40px" alt="Red Hat"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="../../..">OpenShift Virtualization cookbook</a>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues" target="_blank">Report Issues</a>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="ocp-virt-cookbook" data-version="1">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="../index.html">OpenShift Virtualization cookbook</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../index.html">Introduction</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../getting-started/index.html">Getting Started</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/vm-quick-start.html">Quick Start</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/prerequisites.html">Prerequisites</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/architecture-overview.html">Architecture Overview</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/install-openshift-virtualization.html">Install OpenShift Virtualization</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/installing-qemu-guest-agent.html">Installing QEMU Guest Agent</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/default-storage-class.html">Storage Setup</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/create-vm-web-console.html">Create VM from Web Console</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/create-vm-cli-yaml.html">Create VM from CLI</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/vm-lifecycle-states.html">VM Lifecycle States</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/virtctl-basics.html">Virtctl Basics</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/cloud-init-fundamentals.html">Cloud-init Fundamentals</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../storage/index.html">Storage Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/lvm-operator.html">LVM Operator Installation</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/lvm-troubleshooting.html">LVM Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/odf-ceph-storage.html">ODF/Ceph Storage</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/hostpath-provisioner.html">HostPath Provisioner</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/creating-managing-storage-class.html">Creating and Managing Storage Classes</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/multi-disk-configuration.html">Multi-Disk VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/expanding-vm-disk-size.html">Expanding VM Disk Size</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/cdi-operations.html">CDI Operations</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/disk-io-tuning.html">Disk I/O Tuning</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../networking/index.html">Networking Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/static-ip-configuration.html">Static IP Configuration</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/cloud-init-troubleshooting.html">Cloud-init Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/udn-primary-networks.html">UDN Primary Networks</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/localnet-secondary.html">Localnet Secondary Networks with CUDN</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/localnet-vlan.html">Localnet Secondary Networks with VLAN using NAD</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/cudn-localnet-vlan.html">Localnet VLAN with CUDN</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/layer2-secondary.html">Layer 2 Secondary Networks</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/linux-bridges.html">Linux Bridges</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/sriov-secondary.html">SR-IOV Secondary Networks</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/network-policies-vms.html">Network Policies for VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/metallb-loadbalancer.html">MetalLB Load Balancer for VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/dual-stack-vms.html">Dual-Stack IPv4/IPv6 VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/vm-ingress-routes.html">VM Ingress and Routes</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/ovs-bridge-troubleshooting.html">Troubleshooting Localnet Networks</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../vm-configuration/index.html">Virtual Machine Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/internal-dns-for-vms.html">Internal DNS for VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/remote-access-linux-vms.html">Remote Access to Linux VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/remote-access-linux-troubleshooting.html">Remote Access to Linux VMs Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/remote-access-windows-vms.html">Remote Access to Windows VMs via RDP</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/ssh-access-windows-vms.html">Remote Access to Windows VMs via SSH</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/windows-vm-virtio-drivers.html">Windows VMs with VirtIO Drivers</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/infrastructure-node-placement.html">Infrastructure Node Placement</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/node-placement-affinity.html">Node Placement and Affinity</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/hotplug-volumes-interfaces.html">Hotplug Volumes and Interfaces</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/vm-templates.html">Virtual Machine Templates</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../performance/index.html">VM Performance Tuning</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/resource-limits-qos.html">Resource Limits and QoS</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/cpu-pinning.html">Dedicated CPU Placement</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/numa-hugepages.html">NUMA and Hugepages</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/realtime-vms.html">Real-Time VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/vm-monitoring-metrics.html">VM Monitoring and Metrics</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../vm-lifecycle/index.html">VM Lifecycle Management</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/import-qcow2-boot-volume.html">Import qcow2 Boot Volume</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/custom-golden-images.html">Custom Golden Images</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/windows-golden-images.html">Windows Golden Images</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/golden-images-troubleshooting.html">Golden Images Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/cloning-vms.html">Cloning VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/vm-snapshots.html">VM Snapshots</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/boot-order-boot-sources.html">VM Boot Order and Boot Sources</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../manifests/index.html">Manifests</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../api/index.html">API Guide</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../api/api-component-overview.html">API Component Overview</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="index.html">Agentic VM Management</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="getting-started.html">Getting Started with rh-virt</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="natural-language-vm-create.html">Natural Language VM Creation</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="ai-vm-lifecycle.html">AI VM Lifecycle Operations</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="vm-clone.html">Cloning VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="ai-vm-snapshot-management.html">VM Snapshot Management</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="ai-skill-chaining.html">Day-2 Skill Chaining</a>
+  </li>
+  <li class="nav-item is-current-page" data-depth="2">
+    <a class="nav-link" href="ai-vm-rebalance.html">VM Rebalancing and Live Migration</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../appendix/glossary.html">Glossary</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">OpenShift Virtualization cookbook</span>
+    <span class="version">1</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <a class="title" href="../index.html">OpenShift Virtualization cookbook</a>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">1</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">OpenShift Virtualization cookbook</a></li>
+    <li><a href="index.html">Agentic VM Management</a></li>
+    <li><a href="ai-vm-rebalance.html">VM Rebalancing and Live Migration</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">Live Migration and Cluster Rebalancing</h1>
+<div id="preamble">
+<div class="sectionbody">
+<div class="paragraph">
+<p>Versions tested:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>OpenShift 4.22</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This tutorial demonstrates how to migrate virtual machines across cluster nodes using natural language commands through the <code>vm-rebalance</code> agent skill. You will learn how to rebalance VMs manually (user-driven) and automatically (AI-driven), understand the differences between live and cold migration, and practice common scenarios such as draining a node for maintenance and optimizing cluster load distribution.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_prerequisites"><a class="anchor" href="#_prerequisites"></a>Prerequisites</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p>Completed the <a href="getting-started.html" class="xref page">Getting Started with Agentic VM Management</a> tutorial (skill pack installed, MCP server configured, cluster connectivity verified)</p>
+</li>
+<li>
+<p>OpenShift cluster with OpenShift Virtualization installed</p>
+</li>
+<li>
+<p><code>KUBECONFIG</code> environment variable set and pointing to a valid kubeconfig file</p>
+</li>
+<li>
+<p>A multi-node cluster with at least two schedulable worker nodes</p>
+</li>
+<li>
+<p>At least two running VMs distributed across nodes (see <a href="natural-language-vm-create.html" class="xref page">Creating Virtual Machines with Natural Language</a> to create them)</p>
+</li>
+<li>
+<p>Worker nodes with hardware virtualization (KVM) support, or software emulation enabled on the HyperConverged CR for non-bare-metal environments</p>
+</li>
+<li>
+<p>For live migration: a StorageClass that supports <code>ReadWriteMany</code> (RWX) access mode (e.g., Ceph RBD, ODF, CephFS). <code>ReadWriteOnce</code> (RWO) storage only supports cold migration</p>
+</li>
+<li>
+<p>For cold migration across nodes: worker nodes must share access to the same persistent storage. Zone-bound or node-local storage limits cold migration to nodes within the same zone</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Create the namespace used in this tutorial if it does not already exist:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc create namespace my-vms</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If you do not have VMs to work with, create them using the <code>vm-create</code> skill by typing in your IDE chat:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>Create a Fedora VM named web-01 in namespace my-vms</pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>Create a Fedora VM named web-02 in namespace my-vms</pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>Create a Fedora VM named db-01 in namespace my-vms</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Verify the VMs exist and are running before continuing:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vm -n my-vms</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Expected output:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>NAME     AGE   STATUS    READY
+db-01    3m    Running   True
+web-01   5m    Running   True
+web-02   4m    Running   True</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Check which nodes the VMs are currently scheduled on:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vmi -n my-vms -o custom-columns="NAME:.metadata.name,NODE:.status.nodeName,PHASE:.status.phase"</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Expected output:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>NAME     NODE        PHASE
+db-01    worker-02   Running
+web-01   worker-01   Running
+web-02   worker-01   Running</pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_how_it_works"><a class="anchor" href="#_how_it_works"></a>How It Works</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The <code>vm-rebalance</code> skill supports two modes of operation: manual and automatic. Both modes follow a safety-first workflow that validates prerequisites, presents a migration plan, and waits for your explicit confirmation before moving any VM.</p>
+</div>
+<div class="sect2">
+<h3 id="_manual_rebalancing"><a class="anchor" href="#_manual_rebalancing"></a>Manual Rebalancing</h3>
+<div class="paragraph">
+<p>In manual mode, you specify which VM to move and where. The agent follows a four-step workflow:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p><strong>Validate source and target</strong>&#8201;&#8212;&#8201;The agent verifies the VM exists and is running, checks that the target node is schedulable (not cordoned or tainted), and confirms the target node has sufficient CPU, memory, and storage resources.</p>
+</li>
+<li>
+<p><strong>Check storage compatibility</strong>&#8201;&#8212;&#8201;The agent inspects the VM&#8217;s storage configuration to determine whether live migration is possible. VMs with ReadWriteMany (RWX) storage support live migration. VMs with ReadWriteOnce (RWO) storage require cold migration (stop, migrate storage, start).</p>
+</li>
+<li>
+<p><strong>Present migration plan</strong>&#8201;&#8212;&#8201;The agent displays the migration type (live or cold), source and target nodes, expected impact, and estimated duration. It waits for your explicit confirmation.</p>
+</li>
+<li>
+<p><strong>Execute and monitor</strong>&#8201;&#8212;&#8201;After confirmation, the agent initiates the migration, monitors state transitions, and reports the result.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_automatic_rebalancing"><a class="anchor" href="#_automatic_rebalancing"></a>Automatic Rebalancing</h3>
+<div class="paragraph">
+<p>In automatic mode, the agent analyzes cluster-wide resource utilization and proposes a migration plan to distribute VMs more evenly. The workflow adds an analysis step:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p><strong>Gather cluster metrics</strong>&#8201;&#8212;&#8201;The agent collects CPU and memory utilization data for all worker nodes and identifies imbalances.</p>
+</li>
+<li>
+<p><strong>Generate migration plan</strong>&#8201;&#8212;&#8201;Based on the metrics, the agent determines which VMs should move and where. It considers storage compatibility, node capacity, and anti-affinity rules.</p>
+</li>
+<li>
+<p><strong>Present plan for review</strong>&#8201;&#8212;&#8201;The agent displays the full migration plan as a table showing each proposed migration, the migration type, and the expected resource impact on each node.</p>
+</li>
+<li>
+<p><strong>Execute with per-VM confirmation</strong>&#8201;&#8212;&#8201;After you approve the plan, the agent executes each migration individually and reports progress. You can cancel remaining migrations at any point.</p>
+</li>
+</ol>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_live_migration_vs_cold_migration"><a class="anchor" href="#_live_migration_vs_cold_migration"></a>Live Migration vs Cold Migration</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The <code>vm-rebalance</code> skill selects the migration type based on the VM&#8217;s storage configuration.</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 20%;">
+<col style="width: 40%;">
+<col style="width: 40%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Criteria</th>
+<th class="tableblock halign-left valign-top">Live Migration</th>
+<th class="tableblock halign-left valign-top">Cold Migration</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Storage access mode</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ReadWriteMany (RWX)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ReadWriteOnce (RWO)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">VM downtime</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Zero&#8201;&#8212;&#8201;VM continues running during migration</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Brief&#8201;&#8212;&#8201;VM is stopped, storage is migrated, VM is restarted</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Typical duration</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">30 seconds to 5 minutes (depends on memory size and dirty page rate)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">2 to 15 minutes (depends on disk size)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Network connections</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Preserved&#8201;&#8212;&#8201;active TCP connections remain intact</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Dropped&#8201;&#8212;&#8201;clients must reconnect after restart</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Use case</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Production workloads, stateful services</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Development VMs, batch jobs, non-critical workloads</p></td>
+</tr>
+</tbody>
+</table>
+<div class="sect2">
+<h3 id="_how_live_migration_works"><a class="anchor" href="#_how_live_migration_works"></a>How Live Migration Works</h3>
+<div class="paragraph">
+<p>KubeVirt live migration transfers a running VM&#8217;s memory state from the source node to the target node without interrupting the guest operating system. The process follows these stages:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p><strong>Scheduling</strong>&#8201;&#8212;&#8201;A new VirtualMachineInstance (VMI) pod is scheduled on the target node.</p>
+</li>
+<li>
+<p><strong>Pre-copy</strong>&#8201;&#8212;&#8201;The VM&#8217;s memory pages are copied to the target while the VM continues running on the source.</p>
+</li>
+<li>
+<p><strong>Iterative copy</strong>&#8201;&#8212;&#8201;Dirty pages (memory modified during copy) are re-sent in successive rounds until the remaining delta is small enough for a quick switchover.</p>
+</li>
+<li>
+<p><strong>Switchover</strong>&#8201;&#8212;&#8201;The VM is paused briefly on the source node, the final dirty pages are transferred, and the VM resumes on the target node.</p>
+</li>
+<li>
+<p><strong>Cleanup</strong>&#8201;&#8212;&#8201;The source VMI pod is terminated.</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>You can monitor the migration state transitions:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vmim -n my-vms -w</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_when_cold_migration_is_required"><a class="anchor" href="#_when_cold_migration_is_required"></a>When Cold Migration Is Required</h3>
+<div class="paragraph">
+<p>Cold migration is used when the VM&#8217;s storage does not support shared access across nodes. Common scenarios include:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>The VM uses a PVC with <code>ReadWriteOnce</code> (RWO) access mode, which can only be mounted on a single node at a time.</p>
+</li>
+<li>
+<p>The underlying StorageClass does not support volume cloning or multi-attach.</p>
+</li>
+<li>
+<p>The VM has local storage (hostPath or local-volume) that cannot be shared.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>The agent always informs you when cold migration will be used and warns about the expected downtime before proceeding.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_example_scenario_1_manual_live_migration"><a class="anchor" href="#_example_scenario_1_manual_live_migration"></a>Example Scenario 1: Manual Live Migration</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>This example moves a single VM to a specific target node using live migration.</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>In your IDE chat, type:</p>
+<div class="listingblock">
+<div class="content">
+<pre>Migrate VM web-01 from worker-01 to worker-02 in namespace my-vms</pre>
+</div>
+</div>
+</li>
+<li>
+<p>The agent validates the VM, checks the target node&#8217;s readiness and capacity, inspects the storage access mode, and presents the migration plan:</p>
+<div class="listingblock">
+<div class="content">
+<pre>## VM Migration Plan
+
+| Parameter    | Value                                    |
+|--------------|------------------------------------------|
+| VM Name      | `web-01`                                 |
+| Namespace    | `my-vms`                                 |
+| Source Node  | `worker-01`                              |
+| Target Node  | `worker-02`                              |
+| Migration    | Live (zero downtime)                     |
+| Storage      | web-01-rootdisk (30Gi, RWX) - compatible |
+| Est. Duration| ~1-2 minutes                             |
+
+**Impact**: No downtime. Active connections preserved.
+
+Proceed with migration? (yes/no)</pre>
+</div>
+</div>
+</li>
+<li>
+<p>You review the plan and confirm:</p>
+<div class="listingblock">
+<div class="content">
+<pre>yes</pre>
+</div>
+</div>
+</li>
+<li>
+<p>The agent initiates the VirtualMachineInstanceMigration, monitors the state transitions, and reports:</p>
+<div class="listingblock">
+<div class="content">
+<pre>## VM Migration Progress
+
+Scheduling... Target pod created on worker-02
+Pre-copy...   Memory transfer in progress (2.1 GiB)
+Iterative...  Round 1: 45 MiB dirty pages
+Iterative...  Round 2: 8 MiB dirty pages
+Switchover... VM paused on source, final pages transferred
+Running...    VM resumed on worker-02
+Cleanup...    Source pod terminated on worker-01
+
+## VM Migration Successful
+
+**VM**: `web-01` | **From**: worker-01 | **To**: worker-02
+**Duration**: 1m 23s | **Type**: Live (zero downtime)
+
+**Next**: "List VMs in namespace my-vms" or "Show status of VM web-01"</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>You can verify the VM is now running on the target node:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vmi web-01 -n my-vms -o jsonpath='{.status.nodeName}'</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>worker-02</pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_example_scenario_2_cold_migration_rwo_storage"><a class="anchor" href="#_example_scenario_2_cold_migration_rwo_storage"></a>Example Scenario 2: Cold Migration (RWO Storage)</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>This example demonstrates cold migration for a VM whose storage uses <code>ReadWriteOnce</code> access mode, which prevents live migration.</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>In your IDE chat, type:</p>
+<div class="listingblock">
+<div class="content">
+<pre>Move VM db-01 to worker-01 in namespace my-vms</pre>
+</div>
+</div>
+</li>
+<li>
+<p>The agent detects that the VM&#8217;s PVC uses RWO access mode and warns about the required downtime:</p>
+<div class="listingblock">
+<div class="content">
+<pre>## VM Migration Plan
+
+| Parameter    | Value                                          |
+|--------------|------------------------------------------------|
+| VM Name      | `db-01`                                        |
+| Namespace    | `my-vms`                                       |
+| Source Node  | `worker-02`                                    |
+| Target Node  | `worker-01`                                    |
+| Migration    | Cold (brief downtime required)                 |
+| Storage      | db-01-rootdisk (30Gi, RWO) - live incompatible |
+| Est. Duration| ~3-5 minutes                                   |
+
+WARNING: Cold migration requires stopping the VM. The VM will be
+unavailable for approximately 3-5 minutes. Active network connections
+will be dropped.
+
+**Cold migration steps**:
+1. Stop VM on worker-02
+2. Reschedule VM to worker-01
+3. Start VM on worker-01
+
+Proceed with cold migration? (yes/no)</pre>
+</div>
+</div>
+</li>
+<li>
+<p>You confirm:</p>
+<div class="listingblock">
+<div class="content">
+<pre>yes</pre>
+</div>
+</div>
+</li>
+<li>
+<p>The agent performs the stop-migrate-start sequence and reports:</p>
+<div class="listingblock">
+<div class="content">
+<pre>## Cold Migration Progress
+
+Step 1/3: Stopping VM db-01 on worker-02... Stopped
+Step 2/3: Rescheduling to worker-01... Scheduled
+Step 3/3: Starting VM db-01 on worker-01... Running
+
+## VM Migration Successful
+
+**VM**: `db-01` | **From**: worker-02 | **To**: worker-01
+**Duration**: 3m 47s | **Type**: Cold (VM was stopped during migration)
+**Downtime**: ~3m 47s
+
+**Next**: Verify application connectivity. Clients may need to reconnect.</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_example_scenario_3_node_maintenance_drain"><a class="anchor" href="#_example_scenario_3_node_maintenance_drain"></a>Example Scenario 3: Node Maintenance Drain</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>This example drains all VMs from a node before maintenance. The agent migrates each VM individually, selecting live or cold migration based on each VM&#8217;s storage configuration.</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>In your IDE chat, type:</p>
+<div class="listingblock">
+<div class="content">
+<pre>Drain all VMs from worker-01 for maintenance in namespace my-vms</pre>
+</div>
+</div>
+</li>
+<li>
+<p>The agent inventories all VMs on the specified node, checks storage compatibility for each, and presents a drain plan:</p>
+<div class="listingblock">
+<div class="content">
+<pre>## Node Drain Plan: worker-01
+
+VMs on worker-01: 2
+
+| VM     | Storage Access | Migration Type | Target Node | Est. Duration |
+|--------|----------------|----------------|-------------|---------------|
+| web-01 | RWX            | Live           | worker-02   | ~1-2 min      |
+| web-02 | RWX            | Live           | worker-02   | ~1-2 min      |
+
+**Target node capacity check**:
+- worker-02: 4/8 vCPU used, 12Gi/32Gi memory used - sufficient for 2 additional VMs
+
+**Total estimated time**: ~3-5 minutes
+**Impact**: Zero downtime for all VMs (all eligible for live migration)
+
+Approve drain plan? (yes/no)</pre>
+</div>
+</div>
+</li>
+<li>
+<p>You approve:</p>
+<div class="listingblock">
+<div class="content">
+<pre>yes</pre>
+</div>
+</div>
+</li>
+<li>
+<p>The agent migrates each VM sequentially and reports progress:</p>
+<div class="listingblock">
+<div class="content">
+<pre>## Node Drain Progress
+
+[1/2] Migrating web-01 (live)... Completed in 1m 15s
+[2/2] Migrating web-02 (live)... Completed in 1m 32s
+
+## Node Drain Complete
+
+**Node**: worker-01 | **VMs migrated**: 2/2
+**Total duration**: 2m 47s | **Downtime**: None
+
+worker-01 is now free of VMs and ready for maintenance.
+
+**Next**: Cordon the node with "oc adm cordon worker-01" before
+starting maintenance to prevent new VMs from scheduling.</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>After the drain completes, cordon the node to prevent new workloads from being scheduled:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc adm cordon worker-01</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>After maintenance, uncordon the node to allow scheduling again:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc adm uncordon worker-01</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_example_scenario_4_automatic_rebalancing"><a class="anchor" href="#_example_scenario_4_automatic_rebalancing"></a>Example Scenario 4: Automatic Rebalancing</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>This example uses automatic mode to let the agent analyze cluster resource utilization and propose a migration plan that distributes VMs more evenly.</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>In your IDE chat, type:</p>
+<div class="listingblock">
+<div class="content">
+<pre>Rebalance VMs across nodes in namespace my-vms</pre>
+</div>
+</div>
+</li>
+<li>
+<p>The agent gathers node metrics, analyzes the current VM distribution, and proposes a rebalancing plan:</p>
+<div class="listingblock">
+<div class="content">
+<pre>## Cluster Analysis
+
+| Node      | vCPU Used | vCPU Total | Mem Used | Mem Total | VMs | Load  |
+|-----------|-----------|------------|----------|-----------|-----|-------|
+| worker-01 | 1/8       | 12.5%      | 4Gi      | 32Gi      | 1   | Low   |
+| worker-02 | 3/8       | 37.5%      | 12Gi     | 32Gi      | 3   | High  |
+
+**Imbalance detected**: worker-02 hosts 75% of VMs with 3x the resource
+utilization of worker-01.
+
+## Proposed Migration Plan
+
+| VM     | From      | To        | Type | Reason                          |
+|--------|-----------|-----------|------|---------------------------------|
+| web-02 | worker-02 | worker-01 | Live | Balance CPU/memory utilization  |
+
+**After rebalancing**:
+- worker-01: 2 VMs, ~25% CPU, ~25% memory
+- worker-02: 2 VMs, ~25% CPU, ~25% memory
+
+**Impact**: Zero downtime (all migrations are live)
+
+Approve rebalancing plan? (yes/no)</pre>
+</div>
+</div>
+</li>
+<li>
+<p>You review the plan and approve:</p>
+<div class="listingblock">
+<div class="content">
+<pre>yes</pre>
+</div>
+</div>
+</li>
+<li>
+<p>The agent executes the migration and reports:</p>
+<div class="listingblock">
+<div class="content">
+<pre>## Rebalancing Progress
+
+[1/1] Migrating web-02 from worker-02 to worker-01 (live)... Completed in 1m 18s
+
+## Rebalancing Complete
+
+| Node      | Before         | After          |
+|-----------|----------------|----------------|
+| worker-01 | 1 VM, 12.5% CPU | 2 VMs, 25% CPU |
+| worker-02 | 3 VMs, 37.5% CPU | 2 VMs, 25% CPU |
+
+**VMs migrated**: 1 | **Downtime**: None
+
+Cluster load is now balanced across worker nodes.</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>You can verify the new distribution:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vmi -n my-vms -o custom-columns="NAME:.metadata.name,NODE:.status.nodeName,PHASE:.status.phase"</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>NAME     NODE        PHASE
+db-01    worker-01   Running
+web-01   worker-02   Running
+web-02   worker-01   Running</pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_storage_compatibility_validation"><a class="anchor" href="#_storage_compatibility_validation"></a>Storage Compatibility Validation</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Before initiating any migration, the <code>vm-rebalance</code> skill validates whether the VM&#8217;s storage configuration supports the requested migration type. The agent performs the following checks:</p>
+</div>
+<div class="sect2">
+<h3 id="_access_mode_check"><a class="anchor" href="#_access_mode_check"></a>Access Mode Check</h3>
+<div class="paragraph">
+<p>The agent inspects the PVC access mode to determine migration eligibility:</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 20%;">
+<col style="width: 40%;">
+<col style="width: 40%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Access Mode</th>
+<th class="tableblock halign-left valign-top">Live Migration</th>
+<th class="tableblock halign-left valign-top">Cold Migration</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ReadWriteMany (RWX)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Supported</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Supported</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ReadWriteOnce (RWO)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Not supported</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Supported</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ReadOnlyMany (ROX)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Supported (read-only disks)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Supported</p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>You can check a VM&#8217;s PVC access mode:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get pvc -n my-vms -o custom-columns="NAME:.metadata.name,ACCESS:.status.accessModes[0],CAPACITY:.status.capacity.storage"</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>NAME                 ACCESS          CAPACITY
+db-01-rootdisk       ReadWriteOnce   30Gi
+web-01-rootdisk      ReadWriteMany   30Gi
+web-02-rootdisk      ReadWriteMany   30Gi</pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_storageclass_capability_check"><a class="anchor" href="#_storageclass_capability_check"></a>StorageClass Capability Check</h3>
+<div class="paragraph">
+<p>The agent also verifies that the StorageClass supports the required operations for migration:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get storageclass -o custom-columns="NAME:.metadata.name,PROVISIONER:.provisioner,BINDING:.volumeBindingMode"</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Storage classes that use CSI drivers with multi-attach support (such as Ceph RBD with RWX or CephFS) enable live migration. Storage classes limited to single-node attachment (such as local-volume or certain LVM implementations) require cold migration.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_node_readiness_checks"><a class="anchor" href="#_node_readiness_checks"></a>Node Readiness Checks</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The <code>vm-rebalance</code> skill validates target nodes before proposing or executing migrations. The agent checks the following conditions:</p>
+</div>
+<div class="sect2">
+<h3 id="_node_schedulability"><a class="anchor" href="#_node_schedulability"></a>Node Schedulability</h3>
+<div class="paragraph">
+<p>The agent verifies the target node is not cordoned or marked as unschedulable:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get nodes -o custom-columns="NAME:.metadata.name,STATUS:.status.conditions[-1].type,SCHEDULABLE:.spec.unschedulable"</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>NAME        STATUS   SCHEDULABLE
+worker-01   Ready    &lt;none&gt;
+worker-02   Ready    &lt;none&gt;</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>A node with <code>SCHEDULABLE: true</code> (unschedulable flag set) is cordoned and will be excluded from migration targets.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_taint_verification"><a class="anchor" href="#_taint_verification"></a>Taint Verification</h3>
+<div class="paragraph">
+<p>The agent checks whether the target node has taints that the VM&#8217;s pod does not tolerate. If untolerated taints exist, the agent either selects a different target node or informs you that no suitable target is available:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get nodes -o custom-columns="NAME:.metadata.name,TAINTS:.spec.taints[*].key"</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_resource_capacity"><a class="anchor" href="#_resource_capacity"></a>Resource Capacity</h3>
+<div class="paragraph">
+<p>The agent verifies that the target node has sufficient allocatable CPU and memory for the incoming VM. It compares the VM&#8217;s resource requests against the node&#8217;s remaining capacity (allocatable minus currently allocated):</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc describe node worker-01 | grep -A 5 "Allocated resources"</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If the target node lacks sufficient resources, the agent reports the shortfall and suggests alternative nodes or recommends scaling the cluster.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_human_in_the_loop_confirmation"><a class="anchor" href="#_human_in_the_loop_confirmation"></a>Human-in-the-Loop Confirmation</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The <code>vm-rebalance</code> skill enforces explicit confirmation at every stage because migrations affect VM availability:</p>
+</div>
+<div class="paragraph">
+<p><strong>Manual migrations</strong>:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>The agent presents the migration type (live or cold), source node, target node, and expected impact before proceeding.</p>
+</li>
+<li>
+<p>Cold migrations include an explicit downtime warning.</p>
+</li>
+<li>
+<p>You must confirm with "yes" before the migration executes.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p><strong>Automatic rebalancing</strong>:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>The agent presents the full migration plan as a table before any migration begins.</p>
+</li>
+<li>
+<p>You review the plan and approve or reject it as a whole.</p>
+</li>
+<li>
+<p>Individual migrations within an approved plan execute sequentially. If any migration fails, the agent stops and reports the failure without proceeding to remaining migrations.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p><strong>Node drain operations</strong>:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>The agent inventories all VMs on the node and presents the full drain plan.</p>
+</li>
+<li>
+<p>The plan shows migration types for each VM so you can assess the total impact.</p>
+</li>
+<li>
+<p>You approve the entire drain plan before execution begins.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>In all modes, typing "no" or "cancel" at any confirmation step cancels the operation. No VMs are moved until you explicitly approve.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_cleanup"><a class="anchor" href="#_cleanup"></a>Cleanup</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>To remove VMs created during this tutorial:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc delete vm web-01 web-02 db-01 -n my-vms</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Or use natural language: type "Delete VM web-01 in namespace my-vms" in your IDE chat. The <code>vm-delete</code> skill handles the deletion with its full safety workflow.</p>
+</div>
+<div class="paragraph">
+<p>To uncordon any nodes that were cordoned during testing:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc adm uncordon worker-01</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>To remove the namespace:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc delete namespace my-vms</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_summary"><a class="anchor" href="#_summary"></a>Summary</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p>The <code>vm-rebalance</code> skill supports manual (user-driven) and automatic (AI-driven) VM migration across cluster nodes.</p>
+</li>
+<li>
+<p>Live migration provides zero-downtime VM movement for VMs with ReadWriteMany (RWX) storage. Active network connections are preserved during live migration.</p>
+</li>
+<li>
+<p>Cold migration is used for VMs with ReadWriteOnce (RWO) storage and involves a stop-reschedule-start sequence with brief downtime.</p>
+</li>
+<li>
+<p>Node drain operations migrate all VMs off a node before maintenance, selecting the appropriate migration type for each VM based on its storage configuration.</p>
+</li>
+<li>
+<p>Automatic rebalancing analyzes cluster CPU and memory utilization and proposes a migration plan to distribute VMs evenly.</p>
+</li>
+<li>
+<p>The agent validates target node readiness (schedulability, taints, resource capacity) and storage compatibility before proposing any migration.</p>
+</li>
+<li>
+<p>All migration operations require explicit user confirmation. Cold migrations include downtime warnings.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_see_also"><a class="anchor" href="#_see_also"></a>See Also</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p><a href="getting-started.html" class="xref page">Getting Started with Agentic VM Management</a></p>
+</li>
+<li>
+<p><a href="natural-language-vm-create.html" class="xref page">Creating Virtual Machines with Natural Language</a></p>
+</li>
+<li>
+<p><a href="ai-vm-lifecycle.html" class="xref page">AI-Assisted VM Lifecycle Operations</a></p>
+</li>
+<li>
+<p><a href="vm-clone.html" class="xref page">Cloning Virtual Machines with AI Agents</a></p>
+</li>
+<li>
+<p><a href="https://github.com/RHEcosystemAppEng/agentic-plugins/tree/main/rh-virt" target="_blank" rel="noopener">rh-virt Skill Pack Repository</a></p>
+</li>
+<li>
+<p><a href="https://github.com/openshift/openshift-mcp-server" target="_blank" rel="noopener">OpenShift MCP Server</a></p>
+</li>
+<li>
+<p><a href="https://docs.openshift.com/container-platform/latest/virt/index.html" target="_blank" rel="noopener">OpenShift Virtualization Documentation</a></p>
+</li>
+<li>
+<p><a href="https://docs.openshift.com/container-platform/latest/virt/live_migration/virt-about-live-migration.html" target="_blank" rel="noopener">OpenShift Live Migration Documentation</a></p>
+</li>
+<li>
+<p><a href="https://kubevirt.io/user-guide/compute/live_migration/" target="_blank" rel="noopener">KubeVirt Live Migration Guide</a></p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<nav class="pagination">
+  <span class="prev"><a href="ai-skill-chaining.html">Day-2 Skill Chaining</a></span>
+  <span class="next"><a href="../appendix/glossary.html">Glossary</a></span>
+</nav>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <img src="../../../_/img/rhl-logo-red.png" height="40px" alt="Red Hat"  href="https://redhat.com" >
+</footer><script id="site-script" src="../../../_/js/site.js" data-ui-root-path="../../../_"></script>
+<script async src="../../../_/js/vendor/highlight.js"></script>
+  </body>
+</html>
