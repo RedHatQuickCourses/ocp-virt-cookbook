@@ -1,0 +1,605 @@
+= Instancetype and Preference for Virtual Machine Definitions
+:navtitle: Instancetype and Preference
+
+== Overview
+
+Every VirtualMachine manifest needs compute resources (CPU, memory) and OS-specific machine settings (firmware type, CPU topology, device bus defaults). You can specify these settings inline in every VM manifest, but that leads to large, repetitive YAML and makes it easy to misconfigure a VM.
+
+Instancetypes and preferences solve this by splitting the configuration into reusable, named objects:
+
+* An **instancetype** defines the compute size: CPU count, memory, and optionally GPU or host device assignments.
+* A **preference** defines OS-specific behavior: firmware type (BIOS or UEFI), CPU topology presentation, disk bus defaults, and features like Hyper-V enlightenments for Windows guests.
+
+Together, they reduce a VM manifest from 30+ lines of domain spec down to a few references by name. OpenShift Virtualization ships with a set of predefined cluster-scoped instancetypes and preferences, and you can create your own for specific workloads.
+
+Versions tested:
+
+----
+OpenShift 4.21
+----
+
+== What You Will Learn
+
+* What instancetypes and preferences are and how they work together
+* The difference between cluster-scoped and namespace-scoped variants
+* How to discover and inspect the instancetypes and preferences available on your cluster
+* How to create a VM using instancetype and preference references
+* The difference between a VM defined with instancetype/preference and one with an explicit domain spec
+* When to use explicit domain specs instead of instancetype/preference
+* How to create custom instancetypes and preferences for specific workloads
+
+== Prerequisites
+
+* An OpenShift 4.18+ cluster with the OpenShift Virtualization operator installed
+* The `oc` CLI and `virtctl` CLI installed
+* A default StorageClass configured
+* A Fedora or RHEL boot source (DataSource) available in the `openshift-virtualization-os-images` namespace
+
+Verify that boot sources are available:
+
+[source,bash,role=execute]
+----
+oc get datasources -n openshift-virtualization-os-images
+----
+
+== Core Concepts
+
+=== What Is an Instancetype
+
+An instancetype is a reusable definition of compute resources. Instead of specifying CPU count, memory, GPU assignments, and related settings in every VM manifest, you reference an instancetype by name.
+
+OpenShift Virtualization ships with a set of predefined instancetypes organized by workload category and t-shirt size. The naming convention follows this pattern:
+
+....
+<letter><generation>.<size>
+
+Examples:
+  u1.medium     — General Purpose, generation 1, medium size
+  cx1.xlarge    — Compute Exclusive, generation 1, extra-large size
+  m1.2xlarge    — Memory Intensive, generation 1, 2x extra-large size
+....
+
+The available categories are:
+
+* **U (General Purpose)** -- Shared CPU cores, 1:4 CPU-to-RAM ratio. Suitable for most workloads.
+* **O (Overcommitted)** -- Allows host memory overprovisioning, 1:4 CPU-to-RAM ratio. Use when VMs do not consume their full memory allocation.
+* **CX (Compute Exclusive)** -- Dedicated CPU cores, 1:2 CPU-to-RAM ratio. For CPU-bound workloads.
+* **M (Memory Intensive)** -- No memory overcommit, 1:8 CPU-to-RAM ratio. For databases and caches.
+* **N (Network)** -- Requires DPDK-enabled nodes, 1:2 CPU-to-RAM ratio. For network-intensive workloads.
+
+Each category includes sizes from `nano` through `8xlarge`, scaling CPU and memory according to the category's ratio.
+
+=== Cluster-Scoped vs. Namespace-Scoped Instancetypes
+
+Instancetypes come in two scopes:
+
+* **VirtualMachineClusterInstancetype** -- Cluster-scoped. Available to all namespaces. The predefined instancetypes shipped with OpenShift Virtualization are cluster-scoped.
+* **VirtualMachineInstancetype** -- Namespace-scoped. Only available within the namespace where it is created. Use this when you need a custom instancetype for a specific project without affecting the rest of the cluster.
+
+=== What Is a Preference
+
+A preference stores OS-specific machine settings that the instancetype does not cover. These are the settings that differ between operating systems rather than between VM sizes:
+
+* **Firmware type** -- BIOS vs. UEFI, SecureBoot enabled or disabled
+* **CPU topology** -- How vCPUs are presented to the guest (as sockets, cores, or threads)
+* **Device bus defaults** -- Whether disks default to virtio, SATA, or SCSI
+* **Clock and timer configuration** -- OS-specific timer settings
+* **Hyper-V enlightenments** -- Performance optimizations for Windows guests
+
+OpenShift Virtualization ships with cluster preferences named after the OS they target: `fedora`, `rhel9`, `rhel10`, `windows.11`, and others.
+
+Preference values are "preferred" defaults, not hard requirements. If you set a conflicting value directly in the VM manifest, the explicit value takes precedence.
+
+=== Cluster-Scoped vs. Namespace-Scoped Preferences
+
+Like instancetypes, preferences also come in two scopes:
+
+* **VirtualMachineClusterPreference** -- Cluster-scoped. The predefined OS preferences are cluster-scoped.
+* **VirtualMachinePreference** -- Namespace-scoped. Create these for custom OS images or organization-specific firmware requirements.
+
+=== How Instancetype and Preference Work Together
+
+The instancetype defines the "size" (how much compute), and the preference defines the "behavior" (how the OS expects the hardware to look). A VM references both:
+
+....
+VirtualMachine manifest
+├── spec.instancetype         → u1.medium (1 vCPU, 4Gi RAM)
+├── spec.preference           → fedora (EFI firmware, virtio bus, prefer-cores topology)
+└── spec.template.spec        → disks, networks, volumes (your workload-specific config)
+....
+
+When the VM starts, OpenShift Virtualization merges the instancetype and preference settings into the VirtualMachineInstance, producing a fully resolved domain spec. You can inspect this resolved spec on the running VMI.
+
+== Step 1: Discover Available Instancetypes
+
+List all cluster-scoped instancetypes:
+
+[source,bash,role=execute]
+----
+oc get virtualmachineclusterinstancetypes
+----
+
+The output shows every predefined instancetype. To filter to a specific category, use `grep`:
+
+[source,bash,role=execute]
+----
+oc get virtualmachineclusterinstancetypes | grep '^u1\.'
+----
+
+This shows only the General Purpose (U) instancetypes and their sizes.
+
+Inspect a specific instancetype to see what resources it defines:
+
+[source,bash,role=execute]
+----
+oc get virtualmachineclusterinstancetype u1.medium -o yaml
+----
+
+The `spec` section shows the CPU and memory configuration. For `u1.medium`, you will see 1 vCPU and 4Gi of memory, matching the 1:4 ratio of the General Purpose category.
+
+== Step 2: Discover Available Preferences
+
+List all cluster-scoped preferences:
+
+[source,bash,role=execute]
+----
+oc get virtualmachineclusterpreferences
+----
+
+Inspect the Fedora preference to see what OS settings it configures:
+
+[source,bash,role=execute]
+----
+oc get virtualmachineclusterpreference fedora -o yaml
+----
+
+Look at the `spec` section. You will see settings for firmware type (EFI), preferred CPU topology, preferred disk bus (virtio), and other OS-specific defaults.
+
+== Step 3: Create a VM Using Instancetype and Preference
+
+Create a namespace for the examples in this tutorial:
+
+[source,bash,role=execute]
+----
+oc new-project instancetype-demo
+----
+
+The following manifest creates a Fedora VM using the `u1.medium` instancetype and the `fedora` preference. Notice that the manifest does not contain any `cpu`, `memory`, `firmware`, or `machine` fields in the domain spec. Those are all supplied by the instancetype and preference.
+
+xref:attachment$instancetype-preference/vm-with-instancetype.yaml[Download vm-with-instancetype.yaml]
+
+[source,yaml]
+----
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: fedora-instancetype-demo
+  namespace: instancetype-demo
+spec:
+  instancetype:
+    name: u1.medium
+    kind: VirtualMachineClusterInstancetype
+  preference:
+    name: fedora
+    kind: VirtualMachineClusterPreference
+  runStrategy: Always
+  dataVolumeTemplates:
+    - metadata:
+        name: fedora-instancetype-demo
+      spec:
+        sourceRef:
+          kind: DataSource
+          name: fedora
+          namespace: openshift-virtualization-os-images
+        storage:
+          resources:
+            requests:
+              storage: 30Gi
+  template:
+    metadata:
+      labels:
+        kubevirt.io/domain: fedora-instancetype-demo
+    spec:
+      domain:
+        devices:
+          disks:
+            - name: rootdisk
+              disk:
+                bus: virtio
+            - name: cloudinitdisk
+              disk:
+                bus: virtio
+          interfaces:
+            - name: default
+              masquerade: {}
+      networks:
+        - name: default
+          pod: {}
+      volumes:
+        - name: rootdisk
+          dataVolume:
+            name: fedora-instancetype-demo
+        - name: cloudinitdisk
+          cloudInitNoCloud:
+            userData: |
+              #cloud-config
+              user: fedora
+              password: changeme123
+              chpasswd:
+                expire: false
+              ssh_pwauth: true
+----
+
+WARNING: The cloud-init password in this example is for demo purposes only. Use SSH key authentication in production.
+
+Apply the manifest:
+
+[source,bash,role=execute]
+----
+oc apply -f vm-with-instancetype.yaml
+----
+
+Wait for the VM to reach the Running state:
+
+[source,bash,role=execute]
+----
+oc get vm fedora-instancetype-demo -n instancetype-demo -w
+----
+
+Press `Ctrl+C` once the VM shows `Running`.
+
+== Step 4: Inspect the Resolved Spec on the Running VMI
+
+The VirtualMachine manifest does not contain CPU or memory fields, but the running VirtualMachineInstance does. The instancetype and preference values are merged into the VMI at start time.
+
+View the resolved domain spec on the VMI:
+
+[source,bash,role=execute]
+----
+oc get vmi fedora-instancetype-demo -n instancetype-demo -o yaml
+----
+
+In the output, look at `spec.domain`. You will see the CPU, memory, firmware, and machine settings that came from the `u1.medium` instancetype and the `fedora` preference. This is the actual configuration that QEMU/KVM is using.
+
+To see just the CPU and memory values:
+
+[source,bash,role=execute]
+----
+oc get vmi fedora-instancetype-demo -n instancetype-demo -o jsonpath='{.spec.domain.cpu}' | python3 -m json.tool
+----
+
+[source,bash,role=execute]
+----
+oc get vmi fedora-instancetype-demo -n instancetype-demo -o jsonpath='{.spec.domain.memory}' | python3 -m json.tool
+----
+
+This is how you verify what a VM is actually configured with when instancetype and preference are in use.
+
+== Step 5: Compare Instancetype vs. Explicit Domain Spec
+
+To understand what instancetype and preference are doing for you, compare the previous manifest to an equivalent VM defined with explicit domain spec fields.
+
+The following manifest produces the same VM, but with all compute and OS settings specified inline:
+
+xref:attachment$instancetype-preference/vm-with-explicit-domain.yaml[Download vm-with-explicit-domain.yaml]
+
+[source,yaml]
+----
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: fedora-explicit-demo
+  namespace: instancetype-demo
+spec:
+  runStrategy: Always
+  dataVolumeTemplates:
+    - metadata:
+        name: fedora-explicit-demo
+      spec:
+        sourceRef:
+          kind: DataSource
+          name: fedora
+          namespace: openshift-virtualization-os-images
+        storage:
+          resources:
+            requests:
+              storage: 30Gi
+  template:
+    metadata:
+      labels:
+        kubevirt.io/domain: fedora-explicit-demo
+    spec:
+      domain:
+        cpu:
+          sockets: 1
+          cores: 1
+          threads: 1
+        memory:
+          guest: 4Gi
+        devices:
+          disks:
+            - name: rootdisk
+              disk:
+                bus: virtio
+            - name: cloudinitdisk
+              disk:
+                bus: virtio
+          interfaces:
+            - name: default
+              masquerade: {}
+          rng: {}
+        features:
+          smm:
+            enabled: true
+        firmware:
+          bootloader:
+            efi: {}
+        machine:
+          type: pc-q35-rhel9.4.0
+        resources:
+          requests:
+            memory: 4Gi
+      networks:
+        - name: default
+          pod: {}
+      volumes:
+        - name: rootdisk
+          dataVolume:
+            name: fedora-explicit-demo
+        - name: cloudinitdisk
+          cloudInitNoCloud:
+            userData: |
+              #cloud-config
+              user: fedora
+              password: changeme123
+              chpasswd:
+                expire: false
+              ssh_pwauth: true
+----
+
+Here is what the instancetype and preference replace in the explicit version:
+
+[cols="1,1"]
+|===
+| Explicit domain spec field | Provided by
+
+| `spec.template.spec.domain.cpu` (sockets, cores, threads)
+| Instancetype (`u1.medium`) + Preference (`fedora`) topology
+
+| `spec.template.spec.domain.memory.guest`
+| Instancetype (`u1.medium`)
+
+| `spec.template.spec.domain.resources.requests.memory`
+| Instancetype (`u1.medium`)
+
+| `spec.template.spec.domain.features.smm`
+| Preference (`fedora`)
+
+| `spec.template.spec.domain.firmware.bootloader`
+| Preference (`fedora`)
+
+| `spec.template.spec.domain.machine.type`
+| Preference (`fedora`)
+
+| `spec.template.spec.domain.devices.rng`
+| Preference (`fedora`)
+|===
+
+The instancetype version is shorter and less error-prone. If the organization later changes the standard memory for "medium" VMs, updating the `u1.medium` instancetype applies the change to all VMs that reference it.
+
+IMPORTANT: The `spec.instancetype` field and `spec.template.spec.domain.cpu` / `spec.template.spec.domain.memory` fields are mutually exclusive. Setting both causes a validation error. Choose one approach or the other for a given VM.
+
+== Step 6: When NOT to Use Instancetype and Preference
+
+Instancetypes and preferences cover the common cases well, but there are situations where you need direct control of the domain spec:
+
+* **Dedicated CPU pinning** -- When a VM requires `dedicatedCPUPlacement: true` with specific NUMA topology, you may need to set CPU fields directly or use a custom instancetype that defines these settings.
+* **Hugepages** -- Hugepage configuration interacts with memory settings in ways that require explicit control.
+* **Real-time workloads** -- Real-time VMs need CPU isolation, emulator thread pinning, and kernel tuning that goes beyond what standard instancetypes provide.
+* **Custom firmware settings** -- If you need specific BIOS/UEFI settings that no existing preference covers, and creating a custom preference is not justified for a single VM.
+* **Debugging VM configuration** -- When troubleshooting hardware-level issues, having all settings visible in the VM manifest (rather than resolved at start time) can simplify diagnosis. Inspect the VMI to see the resolved spec, as shown in Step 4.
+* **Unique compute configurations** -- If a VM needs a combination of CPU, memory, and device settings that no existing instancetype provides, and the configuration is truly one-off, an explicit domain spec is simpler than creating a custom instancetype for a single VM.
+
+For these cases, define the full domain spec inline in the VM manifest as shown in the explicit domain spec example above.
+
+== Step 7: Create a Custom Instancetype
+
+When no predefined instancetype matches your needs and you plan to reuse the configuration across multiple VMs, create a custom instancetype.
+
+This example creates a namespace-scoped instancetype for an application server with 4 vCPUs and 8Gi of memory:
+
+xref:attachment$instancetype-preference/custom-instancetype.yaml[Download custom-instancetype.yaml]
+
+[source,yaml]
+----
+apiVersion: instancetype.kubevirt.io/v1beta1
+kind: VirtualMachineInstancetype
+metadata:
+  name: app-server-4c8g
+  namespace: instancetype-demo
+spec:
+  cpu:
+    guest: 4
+  memory:
+    guest: 8Gi
+----
+
+Apply the custom instancetype:
+
+[source,bash,role=execute]
+----
+oc apply -f custom-instancetype.yaml
+----
+
+Verify it was created:
+
+[source,bash,role=execute]
+----
+oc get virtualmachineinstancetypes -n instancetype-demo
+----
+
+== Step 8: Create a Custom Preference
+
+Create a namespace-scoped preference for a Linux server that boots with EFI (without SecureBoot), uses virtio devices, and presents vCPUs as cores:
+
+xref:attachment$instancetype-preference/custom-preference.yaml[Download custom-preference.yaml]
+
+[source,yaml]
+----
+apiVersion: instancetype.kubevirt.io/v1beta1
+kind: VirtualMachinePreference
+metadata:
+  name: my-linux-server
+  namespace: instancetype-demo
+spec:
+  cpu:
+    preferredCPUTopology: cores
+  firmware:
+    preferredUseEfi: true
+    preferredUseSecureBoot: false
+  devices:
+    preferredDiskBus: virtio
+    preferredInterfaceModel: virtio
+----
+
+Apply the custom preference:
+
+[source,bash,role=execute]
+----
+oc apply -f custom-preference.yaml
+----
+
+Verify it was created:
+
+[source,bash,role=execute]
+----
+oc get virtualmachinepreferences -n instancetype-demo
+----
+
+== Step 9: Create a VM with Custom Instancetype and Preference
+
+Now create a VM that uses the custom instancetype and preference you just defined:
+
+xref:attachment$instancetype-preference/vm-with-custom-instancetype.yaml[Download vm-with-custom-instancetype.yaml]
+
+[source,yaml]
+----
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: custom-instancetype-demo
+  namespace: instancetype-demo
+spec:
+  instancetype:
+    name: app-server-4c8g
+    kind: VirtualMachineInstancetype
+  preference:
+    name: my-linux-server
+    kind: VirtualMachinePreference
+  runStrategy: Always
+  dataVolumeTemplates:
+    - metadata:
+        name: custom-instancetype-demo
+      spec:
+        sourceRef:
+          kind: DataSource
+          name: fedora
+          namespace: openshift-virtualization-os-images
+        storage:
+          resources:
+            requests:
+              storage: 30Gi
+  template:
+    metadata:
+      labels:
+        kubevirt.io/domain: custom-instancetype-demo
+    spec:
+      domain:
+        devices:
+          disks:
+            - name: rootdisk
+              disk:
+                bus: virtio
+            - name: cloudinitdisk
+              disk:
+                bus: virtio
+          interfaces:
+            - name: default
+              masquerade: {}
+      networks:
+        - name: default
+          pod: {}
+      volumes:
+        - name: rootdisk
+          dataVolume:
+            name: custom-instancetype-demo
+        - name: cloudinitdisk
+          cloudInitNoCloud:
+            userData: |
+              #cloud-config
+              user: fedora
+              password: changeme123
+              chpasswd:
+                expire: false
+              ssh_pwauth: true
+----
+
+Apply the manifest:
+
+[source,bash,role=execute]
+----
+oc apply -f vm-with-custom-instancetype.yaml
+----
+
+Wait for the VM to start:
+
+[source,bash,role=execute]
+----
+oc get vm custom-instancetype-demo -n instancetype-demo -w
+----
+
+Press `Ctrl+C` once the VM shows `Running`.
+
+Verify that the custom instancetype values were applied by checking the VMI:
+
+[source,bash,role=execute]
+----
+oc get vmi custom-instancetype-demo -n instancetype-demo -o jsonpath='{.spec.domain.cpu.cores}' && echo " cores"
+----
+
+[source,bash,role=execute]
+----
+oc get vmi custom-instancetype-demo -n instancetype-demo -o jsonpath='{.spec.domain.memory.guest}' && echo ""
+----
+
+You should see `4 cores` and `8Gi`, matching your custom instancetype definition.
+
+== Cleanup
+
+Remove the namespace and all resources created during this tutorial:
+
+[source,bash,role=execute]
+----
+oc delete project instancetype-demo
+----
+
+== Summary
+
+In this tutorial, you learned:
+
+* Instancetypes define reusable compute sizes (CPU, memory) and preferences define OS-specific machine settings (firmware, CPU topology, device defaults).
+* OpenShift Virtualization ships with predefined cluster-scoped instancetypes (U, O, CX, M, N categories) and preferences (per OS).
+* You can discover available instancetypes and preferences with `oc get` and inspect them with `-o yaml` to see their configuration.
+* Using instancetype and preference in a VM manifest replaces inline domain spec fields, resulting in shorter and more consistent manifests.
+* The `spec.instancetype` and `spec.template.spec.domain.cpu` / `memory` fields are mutually exclusive.
+* You can inspect the running VirtualMachineInstance to see the fully resolved domain spec.
+* Explicit domain specs are appropriate for dedicated CPU pinning, hugepages, real-time workloads, and one-off compute configurations.
+* Custom namespace-scoped instancetypes and preferences let you define organization-specific or workload-specific configurations.
+
+== See Also
+
+* xref:api:api-component-overview.adoc[API Component Overview] -- Detailed API reference for instancetype and preference objects, including CPU topology spread options and field specifications
+* xref:vm-templates.adoc[Virtual Machine Templates] -- Using instancetype and preference within VM templates for repeatable deployments
+* xref:getting-started:create-vm-cli-yaml.adoc[Creating VMs from CLI Using YAML Manifests] -- Foundational guide to creating VMs with YAML
+* link:https://docs.redhat.com/en/documentation/openshift_container_platform/latest/html/virtualization/creating-a-virtual-machine#virt-creating-vms-from-instance-types[Creating VMs from instance types - Official Documentation,window=_blank]
+* link:https://kubevirt.io/user-guide/virtual_machines/instancetypes/[KubeVirt Instancetypes User Guide,window=_blank]
