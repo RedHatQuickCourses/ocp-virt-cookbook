@@ -1,0 +1,1266 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Instancetype and Preference for Virtual Machine Definitions :: OpenShift Virtualization cookbook</title>
+    <link rel="prev" href="vm-templates.html">
+    <link rel="next" href="../performance/index.html">
+    <meta name="generator" content="Antora 3.1.3">
+    <link rel="stylesheet" href="../../../_/css/site.css">
+    <script>var uiRootPath = '../../../_'</script>
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://www.redhat.com" target="_blank"><img src="../../../_/img/redhat-logo.png" height="40px" alt="Red Hat"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="../../..">OpenShift Virtualization cookbook</a>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues" target="_blank">Report Issues</a>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="ocp-virt-cookbook" data-version="1">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="../index.html">OpenShift Virtualization cookbook</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../index.html">Introduction</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../getting-started/index.html">Getting Started</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/vm-quick-start.html">Quick Start</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/prerequisites.html">Prerequisites</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/architecture-overview.html">Architecture Overview</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/install-openshift-virtualization.html">Install OpenShift Virtualization</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/installing-qemu-guest-agent.html">Installing QEMU Guest Agent</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/default-storage-class.html">Storage Setup</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/create-vm-web-console.html">Create VM from Web Console</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/create-vm-cli-yaml.html">Create VM from CLI</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/vm-lifecycle-states.html">VM Lifecycle States</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/virtctl-basics.html">Virtctl Basics</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/cloud-init-fundamentals.html">Cloud-init Fundamentals</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../storage/index.html">Storage Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/lvm-operator.html">LVM Operator Installation</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/lvm-troubleshooting.html">LVM Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/odf-ceph-storage.html">ODF/Ceph Storage</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/hostpath-provisioner.html">HostPath Provisioner</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/creating-managing-storage-class.html">Creating and Managing Storage Classes</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/multi-disk-configuration.html">Multi-Disk VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/expanding-vm-disk-size.html">Expanding VM Disk Size</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/cdi-operations.html">CDI Operations</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/disk-io-tuning.html">Disk I/O Tuning</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../networking/index.html">Networking Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/static-ip-configuration.html">Static IP Configuration</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/cloud-init-troubleshooting.html">Cloud-init Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/udn-primary-networks.html">UDN Primary Networks</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/localnet-secondary.html">Localnet Secondary Networks with CUDN</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/localnet-vlan.html">Localnet Secondary Networks with VLAN using NAD</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/cudn-localnet-vlan.html">Localnet VLAN with CUDN</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/layer2-secondary.html">Layer 2 Secondary Networks</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/linux-bridges.html">Linux Bridges</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/sriov-secondary.html">SR-IOV Secondary Networks</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/network-policies-vms.html">Network Policies for VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/metallb-loadbalancer.html">MetalLB Load Balancer for VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/dual-stack-vms.html">Dual-Stack IPv4/IPv6 VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/vm-ingress-routes.html">VM Ingress and Routes</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/ovs-bridge-troubleshooting.html">Troubleshooting Localnet Networks</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="index.html">Virtual Machine Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="internal-dns-for-vms.html">Internal DNS for VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="remote-access-linux-vms.html">Remote Access to Linux VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="remote-access-linux-troubleshooting.html">Remote Access to Linux VMs Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="remote-access-windows-vms.html">Remote Access to Windows VMs via RDP</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="ssh-access-windows-vms.html">Remote Access to Windows VMs via SSH</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="windows-vm-virtio-drivers.html">Windows VMs with VirtIO Drivers</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="infrastructure-node-placement.html">Infrastructure Node Placement</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="node-placement-affinity.html">Node Placement and Affinity</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="hotplug-volumes-interfaces.html">Hotplug Volumes and Interfaces</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="vm-templates.html">Virtual Machine Templates</a>
+  </li>
+  <li class="nav-item is-current-page" data-depth="2">
+    <a class="nav-link" href="instancetype-preference.html">Instancetype and Preference</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../performance/index.html">VM Performance Tuning</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/resource-limits-qos.html">Resource Limits and QoS</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/cpu-pinning.html">Dedicated CPU Placement</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/numa-hugepages.html">NUMA and Hugepages</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/realtime-vms.html">Real-Time VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/vm-monitoring-metrics.html">VM Monitoring and Metrics</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../vm-lifecycle/index.html">VM Lifecycle Management</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/import-qcow2-boot-volume.html">Import qcow2 Boot Volume</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/custom-golden-images.html">Custom Golden Images</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/windows-golden-images.html">Windows Golden Images</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/golden-images-troubleshooting.html">Golden Images Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/cloning-vms.html">Cloning VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/vm-snapshots.html">VM Snapshots</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/boot-order-boot-sources.html">VM Boot Order and Boot Sources</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../manifests/index.html">Manifests</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../api/index.html">API Guide</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../api/api-component-overview.html">API Component Overview</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../agentic-vm-management/index.html">Agentic VM Management</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/getting-started.html">Getting Started with rh-virt</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/natural-language-vm-create.html">Natural Language VM Creation</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/ai-vm-lifecycle.html">AI VM Lifecycle Operations</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/vm-clone.html">Cloning VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/ai-vm-snapshot-management.html">VM Snapshot Management</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/ai-skill-chaining.html">Day-2 Skill Chaining</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/ai-vm-rebalance.html">VM Rebalancing and Live Migration</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../appendix/glossary.html">Glossary</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">OpenShift Virtualization cookbook</span>
+    <span class="version">1</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <a class="title" href="../index.html">OpenShift Virtualization cookbook</a>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">1</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">OpenShift Virtualization cookbook</a></li>
+    <li><a href="index.html">Virtual Machine Configuration</a></li>
+    <li><a href="instancetype-preference.html">Instancetype and Preference</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">Instancetype and Preference for Virtual Machine Definitions</h1>
+<div class="sect1">
+<h2 id="_overview"><a class="anchor" href="#_overview"></a>Overview</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Every VirtualMachine manifest needs compute resources (CPU, memory) and OS-specific machine settings (firmware type, CPU topology, device bus defaults). You can specify these settings inline in every VM manifest, but that leads to large, repetitive YAML and makes it easy to misconfigure a VM.</p>
+</div>
+<div class="paragraph">
+<p>Instancetypes and preferences solve this by splitting the configuration into reusable, named objects:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>An <strong>instancetype</strong> defines the compute size: CPU count, memory, and optionally GPU or host device assignments.</p>
+</li>
+<li>
+<p>A <strong>preference</strong> defines OS-specific behavior: firmware type (BIOS or UEFI), CPU topology presentation, disk bus defaults, and features like Hyper-V enlightenments for Windows guests.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Together, they reduce a VM manifest from 30+ lines of domain spec down to a few references by name. OpenShift Virtualization ships with a set of predefined cluster-scoped instancetypes and preferences, and you can create your own for specific workloads.</p>
+</div>
+<div class="paragraph">
+<p>Versions tested:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>OpenShift 4.21</pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_what_you_will_learn"><a class="anchor" href="#_what_you_will_learn"></a>What You Will Learn</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p>What instancetypes and preferences are and how they work together</p>
+</li>
+<li>
+<p>The difference between cluster-scoped and namespace-scoped variants</p>
+</li>
+<li>
+<p>How to discover and inspect the instancetypes and preferences available on your cluster</p>
+</li>
+<li>
+<p>How to create a VM using instancetype and preference references</p>
+</li>
+<li>
+<p>The difference between a VM defined with instancetype/preference and one with an explicit domain spec</p>
+</li>
+<li>
+<p>When to use explicit domain specs instead of instancetype/preference</p>
+</li>
+<li>
+<p>How to create custom instancetypes and preferences for specific workloads</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_prerequisites"><a class="anchor" href="#_prerequisites"></a>Prerequisites</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p>An OpenShift 4.18+ cluster with the OpenShift Virtualization operator installed</p>
+</li>
+<li>
+<p>The <code>oc</code> CLI and <code>virtctl</code> CLI installed</p>
+</li>
+<li>
+<p>A default StorageClass configured</p>
+</li>
+<li>
+<p>A Fedora or RHEL boot source (DataSource) available in the <code>openshift-virtualization-os-images</code> namespace</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Verify that boot sources are available:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get datasources -n openshift-virtualization-os-images</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_core_concepts"><a class="anchor" href="#_core_concepts"></a>Core Concepts</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_what_is_an_instancetype"><a class="anchor" href="#_what_is_an_instancetype"></a>What Is an Instancetype</h3>
+<div class="paragraph">
+<p>An instancetype is a reusable definition of compute resources. Instead of specifying CPU count, memory, GPU assignments, and related settings in every VM manifest, you reference an instancetype by name.</p>
+</div>
+<div class="paragraph">
+<p>OpenShift Virtualization ships with a set of predefined instancetypes organized by workload category and t-shirt size. The naming convention follows this pattern:</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>&lt;letter&gt;&lt;generation&gt;.&lt;size&gt;
+
+Examples:
+  u1.medium     — General Purpose, generation 1, medium size
+  cx1.xlarge    — Compute Exclusive, generation 1, extra-large size
+  m1.2xlarge    — Memory Intensive, generation 1, 2x extra-large size</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The available categories are:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>U (General Purpose)</strong>&#8201;&#8212;&#8201;Shared CPU cores, 1:4 CPU-to-RAM ratio. Suitable for most workloads.</p>
+</li>
+<li>
+<p><strong>O (Overcommitted)</strong>&#8201;&#8212;&#8201;Allows host memory overprovisioning, 1:4 CPU-to-RAM ratio. Use when VMs do not consume their full memory allocation.</p>
+</li>
+<li>
+<p><strong>CX (Compute Exclusive)</strong>&#8201;&#8212;&#8201;Dedicated CPU cores, 1:2 CPU-to-RAM ratio. For CPU-bound workloads.</p>
+</li>
+<li>
+<p><strong>M (Memory Intensive)</strong>&#8201;&#8212;&#8201;No memory overcommit, 1:8 CPU-to-RAM ratio. For databases and caches.</p>
+</li>
+<li>
+<p><strong>N (Network)</strong>&#8201;&#8212;&#8201;Requires DPDK-enabled nodes, 1:2 CPU-to-RAM ratio. For network-intensive workloads.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Each category includes sizes from <code>nano</code> through <code>8xlarge</code>, scaling CPU and memory according to the category&#8217;s ratio.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_cluster_scoped_vs_namespace_scoped_instancetypes"><a class="anchor" href="#_cluster_scoped_vs_namespace_scoped_instancetypes"></a>Cluster-Scoped vs. Namespace-Scoped Instancetypes</h3>
+<div class="paragraph">
+<p>Instancetypes come in two scopes:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>VirtualMachineClusterInstancetype</strong>&#8201;&#8212;&#8201;Cluster-scoped. Available to all namespaces. The predefined instancetypes shipped with OpenShift Virtualization are cluster-scoped.</p>
+</li>
+<li>
+<p><strong>VirtualMachineInstancetype</strong>&#8201;&#8212;&#8201;Namespace-scoped. Only available within the namespace where it is created. Use this when you need a custom instancetype for a specific project without affecting the rest of the cluster.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_what_is_a_preference"><a class="anchor" href="#_what_is_a_preference"></a>What Is a Preference</h3>
+<div class="paragraph">
+<p>A preference stores OS-specific machine settings that the instancetype does not cover. These are the settings that differ between operating systems rather than between VM sizes:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Firmware type</strong>&#8201;&#8212;&#8201;BIOS vs. UEFI, SecureBoot enabled or disabled</p>
+</li>
+<li>
+<p><strong>CPU topology</strong>&#8201;&#8212;&#8201;How vCPUs are presented to the guest (as sockets, cores, or threads)</p>
+</li>
+<li>
+<p><strong>Device bus defaults</strong>&#8201;&#8212;&#8201;Whether disks default to virtio, SATA, or SCSI</p>
+</li>
+<li>
+<p><strong>Clock and timer configuration</strong>&#8201;&#8212;&#8201;OS-specific timer settings</p>
+</li>
+<li>
+<p><strong>Hyper-V enlightenments</strong>&#8201;&#8212;&#8201;Performance optimizations for Windows guests</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>OpenShift Virtualization ships with cluster preferences named after the OS they target: <code>fedora</code>, <code>rhel9</code>, <code>rhel10</code>, <code>windows.11</code>, and others.</p>
+</div>
+<div class="paragraph">
+<p>Preference values are "preferred" defaults, not hard requirements. If you set a conflicting value directly in the VM manifest, the explicit value takes precedence.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_cluster_scoped_vs_namespace_scoped_preferences"><a class="anchor" href="#_cluster_scoped_vs_namespace_scoped_preferences"></a>Cluster-Scoped vs. Namespace-Scoped Preferences</h3>
+<div class="paragraph">
+<p>Like instancetypes, preferences also come in two scopes:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>VirtualMachineClusterPreference</strong>&#8201;&#8212;&#8201;Cluster-scoped. The predefined OS preferences are cluster-scoped.</p>
+</li>
+<li>
+<p><strong>VirtualMachinePreference</strong>&#8201;&#8212;&#8201;Namespace-scoped. Create these for custom OS images or organization-specific firmware requirements.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_how_instancetype_and_preference_work_together"><a class="anchor" href="#_how_instancetype_and_preference_work_together"></a>How Instancetype and Preference Work Together</h3>
+<div class="paragraph">
+<p>The instancetype defines the "size" (how much compute), and the preference defines the "behavior" (how the OS expects the hardware to look). A VM references both:</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>VirtualMachine manifest
+├── spec.instancetype         → u1.medium (1 vCPU, 4Gi RAM)
+├── spec.preference           → fedora (EFI firmware, virtio bus, prefer-cores topology)
+└── spec.template.spec        → disks, networks, volumes (your workload-specific config)</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>When the VM starts, OpenShift Virtualization merges the instancetype and preference settings into the VirtualMachineInstance, producing a fully resolved domain spec. You can inspect this resolved spec on the running VMI.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_1_discover_available_instancetypes"><a class="anchor" href="#_step_1_discover_available_instancetypes"></a>Step 1: Discover Available Instancetypes</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>List all cluster-scoped instancetypes:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get virtualmachineclusterinstancetypes</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The output shows every predefined instancetype. To filter to a specific category, use <code>grep</code>:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get virtualmachineclusterinstancetypes | grep '^u1\.'</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This shows only the General Purpose (U) instancetypes and their sizes.</p>
+</div>
+<div class="paragraph">
+<p>Inspect a specific instancetype to see what resources it defines:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get virtualmachineclusterinstancetype u1.medium -o yaml</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The <code>spec</code> section shows the CPU and memory configuration. For <code>u1.medium</code>, you will see 1 vCPU and 4Gi of memory, matching the 1:4 ratio of the General Purpose category.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_2_discover_available_preferences"><a class="anchor" href="#_step_2_discover_available_preferences"></a>Step 2: Discover Available Preferences</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>List all cluster-scoped preferences:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get virtualmachineclusterpreferences</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Inspect the Fedora preference to see what OS settings it configures:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get virtualmachineclusterpreference fedora -o yaml</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Look at the <code>spec</code> section. You will see settings for firmware type (EFI), preferred CPU topology, preferred disk bus (virtio), and other OS-specific defaults.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_3_create_a_vm_using_instancetype_and_preference"><a class="anchor" href="#_step_3_create_a_vm_using_instancetype_and_preference"></a>Step 3: Create a VM Using Instancetype and Preference</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Create a namespace for the examples in this tutorial:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc new-project instancetype-demo</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The following manifest creates a Fedora VM using the <code>u1.medium</code> instancetype and the <code>fedora</code> preference. Notice that the manifest does not contain any <code>cpu</code>, <code>memory</code>, <code>firmware</code>, or <code>machine</code> fields in the domain spec. Those are all supplied by the instancetype and preference.</p>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/instancetype-preference/vm-with-instancetype.yaml" class="xref attachment">Download vm-with-instancetype.yaml</a></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: fedora-instancetype-demo
+  namespace: instancetype-demo
+spec:
+  instancetype:
+    name: u1.medium
+    kind: VirtualMachineClusterInstancetype
+  preference:
+    name: fedora
+    kind: VirtualMachineClusterPreference
+  runStrategy: Always
+  dataVolumeTemplates:
+    - metadata:
+        name: fedora-instancetype-demo
+      spec:
+        sourceRef:
+          kind: DataSource
+          name: fedora
+          namespace: openshift-virtualization-os-images
+        storage:
+          resources:
+            requests:
+              storage: 30Gi
+  template:
+    metadata:
+      labels:
+        kubevirt.io/domain: fedora-instancetype-demo
+    spec:
+      domain:
+        devices:
+          disks:
+            - name: rootdisk
+              disk:
+                bus: virtio
+            - name: cloudinitdisk
+              disk:
+                bus: virtio
+          interfaces:
+            - name: default
+              masquerade: {}
+      networks:
+        - name: default
+          pod: {}
+      volumes:
+        - name: rootdisk
+          dataVolume:
+            name: fedora-instancetype-demo
+        - name: cloudinitdisk
+          cloudInitNoCloud:
+            userData: |
+              #cloud-config
+              user: fedora
+              password: changeme123
+              chpasswd:
+                expire: false
+              ssh_pwauth: true</code></pre>
+</div>
+</div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+The cloud-init password in this example is for demo purposes only. Use SSH key authentication in production.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Apply the manifest:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f vm-with-instancetype.yaml</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Wait for the VM to reach the Running state:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vm fedora-instancetype-demo -n instancetype-demo -w</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Press <code>Ctrl+C</code> once the VM shows <code>Running</code>.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_4_inspect_the_resolved_spec_on_the_running_vmi"><a class="anchor" href="#_step_4_inspect_the_resolved_spec_on_the_running_vmi"></a>Step 4: Inspect the Resolved Spec on the Running VMI</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The VirtualMachine manifest does not contain CPU or memory fields, but the running VirtualMachineInstance does. The instancetype and preference values are merged into the VMI at start time.</p>
+</div>
+<div class="paragraph">
+<p>View the resolved domain spec on the VMI:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vmi fedora-instancetype-demo -n instancetype-demo -o yaml</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>In the output, look at <code>spec.domain</code>. You will see the CPU, memory, firmware, and machine settings that came from the <code>u1.medium</code> instancetype and the <code>fedora</code> preference. This is the actual configuration that QEMU/KVM is using.</p>
+</div>
+<div class="paragraph">
+<p>To see just the CPU and memory values:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vmi fedora-instancetype-demo -n instancetype-demo -o jsonpath='{.spec.domain.cpu}' | python3 -m json.tool</code></pre>
+</div>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vmi fedora-instancetype-demo -n instancetype-demo -o jsonpath='{.spec.domain.memory}' | python3 -m json.tool</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This is how you verify what a VM is actually configured with when instancetype and preference are in use.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_5_compare_instancetype_vs_explicit_domain_spec"><a class="anchor" href="#_step_5_compare_instancetype_vs_explicit_domain_spec"></a>Step 5: Compare Instancetype vs. Explicit Domain Spec</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>To understand what instancetype and preference are doing for you, compare the previous manifest to an equivalent VM defined with explicit domain spec fields.</p>
+</div>
+<div class="paragraph">
+<p>The following manifest produces the same VM, but with all compute and OS settings specified inline:</p>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/instancetype-preference/vm-with-explicit-domain.yaml" class="xref attachment">Download vm-with-explicit-domain.yaml</a></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: fedora-explicit-demo
+  namespace: instancetype-demo
+spec:
+  runStrategy: Always
+  dataVolumeTemplates:
+    - metadata:
+        name: fedora-explicit-demo
+      spec:
+        sourceRef:
+          kind: DataSource
+          name: fedora
+          namespace: openshift-virtualization-os-images
+        storage:
+          resources:
+            requests:
+              storage: 30Gi
+  template:
+    metadata:
+      labels:
+        kubevirt.io/domain: fedora-explicit-demo
+    spec:
+      domain:
+        cpu:
+          sockets: 1
+          cores: 1
+          threads: 1
+        memory:
+          guest: 4Gi
+        devices:
+          disks:
+            - name: rootdisk
+              disk:
+                bus: virtio
+            - name: cloudinitdisk
+              disk:
+                bus: virtio
+          interfaces:
+            - name: default
+              masquerade: {}
+          rng: {}
+        features:
+          smm:
+            enabled: true
+        firmware:
+          bootloader:
+            efi: {}
+        machine:
+          type: pc-q35-rhel9.4.0
+        resources:
+          requests:
+            memory: 4Gi
+      networks:
+        - name: default
+          pod: {}
+      volumes:
+        - name: rootdisk
+          dataVolume:
+            name: fedora-explicit-demo
+        - name: cloudinitdisk
+          cloudInitNoCloud:
+            userData: |
+              #cloud-config
+              user: fedora
+              password: changeme123
+              chpasswd:
+                expire: false
+              ssh_pwauth: true</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Here is what the instancetype and preference replace in the explicit version:</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 50%;">
+<col style="width: 50%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Explicit domain spec field</th>
+<th class="tableblock halign-left valign-top">Provided by</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>spec.template.spec.domain.cpu</code> (sockets, cores, threads)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Instancetype (<code>u1.medium</code>) + Preference (<code>fedora</code>) topology</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>spec.template.spec.domain.memory.guest</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Instancetype (<code>u1.medium</code>)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>spec.template.spec.domain.resources.requests.memory</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Instancetype (<code>u1.medium</code>)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>spec.template.spec.domain.features.smm</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Preference (<code>fedora</code>)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>spec.template.spec.domain.firmware.bootloader</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Preference (<code>fedora</code>)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>spec.template.spec.domain.machine.type</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Preference (<code>fedora</code>)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>spec.template.spec.domain.devices.rng</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Preference (<code>fedora</code>)</p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>The instancetype version is shorter and less error-prone. If the organization later changes the standard memory for "medium" VMs, updating the <code>u1.medium</code> instancetype applies the change to all VMs that reference it.</p>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-important" title="Important"></i>
+</td>
+<td class="content">
+The <code>spec.instancetype</code> field and <code>spec.template.spec.domain.cpu</code> / <code>spec.template.spec.domain.memory</code> fields are mutually exclusive. Setting both causes a validation error. Choose one approach or the other for a given VM.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_6_when_not_to_use_instancetype_and_preference"><a class="anchor" href="#_step_6_when_not_to_use_instancetype_and_preference"></a>Step 6: When NOT to Use Instancetype and Preference</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Instancetypes and preferences cover the common cases well, but there are situations where you need direct control of the domain spec:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Dedicated CPU pinning</strong>&#8201;&#8212;&#8201;When a VM requires <code>dedicatedCPUPlacement: true</code> with specific NUMA topology, you may need to set CPU fields directly or use a custom instancetype that defines these settings.</p>
+</li>
+<li>
+<p><strong>Hugepages</strong>&#8201;&#8212;&#8201;Hugepage configuration interacts with memory settings in ways that require explicit control.</p>
+</li>
+<li>
+<p><strong>Real-time workloads</strong>&#8201;&#8212;&#8201;Real-time VMs need CPU isolation, emulator thread pinning, and kernel tuning that goes beyond what standard instancetypes provide.</p>
+</li>
+<li>
+<p><strong>Custom firmware settings</strong>&#8201;&#8212;&#8201;If you need specific BIOS/UEFI settings that no existing preference covers, and creating a custom preference is not justified for a single VM.</p>
+</li>
+<li>
+<p><strong>Debugging VM configuration</strong>&#8201;&#8212;&#8201;When troubleshooting hardware-level issues, having all settings visible in the VM manifest (rather than resolved at start time) can simplify diagnosis. Inspect the VMI to see the resolved spec, as shown in Step 4.</p>
+</li>
+<li>
+<p><strong>Unique compute configurations</strong>&#8201;&#8212;&#8201;If a VM needs a combination of CPU, memory, and device settings that no existing instancetype provides, and the configuration is truly one-off, an explicit domain spec is simpler than creating a custom instancetype for a single VM.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>For these cases, define the full domain spec inline in the VM manifest as shown in the explicit domain spec example above.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_7_create_a_custom_instancetype"><a class="anchor" href="#_step_7_create_a_custom_instancetype"></a>Step 7: Create a Custom Instancetype</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>When no predefined instancetype matches your needs and you plan to reuse the configuration across multiple VMs, create a custom instancetype.</p>
+</div>
+<div class="paragraph">
+<p>This example creates a namespace-scoped instancetype for an application server with 4 vCPUs and 8Gi of memory:</p>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/instancetype-preference/custom-instancetype.yaml" class="xref attachment">Download custom-instancetype.yaml</a></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: instancetype.kubevirt.io/v1beta1
+kind: VirtualMachineInstancetype
+metadata:
+  name: app-server-4c8g
+  namespace: instancetype-demo
+spec:
+  cpu:
+    guest: 4
+  memory:
+    guest: 8Gi</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Apply the custom instancetype:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f custom-instancetype.yaml</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Verify it was created:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get virtualmachineinstancetypes -n instancetype-demo</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_8_create_a_custom_preference"><a class="anchor" href="#_step_8_create_a_custom_preference"></a>Step 8: Create a Custom Preference</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Create a namespace-scoped preference for a Linux server that boots with EFI (without SecureBoot), uses virtio devices, and presents vCPUs as cores:</p>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/instancetype-preference/custom-preference.yaml" class="xref attachment">Download custom-preference.yaml</a></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: instancetype.kubevirt.io/v1beta1
+kind: VirtualMachinePreference
+metadata:
+  name: my-linux-server
+  namespace: instancetype-demo
+spec:
+  cpu:
+    preferredCPUTopology: cores
+  firmware:
+    preferredUseEfi: true
+    preferredUseSecureBoot: false
+  devices:
+    preferredDiskBus: virtio
+    preferredInterfaceModel: virtio</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Apply the custom preference:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f custom-preference.yaml</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Verify it was created:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get virtualmachinepreferences -n instancetype-demo</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_9_create_a_vm_with_custom_instancetype_and_preference"><a class="anchor" href="#_step_9_create_a_vm_with_custom_instancetype_and_preference"></a>Step 9: Create a VM with Custom Instancetype and Preference</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Now create a VM that uses the custom instancetype and preference you just defined:</p>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/instancetype-preference/vm-with-custom-instancetype.yaml" class="xref attachment">Download vm-with-custom-instancetype.yaml</a></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: custom-instancetype-demo
+  namespace: instancetype-demo
+spec:
+  instancetype:
+    name: app-server-4c8g
+    kind: VirtualMachineInstancetype
+  preference:
+    name: my-linux-server
+    kind: VirtualMachinePreference
+  runStrategy: Always
+  dataVolumeTemplates:
+    - metadata:
+        name: custom-instancetype-demo
+      spec:
+        sourceRef:
+          kind: DataSource
+          name: fedora
+          namespace: openshift-virtualization-os-images
+        storage:
+          resources:
+            requests:
+              storage: 30Gi
+  template:
+    metadata:
+      labels:
+        kubevirt.io/domain: custom-instancetype-demo
+    spec:
+      domain:
+        devices:
+          disks:
+            - name: rootdisk
+              disk:
+                bus: virtio
+            - name: cloudinitdisk
+              disk:
+                bus: virtio
+          interfaces:
+            - name: default
+              masquerade: {}
+      networks:
+        - name: default
+          pod: {}
+      volumes:
+        - name: rootdisk
+          dataVolume:
+            name: custom-instancetype-demo
+        - name: cloudinitdisk
+          cloudInitNoCloud:
+            userData: |
+              #cloud-config
+              user: fedora
+              password: changeme123
+              chpasswd:
+                expire: false
+              ssh_pwauth: true</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Apply the manifest:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f vm-with-custom-instancetype.yaml</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Wait for the VM to start:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vm custom-instancetype-demo -n instancetype-demo -w</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Press <code>Ctrl+C</code> once the VM shows <code>Running</code>.</p>
+</div>
+<div class="paragraph">
+<p>Verify that the custom instancetype values were applied by checking the VMI:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vmi custom-instancetype-demo -n instancetype-demo -o jsonpath='{.spec.domain.cpu.cores}' &amp;&amp; echo " cores"</code></pre>
+</div>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vmi custom-instancetype-demo -n instancetype-demo -o jsonpath='{.spec.domain.memory.guest}' &amp;&amp; echo ""</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>You should see <code>4 cores</code> and <code>8Gi</code>, matching your custom instancetype definition.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_cleanup"><a class="anchor" href="#_cleanup"></a>Cleanup</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Remove the namespace and all resources created during this tutorial:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc delete project instancetype-demo</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_summary"><a class="anchor" href="#_summary"></a>Summary</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>In this tutorial, you learned:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Instancetypes define reusable compute sizes (CPU, memory) and preferences define OS-specific machine settings (firmware, CPU topology, device defaults).</p>
+</li>
+<li>
+<p>OpenShift Virtualization ships with predefined cluster-scoped instancetypes (U, O, CX, M, N categories) and preferences (per OS).</p>
+</li>
+<li>
+<p>You can discover available instancetypes and preferences with <code>oc get</code> and inspect them with <code>-o yaml</code> to see their configuration.</p>
+</li>
+<li>
+<p>Using instancetype and preference in a VM manifest replaces inline domain spec fields, resulting in shorter and more consistent manifests.</p>
+</li>
+<li>
+<p>The <code>spec.instancetype</code> and <code>spec.template.spec.domain.cpu</code> / <code>memory</code> fields are mutually exclusive.</p>
+</li>
+<li>
+<p>You can inspect the running VirtualMachineInstance to see the fully resolved domain spec.</p>
+</li>
+<li>
+<p>Explicit domain specs are appropriate for dedicated CPU pinning, hugepages, real-time workloads, and one-off compute configurations.</p>
+</li>
+<li>
+<p>Custom namespace-scoped instancetypes and preferences let you define organization-specific or workload-specific configurations.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_see_also"><a class="anchor" href="#_see_also"></a>See Also</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p><a href="../api/api-component-overview.html" class="xref page">API Component Overview</a>&#8201;&#8212;&#8201;Detailed API reference for instancetype and preference objects, including CPU topology spread options and field specifications</p>
+</li>
+<li>
+<p><a href="vm-templates.html" class="xref page">Virtual Machine Templates</a>&#8201;&#8212;&#8201;Using instancetype and preference within VM templates for repeatable deployments</p>
+</li>
+<li>
+<p><a href="../getting-started/create-vm-cli-yaml.html" class="xref page">Creating VMs from CLI Using YAML Manifests</a>&#8201;&#8212;&#8201;Foundational guide to creating VMs with YAML</p>
+</li>
+<li>
+<p><a href="https://docs.redhat.com/en/documentation/openshift_container_platform/latest/html/virtualization/creating-a-virtual-machine#virt-creating-vms-from-instance-types" target="_blank" rel="noopener">Creating VMs from instance types - Official Documentation</a></p>
+</li>
+<li>
+<p><a href="https://kubevirt.io/user-guide/virtual_machines/instancetypes/" target="_blank" rel="noopener">KubeVirt Instancetypes User Guide</a></p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<nav class="pagination">
+  <span class="prev"><a href="vm-templates.html">Virtual Machine Templates</a></span>
+  <span class="next"><a href="../performance/index.html">VM Performance Tuning</a></span>
+</nav>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <img src="../../../_/img/rhl-logo-red.png" height="40px" alt="Red Hat"  href="https://redhat.com" >
+</footer><script id="site-script" src="../../../_/js/site.js" data-ui-root-path="../../../_"></script>
+<script async src="../../../_/js/vendor/highlight.js"></script>
+  </body>
+</html>
