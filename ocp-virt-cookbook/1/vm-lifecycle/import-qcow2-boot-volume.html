@@ -427,7 +427,14 @@ This tutorial has been tested on OpenShift 4.18.33 with OpenShift Virtualization
 <h2 id="_import_methods_overview"><a class="anchor" href="#_import_methods_overview"></a>Import Methods Overview</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>There are four primary methods to import qcow2 images into OpenShift Virtualization:</p>
+<p>There are four primary methods to import qcow2 images into OpenShift Virtualization.
+The following diagram shows each method&#8217;s data path and how CDI handles format
+conversion from qcow2 to raw before writing to the PVC:</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="_images/import-qcow2-data-paths.svg" alt="qcow2 Import Methods and Data Paths">
+</div>
 </div>
 <table class="tableblock frame-all grid-all stretch">
 <colgroup>
@@ -465,6 +472,62 @@ This tutorial has been tested on OpenShift 4.18.33 with OpenShift Virtualization
 </tr>
 </tbody>
 </table>
+<div class="paragraph">
+<p>Consider the following factors when choosing an import method that best fits your needs:</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 33.3333%;">
+<col style="width: 16.6666%;">
+<col style="width: 50.0001%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Scenario</th>
+<th class="tableblock halign-left valign-top">Recommended Method</th>
+<th class="tableblock halign-left valign-top">Why</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Small-scale migration (&lt; 10 VMs)</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">virtctl upload</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Simplest approach with no additional infrastructure required. Upload qcow2 files directly from your workstation to the cluster.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Medium-scale migration (10-50 VMs)</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">HTTP import</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Host images on a staging web server and run parallel DataVolume imports. Avoids tying up your local workstation and removes local bandwidth as a bottleneck.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Large-scale migration (50+ VMs)</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">S3 import</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Object storage provides a scalable, centralized image repository. S3 imports are resumable on failure, and multiple clusters can pull from the same bucket simultaneously.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Container-native workflow</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Registry import</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Store disk images as OCI artifacts in a container registry (Quay, Docker Hub, Artifactory). Images are versioned, tagged, and distributed through the same pipeline as your application containers.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Air-gapped environment</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">virtctl upload or internal registry</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">No external network access needed. Use virtctl to upload from a local workstation inside the network, or push images to an internal registry that the cluster can reach.</p></td>
+</tr>
+</tbody>
+</table>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+These methods are not mutually exclusive. For example, a common pattern for large migrations is to stage images in S3 for the bulk import, then switch to virtctl upload for one-off additions later.
+</td>
+</tr>
+</table>
+</div>
 <div class="paragraph">
 <p>This tutorial focuses on the <strong>virtctl image-upload</strong> method as it&#8217;s the most straightforward for getting started. Alternative methods are covered in later sections.</p>
 </div>
