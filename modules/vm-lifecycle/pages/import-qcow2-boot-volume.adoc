@@ -20,7 +20,11 @@ NOTE: This tutorial has been tested on OpenShift 4.18.33 with OpenShift Virtuali
 
 == Import Methods Overview
 
-There are four primary methods to import qcow2 images into OpenShift Virtualization:
+There are four primary methods to import qcow2 images into OpenShift Virtualization.
+The following diagram shows each method's data path and how CDI handles format
+conversion from qcow2 to raw before writing to the PVC:
+
+image::import-qcow2-data-paths.svg[qcow2 Import Methods and Data Paths]
 
 [cols="1,2,2",options="header"]
 |===
@@ -42,6 +46,35 @@ There are four primary methods to import qcow2 images into OpenShift Virtualizat
 |VM creation with upload
 |VM spec includes DataVolumeTemplate with upload source
 |===
+
+Consider the following factors when choosing an import method that best fits your needs:
+
+[cols="2,1,3",options="header"]
+|===
+|Scenario |Recommended Method |Why
+
+|**Small-scale migration (< 10 VMs)**
+|virtctl upload
+|Simplest approach with no additional infrastructure required. Upload qcow2 files directly from your workstation to the cluster.
+
+|**Medium-scale migration (10-50 VMs)**
+|HTTP import
+|Host images on a staging web server and run parallel DataVolume imports. Avoids tying up your local workstation and removes local bandwidth as a bottleneck.
+
+|**Large-scale migration (50+ VMs)**
+|S3 import
+|Object storage provides a scalable, centralized image repository. S3 imports are resumable on failure, and multiple clusters can pull from the same bucket simultaneously.
+
+|**Container-native workflow**
+|Registry import
+|Store disk images as OCI artifacts in a container registry (Quay, Docker Hub, Artifactory). Images are versioned, tagged, and distributed through the same pipeline as your application containers.
+
+|**Air-gapped environment**
+|virtctl upload or internal registry
+|No external network access needed. Use virtctl to upload from a local workstation inside the network, or push images to an internal registry that the cluster can reach.
+|===
+
+TIP: These methods are not mutually exclusive. For example, a common pattern for large migrations is to stage images in S3 for the bulk import, then switch to virtctl upload for one-off additions later.
 
 This tutorial focuses on the **virtctl image-upload** method as it's the most straightforward for getting started. Alternative methods are covered in later sections.
 
