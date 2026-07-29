@@ -6,76 +6,23 @@ metadata:
     app: windows-vm-virtio
 spec:
   runStrategy: Always
+  instancetype:
+    name: u1.large
+  preference:
+    name: windows.2k25.virtio
   template:
-    metadata:
-      labels:
-        kubevirt.io/size: medium
-        kubevirt.io/domain: windows-vm-virtio
-        vm.kubevirt.io/name: windows-vm-virtio
     spec:
       domain:
-        cpu:
-          cores: 2
-          sockets: 1
-          threads: 2
-        resources:
-          requests:
-            memory: 4Gi
         devices:
           disks:
             - name: rootdisk
-              disk:
-                bus: virtio
+              disk: {}
               bootOrder: 2
             - name: windows-installation-iso
-              cdrom:
-                bus: sata
+              cdrom: {}
               bootOrder: 1
             - name: virtio-drivers-iso
-              cdrom:
-                bus: sata
-          interfaces:
-            - name: default
-              masquerade: {}
-              model: virtio
-          tpm: {}
-          rng: {}
-        clock:
-          utc: {}
-          timer:
-            hpet:
-              present: false
-            pit:
-              tickPolicy: delay
-            rtc:
-              tickPolicy: catchup
-            hyperv: {}
-        features:
-          acpi: {}
-          apic: {}
-          hyperv:
-            relaxed: {}
-            vapic: {}
-            spinlocks:
-              spinlocks: 8191
-            vpindex: {}
-            runtime: {}
-            synic: {}
-            stimer: {}
-            reset: {}
-            frequencies: {}
-            reenlightenment: {}
-            tlbflush: {}
-            ipi: {}
-          smm:
-            enabled: true
-        firmware:
-          bootloader:
-            efi:
-              secureBoot: true
-      networks:
-        - name: default
-          pod: {}
+              cdrom: {}
       volumes:
         - name: rootdisk
           dataVolume:

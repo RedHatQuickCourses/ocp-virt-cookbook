@@ -490,7 +490,7 @@ oc apply -f sysprep-unattend-configmap.yaml
 
 === Create the VM
 
-The VM below clones its root disk from the `win2k25` DataSource and attaches the sysprep ConfigMap as a volume. The hardware configuration includes Hyper-V enlightenments, EFI with Secure Boot, TPM, and VirtIO devices.
+The VM below clones its root disk from the `win2k25` DataSource and attaches the sysprep ConfigMap as a volume. The `windows.2k25.virtio` preference provides the Windows-specific hardware configuration (Hyper-V enlightenments, EFI with Secure Boot, TPM, VirtIO device buses, clock and timer settings), and the `u1.large` instancetype defines CPU and memory resources.
 
 xref:attachment$windows-golden-images/windows-vm-from-golden.yaml[Download windows-vm-from-golden.yaml]
 
@@ -517,68 +517,19 @@ spec:
             requests:
               storage: 60Gi
   runStrategy: RerunOnFailure
+  instancetype:
+    name: u1.large
+  preference:
+    name: windows.2k25.virtio
   template:
-    metadata:
-      labels:
-        kubevirt.io/domain: win2k25-vm-1
     spec:
       domain:
-        cpu:
-          cores: 2
-          sockets: 1
-          threads: 2
-        memory:
-          guest: 4Gi
         devices:
           disks:
             - name: rootdisk
-              disk:
-                bus: virtio
+              disk: {}
             - name: sysprep
-              cdrom:
-                bus: sata
-          interfaces:
-            - name: default
-              masquerade: {}
-              model: virtio
-          tpm: {}
-          rng: {}
-        clock:
-          utc: {}
-          timer:
-            hpet:
-              present: false
-            pit:
-              tickPolicy: delay
-            rtc:
-              tickPolicy: catchup
-            hyperv: {}
-        features:
-          acpi: {}
-          apic: {}
-          hyperv:
-            relaxed: {}
-            vapic: {}
-            spinlocks:
-              spinlocks: 8191
-            vpindex: {}
-            runtime: {}
-            synic: {}
-            stimer: {}
-            reset: {}
-            frequencies: {}
-            reenlightenment: {}
-            tlbflush: {}
-            ipi: {}
-          smm:
-            enabled: true
-        firmware:
-          bootloader:
-            efi:
-              secureBoot: true
-      networks:
-        - name: default
-          pod: {}
+              cdrom: {}
       volumes:
         - name: rootdisk
           dataVolume:
