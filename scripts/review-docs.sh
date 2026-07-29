@@ -9,6 +9,12 @@ set -euo pipefail
 # Exit code: 0 if no errors, 1 if any ERROR-level issues found.
 # Warnings alone do NOT cause non-zero exit.
 
+# Requires Bash 4+ for associative arrays, mapfile, and negative indexing.
+if [[ ${BASH_VERSINFO[0]} -lt 4 ]]; then
+    echo "Error: This script requires Bash 4 or later (found ${BASH_VERSION})." >&2
+    exit 1
+fi
+
 # ── Configuration ─────────────────────────────────────────────────────────────
 
 # Product name patterns to check (case-sensitive)
