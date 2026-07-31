@@ -1,0 +1,18 @@
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: windowsxp
+spec:
+  runStrategy: Always
+  instancetype:
+    name: u1.micro
+  preference:
+    name: windows.xp
+  template:
+    spec:
+      domain:
+        devices: {}
+      volumes:
+        - persistentVolumeClaim:
+            claimName: windowsxp-dv
+          name: rootdisk
