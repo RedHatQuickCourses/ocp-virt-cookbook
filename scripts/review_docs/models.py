@@ -25,8 +25,9 @@ class ParseState:
     # ── Previous line (set by engine at end of each iteration) ────────
     prev_line: str = ""
 
-    # ── Code-block tracking (managed by engine) ──────────────────────
-    in_code_block: bool = False
+    # ── Code-block metadata (managed by engine) ────────────────────────
+    # Code blocks are also tracked on ``block_stack`` as ``"code_block"``.
+    # These attributes carry code-block-specific metadata.
     code_block_lang: str = ""
     code_block_start_line: int = 0
     boundary_direction: str = ""  # "open" or "close", set at ---- boundary
@@ -38,6 +39,22 @@ class ParseState:
 
     # ── List context (managed by list-blank-line check) ──────────────
     in_list: bool = False
+
+    # ── Block context (managed by engine) ────────────────────────────
+    # Stack of currently-open block types.  The engine pushes/pops as
+    # block delimiters are encountered — including ``----`` code blocks
+    # (as ``"code_block"``), ``|===``, ``====``, ``****``, ``++++``,
+    # ``--``, and ``....``.  Checks can query membership, e.g.
+    # ``state.in_block("table")`` or ``state.in_block("code_block")``.
+    block_stack: List[str] = field(default_factory=list)
+
+    @property
+    def in_code_block(self) -> bool:
+        """Whether we are currently inside a ``----`` code block.
+
+        Convenience property — equivalent to ``self.in_block("code_block")``.
+        """
+        return self.in_block("code_block")
 
     # ── Per-check private state ──────────────────────────────────────
     _check_state: Dict[str, Dict[str, Any]] = field(
@@ -52,6 +69,10 @@ class ParseState:
         if check_name not in self._check_state:
             self._check_state[check_name] = {}
         return self._check_state[check_name]
+
+    def in_block(self, block_type: str) -> bool:
+        """Return ``True`` if currently inside a block of the given type."""
+        return block_type in self.block_stack
 
 
 # ── Findings and results ──────────────────────────────────────────────────────

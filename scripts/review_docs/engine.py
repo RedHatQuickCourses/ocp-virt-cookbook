@@ -31,6 +31,32 @@ class BuildResult:
     findings: List[Finding] = field(default_factory=list)
 
 
+# ── Block delimiter mapping ──────────────────────────────────────────────────
+
+# Maps AsciiDoc block delimiter patterns to semantic block type names.
+# The engine pushes/pops these on ``ParseState.block_stack`` as delimiters
+# are encountered.  Code blocks (``----`` / ``"code_block"``) are also
+# tracked on block_stack but handled in a dedicated branch because they
+# carry extra metadata (language, boundary direction) and dispatch to
+# their own check scopes (code_block_content, code_block_boundary).
+# Note: ``--`` is a legitimate 2-character AsciiDoc open block delimiter.
+# False positives are unlikely because:
+#   1. Code blocks (``----``, 4+ dashes) are caught by a dedicated branch
+#      *before* ``_check_block_boundary`` is called.
+#   2. The match is exact (``stripped == delimiter``), so em-dash
+#      replacements or ``---`` / ``----`` lines don't trigger it.
+#   3. A bare ``--`` line outside of intentional block markup is
+#      extremely rare in practice.
+_BLOCK_DELIMITERS = {
+    "|===": "table",
+    "====": "admonition",
+    "****": "sidebar",
+    "++++": "passthrough",
+    "....": "literal",
+    "--": "open",
+}
+
+
 # ── Internal helpers ──────────────────────────────────────────────────────────
 
 
@@ -56,6 +82,36 @@ def _compute_word_count(lines: List[str]) -> int:
             word_count += len(line.split())
 
     return word_count
+
+
+def _check_block_boundary(line: str, state: ParseState) -> bool:
+    """Check if *line* is a non-code-block delimiter and update *state*.
+
+    Returns ``True`` if the line was consumed as a block delimiter
+    (callers should skip further processing).
+
+    AsciiDoc block delimiters are toggle-style: the same delimiter string
+    opens and closes a block.  When the top of the stack matches, we pop
+    (close).  When it doesn't, we scan deeper — if the block type exists
+    anywhere on the stack we treat the line as a close for a mismatched
+    nesting (popping back to and including that entry), otherwise we push
+    (open).
+    """
+    stripped = line.rstrip()
+    for delimiter, block_type in _BLOCK_DELIMITERS.items():
+        if stripped == delimiter:
+            if state.block_stack and state.block_stack[-1] == block_type:
+                # Clean close — top of stack matches.
+                state.block_stack.pop()
+            elif block_type in state.block_stack:
+                # Mismatched nesting — pop back to the matching open.
+                idx = len(state.block_stack) - 1 - state.block_stack[::-1].index(block_type)
+                state.block_stack = state.block_stack[:idx]
+            else:
+                # New open.
+                state.block_stack.append(block_type)
+            return True
+    return False
 
 
 # ── Public API ────────────────────────────────────────────────────────────────
@@ -103,7 +159,7 @@ def review_file(filepath: str, cfg: Config) -> FileResult:
         # Track code block boundaries
         if re.match(r"^----", line):
             if not state.in_code_block:
-                state.in_code_block = True
+                state.block_stack.append("code_block")
                 state.code_block_start_line = line_num
                 state.boundary_direction = "open"
 
@@ -114,7 +170,7 @@ def review_file(filepath: str, cfg: Config) -> FileResult:
                 ) or re.match(r"^\[source,?([a-zA-Z0-9_-]*),.*\]", prev)
                 state.code_block_lang = m.group(1) if m else ""
             else:
-                state.in_code_block = False
+                state.block_stack.pop()
                 state.code_block_lang = ""
                 state.boundary_direction = "close"
 
@@ -130,6 +186,11 @@ def review_file(filepath: str, cfg: Config) -> FileResult:
             for check_def in code_block_checks:
                 check_def.func(line, line_num, state, cfg, file_result)
 
+            state.prev_line = line
+            continue
+
+        # Track non-code-block delimiters (tables, admonitions, etc.)
+        if _check_block_boundary(line, state):
             state.prev_line = line
             continue
 
