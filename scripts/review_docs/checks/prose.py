@@ -223,3 +223,104 @@ def check_admonition_capitalization(
             f"line {line_num}: Admonition should be followed by capitalized word: {admonition}: {first_char}",
         )
 
+
+@register_check("list-blank-line", "warning", "prose")
+def check_list_blank_line(
+    line: str,
+    line_num: int,
+    state: ParseState,
+    cfg: Config,
+    file_result: FileResult,
+) -> None:
+    """Check that lists are preceded by a blank line.
+
+    In AsciiDoc, a list immediately following a non-blank line (such as a
+    paragraph) is not rendered as a list.  A blank line is required before
+    the first list item.
+
+    Uses ``state.in_list`` to track whether we are currently inside a
+    list context (i.e. the list has already started).  Multi-line list item
+    paragraphs (no ``+`` needed) followed by another list marker are valid
+    AsciiDoc and should not be flagged.
+    """
+    # Matches the start of any AsciiDoc list item.  Derived from the
+    # ``UnorderedListRx`` and ``OrderedListRx`` patterns in Asciidoctor's
+    # ``rx.rb``.  Description lists (``term::``) and callout lists
+    # (``<1>``) are handled separately.
+    #
+    # Unordered : ``-``, ``*`` through ``*****``, ``•`` (U+2022)
+    # Ordered   : ``.`` through ``......`` (dot-style)
+    #             ``1.`` (arabic), ``a.``/``A.`` (alpha)
+    #             ``i)``/``iv)`` (lowerroman), ``I)``/``IV)`` (upperroman)
+    _LIST_ITEM_RE = r"^\s*(-|\*{1,5}|\u2022|\.{1,6}|\d+\.|[a-zA-Z]\.|[IVXivx]+\))\s+"
+
+    is_list_item = bool(re.match(_LIST_ITEM_RE, line))
+
+    # Track list context: we leave it on a blank line.
+    if not line.strip():
+        state.in_list = False
+        return
+
+    # A list continuation marker (+) means we're in a list.
+    if line.strip() == "+":
+        state.in_list = True
+        return
+
+    if is_list_item:
+        # If we're already in a list, this is a continuation — always OK.
+        if state.in_list:
+            return
+    else:
+        # Non-list, non-blank line: leave context unchanged (multi-line
+        # paragraph continuation within a list item is fine).
+        return
+
+    # --- We have a list item and we are NOT already in a list context ---
+    prev_line = state.prev_line
+
+    # Previous line is blank -> OK (already handled above, but defensive)
+    if not prev_line.strip():
+        state.in_list = True
+        return
+
+    # Previous line is itself a list item -> OK (start of list context)
+    if re.match(_LIST_ITEM_RE, prev_line):
+        state.in_list = True
+        return
+
+    # Previous line is a list continuation marker -> OK
+    if prev_line.strip() == "+":
+        state.in_list = True
+        return
+
+    # Previous line is a description list term (ends with ::) -> OK
+    if prev_line.rstrip().endswith("::"):
+        state.in_list = True
+        return
+
+    # Previous line is a heading -> OK (lists can follow headings)
+    if re.match(r"^=+\s+", prev_line):
+        state.in_list = True
+        return
+
+    # Previous line is a block delimiter -> OK (lists inside admonition/sidebar/etc.)
+    # The engine consumes delimiter lines before prose checks run, but
+    # ``prev_line`` is still set to the delimiter text.
+    if re.match(r"^(====|----|\.\.\.\.|(\*{4}|\+{4}|_{4})|--|\|===)\s*$", prev_line):
+        state.in_list = True
+        return
+
+    # Previous line is an attribute/anchor/block-title -> OK
+    if re.match(r"^(\[|:|\.|//)", prev_line):
+        state.in_list = True
+        return
+
+    file_result.add_finding(
+        cfg,
+        "list-blank-line",
+        line_num,
+        f"line {line_num}: List not preceded by blank line (will not render as a list in AsciiDoc)",
+    )
+    # Even though we flagged it, the list has started from this point.
+    state.in_list = True
+
