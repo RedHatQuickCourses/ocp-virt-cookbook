@@ -3,9 +3,9 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>Virtual Machine Configuration :: OpenShift Virtualization cookbook</title>
-    <link rel="prev" href="../networking/ovs-bridge-troubleshooting.html">
-    <link rel="next" href="internal-dns-for-vms.html">
+    <title>Running Legacy Windows Versions on OpenShift Virtualization :: OpenShift Virtualization cookbook</title>
+    <link rel="prev" href="windows-vm-virtio-drivers.html">
+    <link rel="next" href="infrastructure-node-placement.html">
     <meta name="generator" content="Antora 3.1.3">
     <link rel="stylesheet" href="../../../_/css/site.css">
     <script>var uiRootPath = '../../../_'</script>
@@ -183,7 +183,7 @@
   </li>
   <li class="nav-item" data-depth="0">
 <ul class="nav-list">
-  <li class="nav-item is-current-page" data-depth="1">
+  <li class="nav-item" data-depth="1">
     <button class="nav-item-toggle"></button>
     <a class="nav-link" href="index.html">Virtual Machine Configuration</a>
 <ul class="nav-list">
@@ -205,7 +205,7 @@
   <li class="nav-item" data-depth="2">
     <a class="nav-link" href="windows-vm-virtio-drivers.html">Windows VMs with VirtIO Drivers</a>
   </li>
-  <li class="nav-item" data-depth="2">
+  <li class="nav-item is-current-page" data-depth="2">
     <a class="nav-link" href="legacy-windows-versions.html">Legacy Windows Versions</a>
   </li>
   <li class="nav-item" data-depth="2">
@@ -371,6 +371,7 @@
   <ul>
     <li><a href="../index.html">OpenShift Virtualization cookbook</a></li>
     <li><a href="index.html">Virtual Machine Configuration</a></li>
+    <li><a href="legacy-windows-versions.html">Legacy Windows Versions</a></li>
   </ul>
 </nav>
 </div>
@@ -379,40 +380,53 @@
   <div class="toc-menu"></div>
 </aside>
 <article class="doc">
-<h1 class="page">Virtual Machine Configuration</h1>
+<h1 class="page">Running Legacy Windows Versions on OpenShift Virtualization</h1>
 <div class="sect1">
 <h2 id="_overview"><a class="anchor" href="#_overview"></a>Overview</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>This section covers virtual machine configuration in OpenShift Virtualization, including DNS resolution, remote access methods, node placement control, hotplugging, and VM templates.</p>
+<p>Legacy Windows versions such as Windows XP and Windows Server 2003 can run on OpenShift Virtualization using the <code>windows.xp</code> VirtualMachineClusterPreference. This preference configures Q35 with SATA disk bus, e1000e network, compatible timers, and USB tablet input.</p>
 </div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_what_youll_learn"><a class="anchor" href="#_what_youll_learn"></a>What You&#8217;ll Learn</h2>
-<div class="sectionbody">
 <div class="paragraph">
-<p>Learn how to configure and customize virtual machines in OpenShift Virtualization:</p>
+<p>You can bring a legacy Windows guest into OpenShift Virtualization in two ways:</p>
 </div>
 <div class="ulist">
 <ul>
 <li>
-<p>Internal DNS resolution for VM-to-VM and Pod-to-VM communication</p>
+<p>Convert an existing disk image (VMDK, VHD, VHDX) to qcow2 and upload it.</p>
 </li>
 <li>
-<p>Remote access methods for Linux and Windows VMs</p>
+<p>Perform a fresh install from an ISO that includes SATA drivers.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>In both cases the guest must have SATA (AHCI) storage drivers. Older images using IDE bus may require the i440FX machine type and other workarounds, which are out of scope for this tutorial.</p>
+</div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+Windows XP and Server 2003 reached end of life in 2014 and 2015 respectively and no longer receive security updates. Only run these systems in isolated lab environments for testing or legacy application compatibility.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_what_you_will_learn"><a class="anchor" href="#_what_you_will_learn"></a>What You Will Learn</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p>How to convert and upload a legacy Windows disk image into OpenShift Virtualization</p>
 </li>
 <li>
-<p>Node placement using selectors, affinity, and anti-affinity rules</p>
-</li>
-<li>
-<p>Infrastructure component placement on dedicated nodes</p>
-</li>
-<li>
-<p>Hotplugging volumes and network interfaces on running VMs</p>
-</li>
-<li>
-<p>Creating custom VM templates for repeatable deployments</p>
+<p>How to create a VirtualMachine using the <code>windows.xp</code> preference</p>
 </li>
 </ul>
 </div>
@@ -421,117 +435,380 @@
 <div class="sect1">
 <h2 id="_prerequisites"><a class="anchor" href="#_prerequisites"></a>Prerequisites</h2>
 <div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p>OpenShift 4.22+ with OpenShift Virtualization operator installed</p>
+</li>
+<li>
+<p><code>oc</code> and <code>virtctl</code> CLI tools installed and configured</p>
+</li>
+<li>
+<p><code>qemu-img</code> installed on your workstation (provided by the <code>qemu-img</code> package on RHEL/Fedora or <code>qemu</code> on macOS via Homebrew)</p>
+</li>
+<li>
+<p>A legacy Windows disk image (VMDK, VHD, VHDX, or raw) from an existing installation, or a Windows XP/Server 2003 install ISO with SATA drivers</p>
+</li>
+<li>
+<p>A default StorageClass with enough available capacity for the disk image</p>
+</li>
+</ul>
+</div>
 <div class="paragraph">
-<p>Before working with VM configuration, ensure you have:</p>
+<p>Versions tested:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">OpenShift 4.22</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_1_convert_the_disk_image"><a class="anchor" href="#_step_1_convert_the_disk_image"></a>Step 1: Convert the Disk Image</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Skip this step if you are doing a fresh install from an ISO.</p>
+</div>
+<div class="paragraph">
+<p>Legacy Windows disk images often come from VMware (VMDK), Hyper-V (VHD/VHDX), or raw physical-to-virtual captures. Convert the source image to qcow2 format, which CDI can import directly.</p>
+</div>
+<div class="paragraph">
+<p>Convert from VMDK:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">qemu-img convert -f vmdk -O qcow2 filename.vmdk windows-legacy.qcow2</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Convert from VHD (<code>vpc</code> is the qemu-img format name for VHD files):</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">qemu-img convert -f vpc -O qcow2 filename.vhd windows-legacy.qcow2</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Convert from VHDX:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">qemu-img convert -f vhdx -O qcow2 filename.vhdx windows-legacy.qcow2</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Verify the converted image:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">qemu-img info windows-legacy.qcow2</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Expected output</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">image: windows-legacy.qcow2
+file format: qcow2
+virtual size: 20 GiB (21474836480 bytes)
+disk size: 3.2 GiB
+cluster_size: 65536
+Format specific information:
+    compat: 1.1
+    compression type: zlib</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The <code>virtual size</code> determines the minimum PVC size you need in the next step.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_2_upload_the_disk_image"><a class="anchor" href="#_step_2_upload_the_disk_image"></a>Step 2: Upload the Disk Image</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Skip this step if you are doing a fresh install from an ISO.</p>
+</div>
+<div class="paragraph">
+<p>Check the virtual size of your converted image. The PVC must be at least this large:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">qemu-img info windows-legacy.qcow2 | grep "virtual size"</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Create a namespace for the legacy Windows VM if you do not already have one:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc new-project legacy-windows</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Upload the qcow2 image using <code>virtctl</code>. Replace the <code>--size</code> value with a size equal to or larger than the virtual size reported by <code>qemu-img info</code>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">virtctl image-upload pvc windowsxp-dv \
+  --size=130Gi \
+  --image-path=windows-legacy.qcow2 \
+  --force-bind \
+  --insecure</code></pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+The command uses <code>pvc</code> instead of <code>dv</code> to upload directly to a PersistentVolumeClaim. This avoids issues with the CDI volume populator flow on storage classes that use <code>WaitForFirstConsumer</code> binding mode. The <code>--force-bind</code> flag ensures the PVC binds immediately.
+</td>
+</tr>
+</table>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-important" title="Important"></i>
+</td>
+<td class="content">
+The <code>--insecure</code> flag is often needed in development environments where the CDI upload proxy uses self-signed certificates. In production, configure proper TLS certificates instead.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Wait for the upload to complete. Then verify the PVC is <code>Bound</code>:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get pvc windowsxp-dv</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Expected output</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">NAME           STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   AGE
+windowsxp-dv   Bound    pvc-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx   130Gi      RWO            lvms-vg1       5m</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_3_create_the_virtualmachine"><a class="anchor" href="#_step_3_create_the_virtualmachine"></a>Step 3: Create the VirtualMachine</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The following manifest uses the <code>windows.xp</code> preference, which configures SATA disk bus, e1000e network, compatible timers, and USB tablet input for Q35 machine type.</p>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/legacy-windows-versions/windowsxp-vm.yaml" class="xref attachment">Download windowsxp-vm.yaml</a></p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f - &lt;&lt;EOF
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: windowsxp
+spec:
+  runStrategy: Always
+  instancetype:
+    name: u1.micro
+  preference:
+    name: windows.xp
+  template:
+    spec:
+      domain:
+        devices: {}
+      volumes:
+        - persistentVolumeClaim:
+            claimName: windowsxp-dv
+          name: rootdisk
+EOF</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Wait for the VM to start:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vm windowsxp -w</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Expected output</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">NAME        AGE   STATUS    READY
+windowsxp   10s   Running   True</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Press <code>Ctrl+C</code> once the status shows <code>Running</code>.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_4_access_the_vm_console"><a class="anchor" href="#_step_4_access_the_vm_console"></a>Step 4: Access the VM Console</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Connect to the VM using the VNC console:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">virtctl vnc windowsxp</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Alternatively, use the OpenShift web console: navigate to <strong>Virtualization</strong> &gt; <strong>VirtualMachines</strong> &gt; <strong>windowsxp</strong> &gt; <strong>Console</strong> tab.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+First boot after migration may take longer than usual. Windows may detect hardware changes and install built-in drivers for the emulated devices.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_5_adapt_for_windows_server_2003"><a class="anchor" href="#_step_5_adapt_for_windows_server_2003"></a>Step 5: Adapt for Windows Server 2003</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The <code>windows.xp</code> preference works for both Windows XP and Server 2003. A separate <code>windows.2k3</code> preference also exists if you prefer a named match. For Server 2003 workloads, use a larger instance type such as <code>u1.small</code> (1 CPU, 2 Gi memory):</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">spec:
+  instancetype:
+    name: u1.small
+  preference:
+    name: windows.2k3</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_troubleshooting"><a class="anchor" href="#_troubleshooting"></a>Troubleshooting</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_vm_keeps_rebooting_after_boot_menu_0x0000007b"><a class="anchor" href="#_vm_keeps_rebooting_after_boot_menu_0x0000007b"></a>VM Keeps Rebooting After Boot Menu (0x0000007B)</h3>
+<div class="paragraph">
+<p>If the Windows boot menu appears but the system shows a blue screen with <code>STOP 0x0000007B</code> and reboots in a loop, the guest lacks SATA drivers. This happens when the source VM used an IDE controller.</p>
 </div>
 <div class="ulist">
 <ul>
 <li>
-<p>OpenShift 4.18+ with OpenShift Virtualization operator installed</p>
+<p>Press F8 at the boot menu and select <strong>Disable automatic restart on system failure</strong> to read the full error</p>
 </li>
 <li>
-<p>Basic understanding of virtual machines and networking</p>
+<p>Press F8 and select <strong>Safe Mode</strong> to boot with generic drivers and let Windows detect the SATA hardware</p>
 </li>
 <li>
-<p>Familiarity with YAML syntax</p>
+<p>If Safe Mode also fails, do a fresh install from an ISO that includes SATA drivers</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_no_network_connectivity"><a class="anchor" href="#_no_network_connectivity"></a>No Network Connectivity</h3>
+<div class="paragraph">
+<p>If the guest boots but has no network, check the interface model:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vmi windowsxp -o jsonpath='{.spec.domain.devices.interfaces[0].model}'</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Inside the guest, open <strong>Device Manager</strong> and verify the network adapter is recognized.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_mouse_not_tracking_correctly_in_vnc"><a class="anchor" href="#_mouse_not_tracking_correctly_in_vnc"></a>Mouse Not Tracking Correctly in VNC</h3>
+<div class="paragraph">
+<p>If the mouse cursor does not align with your clicks in the VNC console, verify the USB tablet input device is present. The <code>windows.xp</code> preference enables this automatically:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vmi windowsxp -o jsonpath='{.spec.domain.devices.inputs}'</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_cleanup"><a class="anchor" href="#_cleanup"></a>Cleanup</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Remove the VM and its PVC:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc delete vm windowsxp
+oc delete pvc windowsxp-dv</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Delete the project if you no longer need it:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc delete project legacy-windows</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_summary"><a class="anchor" href="#_summary"></a>Summary</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p>You converted the disk image to qcow2 format and uploaded it into OpenShift Virtualization</p>
 </li>
 <li>
-<p>CLI tools installed: <code>oc</code>, <code>virtctl</code>, <code>kubectl</code></p>
+<p>You created a VirtualMachine using the <code>windows.xp</code> preference with e1000e network and SATA settings</p>
+</li>
+<li>
+<p>You accessed the running legacy Windows guest through the VNC console</p>
 </li>
 </ul>
 </div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="_topics"><a class="anchor" href="#_topics"></a>Topics</h2>
-<div class="sectionbody">
-<div class="dlist">
-<dl>
-<dt class="hdlist1"><a href="internal-dns-for-vms.html" class="xref page">Internal DNS Resolution for Virtual Machines</a></dt>
-<dd>
-<p>Configure internal DNS resolution for VM-to-VM and Pod-to-VM communication using Kubernetes Services within the cluster.</p>
-</dd>
-<dt class="hdlist1"><a href="remote-access-linux-vms.html" class="xref page">Remote Access to Linux VMs</a></dt>
-<dd>
-<p>Multiple methods to access Linux virtual machines including console, VNC, SSH via virtctl, NodePort services, port-forwarding, and direct network access.</p>
-</dd>
-<dt class="hdlist1"><a href="remote-access-linux-troubleshooting.html" class="xref page">Troubleshooting Remote Access to Linux VMs</a></dt>
-<dd>
-<p>Troubleshooting guide for all VM remote access methods, including diagnostic commands and solutions for common issues.</p>
-</dd>
-<dt class="hdlist1"><a href="remote-access-windows-vms.html" class="xref page">Accessing Your Windows 11 VM on Red Hat OpenShift via Remote Desktop</a></dt>
-<dd>
-<p>Configure external Remote Desktop Protocol (RDP) access to Windows virtual machines using LoadBalancer or NodePort services.</p>
-</dd>
-<dt class="hdlist1"><a href="infrastructure-node-placement.html" class="xref page">OpenShift Virtualization Infrastructure Node Placement</a></dt>
-<dd>
-<p>Control placement of OpenShift Virtualization infrastructure components (virt-controller, virt-api, virt-handler, CDI) using the HyperConverged custom resource for dedicated infrastructure nodes and high availability.</p>
-</dd>
-<dt class="hdlist1"><a href="node-placement-affinity.html" class="xref page">VM Node Placement with Selectors and Affinity Rules</a></dt>
-<dd>
-<p>Control VM placement across cluster nodes using node selectors, node affinity, and pod affinity/anti-affinity rules for performance, availability, and workload isolation.</p>
-</dd>
-<dt class="hdlist1"><a href="hotplug-volumes-interfaces.html" class="xref page">Hotplugging Volumes and Network Interfaces to Running VMs</a></dt>
-<dd>
-<p>Dynamically add and remove storage volumes and network interfaces on running VMs using virtctl, with zero downtime.</p>
-</dd>
-<dt class="hdlist1"><a href="vm-templates.html" class="xref page">Create Custom Virtual Machine Templates</a></dt>
-<dd>
-<p>Create custom VM templates for fast, repeatable deployments from both the OpenShift Virtualization console and command line.</p>
-</dd>
-<dt class="hdlist1"><a href="instancetype-preference.html" class="xref page">Instancetype and Preference for Virtual Machine Definitions</a></dt>
-<dd>
-<p>Use instancetypes and preferences to define reusable compute sizes and OS-specific settings for VM manifests, replacing inline domain spec fields.</p>
-</dd>
-</dl>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_related_topics"><a class="anchor" href="#_related_topics"></a>Related Topics</h2>
+<h2 id="_see_also"><a class="anchor" href="#_see_also"></a>See Also</h2>
 <div class="sectionbody">
 <div class="ulist">
 <ul>
 <li>
-<p><a href="../getting-started/index.html" class="xref page">Getting Started</a> - Initial setup and prerequisites</p>
+<p><a href="windows-vm-virtio-drivers.html" class="xref page">Deploying Windows VMs with VirtIO Drivers</a>&#8201;&#8212;&#8201;for modern Windows versions that support paravirtualized hardware</p>
 </li>
 <li>
-<p><a href="../storage/index.html" class="xref page">Storage Configuration</a> - Persistent storage for VMs</p>
+<p><a href="remote-access-windows-vms.html" class="xref page">Remote Access to Windows VMs via RDP</a></p>
 </li>
 <li>
-<p><a href="../networking/index.html" class="xref page">Networking Configuration</a> - Network infrastructure setup</p>
+<p><a href="https://kubevirt.io/user-guide/compute/virtual_hardware/#machine-type" target="_blank" rel="noopener">KubeVirt Machine Type Reference</a></p>
 </li>
 <li>
-<p><a href="../performance/index.html" class="xref page">Performance Tuning</a> - CPU pinning, NUMA, hugepages, real-time VMs</p>
-</li>
-<li>
-<p><a href="../vm-lifecycle/index.html" class="xref page">VM Lifecycle</a> - Golden images, cloning, snapshots, boot configuration</p>
-</li>
-</ul>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_additional_resources"><a class="anchor" href="#_additional_resources"></a>Additional Resources</h2>
-<div class="sectionbody">
-<div class="ulist">
-<ul>
-<li>
-<p><a href="https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/virtualization/about#about-virt" target="_blank" rel="noopener">OpenShift Virtualization Documentation</a></p>
-</li>
-<li>
-<p><a href="https://cloudinit.readthedocs.io/" target="_blank" rel="noopener">Cloud-init Official Documentation</a></p>
-</li>
-<li>
-<p><a href="https://kubevirt.io/user-guide/" target="_blank" rel="noopener">KubeVirt User Guide</a></p>
+<p><a href="https://docs.redhat.com/en/documentation/openshift_container_platform/4.22/html/virtualization/about#about-virt" target="_blank" rel="noopener">OpenShift Virtualization Documentation</a></p>
 </li>
 </ul>
 </div>
 </div>
 </div>
 <nav class="pagination">
-  <span class="prev"><a href="../networking/ovs-bridge-troubleshooting.html">Troubleshooting Localnet Networks</a></span>
-  <span class="next"><a href="internal-dns-for-vms.html">Internal DNS for VMs</a></span>
+  <span class="prev"><a href="windows-vm-virtio-drivers.html">Windows VMs with VirtIO Drivers</a></span>
+  <span class="next"><a href="infrastructure-node-placement.html">Infrastructure Node Placement</a></span>
 </nav>
 </article>
   </div>
