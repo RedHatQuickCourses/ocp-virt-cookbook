@@ -3,10 +3,58 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Callable, List, Optional
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional
 
 if TYPE_CHECKING:
     from .config import Config
+
+
+# ── Parse state ───────────────────────────────────────────────────────────────
+
+
+@dataclass
+class ParseState:
+    """Line-by-line parser state maintained by the engine.
+
+    This replaces the untyped ``state: dict`` that was shared between
+    the engine and check functions.  Checks read/write named attributes
+    instead of opaque string keys.  Per-check private state is available
+    via :meth:`check_state`.
+    """
+
+    # ── Previous line (set by engine at end of each iteration) ────────
+    prev_line: str = ""
+
+    # ── Code-block tracking (managed by engine) ──────────────────────
+    in_code_block: bool = False
+    code_block_lang: str = ""
+    code_block_start_line: int = 0
+    boundary_direction: str = ""  # "open" or "close", set at ---- boundary
+
+    # ── Heading tracking (managed by heading-hierarchy check) ─────────
+    heading_levels: List[int] = field(default_factory=list)
+    first_heading_found: bool = False
+    h1_count: int = 0
+
+    # ── List context (managed by list-blank-line check) ──────────────
+    in_list: bool = False
+
+    # ── Per-check private state ──────────────────────────────────────
+    _check_state: Dict[str, Dict[str, Any]] = field(
+        default_factory=dict, repr=False
+    )
+
+    def check_state(self, check_name: str) -> Dict[str, Any]:
+        """Return a private state dict for the named check.
+
+        Created lazily on first access.
+        """
+        if check_name not in self._check_state:
+            self._check_state[check_name] = {}
+        return self._check_state[check_name]
+
+
+# ── Findings and results ──────────────────────────────────────────────────────
 
 
 @dataclass
