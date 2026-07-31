@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
+import inspect
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Protocol
 
 if TYPE_CHECKING:
     from .config import Config
@@ -121,6 +122,84 @@ class ReviewResult:
     files: List[FileResult] = field(default_factory=list)
     total_errors: int = 0
     total_warnings: int = 0
+
+
+# ── Check type protocols ──────────────────────────────────────────────────────
+
+# These protocols define the expected call signatures for each check scope.
+# They are used for validation at registration time.
+
+
+class LineCheck(Protocol):
+    """Signature for prose, code_block_content, and code_block_boundary checks."""
+
+    def __call__(
+        self,
+        line: str,
+        line_num: int,
+        state: ParseState,
+        cfg: Config,
+        file_result: FileResult,
+    ) -> None: ...
+
+
+class StructuralCheck(Protocol):
+    """Signature for structural checks (operate on full file content)."""
+
+    def __call__(
+        self,
+        filepath: str,
+        lines: List[str],
+        cfg: Config,
+        file_result: FileResult,
+    ) -> None: ...
+
+
+# Maps scope name -> (expected parameter names, protocol description)
+SCOPE_SIGNATURES: Dict[str, tuple[tuple[str, ...], str]] = {
+    "prose": (
+        ("line", "line_num", "state", "cfg", "file_result"),
+        "LineCheck(line, line_num, state, cfg, file_result)",
+    ),
+    "code_block_content": (
+        ("line", "line_num", "state", "cfg", "file_result"),
+        "LineCheck(line, line_num, state, cfg, file_result)",
+    ),
+    "code_block_boundary": (
+        ("line", "line_num", "state", "cfg", "file_result"),
+        "LineCheck(line, line_num, state, cfg, file_result)",
+    ),
+    "structural": (
+        ("filepath", "lines", "cfg", "file_result"),
+        "StructuralCheck(filepath, lines, cfg, file_result)",
+    ),
+}
+
+
+def validate_check_signature(func: Callable, scope: str, name: str) -> None:
+    """Validate that *func*'s parameters match the expected signature for *scope*.
+
+    Raises ``TypeError`` at registration time if there is a mismatch.
+    """
+    if scope not in SCOPE_SIGNATURES:
+        raise ValueError(
+            f"Check '{name}': unknown scope '{scope}'. "
+            f"Valid scopes: {', '.join(SCOPE_SIGNATURES)}"
+        )
+
+    expected_params, description = SCOPE_SIGNATURES[scope]
+    sig = inspect.signature(func)
+    actual_params = tuple(sig.parameters.keys())
+
+    if actual_params != expected_params:
+        raise TypeError(
+            f"Check '{name}' (scope={scope}) has signature "
+            f"{actual_params} but expected {expected_params} "
+            f"matching {description}"
+        )
+
+
+# ── Check definition ─────────────────────────────────────────────────────────
 
 
 @dataclass
