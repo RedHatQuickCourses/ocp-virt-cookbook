@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import List
 
 from .config import Config
-from .models import FileResult, Finding
+from .models import FileResult, Finding, ParseState
 from .registry import CHECKS
 
 # Ensure all checks are registered before the engine runs.
@@ -92,60 +92,52 @@ def review_file(filepath: str, cfg: Config) -> FileResult:
     structural_checks = _get_enabled_checks(cfg, "structural")
 
     # Line-by-line state machine
-    state: dict = {
-        "in_code_block": False,
-        "code_block_lang": "",
-        "code_block_start_line": 0,
-        "prev_line": "",
-        "heading_levels": [],
-        "first_heading_found": False,
-        "h1_count": 0,
-    }
+    state = ParseState()
 
     for line_num, line in enumerate(lines, 1):
         # Skip comment lines for prose checks
         if re.match(r"^//", line):
-            state["prev_line"] = line
+            state.prev_line = line
             continue
 
         # Track code block boundaries
         if re.match(r"^----", line):
-            if not state["in_code_block"]:
-                state["in_code_block"] = True
-                state["code_block_start_line"] = line_num
-                state["boundary_direction"] = "open"
+            if not state.in_code_block:
+                state.in_code_block = True
+                state.code_block_start_line = line_num
+                state.boundary_direction = "open"
 
-                prev = state["prev_line"]
+                prev = state.prev_line
                 # Detect language specifier in previous line
                 m = re.match(
                     r"^\[source,?([a-zA-Z0-9_-]*)\]", prev
                 ) or re.match(r"^\[source,?([a-zA-Z0-9_-]*),.*\]", prev)
-                state["code_block_lang"] = m.group(1) if m else ""
+                state.code_block_lang = m.group(1) if m else ""
             else:
-                state["in_code_block"] = False
-                state["code_block_lang"] = ""
-                state["boundary_direction"] = "close"
+                state.in_code_block = False
+                state.code_block_lang = ""
+                state.boundary_direction = "close"
 
             # Run boundary checks
             for check_def in boundary_checks:
                 check_def.func(line, line_num, state, cfg, file_result)
 
-            state["prev_line"] = line
+            state.prev_line = line
             continue
 
         # Inside code block: run code block content checks
-        if state["in_code_block"]:
+        if state.in_code_block:
             for check_def in code_block_checks:
                 check_def.func(line, line_num, state, cfg, file_result)
 
-            state["prev_line"] = line
+            state.prev_line = line
             continue
 
         # Outside code block: run prose checks
         for check_def in prose_checks:
             check_def.func(line, line_num, state, cfg, file_result)
 
-        state["prev_line"] = line
+        state.prev_line = line
 
     # Run structural checks
     for check_def in structural_checks:

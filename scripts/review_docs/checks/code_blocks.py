@@ -3,7 +3,7 @@
 import re
 
 from ..config import Config
-from ..models import FileResult
+from ..models import FileResult, ParseState
 from ..registry import register_check
 
 
@@ -11,20 +11,20 @@ from ..registry import register_check
 def check_code_block_language(
     line: str,
     line_num: int,
-    state: dict,
+    state: ParseState,
     cfg: Config,
     file_result: FileResult,
 ) -> None:
     """Check that a code block opening has a ``[source,language]`` specifier.
 
     Boundary checks are called when a ``----`` delimiter is encountered.
-    ``state["boundary_direction"]`` is ``"open"`` or ``"close"``.
-    ``state["prev_line"]`` contains the line immediately before the delimiter.
+    ``state.boundary_direction`` is ``"open"`` or ``"close"``.
+    ``state.prev_line`` contains the line immediately before the delimiter.
     """
-    if state.get("boundary_direction") != "open":
+    if state.boundary_direction != "open":
         return
 
-    prev = state.get("prev_line", "")
+    prev = state.prev_line
     m = re.match(r"^\[source,?([a-zA-Z0-9_-]*)\]", prev) or re.match(
         r"^\[source,?([a-zA-Z0-9_-]*),.*\]", prev
     )
@@ -45,12 +45,12 @@ def check_code_block_language(
 def check_yaml_null_timestamps(
     line: str,
     line_num: int,
-    state: dict,
+    state: ParseState,
     cfg: Config,
     file_result: FileResult,
 ) -> None:
     """Check for creationTimestamp: null in YAML blocks."""
-    if state.get("code_block_lang") == "yaml" and re.search(
+    if state.code_block_lang == "yaml" and re.search(
         r"creationTimestamp:\s*null", line
     ):
         file_result.add_finding(
@@ -65,12 +65,12 @@ def check_yaml_null_timestamps(
 def check_yaml_flow_syntax(
     line: str,
     line_num: int,
-    state: dict,
+    state: ParseState,
     cfg: Config,
     file_result: FileResult,
 ) -> None:
     """Check for inline YAML flow syntax ({} or []) in YAML blocks."""
-    if state.get("code_block_lang") != "yaml":
+    if state.code_block_lang != "yaml":
         return
 
     if re.search(r".*:\s*\{.*\}", line) or re.search(r".*:\s*\[.*\]", line):

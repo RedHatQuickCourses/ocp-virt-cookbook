@@ -3,7 +3,7 @@
 import re
 
 from ..config import Config
-from ..models import FileResult
+from ..models import FileResult, ParseState
 from ..registry import register_check
 
 # Admonition keywords (used by the admonition-capitalization check)
@@ -14,7 +14,7 @@ ADMONITIONS = r"NOTE|WARNING|TIP|IMPORTANT|CAUTION"
 def check_heading_hierarchy(
     line: str,
     line_num: int,
-    state: dict,
+    state: ParseState,
     cfg: Config,
     file_result: FileResult,
 ) -> None:
@@ -28,15 +28,15 @@ def check_heading_hierarchy(
 
     # Count H1s
     if level == 1:
-        state["h1_count"] = state.get("h1_count", 0) + 1
-        if state["h1_count"] > 1:
+        state.h1_count += 1
+        if state.h1_count > 1:
             file_result.add_finding(
                 cfg,
                 "heading-hierarchy",
                 line_num,
                 f"line {line_num}: Multiple H1 headings found (should have only one)",
             )
-        if state.get("first_heading_found", False):
+        if state.first_heading_found:
             file_result.add_finding(
                 cfg,
                 "heading-hierarchy",
@@ -44,12 +44,11 @@ def check_heading_hierarchy(
                 f"line {line_num}: H1 must be the first heading in the file",
             )
 
-    state["first_heading_found"] = True
+    state.first_heading_found = True
 
     # Check for skipped levels
-    heading_levels = state.get("heading_levels", [])
-    if heading_levels:
-        prev_level = heading_levels[-1]
+    if state.heading_levels:
+        prev_level = state.heading_levels[-1]
         if level > prev_level + 1:
             file_result.add_finding(
                 cfg,
@@ -58,20 +57,19 @@ def check_heading_hierarchy(
                 f"line {line_num}: Heading level skipped (previous: {prev_level}, current: {level})",
             )
 
-    heading_levels.append(level)
-    state["heading_levels"] = heading_levels
+    state.heading_levels.append(level)
 
 
 @register_check("heading-blank-line", "warning", "prose")
 def check_heading_blank_line(
     line: str,
     line_num: int,
-    state: dict,
+    state: ParseState,
     cfg: Config,
     file_result: FileResult,
 ) -> None:
     """Check that headings are followed by a blank line."""
-    prev_line = state.get("prev_line", "")
+    prev_line = state.prev_line
 
     # Check if previous line was a heading and this line is not blank
     if re.match(r"^(=+)\s+(.+)$", prev_line):
@@ -88,7 +86,7 @@ def check_heading_blank_line(
 def check_trailing_whitespace(
     line: str,
     line_num: int,
-    state: dict,
+    state: ParseState,
     cfg: Config,
     file_result: FileResult,
 ) -> None:
@@ -106,7 +104,7 @@ def check_trailing_whitespace(
 def check_bare_urls(
     line: str,
     line_num: int,
-    state: dict,
+    state: ParseState,
     cfg: Config,
     file_result: FileResult,
 ) -> None:
@@ -128,7 +126,7 @@ def check_bare_urls(
 def check_external_link_target(
     line: str,
     line_num: int,
-    state: dict,
+    state: ParseState,
     cfg: Config,
     file_result: FileResult,
 ) -> None:
@@ -149,7 +147,7 @@ def check_external_link_target(
 def check_image_alt_text(
     line: str,
     line_num: int,
-    state: dict,
+    state: ParseState,
     cfg: Config,
     file_result: FileResult,
 ) -> None:
@@ -168,7 +166,7 @@ def check_image_alt_text(
 def check_product_names(
     line: str,
     line_num: int,
-    state: dict,
+    state: ParseState,
     cfg: Config,
     file_result: FileResult,
 ) -> None:
@@ -187,7 +185,7 @@ def check_product_names(
 def check_banned_terms(
     line: str,
     line_num: int,
-    state: dict,
+    state: ParseState,
     cfg: Config,
     file_result: FileResult,
 ) -> None:
@@ -209,7 +207,7 @@ def check_banned_terms(
 def check_admonition_capitalization(
     line: str,
     line_num: int,
-    state: dict,
+    state: ParseState,
     cfg: Config,
     file_result: FileResult,
 ) -> None:
