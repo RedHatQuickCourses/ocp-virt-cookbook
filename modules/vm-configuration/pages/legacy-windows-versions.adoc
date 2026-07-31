@@ -1,0 +1,262 @@
+= Running Legacy Windows Versions on OpenShift Virtualization
+:navtitle: Legacy Windows Versions
+
+== Overview
+
+Legacy Windows versions such as Windows XP and Windows Server 2003 can run on OpenShift Virtualization using the `windows.xp` VirtualMachineClusterPreference. This preference configures Q35 with SATA disk bus, e1000e network, compatible timers, and USB tablet input.
+
+You can bring a legacy Windows guest into OpenShift Virtualization in two ways:
+
+* Convert an existing disk image (VMDK, VHD, VHDX) to qcow2 and upload it.
+* Perform a fresh install from an ISO that includes SATA drivers.
+
+In both cases the guest must have SATA (AHCI) storage drivers. Older images using IDE bus may require the i440FX machine type and other workarounds, which are out of scope for this tutorial.
+
+WARNING: Windows XP and Server 2003 reached end of life in 2014 and 2015 respectively and no longer receive security updates. Only run these systems in isolated lab environments for testing or legacy application compatibility.
+
+== What You Will Learn
+
+* How to convert and upload a legacy Windows disk image into OpenShift Virtualization
+* How to create a VirtualMachine using the `windows.xp` preference
+
+== Prerequisites
+
+* OpenShift 4.22+ with OpenShift Virtualization operator installed
+* `oc` and `virtctl` CLI tools installed and configured
+* `qemu-img` installed on your workstation (provided by the `qemu-img` package on RHEL/Fedora or `qemu` on macOS via Homebrew)
+* A legacy Windows disk image (VMDK, VHD, VHDX, or raw) from an existing installation, or a Windows XP/Server 2003 install ISO with SATA drivers
+* A default StorageClass with enough available capacity for the disk image
+
+Versions tested:
+[source,text]
+----
+OpenShift 4.22
+----
+
+== Step 1: Convert the Disk Image
+
+Skip this step if you are doing a fresh install from an ISO.
+
+Legacy Windows disk images often come from VMware (VMDK), Hyper-V (VHD/VHDX), or raw physical-to-virtual captures. Convert the source image to qcow2 format, which CDI can import directly.
+
+Convert from VMDK:
+
+[source,bash]
+----
+qemu-img convert -f vmdk -O qcow2 filename.vmdk windows-legacy.qcow2
+----
+
+Convert from VHD (`vpc` is the qemu-img format name for VHD files):
+
+[source,bash]
+----
+qemu-img convert -f vpc -O qcow2 filename.vhd windows-legacy.qcow2
+----
+
+Convert from VHDX:
+
+[source,bash]
+----
+qemu-img convert -f vhdx -O qcow2 filename.vhdx windows-legacy.qcow2
+----
+
+Verify the converted image:
+
+[source,bash]
+----
+qemu-img info windows-legacy.qcow2
+----
+
+.Expected output
+[source,text]
+----
+image: windows-legacy.qcow2
+file format: qcow2
+virtual size: 20 GiB (21474836480 bytes)
+disk size: 3.2 GiB
+cluster_size: 65536
+Format specific information:
+    compat: 1.1
+    compression type: zlib
+----
+
+The `virtual size` determines the minimum PVC size you need in the next step.
+
+== Step 2: Upload the Disk Image
+
+Skip this step if you are doing a fresh install from an ISO.
+
+Check the virtual size of your converted image. The PVC must be at least this large:
+
+[source,bash]
+----
+qemu-img info windows-legacy.qcow2 | grep "virtual size"
+----
+
+Create a namespace for the legacy Windows VM if you do not already have one:
+
+[source,bash,role=execute]
+----
+oc new-project legacy-windows
+----
+
+Upload the qcow2 image using `virtctl`. Replace the `--size` value with a size equal to or larger than the virtual size reported by `qemu-img info`:
+
+[source,bash]
+----
+virtctl image-upload pvc windowsxp-dv \
+  --size=130Gi \
+  --image-path=windows-legacy.qcow2 \
+  --force-bind \
+  --insecure
+----
+
+NOTE: The command uses `pvc` instead of `dv` to upload directly to a PersistentVolumeClaim. This avoids issues with the CDI volume populator flow on storage classes that use `WaitForFirstConsumer` binding mode. The `--force-bind` flag ensures the PVC binds immediately.
+
+IMPORTANT: The `--insecure` flag is often needed in development environments where the CDI upload proxy uses self-signed certificates. In production, configure proper TLS certificates instead.
+
+Wait for the upload to complete. Then verify the PVC is `Bound`:
+
+[source,bash,role=execute]
+----
+oc get pvc windowsxp-dv
+----
+
+.Expected output
+[source,text]
+----
+NAME           STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   AGE
+windowsxp-dv   Bound    pvc-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx   130Gi      RWO            lvms-vg1       5m
+----
+
+== Step 3: Create the VirtualMachine
+
+The following manifest uses the `windows.xp` preference, which configures SATA disk bus, e1000e network, compatible timers, and USB tablet input for Q35 machine type.
+
+xref:attachment$legacy-windows-versions/windowsxp-vm.yaml[Download windowsxp-vm.yaml]
+
+[source,bash,role=execute]
+----
+oc apply -f - <<EOF
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: windowsxp
+spec:
+  runStrategy: Always
+  instancetype:
+    name: u1.micro
+  preference:
+    name: windows.xp
+  template:
+    spec:
+      domain:
+        devices: {}
+      volumes:
+        - persistentVolumeClaim:
+            claimName: windowsxp-dv
+          name: rootdisk
+EOF
+----
+
+Wait for the VM to start:
+
+[source,bash,role=execute]
+----
+oc get vm windowsxp -w
+----
+
+.Expected output
+[source,text]
+----
+NAME        AGE   STATUS    READY
+windowsxp   10s   Running   True
+----
+
+Press `Ctrl+C` once the status shows `Running`.
+
+== Step 4: Access the VM Console
+
+Connect to the VM using the VNC console:
+
+[source,bash,role=execute]
+----
+virtctl vnc windowsxp
+----
+
+Alternatively, use the OpenShift web console: navigate to **Virtualization** > **VirtualMachines** > **windowsxp** > **Console** tab.
+
+NOTE: First boot after migration may take longer than usual. Windows may detect hardware changes and install built-in drivers for the emulated devices.
+
+== Step 5: Adapt for Windows Server 2003
+
+The `windows.xp` preference works for both Windows XP and Server 2003. A separate `windows.2k3` preference also exists if you prefer a named match. For Server 2003 workloads, use a larger instance type such as `u1.small` (1 CPU, 2 Gi memory):
+
+[source,yaml]
+----
+spec:
+  instancetype:
+    name: u1.small
+  preference:
+    name: windows.2k3
+----
+
+== Troubleshooting
+
+=== VM Keeps Rebooting After Boot Menu (0x0000007B)
+
+If the Windows boot menu appears but the system shows a blue screen with `STOP 0x0000007B` and reboots in a loop, the guest lacks SATA drivers. This happens when the source VM used an IDE controller.
+
+* Press F8 at the boot menu and select **Disable automatic restart on system failure** to read the full error
+* Press F8 and select **Safe Mode** to boot with generic drivers and let Windows detect the SATA hardware
+* If Safe Mode also fails, do a fresh install from an ISO that includes SATA drivers
+
+=== No Network Connectivity
+
+If the guest boots but has no network, check the interface model:
+
+[source,bash,role=execute]
+----
+oc get vmi windowsxp -o jsonpath='{.spec.domain.devices.interfaces[0].model}'
+----
+
+Inside the guest, open **Device Manager** and verify the network adapter is recognized.
+
+=== Mouse Not Tracking Correctly in VNC
+
+If the mouse cursor does not align with your clicks in the VNC console, verify the USB tablet input device is present. The `windows.xp` preference enables this automatically:
+
+[source,bash,role=execute]
+----
+oc get vmi windowsxp -o jsonpath='{.spec.domain.devices.inputs}'
+----
+
+== Cleanup
+
+Remove the VM and its PVC:
+
+[source,bash,role=execute]
+----
+oc delete vm windowsxp
+oc delete pvc windowsxp-dv
+----
+
+Delete the project if you no longer need it:
+
+[source,bash,role=execute]
+----
+oc delete project legacy-windows
+----
+
+== Summary
+
+* You converted the disk image to qcow2 format and uploaded it into OpenShift Virtualization
+* You created a VirtualMachine using the `windows.xp` preference with e1000e network and SATA settings
+* You accessed the running legacy Windows guest through the VNC console
+
+== See Also
+
+* xref:windows-vm-virtio-drivers.adoc[Deploying Windows VMs with VirtIO Drivers] -- for modern Windows versions that support paravirtualized hardware
+* xref:remote-access-windows-vms.adoc[Remote Access to Windows VMs via RDP]
+* link:https://kubevirt.io/user-guide/compute/virtual_hardware/#machine-type[KubeVirt Machine Type Reference,window=_blank]
+* link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.22/html/virtualization/about#about-virt[OpenShift Virtualization Documentation,window=_blank]
