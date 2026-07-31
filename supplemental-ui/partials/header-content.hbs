@@ -3,6 +3,13 @@
     <div class="navbar-brand">
       <a class="navbar-item" href="https://www.redhat.com" target="_blank"><img src="{{uiRootPath}}/img/redhat-logo.png" height="40px" alt="Red Hat"></a>
       <a class="navbar-item" style="font-size: 24px; color: white" href="{{or site.url (or siteRootUrl siteRootPath)}}">{{site.title}}</a>
+      {{#if env.SITE_SEARCH_PROVIDER}}
+      <div class="navbar-item search hide-for-print">
+        <div id="search-field" class="field">
+          <input id="search-input" type="text" placeholder="Search the docs"{{#if page.home}} autofocus{{/if}}>
+        </div>
+      </div>
+      {{/if}}
       <button class="navbar-burger" data-target="topbar-nav">
         <span></span>
         <span></span>
