@@ -7,7 +7,7 @@ happens automatically when the package is first imported.
 
 from typing import Callable, Dict
 
-from .models import CheckDef
+from .models import CheckDef, validate_check_signature
 
 # Global registry populated by @register_check decorators.
 CHECKS: Dict[str, CheckDef] = {}
@@ -15,6 +15,10 @@ CHECKS: Dict[str, CheckDef] = {}
 
 def register_check(name: str, severity: str, scope: str):
     """Decorator that registers a check function in the global CHECKS dict.
+
+    The function's signature is validated against the expected parameters
+    for the given *scope* at registration time.  A ``TypeError`` is raised
+    immediately if the signature does not match.
 
     Parameters
     ----------
@@ -28,6 +32,7 @@ def register_check(name: str, severity: str, scope: str):
     """
 
     def decorator(func: Callable) -> Callable:
+        validate_check_signature(func, scope, name)
         CHECKS[name] = CheckDef(
             name=name, default_severity=severity, scope=scope, func=func
         )
