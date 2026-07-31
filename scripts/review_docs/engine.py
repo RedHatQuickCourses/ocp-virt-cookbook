@@ -57,6 +57,7 @@ _BLOCK_DELIMITERS = {
 }
 
 
+
 # ── Internal helpers ──────────────────────────────────────────────────────────
 
 
@@ -112,6 +113,7 @@ def _check_block_boundary(line: str, state: ParseState) -> bool:
                 state.block_stack.append(block_type)
             return True
     return False
+
 
 
 # ── Public API ────────────────────────────────────────────────────────────────
