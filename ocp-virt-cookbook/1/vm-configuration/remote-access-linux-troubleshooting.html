@@ -516,11 +516,23 @@ oc get pods -n my-namespace -l kubevirt.io/domain=my-vm</code></pre>
 </div>
 </div>
 <div class="paragraph">
-<p><strong>Common Causes</strong>:
-- VM is not running
-- VMI not created
-- virt-launcher pod not running
-- Network issues between client and API server</p>
+<p><strong>Common Causes</strong>:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>VM is not running</p>
+</li>
+<li>
+<p>VMI not created</p>
+</li>
+<li>
+<p>virt-launcher pod not running</p>
+</li>
+<li>
+<p>Network issues between client and API server</p>
+</li>
+</ul>
 </div>
 <div class="paragraph">
 <p><strong>Solutions</strong>:</p>
@@ -579,10 +591,20 @@ Console connects but shows blank screen or no prompt.</p>
 </div>
 </div>
 <div class="paragraph">
-<p><strong>Common Causes</strong>:
-- VM still booting
-- Serial console not configured in VM
-- systemd-getty not running on ttyS0</p>
+<p><strong>Common Causes</strong>:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>VM still booting</p>
+</li>
+<li>
+<p>Serial console not configured in VM</p>
+</li>
+<li>
+<p>systemd-getty not running on ttyS0</p>
+</li>
+</ul>
 </div>
 <div class="paragraph">
 <p><strong>Solutions</strong>:</p>
@@ -629,10 +651,20 @@ virtctl console my-vm -n my-namespace</code></pre>
 Login prompt appears but credentials do not work.</p>
 </div>
 <div class="paragraph">
-<p><strong>Common Causes</strong>:
-- Wrong username/password
-- Cloud-init SSH-only access configured
-- Root login disabled</p>
+<p><strong>Common Causes</strong>:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Wrong username/password</p>
+</li>
+<li>
+<p>Cloud-init SSH-only access configured</p>
+</li>
+<li>
+<p>Root login disabled</p>
+</li>
+</ul>
 </div>
 <div class="paragraph">
 <p><strong>Solutions</strong>:</p>
@@ -703,13 +735,27 @@ oc get vm my-vm -n my-namespace -o yaml | grep -A 10 "devices:"</code></pre>
 </div>
 </div>
 <div class="paragraph">
-<p><strong>Common Causes</strong>:
-- Graphics device disabled via <code>autoattachGraphicsDevice: false</code>
-- VM spec explicitly excludes graphics device</p>
+<p><strong>Common Causes</strong>:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Graphics device disabled via <code>autoattachGraphicsDevice: false</code></p>
+</li>
+<li>
+<p>VM spec explicitly excludes graphics device</p>
+</li>
+</ul>
 </div>
 <div class="paragraph">
-<p><strong>Solutions</strong>:
-. Ensure graphics device is enabled (it is enabled by default in OpenShift Virtualization). If explicitly disabled, remove the <code>autoattachGraphicsDevice: false</code> setting or set it to <code>true</code>.</p>
+<p><strong>Solutions</strong>:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Ensure graphics device is enabled (it is enabled by default in OpenShift Virtualization). If explicitly disabled, remove the <code>autoattachGraphicsDevice: false</code> setting or set it to <code>true</code>.</p>
+</li>
+</ol>
 </div>
 </div>
 <div class="sect2">
@@ -732,10 +778,20 @@ netstat -tuln | grep 5900</code></pre>
 </div>
 </div>
 <div class="paragraph">
-<p><strong>Common Causes</strong>:
-- Firewall blocking VNC port
-- VNC viewer not installed or wrong viewer
-- Port conflict</p>
+<p><strong>Common Causes</strong>:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Firewall blocking VNC port</p>
+</li>
+<li>
+<p>VNC viewer not installed or wrong viewer</p>
+</li>
+<li>
+<p>Port conflict</p>
+</li>
+</ul>
 </div>
 <div class="paragraph">
 <p><strong>Solutions</strong>:</p>
@@ -770,10 +826,20 @@ brew install tiger-vnc</code></pre>
 VNC connects but shows blank or black screen.</p>
 </div>
 <div class="paragraph">
-<p><strong>Common Causes</strong>:
-- VM still booting
-- No display manager running
-- VM is console-only (no GUI)</p>
+<p><strong>Common Causes</strong>:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>VM still booting</p>
+</li>
+<li>
+<p>No display manager running</p>
+</li>
+<li>
+<p>VM is console-only (no GUI)</p>
+</li>
+</ul>
 </div>
 <div class="paragraph">
 <p><strong>Solutions</strong>:</p>
@@ -829,11 +895,23 @@ virtctl console my-vm -n my-namespace
 </div>
 </div>
 <div class="paragraph">
-<p><strong>Common Causes</strong>:
-- SSH service not running in VM
-- No IP address assigned to VM
-- SSH not installed in VM
-- Network connectivity issues</p>
+<p><strong>Common Causes</strong>:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>SSH service not running in VM</p>
+</li>
+<li>
+<p>No IP address assigned to VM</p>
+</li>
+<li>
+<p>SSH not installed in VM</p>
+</li>
+<li>
+<p>Network connectivity issues</p>
+</li>
+</ul>
 </div>
 <div class="paragraph">
 <p><strong>Solutions</strong>:</p>
@@ -895,10 +973,20 @@ virtctl ssh --local-ssh-opts="-o PreferredAuthentications=password" fedora@my-vm
 </div>
 </div>
 <div class="paragraph">
-<p><strong>Common Causes</strong>:
-- SSH public key not in VM&#8217;s authorized_keys
-- Wrong username
-- SSH key passphrase required</p>
+<p><strong>Common Causes</strong>:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>SSH public key not in VM&#8217;s authorized_keys</p>
+</li>
+<li>
+<p>Wrong username</p>
+</li>
+<li>
+<p>SSH key passphrase required</p>
+</li>
+</ul>
 </div>
 <div class="paragraph">
 <p><strong>Solutions</strong>:</p>
@@ -940,9 +1028,17 @@ chmod 600 ~/.ssh/authorized_keys</code></pre>
 Connection takes 30+ seconds to establish.</p>
 </div>
 <div class="paragraph">
-<p><strong>Common Causes</strong>:
-- DNS reverse lookup timeout
-- GSSAPI authentication attempt</p>
+<p><strong>Common Causes</strong>:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>DNS reverse lookup timeout</p>
+</li>
+<li>
+<p>GSSAPI authentication attempt</p>
+</li>
+</ul>
 </div>
 <div class="paragraph">
 <p><strong>Solutions</strong>:
@@ -986,12 +1082,26 @@ oc get svc my-vm-ssh -n my-namespace -o jsonpath='{.spec.ports[0].nodePort}'</co
 </div>
 </div>
 <div class="paragraph">
-<p><strong>Common Causes</strong>:
-- Service not created
-- Wrong NodePort number
-- VM pod not running or not ready
-- Firewall blocking NodePort
-- SSH not listening in VM</p>
+<p><strong>Common Causes</strong>:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Service not created</p>
+</li>
+<li>
+<p>Wrong NodePort number</p>
+</li>
+<li>
+<p>VM pod not running or not ready</p>
+</li>
+<li>
+<p>Firewall blocking NodePort</p>
+</li>
+<li>
+<p>SSH not listening in VM</p>
+</li>
+</ul>
 </div>
 <div class="paragraph">
 <p><strong>Solutions</strong>:</p>
@@ -1057,9 +1167,17 @@ oc describe svc my-vm-ssh -n my-namespace
 </div>
 </div>
 <div class="paragraph">
-<p><strong>Common Causes</strong>:
-- Service selector matches multiple VMs
-- Service selector does not match any VM</p>
+<p><strong>Common Causes</strong>:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Service selector matches multiple VMs</p>
+</li>
+<li>
+<p>Service selector does not match any VM</p>
+</li>
+</ul>
 </div>
 <div class="paragraph">
 <p><strong>Solutions</strong>:</p>
@@ -1140,10 +1258,20 @@ oc describe svc my-vm-ssh -n my-namespace</code></pre>
 </div>
 </div>
 <div class="paragraph">
-<p><strong>Common Causes</strong>:
-- No LoadBalancer provider configured (MetalLB, cloud provider)
-- LoadBalancer quota exhausted
-- LoadBalancer configuration error</p>
+<p><strong>Common Causes</strong>:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>No LoadBalancer provider configured (MetalLB, cloud provider)</p>
+</li>
+<li>
+<p>LoadBalancer quota exhausted</p>
+</li>
+<li>
+<p>LoadBalancer configuration error</p>
+</li>
+</ul>
 </div>
 <div class="paragraph">
 <p><strong>Solutions</strong>:</p>
@@ -1192,11 +1320,23 @@ oc run test-curl --image=curlimages/curl --rm -it --restart=Never -- curl -v tel
 </div>
 </div>
 <div class="paragraph">
-<p><strong>Common Causes</strong>:
-- LoadBalancer IP not routable
-- Firewall blocking traffic
-- LoadBalancer misconfiguration
-- SSH not running in VM</p>
+<p><strong>Common Causes</strong>:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>LoadBalancer IP not routable</p>
+</li>
+<li>
+<p>Firewall blocking traffic</p>
+</li>
+<li>
+<p>LoadBalancer misconfiguration</p>
+</li>
+<li>
+<p>SSH not running in VM</p>
+</li>
+</ul>
 </div>
 <div class="paragraph">
 <p><strong>Solutions</strong>:</p>
@@ -1245,10 +1385,20 @@ lsof -i :2222</code></pre>
 </div>
 </div>
 <div class="paragraph">
-<p><strong>Common Causes</strong>:
-- Local port already in use
-- VMI not running
-- Network policy blocking port-forward</p>
+<p><strong>Common Causes</strong>:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Local port already in use</p>
+</li>
+<li>
+<p>VMI not running</p>
+</li>
+<li>
+<p>Network policy blocking port-forward</p>
+</li>
+</ul>
 </div>
 <div class="paragraph">
 <p><strong>Solutions</strong>:</p>
@@ -1309,10 +1459,20 @@ ss -tuln | grep :22</code></pre>
 </div>
 </div>
 <div class="paragraph">
-<p><strong>Common Causes</strong>:
-- SSH not running in VM
-- SSH listening on different port
-- VM does not have SSH installed</p>
+<p><strong>Common Causes</strong>:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>SSH not running in VM</p>
+</li>
+<li>
+<p>SSH listening on different port</p>
+</li>
+<li>
+<p>VM does not have SSH installed</p>
+</li>
+</ul>
 </div>
 <div class="paragraph">
 <p><strong>Solutions</strong>:</p>
@@ -1357,10 +1517,20 @@ sudo cat /etc/ssh/sshd_config | grep ^Port</code></pre>
 Port forward works but drops connection after few minutes.</p>
 </div>
 <div class="paragraph">
-<p><strong>Common Causes</strong>:
-- Idle timeout
-- API server connection timeout
-- Network instability</p>
+<p><strong>Common Causes</strong>:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Idle timeout</p>
+</li>
+<li>
+<p>API server connection timeout</p>
+</li>
+<li>
+<p>Network instability</p>
+</li>
+</ul>
 </div>
 <div class="paragraph">
 <p><strong>Solutions</strong>:</p>
@@ -1421,12 +1591,26 @@ oc get vm my-vm -n my-namespace -o jsonpath='{.spec.template.spec.networks}' | j
 </div>
 </div>
 <div class="paragraph">
-<p><strong>Common Causes</strong>:
-- NetworkAttachmentDefinition not configured
-- VM does not have secondary network interface
-- Secondary network IP not configured
-- Physical network not accessible
-- VLAN configuration error</p>
+<p><strong>Common Causes</strong>:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>NetworkAttachmentDefinition not configured</p>
+</li>
+<li>
+<p>VM does not have secondary network interface</p>
+</li>
+<li>
+<p>Secondary network IP not configured</p>
+</li>
+<li>
+<p>Physical network not accessible</p>
+</li>
+<li>
+<p>VLAN configuration error</p>
+</li>
+</ul>
 </div>
 <div class="paragraph">
 <p><strong>Solutions</strong>:</p>
@@ -1502,10 +1686,20 @@ oc get vmi my-vm -n my-namespace -o jsonpath='{.status.interfaces}' | jq</code><
 </div>
 </div>
 <div class="paragraph">
-<p><strong>Common Causes</strong>:
-- NAD does not exist in same namespace
-- VM spec missing secondary network interface
-- Multus CNI not working</p>
+<p><strong>Common Causes</strong>:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>NAD does not exist in same namespace</p>
+</li>
+<li>
+<p>VM spec missing secondary network interface</p>
+</li>
+<li>
+<p>Multus CNI not working</p>
+</li>
+</ul>
 </div>
 <div class="paragraph">
 <p><strong>Solutions</strong>:</p>
