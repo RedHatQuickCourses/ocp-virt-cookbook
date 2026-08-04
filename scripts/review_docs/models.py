@@ -56,7 +56,6 @@ class ParseState:
         Convenience property — equivalent to ``self.in_block("code_block")``.
         """
         return self.in_block("code_block")
-
     # ── Per-check private state ──────────────────────────────────────
     _check_state: Dict[str, Dict[str, Any]] = field(
         default_factory=dict, repr=False
