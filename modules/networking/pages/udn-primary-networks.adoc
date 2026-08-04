@@ -205,6 +205,37 @@ Expected output:
 <h1>Welcome to OpenShift Virtualization !!!</h1>
 ----
 
+== Network Topology
+
+The following diagram illustrates how a UDN primary network provides namespace-scoped network isolation with custom IP addressing. Unlike secondary networks that add an interface alongside the default pod network, a UDN primary network replaces the default pod network entirely for all workloads in the namespace.
+
+image::udn-primary-topology.png[UDN Primary Network Topology, align=center]
+
+The `UserDefinedNetwork` resource with `Layer2` topology and `role: Primary` configures OVN-Kubernetes to manage a custom subnet (192.168.100.0/24) for the labeled namespace. OVN-Kubernetes IPAM assigns addresses from this subnet with `Persistent` lifecycle, meaning VMs retain their IPs across restarts and migrations. Each VM's primary interface connects through an l2bridge binding directly to the UDN, with no Multus plugin or `NetworkAttachmentDefinition` required. External access is provided through standard Kubernetes Services, such as a LoadBalancer that routes traffic to VMs on the UDN subnet.
+
+NOTE: The namespace must be labeled with `k8s.ovn.org/primary-user-defined-network` before any workloads are deployed. This label cannot be added or removed after pods or VMs are running in the namespace.
+
+== Business Use Cases
+
+UDN primary networks are best suited for workloads that require complete network isolation with custom IP addressing at the namespace level.
+
+[cols="1,2",options="header"]
+|===
+|Use Case |Description
+
+|Multi-tenant SaaS platforms
+|Each tenant gets a dedicated namespace with an isolated subnet. VMs in one tenant's namespace cannot reach VMs in another tenant's namespace, providing network-level tenant isolation without physical network segmentation.
+
+|Development and test environments
+|Teams get namespaces with custom IP ranges (e.g., 10.0.1.0/24 for dev, 10.0.2.0/24 for staging), allowing developers to define addressing schemes that mirror production without conflicting with other teams or the cluster's default network.
+
+|Cluster-managed IP persistence
+|VMs that require stable IP addresses across restarts and live migrations. With `Persistent` IPAM lifecycle, database servers, monitoring agents, and clustered applications retain their addresses without external DHCP or static configuration inside the guest.
+
+|Comparison with secondary networks
+|Choose UDN primary networks when workloads should not use the default pod network at all and need namespace-level isolation. Choose Layer 2 secondary networks when VMs need an additional private network alongside the default pod network, such as for dedicated replication or heartbeat traffic.
+|===
+
 == Summary
 
 In this tutorial, you learned:

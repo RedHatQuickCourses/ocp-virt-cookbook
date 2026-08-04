@@ -1,0 +1,91 @@
+<mxfile host="app.diagrams.net">
+  <diagram name="UDN Primary Network Topology" id="udn-primary-topo">
+    <mxGraphModel dx="1200" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1100" pageHeight="700" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+
+        <!-- OpenShift Cluster background -->
+        <mxCell id="2" value="OpenShift Cluster" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;verticalAlign=top;fontStyle=1;fontSize=14;arcSize=6;align=left;spacingLeft=10;spacingTop=5;" vertex="1" parent="1">
+          <mxGeometry x="40" y="30" width="1020" height="620" as="geometry"/>
+        </mxCell>
+
+        <!-- Namespace box with UDN label -->
+        <mxCell id="3" value="Namespace: udn-primary-vm-guests&#xa;Label: k8s.ovn.org/primary-user-defined-network" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontColor=#333333;verticalAlign=top;fontStyle=1;fontSize=12;arcSize=6;align=center;spacingTop=5;" vertex="1" parent="1">
+          <mxGeometry x="80" y="80" width="940" height="540" as="geometry"/>
+        </mxCell>
+
+        <!-- UserDefinedNetwork CR -->
+        <mxCell id="4" value="UserDefinedNetwork&#xa;udn-primary&#xa;━━━━━━━━━━━━━━&#xa;topology: Layer2&#xa;role: Primary&#xa;subnet: 192.168.100.0/24" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontColor=#333333;fontSize=11;align=center;" vertex="1" parent="1">
+          <mxGeometry x="120" y="160" width="200" height="120" as="geometry"/>
+        </mxCell>
+
+        <!-- OVN-Kubernetes IPAM -->
+        <mxCell id="5" value="OVN-Kubernetes IPAM&#xa;(Persistent)&#xa;━━━━━━━━━━━━━━&#xa;Assigns IPs from&#xa;192.168.100.0/24&#xa;IPs survive restart/migration" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontColor=#333333;fontSize=11;align=center;" vertex="1" parent="1">
+          <mxGeometry x="420" y="160" width="200" height="120" as="geometry"/>
+        </mxCell>
+
+        <!-- Arrow: UDN CR to IPAM -->
+        <mxCell id="6" value="configures" style="endArrow=classic;html=1;strokeWidth=2;strokeColor=#6c8ebf;fontSize=10;" edge="1" parent="1" source="4" target="5">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- l2bridge binding -->
+        <mxCell id="7" value="l2bridge&#xa;binding" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontColor=#333333;fontSize=11;align=center;" vertex="1" parent="1">
+          <mxGeometry x="720" y="180" width="120" height="60" as="geometry"/>
+        </mxCell>
+
+        <!-- Arrow: IPAM to l2bridge -->
+        <mxCell id="8" value="binds via" style="endArrow=classic;html=1;strokeWidth=2;strokeColor=#d6b656;fontSize=10;" edge="1" parent="1" source="5" target="7">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- VM 1 -->
+        <mxCell id="10" value="fedora-vm-with-udn&#xa;━━━━━━━━━━━━━━&#xa;Primary interface: UDN&#xa;IP: 192.168.100.10&#xa;HTTP server on port 80" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontColor=#333333;fontSize=11;align=center;" vertex="1" parent="1">
+          <mxGeometry x="160" y="380" width="200" height="110" as="geometry"/>
+        </mxCell>
+
+        <!-- VM 2 -->
+        <mxCell id="11" value="(additional VMs)&#xa;━━━━━━━━━━━━━━&#xa;Primary interface: UDN&#xa;IP: 192.168.100.x&#xa;Same isolated subnet" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontColor=#333333;fontSize=11;align=center;strokeDashArray=3 3;" vertex="1" parent="1">
+          <mxGeometry x="440" y="380" width="200" height="110" as="geometry"/>
+        </mxCell>
+
+        <!-- Arrow: l2bridge to VM1 -->
+        <mxCell id="12" value="primary&#xa;interface" style="endArrow=classic;html=1;strokeWidth=2;strokeColor=#82b366;fontSize=10;" edge="1" parent="1" source="7" target="10">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Arrow: l2bridge to VM2 -->
+        <mxCell id="13" value="primary&#xa;interface" style="endArrow=classic;html=1;strokeWidth=2;strokeColor=#82b366;fontSize=10;" edge="1" parent="1" source="7" target="11">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Service LoadBalancer -->
+        <mxCell id="14" value="Service&#xa;(LoadBalancer)&#xa;━━━━━━━━━━━━━━&#xa;fedora-vm-web-service&#xa;Port 80 → VM" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontColor=#333333;fontSize=11;align=center;" vertex="1" parent="1">
+          <mxGeometry x="720" y="380" width="180" height="110" as="geometry"/>
+        </mxCell>
+
+        <!-- Arrow: VM1 to Service -->
+        <mxCell id="15" value="exposes" style="endArrow=classic;html=1;strokeWidth=2;strokeColor=#9673a6;fontSize=10;" edge="1" parent="1" source="10" target="14">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- External access -->
+        <mxCell id="16" value="External&#xa;Access" style="shape=cloud;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="740" y="540" width="140" height="70" as="geometry"/>
+        </mxCell>
+
+        <!-- Arrow: Service to External -->
+        <mxCell id="17" value="" style="endArrow=classic;endFill=1;html=1;strokeWidth=2;strokeColor=#666666;" edge="1" parent="1" source="14" target="16">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Key difference callout -->
+        <mxCell id="18" value="UDN replaces the default pod network.&#xa;No Multus or NetworkAttachmentDefinition needed.&#xa;Namespace-scoped isolation by default." style="shape=note;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontColor=#333333;fontSize=10;align=left;spacingLeft=5;size=14;" vertex="1" parent="1">
+          <mxGeometry x="120" y="530" width="320" height="70" as="geometry"/>
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
