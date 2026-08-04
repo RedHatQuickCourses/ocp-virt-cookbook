@@ -668,6 +668,72 @@ fedora-vm-web-service   LoadBalancer   172.30.72.140   aa32981df19ad4959ae9a82fb
 </div>
 </div>
 <div class="sect1">
+<h2 id="_network_topology"><a class="anchor" href="#_network_topology"></a>Network Topology</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The following diagram illustrates how a UDN primary network provides namespace-scoped network isolation with custom IP addressing. Unlike secondary networks that add an interface alongside the default pod network, a UDN primary network replaces the default pod network entirely for all workloads in the namespace.</p>
+</div>
+<div class="imageblock text-center">
+<div class="content">
+<img src="_images/udn-primary-topology.png" alt="UDN Primary Network Topology">
+</div>
+</div>
+<div class="paragraph">
+<p>The <code>UserDefinedNetwork</code> resource with <code>Layer2</code> topology and <code>role: Primary</code> configures OVN-Kubernetes to manage a custom subnet (192.168.100.0/24) for the labeled namespace. OVN-Kubernetes IPAM assigns addresses from this subnet with <code>Persistent</code> lifecycle, meaning VMs retain their IPs across restarts and migrations. Each VM&#8217;s primary interface connects through an l2bridge binding directly to the UDN, with no Multus plugin or <code>NetworkAttachmentDefinition</code> required. External access is provided through standard Kubernetes Services, such as a LoadBalancer that routes traffic to VMs on the UDN subnet.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+The namespace must be labeled with <code>k8s.ovn.org/primary-user-defined-network</code> before any workloads are deployed. This label cannot be added or removed after pods or VMs are running in the namespace.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_business_use_cases"><a class="anchor" href="#_business_use_cases"></a>Business Use Cases</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>UDN primary networks are best suited for workloads that require complete network isolation with custom IP addressing at the namespace level.</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 33.3333%;">
+<col style="width: 66.6667%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Use Case</th>
+<th class="tableblock halign-left valign-top">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Multi-tenant SaaS platforms</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Each tenant gets a dedicated namespace with an isolated subnet. VMs in one tenant&#8217;s namespace cannot reach VMs in another tenant&#8217;s namespace, providing network-level tenant isolation without physical network segmentation.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Development and test environments</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Teams get namespaces with custom IP ranges (e.g., 10.0.1.0/24 for dev, 10.0.2.0/24 for staging), allowing developers to define addressing schemes that mirror production without conflicting with other teams or the cluster&#8217;s default network.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Cluster-managed IP persistence</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">VMs that require stable IP addresses across restarts and live migrations. With <code>Persistent</code> IPAM lifecycle, database servers, monitoring agents, and clustered applications retain their addresses without external DHCP or static configuration inside the guest.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Comparison with secondary networks</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Choose UDN primary networks when workloads should not use the default pod network at all and need namespace-level isolation. Choose Layer 2 secondary networks when VMs need an additional private network alongside the default pod network, such as for dedicated replication or heartbeat traffic.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="sect1">
 <h2 id="_summary"><a class="anchor" href="#_summary"></a>Summary</h2>
 <div class="sectionbody">
 <div class="paragraph">
