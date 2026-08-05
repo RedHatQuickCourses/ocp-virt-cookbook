@@ -270,11 +270,9 @@ spec:
         devices:
           disks:
           - name: fedora-bridge-demo-root
-            disk:
-              bus: virtio
+            disk: {}
           - name: cloudinitdisk
-            disk:
-              bus: virtio
+            disk: {}
           interfaces:
           - masquerade: {}
             name: default
@@ -306,16 +304,18 @@ spec:
               expire: false
 ----
 
-Reviewing specific fields from the above example (all field paths are relative to `spec.template.spec`):
+Reviewing specific fields from the above example (all field paths are relative to `spec`):
 
-* *`domain.devices.interfaces`*: lists two interfaces, the primary `default` and the secondary `nic-linux-bridge`
+* *`instancetype`*: references the `u1.large` cluster instancetype, which defines CPU and memory resources. This removes the need for inline `domain.resources` or `domain.cpu` fields.
+* *`preference`*: references the `fedora` cluster preference, which provides Fedora-specific settings such as preferred disk bus types, machine type, and firmware configuration.
+* *`template.spec.domain.devices.interfaces`*: lists two interfaces, the primary `default` and the secondary `nic-linux-bridge`
 ** *`bridge`*: one of two ways to connect a VM nic to the host container (the other is IP `masquerade`).
 This uses a vm-to-container bridge, whereas the `lnbr0` bridge connects container-to-node (completing the connection).
 ** *`name`*: an arbitrary identifier which gets referred to later in the `network` section.
-* *`networks`*: list of networks to which the `interfaces` are attached.
+* *`template.spec.networks`*: list of networks to which the `interfaces` are attached.
 ** *`name`*: the name of the bridge interface as defined in the `interfaces` field.
 ** *`multus.networkName`*: the name of the NetworkAttachmentDefinition (NAD) providing pods/VMs access to the bridge network.
-* *`volumes`*: there are two named volumes: one is the root `datavolumedisk`, and the other is the `cloudinitdisk`
+* *`template.spec.volumes`*: there are two named volumes: one is the root `datavolumedisk`, and the other is the `cloudinitdisk`
 ** *`CloudInitNoCloud`*: informs kubevirt that this is a cloud-init disk and to use the https://cloudinit.readthedocs.io/en/latest/reference/datasources/nocloud.html[NoCloud,window=_blank] data source
 *** *`networkData`*: this configures a static IP (`192.168.50.10/24`) on the secondary interface (`enp2s0`)
 **** *`ethernets`*: The secondary interface name `enp2s0` follows KubeVirt's predictable naming convention for the second network interface
@@ -378,11 +378,9 @@ spec:
         devices:
           disks:
           - name: fedora-bridge-demo2-root
-            disk:
-              bus: virtio
+            disk: {}
           - name: cloudinitdisk
-            disk:
-              bus: virtio
+            disk: {}
           interfaces:
           - masquerade: {}
             name: default
