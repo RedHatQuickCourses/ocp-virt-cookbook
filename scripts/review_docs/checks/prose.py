@@ -10,6 +10,44 @@ from ..registry import register_check
 ADMONITIONS = r"NOTE|WARNING|TIP|IMPORTANT|CAUTION"
 
 
+def _extract_prose_text(line: str) -> str:
+    """Remove non-prose constructs from line, leaving only user-facing text.
+
+    Strips URLs, xref/image/include paths, attribute definitions/references,
+    source block specifiers, and inline code so checks like product-names
+    and banned-terms only examine prose intended for readers.
+    """
+    # Skip attribute definition lines entirely (e.g., :navtitle: ...)
+    if re.match(r"^:[a-zA-Z][^:]*:", line):
+        return ""
+
+    # Skip source block attribute lines (e.g., [source,yaml])
+    if re.match(r"^\[source", line):
+        return ""
+
+    text = line
+
+    # Remove inline code (backticks)
+    text = re.sub(r"`[^`]+`", "", text)
+
+    # Remove URLs (standalone or in link macros)
+    text = re.sub(r"https?://[^\s\[\]]+", "", text)
+
+    # Remove xref targets (keep display text in brackets)
+    text = re.sub(r"xref:[^\[]+", "", text)
+
+    # Remove image paths (keep alt text in brackets)
+    text = re.sub(r"image::[^\[]+", "", text)
+
+    # Remove include directives entirely (no user-facing text)
+    text = re.sub(r"include::[^\[]+\[[^\]]*\]", "", text)
+
+    # Remove attribute references
+    text = re.sub(r"\{[^}]+\}", "", text)
+
+    return text
+
+
 @register_check("heading-hierarchy", "error", "prose")
 def check_heading_hierarchy(
     line: str,
@@ -170,9 +208,14 @@ def check_product_names(
     cfg: Config,
     file_result: FileResult,
 ) -> None:
-    """Check product name capitalization."""
+    """Check product name capitalization in user-facing text."""
+    # Skip inside literal or passthrough blocks (code-like content)
+    if state.in_block("literal") or state.in_block("passthrough"):
+        return
+
+    prose_text = _extract_prose_text(line)
     for wrong, correct in cfg.product_names.items():
-        if wrong in line:
+        if wrong in prose_text:
             file_result.add_finding(
                 cfg,
                 "product-names",
@@ -189,11 +232,16 @@ def check_banned_terms(
     cfg: Config,
     file_result: FileResult,
 ) -> None:
-    """Check banned terminology."""
+    """Check banned terminology in user-facing text."""
+    # Skip inside literal or passthrough blocks (code-like content)
+    if state.in_block("literal") or state.in_block("passthrough"):
+        return
+
+    prose_text = _extract_prose_text(line)
     for banned, replacement in cfg.banned_terms.items():
         # Use word boundaries to avoid false positives
         if re.search(
-            rf"(?:^|[^a-zA-Z0-9]){re.escape(banned)}(?:[^a-zA-Z0-9]|$)", line
+            rf"(?:^|[^a-zA-Z0-9]){re.escape(banned)}(?:[^a-zA-Z0-9]|$)", prose_text
         ):
             file_result.add_finding(
                 cfg,
