@@ -195,23 +195,22 @@ metadata:
     app: web-vm
 spec:
   runStrategy: Always
+  instancetype:
+    name: u1.small
+  preference:
+    name: fedora
   template:
     metadata:
       labels:
         app: web-vm
     spec:
       domain:
-        resources:
-          requests:
-            memory: 2Gi
         devices:
           disks:
             - name: containerdisk
-              disk:
-                bus: virtio
+              disk: {}
             - name: cloudinitdisk
-              disk:
-                bus: virtio
+              disk: {}
           interfaces:
             - name: default
               masquerade: {}
@@ -495,12 +494,7 @@ oc delete subscription metallb-operator -n metallb-system
 
 [source,bash,role=execute]
 ----
-CSV_NAME=$(oc get csv -n metallb-system -o jsonpath='{.items[0].metadata.name}')
-----
-
-[source,bash,role=execute]
-----
-oc delete csv -n metallb-system ${CSV_NAME}
+oc delete csv -n metallb-system -l operators.coreos.com/metallb-operator.metallb-system=
 ----
 
 [source,bash,role=execute]

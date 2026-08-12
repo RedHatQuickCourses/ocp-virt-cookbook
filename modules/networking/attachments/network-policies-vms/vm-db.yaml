@@ -8,6 +8,10 @@ metadata:
     role: backend
 spec:
   runStrategy: Always
+  instancetype:
+    name: u1.small
+  preference:
+    name: fedora
   template:
     metadata:
       labels:
@@ -15,17 +19,12 @@ spec:
         role: backend
     spec:
       domain:
-        resources:
-          requests:
-            memory: 2Gi
         devices:
           disks:
             - name: containerdisk
-              disk:
-                bus: virtio
+              disk: {}
             - name: cloudinitdisk
-              disk:
-                bus: virtio
+              disk: {}
           interfaces:
             - name: default
               masquerade: {}

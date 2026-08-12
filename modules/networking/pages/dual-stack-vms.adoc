@@ -16,6 +16,8 @@ Dual-stack networking is required in many enterprise and government environments
 * Cluster admin access
 
 Versions tested:
+
+[source,bash]
 ----
 OpenShift 4.22
 ----
@@ -34,7 +36,8 @@ oc get network.config cluster -o jsonpath='{.status.clusterNetwork[*].cidr}'
 oc get network.config cluster -o jsonpath='{.status.serviceNetwork[*]}'
 ----
 
-Expected output for a dual-stack cluster:
+.Expected output
+[source,bash]
 ----
 10.128.0.0/14 fd01::/48
 172.30.0.0/16 fd02::/112
@@ -107,23 +110,22 @@ metadata:
   namespace: dualstack-demo
 spec:
   runStrategy: Always
+  instancetype:
+    name: u1.small
+  preference:
+    name: fedora
   template:
     metadata:
       labels:
         app: dualstack-vm
     spec:
       domain:
-        resources:
-          requests:
-            memory: 2Gi
         devices:
           disks:
             - name: containerdisk
-              disk:
-                bus: virtio
+              disk: {}
             - name: cloudinitdisk
-              disk:
-                bus: virtio
+              disk: {}
           interfaces:
             - name: default
               masquerade: {}
@@ -152,12 +154,13 @@ spec:
               ethernets:
                 eth0:
                   dhcp4: true
-                  addresses: [ fd10:0:2::2/120 ]
+                  addresses:
+                    - fd10:0:2::2/120
                   gateway6: fd10:0:2::1
 EOF
 ----
 
-NOTE: The KubeVirt user guide uses `gateway6` and inline `addresses` format. This tutorial follows the same convention. While `gateway6` is deprecated in netplan 0.103+, KubeVirt's cloud-init implementation processes it correctly. If your guest OS warns about the deprecation, you can use `routes` entries instead (see <<_cloud_init_networkdata_reference>>).
+NOTE: While `gateway6` is deprecated in netplan 0.103+, KubeVirt's cloud-init implementation processes it correctly. If your guest OS warns about the deprecation, you can use `routes` entries instead (see <<_cloud_init_networkdata_reference>>).
 
 Wait for the VM to become ready:
 
@@ -182,7 +185,8 @@ Once logged in (user: `fedora` or `root`, password: `changeme`), check the netwo
 ip -4 addr show eth0
 ----
 
-Expected output shows a `10.0.2.x` address (internal masquerade subnet):
+.Expected output
+[source,bash]
 ----
 inet 10.0.2.2/24 brd 10.0.2.255 scope global dynamic eth0
 ----
@@ -192,7 +196,8 @@ inet 10.0.2.2/24 brd 10.0.2.255 scope global dynamic eth0
 ip -6 addr show eth0
 ----
 
-Expected output shows the configured IPv6 address:
+.Expected output
+[source,bash]
 ----
 inet6 fd10:0:2::2/120 scope global
 ----
@@ -259,7 +264,8 @@ Verify the Service has dual-stack ClusterIPs:
 oc get svc dualstack-web -n dualstack-demo -o jsonpath='{.spec.clusterIPs}'
 ----
 
-Expected output shows two IPs (one IPv4, one IPv6):
+.Expected output
+[source,bash]
 ----
 ["172.30.x.x","fd02::x"]
 ----
@@ -343,23 +349,22 @@ metadata:
   namespace: dualstack-demo
 spec:
   runStrategy: Always
+  instancetype:
+    name: u1.small
+  preference:
+    name: fedora
   template:
     metadata:
       labels:
         app: dualstack-udn-vm
     spec:
       domain:
-        resources:
-          requests:
-            memory: 2Gi
         devices:
           disks:
             - name: containerdisk
-              disk:
-                bus: virtio
+              disk: {}
             - name: cloudinitdisk
-              disk:
-                bus: virtio
+              disk: {}
           interfaces:
             - name: primary-udn
               binding:
@@ -386,7 +391,7 @@ With IPAM lifecycle set to `Persistent`, the VM retains its IPv4 and IPv6 addres
 [[_cloud_init_networkdata_reference]]
 == Cloud-init networkData Reference
 
-The `networkData` field uses netplan version 2 format. The KubeVirt user guide and OpenShift documentation use the `gateway6` field with inline `addresses`:
+The `networkData` field uses netplan version 2 format. The KubeVirt user guide and OpenShift documentation use the `gateway6` field:
 
 [source,yaml]
 ----
@@ -394,7 +399,8 @@ version: 2
 ethernets:
   eth0:
     dhcp4: true
-    addresses: [ fd10:0:2::2/120 ]
+    addresses:
+      - fd10:0:2::2/120
     gateway6: fd10:0:2::1
 ----
 

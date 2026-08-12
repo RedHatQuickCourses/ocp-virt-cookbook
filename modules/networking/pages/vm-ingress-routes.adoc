@@ -16,6 +16,7 @@ This approach uses the same OpenShift Ingress infrastructure that serves contain
 * **Ingress controller** running (default with OpenShift installation)
 
 Versions tested:
+[source,text]
 ----
 OpenShift 4.20
 ----
@@ -45,6 +46,10 @@ metadata:
   namespace: ingress-demo
 spec:
   runStrategy: Always
+  instancetype:
+    name: u1.small
+  preference:
+    name: fedora
   template:
     metadata:
       labels:
@@ -55,17 +60,12 @@ spec:
         devices:
           disks:
           - name: rootdisk
-            disk:
-              bus: virtio
+            disk: {}
           - name: cloudinitdisk
-            disk:
-              bus: virtio
+            disk: {}
           interfaces:
           - name: default
             masquerade: {}
-        resources:
-          requests:
-            memory: 1Gi
       networks:
       - name: default
         pod: {}
@@ -80,19 +80,18 @@ spec:
             password: redhat
             chpasswd:
               expire: false
-            packages:
-            - nginx
-            write_files:
-            - path: /usr/share/nginx/html/index.html
-              content: |
-                <html>
-                <head><title>OpenShift Virt - Ingress Demo</title></head>
-                <body>
-                <h1>Hello from OpenShift Virtualization</h1>
-                <p>This page is served by Nginx inside a VM, exposed via an OpenShift Route.</p>
-                </body>
-                </html>
             runcmd:
+            - dnf install -y nginx
+            - |
+              cat > /usr/share/nginx/html/index.html <<'HTMLEOF'
+              <html>
+              <head><title>OpenShift Virt - Ingress Demo</title></head>
+              <body>
+              <h1>Hello from OpenShift Virtualization</h1>
+              <p>This page is served by Nginx inside a VM, exposed via an OpenShift Route.</p>
+              </body>
+              </html>
+              HTMLEOF
             - systemctl enable nginx
             - systemctl start nginx
 EOF
@@ -168,7 +167,8 @@ Confirm it has an endpoint:
 oc get endpoints web-vm-svc -n ingress-demo
 ----
 
-Expected output:
+.Expected output
+[source,text]
 ----
 NAME         TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)   AGE
 web-vm-svc   ClusterIP   172.30.x.x      <none>        80/TCP    5s
@@ -232,7 +232,8 @@ EOF
 oc get route web-vm-route -n ingress-demo
 ----
 
-Expected output:
+.Expected output
+[source,text]
 ----
 NAME           HOST/PORT                                          PATH  SERVICES     PORT  TERMINATION     WILDCARD
 web-vm-route   web-vm-route-ingress-demo.apps.ocplab01.example.com       web-vm-svc   80    edge/Redirect   None
