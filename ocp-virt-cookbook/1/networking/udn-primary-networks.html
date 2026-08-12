@@ -392,7 +392,7 @@
 </div>
 <div class="listingblock">
 <div class="content">
-<pre>OpenShift 4.19, 4.20, 4.21</pre>
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">OpenShift 4.19, 4.20, 4.21</code></pre>
 </div>
 </div>
 </div>
@@ -517,6 +517,10 @@ metadata:
     network-type: udn-primary
 spec:
   runStrategy: Always
+  instancetype:
+    name: u1.small
+  preference:
+    name: fedora
   dataVolumeTemplates:
   - metadata:
       name: fedora-udn-volume
@@ -540,19 +544,13 @@ spec:
         devices:
           disks:
           - name: datavolumedisk
-            disk:
-              bus: virtio
+            disk: {}
           - name: cloudinitdisk
-            disk:
-              bus: virtio
+            disk: {}
           interfaces:
           - name: default
             binding:
               name: l2bridge
-        resources:
-          requests:
-            memory: 2Gi
-            cpu: 1
       networks:
       - name: default
         pod: {}
@@ -645,8 +643,8 @@ EOF</code></pre>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre>NAME                    TYPE           CLUSTER-IP      EXTERNAL-IP                                                                  PORT(S)        AGE
-fedora-vm-web-service   LoadBalancer   172.30.72.140   aa32981df19ad4959ae9a82fb9990db9-1996929606.ca-central-1.elb.amazonaws.com   80:32291/TCP   45m</pre>
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">NAME                    TYPE           CLUSTER-IP      EXTERNAL-IP                                                                  PORT(S)        AGE
+fedora-vm-web-service   LoadBalancer   172.30.72.140   aa32981df19ad4959ae9a82fb9990db9-1996929606.ca-central-1.elb.amazonaws.com   80:32291/TCP   45m</code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -662,7 +660,7 @@ fedora-vm-web-service   LoadBalancer   172.30.72.140   aa32981df19ad4959ae9a82fb
 </div>
 <div class="listingblock">
 <div class="content">
-<pre>&lt;h1&gt;Welcome to OpenShift Virtualization !!!&lt;/h1&gt;</pre>
+<pre class="highlightjs highlight"><code class="language-html hljs" data-lang="html">&lt;h1&gt;Welcome to OpenShift Virtualization !!!&lt;/h1&gt;</code></pre>
 </div>
 </div>
 </div>

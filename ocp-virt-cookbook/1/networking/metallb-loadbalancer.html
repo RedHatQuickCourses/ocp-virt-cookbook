@@ -656,23 +656,22 @@ metadata:
     app: web-vm
 spec:
   runStrategy: Always
+  instancetype:
+    name: u1.small
+  preference:
+    name: fedora
   template:
     metadata:
       labels:
         app: web-vm
     spec:
       domain:
-        resources:
-          requests:
-            memory: 2Gi
         devices:
           disks:
             - name: containerdisk
-              disk:
-                bus: virtio
+              disk: {}
             - name: cloudinitdisk
-              disk:
-                bus: virtio
+              disk: {}
           interfaces:
             - name: default
               masquerade: {}
@@ -1060,12 +1059,7 @@ The MetalLB Operator remains installed for continued use. To remove it entirely:
 </div>
 <div class="listingblock execute">
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">CSV_NAME=$(oc get csv -n metallb-system -o jsonpath='{.items[0].metadata.name}')</code></pre>
-</div>
-</div>
-<div class="listingblock execute">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc delete csv -n metallb-system ${CSV_NAME}</code></pre>
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc delete csv -n metallb-system -l operators.coreos.com/metallb-operator.metallb-system=</code></pre>
 </div>
 </div>
 <div class="listingblock execute">

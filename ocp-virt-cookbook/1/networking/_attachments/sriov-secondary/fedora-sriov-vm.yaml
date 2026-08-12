@@ -7,6 +7,10 @@ metadata:
     app: fedora-sriov-vm
 spec:
   runStrategy: Always
+  instancetype:
+    name: u1.medium
+  preference:
+    name: fedora
   dataVolumeTemplates:
   - metadata:
       name: fedora-sriov-volume
@@ -30,11 +34,9 @@ spec:
         devices:
           disks:
           - name: datavolumedisk
-            disk:
-              bus: virtio
+            disk: {}
           - name: cloudinitdisk
-            disk:
-              bus: virtio
+            disk: {}
           interfaces:
           - name: default
             masquerade: {}
@@ -42,10 +44,6 @@ spec:
             sriov: {}
           - name: mgmt-plane
             sriov: {}
-        resources:
-          requests:
-            memory: 4Gi
-            cpu: 2
       networks:
       - name: default
         pod: {}
@@ -65,4 +63,5 @@ spec:
             #cloud-config
             user: fedora
             password: fedora
-            chpasswd: { expire: False }
+            chpasswd:
+              expire: false

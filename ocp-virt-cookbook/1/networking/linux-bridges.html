@@ -890,11 +890,9 @@ spec:
         devices:
           disks:
           - name: fedora-bridge-demo-root
-            disk:
-              bus: virtio
+            disk: {}
           - name: cloudinitdisk
-            disk:
-              bus: virtio
+            disk: {}
           interfaces:
           - masquerade: {}
             name: default
@@ -927,12 +925,18 @@ spec:
 </div>
 </div>
 <div class="paragraph">
-<p>Reviewing specific fields from the above example (all field paths are relative to <code>spec.template.spec</code>):</p>
+<p>Reviewing specific fields from the above example (all field paths are relative to <code>spec</code>):</p>
 </div>
 <div class="ulist">
 <ul>
 <li>
-<p><strong><code>domain.devices.interfaces</code></strong>: lists two interfaces, the primary <code>default</code> and the secondary <code>nic-linux-bridge</code></p>
+<p><strong><code>instancetype</code></strong>: references the <code>u1.large</code> cluster instancetype, which defines CPU and memory resources. This removes the need for inline <code>domain.resources</code> or <code>domain.cpu</code> fields.</p>
+</li>
+<li>
+<p><strong><code>preference</code></strong>: references the <code>fedora</code> cluster preference, which provides Fedora-specific settings such as preferred disk bus types, machine type, and firmware configuration.</p>
+</li>
+<li>
+<p><strong><code>template.spec.domain.devices.interfaces</code></strong>: lists two interfaces, the primary <code>default</code> and the secondary <code>nic-linux-bridge</code></p>
 <div class="ulist">
 <ul>
 <li>
@@ -946,7 +950,7 @@ This uses a vm-to-container bridge, whereas the <code>lnbr0</code> bridge connec
 </div>
 </li>
 <li>
-<p><strong><code>networks</code></strong>: list of networks to which the <code>interfaces</code> are attached.</p>
+<p><strong><code>template.spec.networks</code></strong>: list of networks to which the <code>interfaces</code> are attached.</p>
 <div class="ulist">
 <ul>
 <li>
@@ -959,7 +963,7 @@ This uses a vm-to-container bridge, whereas the <code>lnbr0</code> bridge connec
 </div>
 </li>
 <li>
-<p><strong><code>volumes</code></strong>: there are two named volumes: one is the root <code>datavolumedisk</code>, and the other is the <code>cloudinitdisk</code></p>
+<p><strong><code>template.spec.volumes</code></strong>: there are two named volumes: one is the root <code>datavolumedisk</code>, and the other is the <code>cloudinitdisk</code></p>
 <div class="ulist">
 <ul>
 <li>
@@ -1059,11 +1063,9 @@ spec:
         devices:
           disks:
           - name: fedora-bridge-demo2-root
-            disk:
-              bus: virtio
+            disk: {}
           - name: cloudinitdisk
-            disk:
-              bus: virtio
+            disk: {}
           interfaces:
           - masquerade: {}
             name: default

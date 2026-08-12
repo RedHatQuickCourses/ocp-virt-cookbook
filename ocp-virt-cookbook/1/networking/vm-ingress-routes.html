@@ -419,7 +419,7 @@
 </div>
 <div class="listingblock">
 <div class="content">
-<pre>OpenShift 4.20</pre>
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">OpenShift 4.20</code></pre>
 </div>
 </div>
 </div>
@@ -465,6 +465,10 @@ metadata:
   namespace: ingress-demo
 spec:
   runStrategy: Always
+  instancetype:
+    name: u1.small
+  preference:
+    name: fedora
   template:
     metadata:
       labels:
@@ -475,17 +479,12 @@ spec:
         devices:
           disks:
           - name: rootdisk
-            disk:
-              bus: virtio
+            disk: {}
           - name: cloudinitdisk
-            disk:
-              bus: virtio
+            disk: {}
           interfaces:
           - name: default
             masquerade: {}
-        resources:
-          requests:
-            memory: 1Gi
       networks:
       - name: default
         pod: {}
@@ -500,19 +499,18 @@ spec:
             password: redhat
             chpasswd:
               expire: false
-            packages:
-            - nginx
-            write_files:
-            - path: /usr/share/nginx/html/index.html
-              content: |
-                &lt;html&gt;
-                &lt;head&gt;&lt;title&gt;OpenShift Virt - Ingress Demo&lt;/title&gt;&lt;/head&gt;
-                &lt;body&gt;
-                &lt;h1&gt;Hello from OpenShift Virtualization&lt;/h1&gt;
-                &lt;p&gt;This page is served by Nginx inside a VM, exposed via an OpenShift Route.&lt;/p&gt;
-                &lt;/body&gt;
-                &lt;/html&gt;
             runcmd:
+            - dnf install -y nginx
+            - |
+              cat &gt; /usr/share/nginx/html/index.html &lt;&lt;'HTMLEOF'
+              &lt;html&gt;
+              &lt;head&gt;&lt;title&gt;OpenShift Virt - Ingress Demo&lt;/title&gt;&lt;/head&gt;
+              &lt;body&gt;
+              &lt;h1&gt;Hello from OpenShift Virtualization&lt;/h1&gt;
+              &lt;p&gt;This page is served by Nginx inside a VM, exposed via an OpenShift Route.&lt;/p&gt;
+              &lt;/body&gt;
+              &lt;/html&gt;
+              HTMLEOF
             - systemctl enable nginx
             - systemctl start nginx
 EOF</code></pre>
@@ -605,16 +603,14 @@ EOF</code></pre>
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get endpoints web-vm-svc -n ingress-demo</code></pre>
 </div>
 </div>
-<div class="paragraph">
-<p>Expected output:</p>
-</div>
 <div class="listingblock">
+<div class="title">Expected output</div>
 <div class="content">
-<pre>NAME         TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)   AGE
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">NAME         TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)   AGE
 web-vm-svc   ClusterIP   172.30.x.x      &lt;none&gt;        80/TCP    5s
 
 NAME         ENDPOINTS          AGE
-web-vm-svc   10.128.x.x:80      5s</pre>
+web-vm-svc   10.128.x.x:80      5s</code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -693,13 +689,11 @@ EOF</code></pre>
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get route web-vm-route -n ingress-demo</code></pre>
 </div>
 </div>
-<div class="paragraph">
-<p>Expected output:</p>
-</div>
 <div class="listingblock">
+<div class="title">Expected output</div>
 <div class="content">
-<pre>NAME           HOST/PORT                                          PATH  SERVICES     PORT  TERMINATION     WILDCARD
-web-vm-route   web-vm-route-ingress-demo.apps.ocplab01.example.com       web-vm-svc   80    edge/Redirect   None</pre>
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">NAME           HOST/PORT                                          PATH  SERVICES     PORT  TERMINATION     WILDCARD
+web-vm-route   web-vm-route-ingress-demo.apps.ocplab01.example.com       web-vm-svc   80    edge/Redirect   None</code></pre>
 </div>
 </div>
 </div>

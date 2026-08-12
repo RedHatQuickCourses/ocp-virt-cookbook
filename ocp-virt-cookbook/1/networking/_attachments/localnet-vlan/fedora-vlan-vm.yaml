@@ -7,6 +7,10 @@ metadata:
     app: fedora-vlan-vm
 spec:
   runStrategy: Always
+  instancetype:
+    name: u1.small
+  preference:
+    name: fedora
   dataVolumeTemplates:
   - metadata:
       name: fedora-vlan-volume
@@ -30,20 +34,14 @@ spec:
         devices:
           disks:
           - name: datavolumedisk
-            disk:
-              bus: virtio
+            disk: {}
           - name: cloudinitdisk
-            disk:
-              bus: virtio
+            disk: {}
           interfaces:
           - name: default
             bridge: {}
           - name: vlan_network
             bridge: {}
-        resources:
-          requests:
-            memory: 2Gi
-            cpu: 1
       networks:
       - name: default
         pod: {}
@@ -60,7 +58,8 @@ spec:
             #cloud-config
             user: fedora
             password: fedora
-            chpasswd: { expire: False }
+            chpasswd:
+              expire: false
             packages:
             - python3
             - tcpdump

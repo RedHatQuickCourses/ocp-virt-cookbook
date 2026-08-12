@@ -419,7 +419,7 @@
 </div>
 <div class="listingblock">
 <div class="content">
-<pre>OpenShift 4.22</pre>
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">OpenShift 4.22</code></pre>
 </div>
 </div>
 </div>
@@ -440,13 +440,11 @@
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get network.config cluster -o jsonpath='{.status.serviceNetwork[*]}'</code></pre>
 </div>
 </div>
-<div class="paragraph">
-<p>Expected output for a dual-stack cluster:</p>
-</div>
 <div class="listingblock">
+<div class="title">Expected output</div>
 <div class="content">
-<pre>10.128.0.0/14 fd01::/48
-172.30.0.0/16 fd02::/112</pre>
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">10.128.0.0/14 fd01::/48
+172.30.0.0/16 fd02::/112</code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -539,23 +537,22 @@ metadata:
   namespace: dualstack-demo
 spec:
   runStrategy: Always
+  instancetype:
+    name: u1.small
+  preference:
+    name: fedora
   template:
     metadata:
       labels:
         app: dualstack-vm
     spec:
       domain:
-        resources:
-          requests:
-            memory: 2Gi
         devices:
           disks:
             - name: containerdisk
-              disk:
-                bus: virtio
+              disk: {}
             - name: cloudinitdisk
-              disk:
-                bus: virtio
+              disk: {}
           interfaces:
             - name: default
               masquerade: {}
@@ -584,7 +581,8 @@ spec:
               ethernets:
                 eth0:
                   dhcp4: true
-                  addresses: [ fd10:0:2::2/120 ]
+                  addresses:
+                    - fd10:0:2::2/120
                   gateway6: fd10:0:2::1
 EOF</code></pre>
 </div>
@@ -596,7 +594,7 @@ EOF</code></pre>
 <i class="fa icon-note" title="Note"></i>
 </td>
 <td class="content">
-The KubeVirt user guide uses <code>gateway6</code> and inline <code>addresses</code> format. This tutorial follows the same convention. While <code>gateway6</code> is deprecated in netplan 0.103+, KubeVirt&#8217;s cloud-init implementation processes it correctly. If your guest OS warns about the deprecation, you can use <code>routes</code> entries instead (see <a href="#_cloud_init_networkdata_reference">Cloud-init networkData Reference</a>).
+While <code>gateway6</code> is deprecated in netplan 0.103+, KubeVirt&#8217;s cloud-init implementation processes it correctly. If your guest OS warns about the deprecation, you can use <code>routes</code> entries instead (see <a href="#_cloud_init_networkdata_reference">Cloud-init networkData Reference</a>).
 </td>
 </tr>
 </table>
@@ -630,12 +628,10 @@ The KubeVirt user guide uses <code>gateway6</code> and inline <code>addresses</c
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">ip -4 addr show eth0</code></pre>
 </div>
 </div>
-<div class="paragraph">
-<p>Expected output shows a <code>10.0.2.x</code> address (internal masquerade subnet):</p>
-</div>
 <div class="listingblock">
+<div class="title">Expected output</div>
 <div class="content">
-<pre>inet 10.0.2.2/24 brd 10.0.2.255 scope global dynamic eth0</pre>
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">inet 10.0.2.2/24 brd 10.0.2.255 scope global dynamic eth0</code></pre>
 </div>
 </div>
 <div class="listingblock">
@@ -643,12 +639,10 @@ The KubeVirt user guide uses <code>gateway6</code> and inline <code>addresses</c
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">ip -6 addr show eth0</code></pre>
 </div>
 </div>
-<div class="paragraph">
-<p>Expected output shows the configured IPv6 address:</p>
-</div>
 <div class="listingblock">
+<div class="title">Expected output</div>
 <div class="content">
-<pre>inet6 fd10:0:2::2/120 scope global</pre>
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">inet6 fd10:0:2::2/120 scope global</code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -727,12 +721,10 @@ EOF</code></pre>
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get svc dualstack-web -n dualstack-demo -o jsonpath='{.spec.clusterIPs}'</code></pre>
 </div>
 </div>
-<div class="paragraph">
-<p>Expected output shows two IPs (one IPv4, one IPv6):</p>
-</div>
 <div class="listingblock">
+<div class="title">Expected output</div>
 <div class="content">
-<pre>["172.30.x.x","fd02::x"]</pre>
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">["172.30.x.x","fd02::x"]</code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -842,23 +834,22 @@ metadata:
   namespace: dualstack-demo
 spec:
   runStrategy: Always
+  instancetype:
+    name: u1.small
+  preference:
+    name: fedora
   template:
     metadata:
       labels:
         app: dualstack-udn-vm
     spec:
       domain:
-        resources:
-          requests:
-            memory: 2Gi
         devices:
           disks:
             - name: containerdisk
-              disk:
-                bus: virtio
+              disk: {}
             - name: cloudinitdisk
-              disk:
-                bus: virtio
+              disk: {}
           interfaces:
             - name: primary-udn
               binding:
@@ -890,7 +881,7 @@ EOF</code></pre>
 <h2 id="_cloud_init_networkdata_reference"><a class="anchor" href="#_cloud_init_networkdata_reference"></a>Cloud-init networkData Reference</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>The <code>networkData</code> field uses netplan version 2 format. The KubeVirt user guide and OpenShift documentation use the <code>gateway6</code> field with inline <code>addresses</code>:</p>
+<p>The <code>networkData</code> field uses netplan version 2 format. The KubeVirt user guide and OpenShift documentation use the <code>gateway6</code> field:</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -898,7 +889,8 @@ EOF</code></pre>
 ethernets:
   eth0:
     dhcp4: true
-    addresses: [ fd10:0:2::2/120 ]
+    addresses:
+      - fd10:0:2::2/120
     gateway6: fd10:0:2::1</code></pre>
 </div>
 </div>

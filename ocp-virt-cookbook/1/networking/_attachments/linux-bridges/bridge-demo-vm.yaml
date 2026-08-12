@@ -1,60 +1,55 @@
 apiVersion: kubevirt.io/v1
 kind: VirtualMachine
 metadata:
-  name: bridge-demo-vm
+  name: fedora-bridge-demo
   namespace: bridge-demo
   labels:
-    app: bridge-demo-vm
+    app: fedora-bridge-demo
 spec:
   runStrategy: Always
   dataVolumeTemplates:
   - metadata:
-      name: bridge-demo-volume
+      name: fedora-bridge-demo-root
     spec:
-      pvc:
-        accessModes:
-        - ReadWriteOnce
-        resources:
-          requests:
-            storage: 33Gi
       sourceRef:
         kind: DataSource
         name: fedora
         namespace: openshift-virtualization-os-images
+      storage:
+        resources:
+          requests:
+            storage: 30Gi
+  instancetype:
+    name: u1.large
+  preference:
+    name: fedora
   template:
     metadata:
       labels:
-        app: bridge-demo-vm
+        app: fedora-bridge-demo
     spec:
       domain:
         devices:
           disks:
-          - name: datavolumedisk
-            disk:
-              bus: virtio
+          - name: fedora-bridge-demo-root
+            disk: {}
           - name: cloudinitdisk
-            disk:
-              bus: virtio
+            disk: {}
           interfaces:
           - masquerade: {}
             name: default
           - bridge: {}
-            model: virtio
             name: nic-linux-bridge
-        resources:
-          requests:
-            memory: 2Gi
-            cpu: 1
       networks:
       - name: default
         pod: {}
       - multus:
-          networkName: lnbr0-nad
+          networkName: lnbr0-bridge
         name: nic-linux-bridge
       volumes:
-      - name: datavolumedisk
+      - name: fedora-bridge-demo-root
         dataVolume:
-          name: bridge-demo-volume
+          name: fedora-bridge-demo-root
       - name: cloudinitdisk
         cloudInitNoCloud:
           networkData: |
@@ -67,4 +62,5 @@ spec:
             #cloud-config
             user: fedora
             password: fedora
-            chpasswd: { expire: False }
+            chpasswd:
+              expire: false

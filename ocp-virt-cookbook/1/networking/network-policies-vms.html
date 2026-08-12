@@ -489,6 +489,10 @@ metadata:
     role: frontend
 spec:
   runStrategy: Always
+  instancetype:
+    name: u1.small
+  preference:
+    name: fedora
   template:
     metadata:
       labels:
@@ -496,17 +500,12 @@ spec:
         role: frontend
     spec:
       domain:
-        resources:
-          requests:
-            memory: 2Gi
         devices:
           disks:
             - name: containerdisk
-              disk:
-                bus: virtio
+              disk: {}
             - name: cloudinitdisk
-              disk:
-                bus: virtio
+              disk: {}
           interfaces:
             - name: default
               masquerade: {}
@@ -550,6 +549,10 @@ metadata:
     role: backend
 spec:
   runStrategy: Always
+  instancetype:
+    name: u1.small
+  preference:
+    name: fedora
   template:
     metadata:
       labels:
@@ -557,17 +560,12 @@ spec:
         role: backend
     spec:
       domain:
-        resources:
-          requests:
-            memory: 2Gi
         devices:
           disks:
             - name: containerdisk
-              disk:
-                bus: virtio
+              disk: {}
             - name: cloudinitdisk
-              disk:
-                bus: virtio
+              disk: {}
           interfaces:
             - name: default
               masquerade: {}
@@ -683,12 +681,10 @@ EOF</code></pre>
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc exec -n default curl-test -- curl -s --connect-timeout 5 http://&lt;web-vm-ip&gt;:80</code></pre>
 </div>
 </div>
-<div class="paragraph">
-<p>Expected result:</p>
-</div>
 <div class="listingblock">
+<div class="title">Expected output</div>
 <div class="content">
-<pre>command terminated with exit code 28</pre>
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">command terminated with exit code 28</code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -846,11 +842,12 @@ EOF</code></pre>
 </div>
 </div>
 <div class="paragraph">
-<p>Replace <code>&lt;db-vm-ip&gt;</code> with the database VM IP from Step 2. Expected result:</p>
+<p>Replace <code>&lt;db-vm-ip&gt;</code> with the database VM IP from Step 2.</p>
 </div>
 <div class="listingblock">
+<div class="title">Expected output</div>
 <div class="content">
-<pre>command terminated with exit code 28</pre>
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">command terminated with exit code 28</code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -872,17 +869,15 @@ EOF</code></pre>
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get networkpolicy -n netpol-demo</code></pre>
 </div>
 </div>
-<div class="paragraph">
-<p>Expected output:</p>
-</div>
 <div class="listingblock">
+<div class="title">Expected output</div>
 <div class="content">
-<pre>NAME                     POD-SELECTOR   AGE
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">NAME                     POD-SELECTOR   AGE
 allow-db-from-web        app=database   ...
 allow-dns-egress         &lt;none&gt;         ...
 allow-web-ingress        app=web        ...
 allow-web-to-db-egress   app=web        ...
-deny-all                 &lt;none&gt;         ...</pre>
+deny-all                 &lt;none&gt;         ...</code></pre>
 </div>
 </div>
 </div>
