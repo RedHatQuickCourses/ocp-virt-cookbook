@@ -5,23 +5,22 @@ metadata:
   namespace: dualstack-demo
 spec:
   runStrategy: Always
+  instancetype:
+    name: u1.small
+  preference:
+    name: fedora
   template:
     metadata:
       labels:
         app: dualstack-vm
     spec:
       domain:
-        resources:
-          requests:
-            memory: 2Gi
         devices:
           disks:
             - name: containerdisk
-              disk:
-                bus: virtio
+              disk: {}
             - name: cloudinitdisk
-              disk:
-                bus: virtio
+              disk: {}
           interfaces:
             - name: default
               masquerade: {}
@@ -50,5 +49,6 @@ spec:
               ethernets:
                 eth0:
                   dhcp4: true
-                  addresses: [ fd10:0:2::2/120 ]
+                  addresses:
+                    - fd10:0:2::2/120
                   gateway6: fd10:0:2::1
