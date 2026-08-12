@@ -1014,6 +1014,26 @@ packages:
 </tr>
 </table>
 </div>
+<div class="paragraph">
+<p>For networkData, use <code>networkDataSecretRef</code> instead of <code>secretRef</code> for referencing the Secret containing the network configuration.</p>
+</div>
+<div class="paragraph">
+<p><a href="https://kubevirt.io/user-guide/user_workloads/startup_scripts/#cloud-init-network-config-as-k8s-secret" target="_blank" rel="noopener">Cloud-init network configuration</a></p>
+</div>
+<div class="paragraph">
+<p>Example:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">volumes:
+  - cloudInitNoCloud:
+      secretRef:
+        name: my-vm-userdata
+      networkDataSecretRef:
+        name: my-vm-networkdata
+    name: cloudinitdisk</code></pre>
+</div>
+</div>
 </div>
 </div>
 </div>
