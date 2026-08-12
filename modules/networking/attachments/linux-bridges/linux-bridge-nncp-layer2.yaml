@@ -1,17 +1,21 @@
 apiVersion: nmstate.io/v1
 kind: NodeNetworkConfigurationPolicy
 metadata:
-  name: lnbr0-policy
+  name: lnbr0-bridge
 spec:
   desiredState:
     interfaces:
     - name: lnbr0
-      description: layer2-only linux bridge with ens1 as a port
+      description: layer2-only linux bridge with an optional port
       type: linux-bridge
       state: up
+      ipv4:
+        enabled: false
       bridge:
         options:
           stp:
             enabled: false
-        port:
-        - name: ens1
+        # Uncomment below and change the interface name
+        # to match the desired physical host port
+        #port:
+        #- name: ens1

@@ -65,6 +65,10 @@ metadata:
     role: frontend
 spec:
   runStrategy: Always
+  instancetype:
+    name: u1.small
+  preference:
+    name: fedora
   template:
     metadata:
       labels:
@@ -72,17 +76,12 @@ spec:
         role: frontend
     spec:
       domain:
-        resources:
-          requests:
-            memory: 2Gi
         devices:
           disks:
             - name: containerdisk
-              disk:
-                bus: virtio
+              disk: {}
             - name: cloudinitdisk
-              disk:
-                bus: virtio
+              disk: {}
           interfaces:
             - name: default
               masquerade: {}
@@ -124,6 +123,10 @@ metadata:
     role: backend
 spec:
   runStrategy: Always
+  instancetype:
+    name: u1.small
+  preference:
+    name: fedora
   template:
     metadata:
       labels:
@@ -131,17 +134,12 @@ spec:
         role: backend
     spec:
       domain:
-        resources:
-          requests:
-            memory: 2Gi
         devices:
           disks:
             - name: containerdisk
-              disk:
-                bus: virtio
+              disk: {}
             - name: cloudinitdisk
-              disk:
-                bus: virtio
+              disk: {}
           interfaces:
             - name: default
               masquerade: {}
@@ -241,7 +239,8 @@ Verify traffic is now blocked. From the test pod, attempt to reach the web VM:
 oc exec -n default curl-test -- curl -s --connect-timeout 5 http://<web-vm-ip>:80
 ----
 
-Expected result:
+.Expected output
+[source,text]
 ----
 command terminated with exit code 28
 ----
@@ -380,7 +379,10 @@ Verify that the test pod (which does not have label `app: web`) cannot reach the
 oc exec -n default curl-test -- curl -s --connect-timeout 5 http://<db-vm-ip>:5432
 ----
 
-Replace `<db-vm-ip>` with the database VM IP from Step 2. Expected result:
+Replace `<db-vm-ip>` with the database VM IP from Step 2.
+
+.Expected output
+[source,text]
 ----
 command terminated with exit code 28
 ----
@@ -398,7 +400,8 @@ List all NetworkPolicy resources in the namespace to review your security postur
 oc get networkpolicy -n netpol-demo
 ----
 
-Expected output:
+.Expected output
+[source,text]
 ----
 NAME                     POD-SELECTOR   AGE
 allow-db-from-web        app=database   ...

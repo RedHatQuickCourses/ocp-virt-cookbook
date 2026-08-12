@@ -4,6 +4,10 @@ metadata:
   name: fedora-dhcp-reserved-vm
   namespace: static-ip-demo
 spec:
+  instancetype:
+    name: u1.small
+  preference:
+    name: fedora
   dataVolumeTemplates:
     - apiVersion: cdi.kubevirt.io/v1beta1
       kind: DataVolume
@@ -25,15 +29,11 @@ spec:
         kubevirt.io/domain: fedora-dhcp-reserved-vm
     spec:
       domain:
-        cpu:
-          cores: 2
         devices:
           disks:
-            - disk:
-                bus: virtio
+            - disk: {}
               name: rootdisk
-            - disk:
-                bus: virtio
+            - disk: {}
               name: cloudinitdisk
           interfaces:
             - masquerade: {}
@@ -41,11 +41,6 @@ spec:
             - bridge: {}
               name: vlan-network
               macAddress: "02:00:00:01:00:01"
-          rng: {}
-        machine:
-          type: pc-q35-rhel9.4.0
-        memory:
-          guest: 4Gi
       networks:
         - name: default
           pod: {}
@@ -61,6 +56,7 @@ spec:
               #cloud-config
               user: fedora
               password: fedora123
-              chpasswd: { expire: False }
+              chpasswd:
+                expire: false
               ssh_pwauth: True
           name: cloudinitdisk
