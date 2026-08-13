@@ -4,6 +4,10 @@ metadata:
   name: test-vm-odf
   namespace: default
 spec:
+  instancetype:
+    name: u1.small
+  preference:
+    name: fedora
   runStrategy: Halted
   template:
     metadata:
@@ -13,34 +17,31 @@ spec:
       domain:
         devices:
           disks:
-            - name: boot-disk
-              disk:
-                bus: virtio
+          - disk: {}
+            name: boot-disk
           interfaces:
-            - name: default
-              masquerade: {}
+          - masquerade: {}
+            name: default
+      networks:
+      - name: default
+        pod: {}
+      volumes:
+      - name: boot-disk
+        dataVolume:
+          name: test-vm-odf-boot
+  dataVolumeTemplates:
+  - apiVersion: cdi.kubevirt.io/v1beta1
+    kind: DataVolume
+    metadata:
+      name: test-vm-odf-boot
+    spec:
+      source:
+        registry:
+          url: docker://quay.io/containerdisks/fedora:latest
+      storage:
+        accessModes:
+        - ReadWriteOnce
         resources:
           requests:
-            memory: 1Gi
-            cpu: 1
-      networks:
-        - name: default
-          pod: {}
-      volumes:
-        - name: boot-disk
-          dataVolume:
-            name: test-vm-odf-boot
-  dataVolumeTemplates:
-    - metadata:
-        name: test-vm-odf-boot
-      spec:
-        source:
-          registry:
-            url: docker://quay.io/containerdisks/fedora:latest
-        pvc:
-          accessModes:
-            - ReadWriteOnce
-          resources:
-            requests:
-              storage: 10Gi
-          storageClassName: ocs-storagecluster-ceph-rbd
+            storage: 10Gi
+        storageClassName: ocs-storagecluster-ceph-rbd

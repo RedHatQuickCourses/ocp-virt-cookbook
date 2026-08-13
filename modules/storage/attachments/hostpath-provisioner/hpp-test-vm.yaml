@@ -4,6 +4,10 @@ metadata:
   name: hpp-test-vm
   namespace: default
 spec:
+  instancetype:
+    name: u1.small
+  preference:
+    name: fedora
   runStrategy: Always
   template:
     metadata:
@@ -11,22 +15,15 @@ spec:
         kubevirt.io/vm: hpp-test-vm
     spec:
       domain:
-        cpu:
-          cores: 1
         devices:
           disks:
-          - name: rootdisk
-            disk:
-              bus: virtio
-          - name: cloudinitdisk
-            disk:
-              bus: virtio
+          - disk: {}
+            name: rootdisk
+          - disk: {}
+            name: cloudinitdisk
           interfaces:
-          - name: default
-            masquerade: {}
-        resources:
-          requests:
-            memory: 1Gi
+          - masquerade: {}
+            name: default
       networks:
       - name: default
         pod: {}
@@ -43,7 +40,9 @@ spec:
             chpasswd:
               expire: false
   dataVolumeTemplates:
-  - metadata:
+  - apiVersion: cdi.kubevirt.io/v1beta1
+    kind: DataVolume
+    metadata:
       name: hpp-test-vm-rootdisk
     spec:
       storage:

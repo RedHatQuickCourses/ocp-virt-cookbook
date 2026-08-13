@@ -6,6 +6,10 @@ metadata:
   labels:
     app: monitoring-demo
 spec:
+  instancetype:
+    name: u1.small
+  preference:
+    name: fedora
   runStrategy: Always
   template:
     metadata:
@@ -13,21 +17,15 @@ spec:
         kubevirt.io/domain: monitoring-test-vm
     spec:
       domain:
-        cpu:
-          cores: 2
-        memory:
-          guest: 2Gi
         devices:
           disks:
-          - name: rootdisk
-            disk:
-              bus: virtio
-          - name: cloudinitdisk
-            disk:
-              bus: virtio
+          - disk: {}
+            name: rootdisk
+          - disk: {}
+            name: cloudinitdisk
           interfaces:
-          - name: default
-            masquerade: {}
+          - masquerade: {}
+            name: default
       networks:
       - name: default
         pod: {}
