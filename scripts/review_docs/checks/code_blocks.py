@@ -25,23 +25,16 @@ def check_code_block_language(
         return
 
     prev = state.prev_line
-    m = re.match(r"^\[source,?([a-zA-Z0-9_-]*)\]", prev) or re.match(
-        r"^\[source,?([a-zA-Z0-9_-]*),.*\]", prev
-    )
-    if not m:
-        # No [source,...] attribute — but also skip bare [source] or [source ...]
-        if not re.match(r"^\[source\s", prev) and not re.match(
-            r"^\[source\]", prev
-        ):
-            file_result.add_finding(
-                cfg,
-                "code-block-language",
-                line_num,
-                f"line {line_num}: Code block delimiter without [source,language] specifier",
-            )
+    if not re.match(r"^\[source(?:[,\s]|\])", prev):
+        file_result.add_finding(
+            cfg,
+            "code-block-language",
+            line_num,
+            f"line {line_num}: Code block delimiter without [source,language] specifier",
+        )
 
 
-@register_check("yaml-null-timestamps", "warning", "code_block_content")
+@register_check("yaml-null-timestamps", "warning", "code_block_line")
 def check_yaml_null_timestamps(
     line: str,
     line_num: int,
@@ -61,7 +54,7 @@ def check_yaml_null_timestamps(
         )
 
 
-@register_check("yaml-flow-syntax", "warning", "code_block_content")
+@register_check("yaml-flow-syntax", "warning", "code_block_line")
 def check_yaml_flow_syntax(
     line: str,
     line_num: int,
@@ -84,3 +77,38 @@ def check_yaml_flow_syntax(
                 line_num,
                 f"line {line_num}: Inline YAML flow syntax detected (use block style)",
             )
+
+
+@register_check("yaml-validation", "error", "code_block_complete")
+def check_yaml_validation(
+    block_content: list[str],
+    block_lang: str,
+    block_start_line: int,
+    block_end_line: int,
+    following_annotations: list[str],
+    block_attrs: dict[str, str],
+    cfg: Config,
+    file_result: FileResult,
+) -> None:
+    """Validate YAML syntax in code blocks (requires PyYAML)."""
+    if block_lang != "yaml":
+        return
+
+    try:
+        import yaml
+    except ImportError:
+        return
+
+    yaml_content = "\n".join(block_content)
+    if not yaml_content.strip():
+        return
+
+    try:
+        yaml.safe_load(yaml_content)
+    except Exception:
+        file_result.add_finding(
+            cfg,
+            "yaml-validation",
+            block_start_line,
+            f"line {block_start_line}: Invalid YAML syntax in code block",
+        )

@@ -10,7 +10,7 @@ import re
 import subprocess
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import List
+from typing import Dict, List
 
 from .config import Config
 from .models import FileResult, Finding, ParseState
@@ -18,6 +18,39 @@ from .registry import CHECKS
 
 # Ensure all checks are registered before the engine runs.
 from . import checks as _checks  # noqa: F401
+
+# Precompiled regex for annotation line detection (used during code block processing)
+_ANNOTATION_RE = re.compile(r"^<(\d+|\.)>\s")
+
+# Precompiled regex to extract the contents of a block attribute list,
+# e.g. ``[source,yaml,allow-duplicate-callouts]`` -> ``source,yaml,allow-duplicate-callouts``.
+_BLOCK_ATTR_LIST_RE = re.compile(r"^\[(.*)\]\s*$")
+
+
+def _parse_block_attrs(prev_line: str) -> Dict[str, str]:
+    """Parse named attributes from a block-open attribute line.
+
+    Handles lines like ``[source,yaml]``, ``[source,bash,role=execute]``,
+    or ``[source,yaml,allow-duplicate-callouts]``. Positional tokens (``source``,
+    ``bash``) are stored with an empty-string value alongside ``key=value``
+    pairs and bare named attributes (also empty-string value). Returns an
+    empty dict if *prev_line* is not a block attribute list.
+    """
+    m = _BLOCK_ATTR_LIST_RE.match(prev_line)
+    if not m:
+        return {}
+
+    attrs: Dict[str, str] = {}
+    for token in m.group(1).split(","):
+        token = token.strip()
+        if not token:
+            continue
+        if "=" in token:
+            key, _, value = token.partition("=")
+            attrs[key.strip()] = value.strip().strip('"')
+        else:
+            attrs[token] = ""
+    return attrs
 
 
 # ── Build-check result ────────────────────────────────────────────────────────
@@ -38,7 +71,7 @@ class BuildResult:
 # are encountered.  Code blocks (``----`` / ``"code_block"``) are also
 # tracked on block_stack but handled in a dedicated branch because they
 # carry extra metadata (language, boundary direction) and dispatch to
-# their own check scopes (code_block_content, code_block_boundary).
+# their own check scopes (code_block_line, code_block_boundary, code_block_complete).
 # Note: ``--`` is a legitimate 2-character AsciiDoc open block delimiter.
 # False positives are unlikely because:
 #   1. Code blocks (``----``, 4+ dashes) are caught by a dedicated branch
@@ -145,12 +178,14 @@ def review_file(filepath: str, cfg: Config) -> FileResult:
 
     # Get enabled checks by scope
     prose_checks = _get_enabled_checks(cfg, "prose")
-    code_block_checks = _get_enabled_checks(cfg, "code_block_content")
+    code_block_line_checks = _get_enabled_checks(cfg, "code_block_line")
     boundary_checks = _get_enabled_checks(cfg, "code_block_boundary")
+    complete_checks = _get_enabled_checks(cfg, "code_block_complete")
     structural_checks = _get_enabled_checks(cfg, "structural")
 
     # Line-by-line state machine
     state = ParseState()
+    block_content_accumulator: List[str] = []
 
     for line_num, line in enumerate(lines, 1):
         # Skip comment lines for prose checks
@@ -164,6 +199,7 @@ def review_file(filepath: str, cfg: Config) -> FileResult:
                 state.block_stack.append("code_block")
                 state.code_block_start_line = line_num
                 state.boundary_direction = "open"
+                block_content_accumulator = []  # Reset accumulator
 
                 prev = state.prev_line
                 # Detect language specifier in previous line
@@ -171,9 +207,39 @@ def review_file(filepath: str, cfg: Config) -> FileResult:
                     r"^\[source,?([a-zA-Z0-9_-]*)\]", prev
                 ) or re.match(r"^\[source,?([a-zA-Z0-9_-]*),.*\]", prev)
                 state.code_block_lang = m.group(1) if m else ""
+                state.code_block_attrs = _parse_block_attrs(prev)
             else:
+                block_end_line = line_num
+
+                # Capture following annotation lines.
+                # AsciiDoc callout lists must be contiguous with the closing
+                # delimiter — any blank line terminates the list immediately.
+                following_annotations: List[str] = []
+                for i in range(line_num, len(lines)):  # line_num is 1-indexed, lines is 0-indexed
+                    next_line = lines[i]
+                    if not next_line.strip():
+                        break  # Blank line terminates annotation list
+                    if _ANNOTATION_RE.match(next_line):
+                        following_annotations.append(next_line)
+                    else:
+                        break  # Non-annotation line = end
+
+                # Dispatch to code_block_complete checks
+                for check_def in complete_checks:
+                    check_def.func(
+                        block_content_accumulator,
+                        state.code_block_lang,
+                        state.code_block_start_line,
+                        block_end_line,
+                        following_annotations,
+                        state.code_block_attrs,
+                        cfg,
+                        file_result,
+                    )
+
                 state.block_stack.pop()
                 state.code_block_lang = ""
+                state.code_block_attrs = {}
                 state.boundary_direction = "close"
 
             # Run boundary checks
@@ -183,9 +249,10 @@ def review_file(filepath: str, cfg: Config) -> FileResult:
             state.prev_line = line
             continue
 
-        # Inside code block: run code block content checks
+        # Inside code block: accumulate content and run line checks
         if state.in_code_block:
-            for check_def in code_block_checks:
+            block_content_accumulator.append(line)
+            for check_def in code_block_line_checks:
                 check_def.func(line, line_num, state, cfg, file_result)
 
             state.prev_line = line

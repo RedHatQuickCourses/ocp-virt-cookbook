@@ -32,6 +32,10 @@ class ParseState:
     code_block_lang: str = ""
     code_block_start_line: int = 0
     boundary_direction: str = ""  # "open" or "close", set at ---- boundary
+    # Named attributes parsed from the block-open attribute list (e.g.
+    # ``[source,yaml,allow-duplicate-callouts]``). Bare attributes (no ``=value``)
+    # are stored with an empty-string value.
+    code_block_attrs: Dict[str, str] = field(default_factory=dict)
 
     # ── Heading tracking (managed by heading-hierarchy check) ─────────
     heading_levels: List[int] = field(default_factory=list)
@@ -130,7 +134,7 @@ class ReviewResult:
 
 
 class LineCheck(Protocol):
-    """Signature for prose, code_block_content, and code_block_boundary checks."""
+    """Signature for prose, code_block_line, and code_block_boundary checks."""
 
     def __call__(
         self,
@@ -154,19 +158,41 @@ class StructuralCheck(Protocol):
     ) -> None: ...
 
 
+class CodeBlockCompleteCheck(Protocol):
+    """Signature for checks that run once per completed code block."""
+
+    def __call__(
+        self,
+        block_content: List[str],
+        block_lang: str,
+        block_start_line: int,
+        block_end_line: int,
+        following_annotations: List[str],
+        block_attrs: Dict[str, str],
+        cfg: Config,
+        file_result: FileResult,
+    ) -> None: ...
+
+
 # Maps scope name -> (expected parameter names, protocol description)
 SCOPE_SIGNATURES: Dict[str, tuple[tuple[str, ...], str]] = {
     "prose": (
         ("line", "line_num", "state", "cfg", "file_result"),
         "LineCheck(line, line_num, state, cfg, file_result)",
     ),
-    "code_block_content": (
+    "code_block_line": (
         ("line", "line_num", "state", "cfg", "file_result"),
         "LineCheck(line, line_num, state, cfg, file_result)",
     ),
     "code_block_boundary": (
         ("line", "line_num", "state", "cfg", "file_result"),
         "LineCheck(line, line_num, state, cfg, file_result)",
+    ),
+    "code_block_complete": (
+        ("block_content", "block_lang", "block_start_line", "block_end_line",
+         "following_annotations", "block_attrs", "cfg", "file_result"),
+        "CodeBlockCompleteCheck(block_content, block_lang, block_start_line, "
+        "block_end_line, following_annotations, block_attrs, cfg, file_result)",
     ),
     "structural": (
         ("filepath", "lines", "cfg", "file_result"),
@@ -207,5 +233,5 @@ class CheckDef:
 
     name: str
     default_severity: str  # "error" or "warning"
-    scope: str  # "prose", "code_block_content", "code_block_boundary", or "structural"
+    scope: str  # "prose", "code_block_line", "code_block_boundary", "code_block_complete", or "structural"
     func: Callable
