@@ -816,6 +816,10 @@ metadata:
   name: test-vm-odf
   namespace: default
 spec:
+  instancetype:
+    name: u1.small
+  preference:
+    name: fedora
   runStrategy: Halted
   template:
     metadata:
@@ -825,37 +829,34 @@ spec:
       domain:
         devices:
           disks:
-            - name: boot-disk
-              disk:
-                bus: virtio
+          - disk: {}
+            name: boot-disk
           interfaces:
-            - name: default
-              masquerade: {}
+          - masquerade: {}
+            name: default
+      networks:
+      - name: default
+        pod: {}
+      volumes:
+      - name: boot-disk
+        dataVolume:
+          name: test-vm-odf-boot
+  dataVolumeTemplates:
+  - apiVersion: cdi.kubevirt.io/v1beta1
+    kind: DataVolume
+    metadata:
+      name: test-vm-odf-boot
+    spec:
+      source:
+        registry:
+          url: docker://quay.io/containerdisks/fedora:latest
+      storage:
+        accessModes:
+        - ReadWriteOnce
         resources:
           requests:
-            memory: 1Gi
-            cpu: 1
-      networks:
-        - name: default
-          pod: {}
-      volumes:
-        - name: boot-disk
-          dataVolume:
-            name: test-vm-odf-boot
-  dataVolumeTemplates:
-    - metadata:
-        name: test-vm-odf-boot
-      spec:
-        source:
-          registry:
-            url: docker://quay.io/containerdisks/fedora:latest
-        pvc:
-          accessModes:
-            - ReadWriteOnce
-          resources:
-            requests:
-              storage: 10Gi
-          storageClassName: ocs-storagecluster-ceph-rbd
+            storage: 10Gi
+        storageClassName: ocs-storagecluster-ceph-rbd
 EOF</code></pre>
 </div>
 </div>
@@ -973,28 +974,27 @@ kind: VirtualMachine
 metadata:
   name: multi-storage-vm
 spec:
+  instancetype:
+    name: u1.small
+  preference:
+    name: fedora
   runStrategy: Halted
   template:
     spec:
       domain:
         devices:
           disks:
-            - name: boot-disk
-              disk:
-                bus: virtio
-            - name: shared-data
-              disk:
-                bus: virtio
-        resources:
-          requests:
-            memory: 2Gi
+          - disk: {}
+            name: boot-disk
+          - disk: {}
+            name: shared-data
       volumes:
-        - name: boot-disk
-          persistentVolumeClaim:
-            claimName: vm-boot-rbd
-        - name: shared-data
-          persistentVolumeClaim:
-            claimName: vm-shared-cephfs
+      - name: boot-disk
+        persistentVolumeClaim:
+          claimName: vm-boot-rbd
+      - name: shared-data
+        persistentVolumeClaim:
+          claimName: vm-shared-cephfs
 EOF</code></pre>
 </div>
 </div>

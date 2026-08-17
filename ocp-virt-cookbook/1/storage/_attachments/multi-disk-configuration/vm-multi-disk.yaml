@@ -4,6 +4,10 @@ metadata:
   name: multi-disk-vm
   namespace: multi-disk-demo
 spec:
+  instancetype:
+    name: u1.small
+  preference:
+    name: fedora
   runStrategy: Always
   template:
     metadata:
@@ -13,22 +17,15 @@ spec:
       domain:
         devices:
           disks:
-          - name: rootdisk
-            disk:
-              bus: virtio
-            bootOrder: 1
-          - name: datadisk
-            disk:
-              bus: virtio
-          - name: cloudinitdisk
-            disk:
-              bus: virtio
+          - disk: {}
+            name: rootdisk
+          - disk: {}
+            name: datadisk
+          - disk: {}
+            name: cloudinitdisk
           interfaces:
-          - name: default
-            masquerade: {}
-        resources:
-          requests:
-            memory: 1Gi
+          - masquerade: {}
+            name: default
       networks:
       - name: default
         pod: {}
@@ -47,29 +44,33 @@ spec:
             chpasswd:
               expire: false
   dataVolumeTemplates:
-  - metadata:
+  - apiVersion: cdi.kubevirt.io/v1beta1
+    kind: DataVolume
+    metadata:
       name: multi-disk-rootdisk
     spec:
-      pvc:
+      sourceRef:
+        kind: DataSource
+        name: fedora
+        namespace: openshift-virtualization-os-images
+      storage:
         accessModes:
         - ReadWriteOnce
         resources:
           requests:
             storage: 30Gi
         storageClassName: lvms-vg1
-      source:
-        registry:
-          pullMethod: node
-          url: docker://quay.io/containerdisks/fedora:latest
-  - metadata:
+  - apiVersion: cdi.kubevirt.io/v1beta1
+    kind: DataVolume
+    metadata:
       name: multi-disk-datadisk
     spec:
-      pvc:
+      source:
+        blank: {}
+      storage:
         accessModes:
         - ReadWriteOnce
         resources:
           requests:
             storage: 10Gi
         storageClassName: lvms-vg1-retain
-      source:
-        blank: {}
