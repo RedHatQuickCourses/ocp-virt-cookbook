@@ -36,7 +36,7 @@ def check_something(line: str, line_num: int, state: ParseState, cfg: Config, fi
 |------------|--------|-------------|
 | `name`     | `str`  | Unique identifier, kebab-case (e.g. `"my-new-check"`). Used in CLI flags, config file, and findings output. |
 | `severity` | `str`  | Default severity: `"error"` or `"warning"`. Users can override this in `.review-docs.conf` or via `--disable`. |
-| `scope`    | `str`  | Determines when the engine calls your function. One of: `"prose"`, `"code_block_content"`, `"code_block_boundary"`, `"structural"`. |
+| `scope`    | `str`  | Determines when the engine calls your function. One of: `"prose"`, `"code_block_line"`, `"code_block_boundary"`, `"code_block_complete"`, `"structural"`. |
 
 The decorator validates your function's parameter names against the
 expected signature for the given scope. If they don't match, a
@@ -64,7 +64,7 @@ def check_name(line: str, line_num: int, state: ParseState, cfg: Config, file_re
 Most checks are prose checks. Use this scope for anything that examines
 documentation text: style, formatting, terminology, heading structure.
 
-### `code_block_content`
+### `code_block_line`
 
 **When it runs:** On every line *inside* a `----`-delimited code block
 (not including the delimiter lines themselves).
@@ -76,12 +76,15 @@ The `state.code_block_lang` attribute tells you the language from the
 languages:
 
 ```python
-@register_check("yaml-something", "warning", "code_block_content")
+@register_check("yaml-something", "warning", "code_block_line")
 def check_yaml_something(line: str, line_num: int, state: ParseState, cfg: Config, file_result: FileResult) -> None:
     if state.code_block_lang != "yaml":
         return
     # ... inspect line ...
 ```
+
+Use this scope for checks that need to examine individual lines (e.g.,
+detecting specific patterns, validating line-level syntax).
 
 ### `code_block_boundary`
 
@@ -99,6 +102,77 @@ On open, `state.prev_line` contains the line immediately before the
 delimiter — typically the `[source,lang]` attribute, which you can
 inspect.
 
+### `code_block_complete`
+
+**When it runs:** Once per code block, when the closing `----` delimiter
+is encountered. Receives the accumulated block content and following
+annotation lines.
+
+**Signature:**
+
+```python
+def check_name(
+    block_content: list[str],
+    block_lang: str,
+    block_start_line: int,
+    block_end_line: int,
+    following_annotations: list[str],
+    block_attrs: dict[str, str],
+    cfg: Config,
+    file_result: FileResult,
+) -> None
+```
+
+**Parameters:**
+
+| Parameter               | Type              | Description |
+|-------------------------|-------------------|-------------|
+| `block_content`         | `list[str]`       | All lines inside the code block (excluding the `----` delimiters). |
+| `block_lang`            | `str`             | Language from `[source,lang]`, or `""` if none. |
+| `block_start_line`      | `int`             | Line number of the opening `----`. |
+| `block_end_line`        | `int`             | Line number of the closing `----`. |
+| `following_annotations` | `list[str]`       | Annotation lines immediately after the block (lines matching `^<(\d+|\.)>\s`). Engine stops at the first blank line or non-annotation line after the block. |
+| `block_attrs`           | `dict[str, str]`  | Named attributes parsed from the block-open attribute list, e.g. `[source,yaml,allow-duplicate-callouts]` → `{"source": "", "yaml": "", "allow-duplicate-callouts": ""}`. Bare attributes and `key=value` pairs are both captured; bare attributes get an empty-string value. |
+| `cfg`                   | `Config`          | Configuration object. |
+| `file_result`           | `FileResult`      | Result accumulator. |
+
+Use this scope for checks that need:
+- The complete block content (e.g., YAML validation, shell syntax)
+- To validate callouts against annotations
+- To analyze patterns across multiple lines in a block
+
+**Example:**
+
+```python
+@register_check("yaml-validation", "error", "code_block_complete")
+def check_yaml_validation(
+    block_content: list[str],
+    block_lang: str,
+    block_start_line: int,
+    block_end_line: int,
+    following_annotations: list[str],
+    block_attrs: dict[str, str],
+    cfg: Config,
+    file_result: FileResult,
+) -> None:
+    """Validate YAML syntax in code blocks."""
+    if block_lang != "yaml":
+        return
+    
+    import yaml
+    yaml_content = "\n".join(block_content)
+    
+    try:
+        yaml.safe_load(yaml_content)
+    except Exception:
+        file_result.add_finding(
+            cfg,
+            "yaml-validation",
+            block_start_line,
+            f"line {block_start_line}: Invalid YAML syntax in code block",
+        )
+```
+
 ### `structural`
 
 **When it runs:** Once per file, after all line-by-line processing is
@@ -113,6 +187,27 @@ def check_name(filepath: str, lines: list[str], cfg: Config, file_result: FileRe
 Use this for checks that need the whole file: validating required
 sections exist, cross-referencing with the filesystem, parsing
 multi-line constructs that span the entire document.
+
+---
+
+## Choosing between code block scopes
+
+There are three scopes for code block checks. Here's when to use each:
+
+| Scope | Use when... | Example checks |
+|-------|-------------|----------------|
+| `code_block_line` | You need to examine individual lines inside code blocks | `callout-format`, `yaml-null-timestamps`, `yaml-flow-syntax` |
+| `code_block_boundary` | You need to validate the opening or closing delimiter | `code-block-language` (checks for `[source,lang]` attribute) |
+| `code_block_complete` | You need the full block content or following annotations | `yaml-validation`, `callout-count`, JSON/shell syntax validation |
+
+**Rule of thumb:**
+- If your check can fire on a single line → `code_block_line`
+- If your check needs to validate the whole block → `code_block_complete`
+- If your check validates the `[source,lang]` attribute → `code_block_boundary`
+
+The engine handles all the code block parsing for you — accumulating
+content, detecting language, capturing annotations. You just pick the
+right scope and receive pre-parsed data.
 
 ---
 
@@ -427,8 +522,9 @@ The expected signatures per scope:
 | Scope                  | Parameters |
 |------------------------|------------|
 | `prose`                | `(line, line_num, state, cfg, file_result)` |
-| `code_block_content`   | `(line, line_num, state, cfg, file_result)` |
+| `code_block_line`      | `(line, line_num, state, cfg, file_result)` |
 | `code_block_boundary`  | `(line, line_num, state, cfg, file_result)` |
+| `code_block_complete`  | `(block_content, block_lang, block_start_line, block_end_line, following_annotations, block_attrs, cfg, file_result)` |
 | `structural`           | `(filepath, lines, cfg, file_result)` |
 
 ---

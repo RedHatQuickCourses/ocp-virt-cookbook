@@ -90,8 +90,8 @@ At the API level, when a power command is issued against a VM with a `Manual` ru
 ----
 status:
   stateChangeRequests:
-  - action: <Stop|Start> <1>
-    uid: <uid-of-the-virtual-machine-instance> <2>
+  - action: <Stop|Start> # <1>
+    uid: <uid-of-the-virtual-machine-instance> # <2>
 ----
 <1> The action being requested. One of the following string values (`Stop`, `Start`).
 <2> The optional UID of the VirtualMachineInstance (_not_ the VirtualMachine) to perform the action against. This is not required for `Start` command since the VMI gets created when the VM starts.
@@ -318,7 +318,7 @@ See the sections on Networking for concrete usage examples when defining VMs.
 This is (as the name indicates) the default network used by pods in OpenShift and Kubernetes.
 It is chosen by simply defining an empty `pod: {}` network with an empty `masquerade: {}` interface, as in the below example:
 
-[source,yaml]
+[source,yaml,allow-duplicate-callouts]
 ----
 apiVersion: kubevirt.io/v1
 kind: VirtualMachine
@@ -331,11 +331,11 @@ spec:
       domain:
         devices:
           interfaces:
-          - name: default <1>
-            masquerade: {} <2>
+          - name: default # <1>
+            masquerade: {} # <2>
       networks:
-      - name: default <1>
-        pod: {} <3>
+      - name: default # <1>
+        pod: {} # <3>
 ----
 <1> the name of the network defined under `domain.devices.interfaces` (nested under `spec.template.spec`) must match the desired network name under `networks` within the VM template spec.
 <2> the default network uses IP masquerading (NAT) to connect the NIC to the underlying network
@@ -706,10 +706,10 @@ An example VirtualMachineExport is shown below:
 apiVersion: export.kubevirt.io/v1beta1
 kind: VirtualMachineExport
 metadata:
-  name: export-example <1>
+  name: export-example # <1>
 spec:
-  tokenSecretRef: export-token <2>
-  source: <3>
+  tokenSecretRef: export-token # <2>
+  source: # <3>
     apiGroup: "kubevirt.io"
     kind: VirtualMachine
     name: virtual-machine-example

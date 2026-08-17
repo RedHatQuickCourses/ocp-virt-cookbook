@@ -27,8 +27,8 @@ def register_check(name: str, severity: str, scope: str):
     severity:
         Default severity — ``"error"`` or ``"warning"``.
     scope:
-        One of ``"prose"``, ``"code_block_content"``, ``"code_block_boundary"``,
-        or ``"structural"``.
+        One of ``"prose"``, ``"code_block_line"``, ``"code_block_boundary"``,
+        ``"code_block_complete"``, or ``"structural"``.
     """
 
     def decorator(func: Callable) -> Callable:
