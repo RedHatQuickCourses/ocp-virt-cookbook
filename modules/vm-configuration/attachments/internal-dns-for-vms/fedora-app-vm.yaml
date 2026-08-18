@@ -19,6 +19,10 @@ spec:
           resources:
             requests:
               storage: 30Gi
+  instancetype:
+    name: u1.large
+  preference:
+    name: fedora
   template:
     metadata:
       labels:
@@ -28,18 +32,13 @@ spec:
       domain:
         devices:
           disks:
-            - disk:
-                bus: virtio
+            - disk: {}
               name: rootdisk
-            - disk:
-                bus: virtio
+            - disk: {}
               name: cloudinitdisk
           interfaces:
             - name: default
               masquerade: {}
-        resources:
-          requests:
-            memory: 2Gi
       networks:
         - name: default
           pod: {}
@@ -52,6 +51,7 @@ spec:
               #cloud-config
               user: fedora
               password: fedora
-              chpasswd: { expire: false }
+              chpasswd:
+                expire: false
               ssh_pwauth: true
           name: cloudinitdisk
