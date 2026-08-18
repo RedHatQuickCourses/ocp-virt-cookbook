@@ -29,20 +29,18 @@ spec:
       domain:
         devices:
           disks:
-            - name: rootdisk
-              disk:
-                bus: virtio
-            - name: cloudinitdisk
-              disk:
-                bus: virtio
+            - disk: {}
+              name: rootdisk
+            - disk: {}
+              name: cloudinitdisk
           interfaces:
-            - name: default
-              masquerade:
-            - name: vlan-network
-              bridge:
+            - masquerade: {}
+              name: default
+            - bridge: {}
+              name: vlan-network
       networks:
         - name: default
-          pod:
+          pod: {}
         - name: vlan-network
           multus:
             networkName: localnet-vlan-100
