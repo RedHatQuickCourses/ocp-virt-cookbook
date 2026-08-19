@@ -626,6 +626,10 @@ metadata:
   namespace: vm-placement
 spec:
   runStrategy: Manual
+  instancetype:
+    name: u1.large
+  preference:
+    name: fedora
   template:
     metadata:
       labels:
@@ -634,30 +638,24 @@ spec:
       nodeSelector:
         storage: ssd  # VM will only run on nodes with storage=ssd label
       domain:
-        cpu:
-          cores: 2
-        memory:
-          guest: 4Gi
         devices:
           disks:
-          - name: rootdisk
-            disk:
-              bus: virtio
-          - name: cloudinitdisk
-            disk:
-              bus: virtio
+            - name: rootdisk
+              disk: {}
+            - name: cloudinitdisk
+              disk: {}
       volumes:
-      - name: rootdisk
-        containerDisk:
-          image: quay.io/containerdisks/fedora:43
-      - name: cloudinitdisk
-        cloudInitNoCloud:
-          userData: |
-            #cloud-config
-            user: fedora
-            password: fedora
-            chpasswd:
-              expire: false</code></pre>
+        - name: rootdisk
+          containerDisk:
+            image: quay.io/containerdisks/fedora:43
+        - name: cloudinitdisk
+          cloudInitNoCloud:
+            userData: |
+              #cloud-config
+              user: fedora
+              password: fedora
+              chpasswd:
+                expire: false</code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -752,6 +750,10 @@ metadata:
   namespace: vm-placement
 spec:
   runStrategy: Manual
+  instancetype:
+    name: u1.large
+  preference:
+    name: fedora
   template:
     metadata:
       labels:
@@ -761,41 +763,35 @@ spec:
         nodeAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
             nodeSelectorTerms:
-            - matchExpressions:
-              - key: gpu
-                operator: In
-                values:
-                - nvidia-t4
-                - nvidia-a100
-              - key: env
-                operator: In
-                values:
-                - production
+              - matchExpressions:
+                  - key: gpu
+                    operator: In
+                    values:
+                      - nvidia-t4
+                      - nvidia-a100
+                  - key: env
+                    operator: In
+                    values:
+                      - production
       domain:
-        cpu:
-          cores: 4
-        memory:
-          guest: 8Gi
         devices:
           disks:
-          - name: rootdisk
-            disk:
-              bus: virtio
-          - name: cloudinitdisk
-            disk:
-              bus: virtio
+            - name: rootdisk
+              disk: {}
+            - name: cloudinitdisk
+              disk: {}
       volumes:
-      - name: rootdisk
-        containerDisk:
-          image: quay.io/containerdisks/fedora:43
-      - name: cloudinitdisk
-        cloudInitNoCloud:
-          userData: |
-            #cloud-config
-            user: fedora
-            password: fedora
-            chpasswd:
-              expire: false</code></pre>
+        - name: rootdisk
+          containerDisk:
+            image: quay.io/containerdisks/fedora:43
+        - name: cloudinitdisk
+          cloudInitNoCloud:
+            userData: |
+              #cloud-config
+              user: fedora
+              password: fedora
+              chpasswd:
+                expire: false</code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -835,6 +831,10 @@ metadata:
   namespace: vm-placement
 spec:
   runStrategy: Manual
+  instancetype:
+    name: u1.large
+  preference:
+    name: fedora
   template:
     metadata:
       labels:
@@ -843,45 +843,39 @@ spec:
       affinity:
         nodeAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
-          - weight: 100
-            preference:
-              matchExpressions:
-              - key: storage
-                operator: In
-                values:
-                - nvme
-          - weight: 50
-            preference:
-              matchExpressions:
-              - key: storage
-                operator: In
-                values:
-                - ssd
+            - weight: 100
+              preference:
+                matchExpressions:
+                  - key: storage
+                    operator: In
+                    values:
+                      - nvme
+            - weight: 50
+              preference:
+                matchExpressions:
+                  - key: storage
+                    operator: In
+                    values:
+                      - ssd
       domain:
-        cpu:
-          cores: 2
-        memory:
-          guest: 2Gi
         devices:
           disks:
-          - name: rootdisk
-            disk:
-              bus: virtio
-          - name: cloudinitdisk
-            disk:
-              bus: virtio
+            - name: rootdisk
+              disk: {}
+            - name: cloudinitdisk
+              disk: {}
       volumes:
-      - name: rootdisk
-        containerDisk:
-          image: quay.io/containerdisks/fedora:43
-      - name: cloudinitdisk
-        cloudInitNoCloud:
-          userData: |
-            #cloud-config
-            user: fedora
-            password: fedora
-            chpasswd:
-              expire: false</code></pre>
+        - name: rootdisk
+          containerDisk:
+            image: quay.io/containerdisks/fedora:43
+        - name: cloudinitdisk
+          cloudInitNoCloud:
+            userData: |
+              #cloud-config
+              user: fedora
+              password: fedora
+              chpasswd:
+                expire: false</code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -956,6 +950,10 @@ metadata:
   namespace: vm-placement
 spec:
   runStrategy: Manual
+  instancetype:
+    name: u1.large
+  preference:
+    name: fedora
   template:
     metadata:
       labels:
@@ -965,38 +963,32 @@ spec:
       affinity:
         podAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
-          - labelSelector:
-              matchExpressions:
-              - key: app
-                operator: In
-                values:
-                - database
-            topologyKey: kubernetes.io/hostname
+            - labelSelector:
+                matchExpressions:
+                  - key: app
+                    operator: In
+                    values:
+                      - database
+              topologyKey: kubernetes.io/hostname
       domain:
-        cpu:
-          cores: 2
-        memory:
-          guest: 2Gi
         devices:
           disks:
-          - name: rootdisk
-            disk:
-              bus: virtio
-          - name: cloudinitdisk
-            disk:
-              bus: virtio
+            - name: rootdisk
+              disk: {}
+            - name: cloudinitdisk
+              disk: {}
       volumes:
-      - name: rootdisk
-        containerDisk:
-          image: quay.io/containerdisks/fedora:43
-      - name: cloudinitdisk
-        cloudInitNoCloud:
-          userData: |
-            #cloud-config
-            user: fedora
-            password: fedora
-            chpasswd:
-              expire: false</code></pre>
+        - name: rootdisk
+          containerDisk:
+            image: quay.io/containerdisks/fedora:43
+        - name: cloudinitdisk
+          cloudInitNoCloud:
+            userData: |
+              #cloud-config
+              user: fedora
+              password: fedora
+              chpasswd:
+                expire: false</code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -1049,6 +1041,10 @@ metadata:
   namespace: vm-placement
 spec:
   runStrategy: Manual
+  instancetype:
+    name: u1.large
+  preference:
+    name: fedora
   template:
     metadata:
       labels:
@@ -1058,38 +1054,32 @@ spec:
       affinity:
         podAntiAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
-          - labelSelector:
-              matchExpressions:
-              - key: app
-                operator: In
-                values:
-                - redis-cache
-            topologyKey: kubernetes.io/hostname
+            - labelSelector:
+                matchExpressions:
+                  - key: app
+                    operator: In
+                    values:
+                      - redis-cache
+              topologyKey: kubernetes.io/hostname
       domain:
-        cpu:
-          cores: 2
-        memory:
-          guest: 4Gi
         devices:
           disks:
-          - name: rootdisk
-            disk:
-              bus: virtio
-          - name: cloudinitdisk
-            disk:
-              bus: virtio
+            - name: rootdisk
+              disk: {}
+            - name: cloudinitdisk
+              disk: {}
       volumes:
-      - name: rootdisk
-        containerDisk:
-          image: quay.io/containerdisks/fedora:43
-      - name: cloudinitdisk
-        cloudInitNoCloud:
-          userData: |
-            #cloud-config
-            user: fedora
-            password: fedora
-            chpasswd:
-              expire: false</code></pre>
+        - name: rootdisk
+          containerDisk:
+            image: quay.io/containerdisks/fedora:43
+        - name: cloudinitdisk
+          cloudInitNoCloud:
+            userData: |
+              #cloud-config
+              user: fedora
+              password: fedora
+              chpasswd:
+                expire: false</code></pre>
 </div>
 </div>
 <div class="paragraph">
