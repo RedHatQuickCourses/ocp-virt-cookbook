@@ -9,18 +9,11 @@ Dual-stack networking is required in many enterprise and government environments
 
 == Prerequisites
 
-* **OpenShift 4.18+** with OpenShift Virtualization operator installed
+* **OpenShift {ocp-min-version}+** with OpenShift Virtualization operator installed
 * OVN-Kubernetes network plugin (default)
-* **Dual-stack cluster networking** -- the cluster must have both IPv4 and IPv6 CIDRs configured for clusterNetwork and serviceNetwork (can be enabled at install time or as a day-2 operation on OpenShift 4.12+)
+* **Dual-stack cluster networking** -- the cluster must have both IPv4 and IPv6 CIDRs configured for clusterNetwork and serviceNetwork (can be enabled at install time or as a day-2 operation on OpenShift {ocp-min-version}+)
 * `oc` CLI installed
 * Cluster admin access
-
-Versions tested:
-
-[source,bash]
-----
-OpenShift 4.22
-----
 
 == Verify or Enable Dual-Stack Networking
 
@@ -94,7 +87,7 @@ oc create namespace dualstack-demo
 
 == Step 2: Deploy a Dual-Stack VM on the Pod Network
 
-With masquerade mode, the VM receives IPv4 automatically via DHCP from the virt-launcher pod. Unlike IPv4, the configuration of the IPv6 address and default route is not automatic and must be configured via cloud-init `networkData`. Although the virt-launcher starts a DHCPv6 server, it does not send Router Advertisements (RAs), so the guest OS never triggers a DHCPv6 solicitation. Static IPv6 addressing through cloud-init is the documented approach in both the link:https://kubevirt.io/user-guide/network/interfaces_and_networks/#masquerade-ipv4-and-ipv6-dual-stack-support[KubeVirt user guide,window=_blank] and the link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.22/html/virtualization/networking#virt-configuring-masquerade-mode-dual-stack_virt-connecting-vm-to-default-pod-network[OpenShift Virtualization documentation,window=_blank].
+With masquerade mode, the VM receives IPv4 automatically via DHCP from the virt-launcher pod. Unlike IPv4, the configuration of the IPv6 address and default route is not automatic and must be configured via cloud-init `networkData`. Although the virt-launcher starts a DHCPv6 server, it does not send Router Advertisements (RAs), so the guest OS never triggers a DHCPv6 solicitation. Static IPv6 addressing through cloud-init is the documented approach in both the link:https://kubevirt.io/user-guide/network/interfaces_and_networks/#masquerade-ipv4-and-ipv6-dual-stack-support[KubeVirt user guide,window=_blank] and the link:https://docs.redhat.com/en/documentation/openshift_container_platform/{ocp-docs-version}/html/virtualization/networking#virt-configuring-masquerade-mode-dual-stack_virt-connecting-vm-to-default-pod-network[OpenShift Virtualization documentation,window=_blank].
 
 The virt-launcher pod uses the internal subnet `fd10:0:2::/120` to route IPv6 traffic between itself and the VM. The VM gets address `fd10:0:2::2/120` and uses `fd10:0:2::1` as the gateway. These are fixed internal addresses determined by the `Network.pod.vmIPv6NetworkCIDR` field and do not appear on the external cluster network.
 
@@ -531,5 +524,5 @@ In this tutorial you learned:
 * xref:static-ip-configuration.adoc[Configuring Static IPs for VMs] -- Detailed cloud-init networkData reference
 * xref:cloud-init-troubleshooting.adoc[Cloud-init Troubleshooting] -- Common cloud-init network issues
 * xref:udn-primary-networks.adoc[UDN Primary Networks] -- Layer 2 primary networks for VMs
-* link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.22/html/virtualization/networking#virt-configuring-masquerade-mode-dual-stack_virt-connecting-vm-to-default-pod-network[OpenShift Virtualization Dual-Stack Masquerade (OCP 4.22),window=_blank]
+* link:https://docs.redhat.com/en/documentation/openshift_container_platform/{ocp-docs-version}/html/virtualization/networking#virt-configuring-masquerade-mode-dual-stack_virt-connecting-vm-to-default-pod-network[OpenShift Virtualization Dual-Stack Masquerade (OCP 4.22),window=_blank]
 * link:https://kubevirt.io/user-guide/network/interfaces_and_networks/#masquerade-ipv4-and-ipv6-dual-stack-support[KubeVirt Dual-Stack Support,window=_blank]

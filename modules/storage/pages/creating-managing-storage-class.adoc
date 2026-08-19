@@ -3,7 +3,7 @@
 
 == Overview
 
-This is a tutorial on StorageClasses for OpenShift Container Platform (OCP). This guide focuses on OCP 4.x (often abbreviated as OCPv4), where the Container Storage Interface (CSI) is the standard for storage provisioning. These concepts also apply directly to OpenShift Virtualization (CNV), where storage classes determine how Virtual Machine disks are provisioned. For more on storage classes, please check out the official OpenShift documentation for https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/storage_apis/storageclass-storage-k8s-io-v1[storage class api] and the https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/storage/using-container-storage-interface-csi[Container Storage Interface].
+This is a tutorial on StorageClasses for OpenShift Container Platform (OCP). This guide focuses on OCP 4.x (often abbreviated as OCPv4), where the Container Storage Interface (CSI) is the standard for storage provisioning. These concepts also apply directly to OpenShift Virtualization (CNV), where storage classes determine how Virtual Machine disks are provisioned. For more on storage classes, please check out the official OpenShift documentation for https://docs.redhat.com/en/documentation/openshift_container_platform/{ocp-docs-version}/html/storage_apis/storageclass-storage-k8s-io-v1[storage class api] and the https://docs.redhat.com/en/documentation/openshift_container_platform/{ocp-docs-version}/html/storage/using-container-storage-interface-csi[Container Storage Interface].
 
 == Storage Class Fundamentals
 In OpenShift, a StorageClass (SC) describes a "class" of storage available to the cluster. It allows administrators to define different tiers of storage (e.g., "fast-ssd", "cheap-hdd") without users needing to know the underlying infrastructure details.
@@ -29,7 +29,6 @@ B. WaitForFirstConsumer (Recommended)
 *  Behavior: The volume creation is delayed until a Pod utilizing that PVC is scheduled.
 *  Advantage: The scheduler sees the Pod needs the PVC. It picks a node for the Pod first (e.g., in Zone B). Then, it triggers the storage provisioner to create the volume in Zone B specifically.
 *  Required For: Local Storage (LVM), HostPath, and Multi-AZ cloud environments.
-
 
 == Reclaim Policies
 This determines the fate of the data when a user deletes their PersistentVolumeClaim (PVC).
@@ -80,7 +79,7 @@ parameters:
   encrypted: "true"
 
 ----  
-OpenShift Documentation: https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/storage/using-container-storage-interface-csi#persistent-storage-csi-ebs
+OpenShift Documentation: https://docs.redhat.com/en/documentation/openshift_container_platform/{ocp-docs-version}/html/storage/using-container-storage-interface-csi#persistent-storage-csi-ebs
 
 Scenario B: Local Storage / LVM (For Databases/Performance)
 Requires the Local Storage Operator or LVM Storage Operator installed.
@@ -119,7 +118,7 @@ mountOptions:
   - nfsvers=4.1
 ----
 
-OpenShift Documentation: https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/storage/persistent-storage-using-local-storage
+OpenShift Documentation: https://docs.redhat.com/en/documentation/openshift_container_platform/{ocp-docs-version}/html/storage/persistent-storage-using-local-storage
 
 == Verification and Troubleshooting Verification Commands
 List Storage Classes:
@@ -153,7 +152,7 @@ spec:
   storageClassName: gp3-fast
 ----
 
-OpenShift documentation: https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/storage/configuring-persistent-storage
+OpenShift documentation: https://docs.redhat.com/en/documentation/openshift_container_platform/{ocp-docs-version}/html/storage/configuring-persistent-storage
 
 == Common Troubleshooting Scenarios
 
@@ -189,5 +188,5 @@ In this tutorial, you learned:
 
 == See Also
 
-* link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/storage/configuring-persistent-storage[OpenShift - Configuring Persistent Storage,window=_blank]
-* link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/storage/using-container-storage-interface-csi[OpenShift - Container Storage Interface,window=_blank]
+* link:https://docs.redhat.com/en/documentation/openshift_container_platform/{ocp-docs-version}/html/storage/configuring-persistent-storage[OpenShift - Configuring Persistent Storage,window=_blank]
+* link:https://docs.redhat.com/en/documentation/openshift_container_platform/{ocp-docs-version}/html/storage/using-container-storage-interface-csi[OpenShift - Container Storage Interface,window=_blank]

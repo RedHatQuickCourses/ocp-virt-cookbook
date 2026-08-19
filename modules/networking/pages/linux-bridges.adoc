@@ -1,11 +1,6 @@
 = Creating a Linux Bridge Secondary Network for Virtual Machines
 :navtitle: Linux Bridges
 
-Versions tested:
-----
-OpenShift 4.20,4.21
-----
-
 A Linux bridge secondary network uses the https://nmstate.io/kubernetes-nmstate/[Kubernetes NMState Operator,_window=blank] to create a new Linux bridge device on the cluster nodes,
 and the https://github.com/k8snetworkplumbingwg/multus-cni[Multus CNI,window=_blank] in conjunction with the https://www.cni.dev/plugins/current/main/bridge/[bridge CNI plugin,_window=blank]
 to connect pods and `VirtualMachines` (VMs) to the bridge.
@@ -23,7 +18,7 @@ NOTE: A Linux bridge `NetworkAttachmentDefinition` is the simplest way to connec
 
 == Prerequisites
 
-* OpenShift 4.20+ cluster with OpenShift Virtualization operator installed
+* OpenShift {ocp-min-version}+ cluster with OpenShift Virtualization operator installed
 * NMState operator installed on the cluster
 * Cluster admin access for creating NodeNetworkConfigurationPolicy and NetworkAttachmentDefinition resources
 * CLI tools installed: `oc`, `virtctl`
@@ -45,7 +40,6 @@ The process is broken down into the following steps:
 The first step is to define the Linux bridge on the cluster nodes using a `NodeNetworkConfigurationPolicy` (`nncp`).
 All `nncp` objects are cluster-scoped, so they do not exist in a namespace.
 You can, however control which nodes that the `nncp` applies to using key-value labels.
-
 
 [IMPORTANT]
 ====
@@ -122,7 +116,6 @@ NOTE: As with `nmstate` objects (which trigger the NMState Operator), `nncp` obj
 
 Once the existence of the Linux bridge interface is confirmed on the node(s), proceed with <<create_net_attach_def,creating a NetworkAttachmentDefinition>>.
 
-
 == Creating a Linux Bridge Network Attachment Definition [[create_net_attach_def]]
 The next step is to create a `NetworkAttachmentDefinition` to provides Layer 2 networking to your pods/VMs.
 The `NetworkAttachmentDefinition` is what allows pods/VMs within a specific project/namespace to connect to a secondary network.
@@ -183,7 +176,7 @@ Each field from the above example is explained below (optional fields are shown 
 ** *`"disableContainerInterface"`* (optional): sets the container network interface (veth peer) state down (defaults to `false`).
 ** *`"portIsolation"`* (optional): whether to set isolation on the host interface. This prevents containers from communicating with each other, enforcing communication only with the host or through the gateway (defaults to `false`).
 
-More example configurations of the Linux bridge CNI plugin (including several examples which are unsupported in OpenShift Virtualization) are available in the https://www.cni.dev/plugins/current/main/bridge/[bridge CNI plugin documentation,window=_blank] as well as the official https://docs.redhat.com/en/documentation/openshift_container_platform/latest/html/virtualization/networking#virt-creating-linux-bridge-nad-cli_virt-connecting-vm-to-linux-bridge[OpenShift Documentation,window=_blank].
+More example configurations of the Linux bridge CNI plugin (including several examples which are unsupported in OpenShift Virtualization) are available in the https://www.cni.dev/plugins/current/main/bridge/[bridge CNI plugin documentation,window=_blank] as well as the official https://docs.redhat.com/en/documentation/openshift_container_platform/{ocp-docs-version}/html/virtualization/networking#virt-creating-linux-bridge-nad-cli_virt-connecting-vm-to-linux-bridge[OpenShift Documentation,window=_blank].
 
 [NOTE]
 ====
@@ -430,7 +423,6 @@ oc get vmi fedora-bridge-demo2 -n bridge-demo -o jsonpath='{.status.interfaces}'
 
 With the second VM running and active, proceed with <<test_secondary_network,Testing>>.
 
-
 == Test the Linux Bridge Secondary Network [[test_secondary_network]]
 
 In our unmodified examples, the Linux bridge secondary network acts as a simple virtual switch, which (when not bridged to a physical node interface) spans across pods, VMs and namespaces within the same node.
@@ -488,6 +480,6 @@ In this tutorial, you learned:
 
 == See Also
 
-* link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/virtualization/networking#virt-connecting-vm-to-linux-bridge_virt-connecting-vm-to-linux-bridge[OpenShift Virtualization - Connecting a VM to a Linux bridge,window=_blank]
+* link:https://docs.redhat.com/en/documentation/openshift_container_platform/{ocp-docs-version}/html/virtualization/networking#virt-connecting-vm-to-linux-bridge_virt-connecting-vm-to-linux-bridge[OpenShift Virtualization - Connecting a VM to a Linux bridge,window=_blank]
 * link:https://nmstate.io/devel/yaml_api.html[NMState API Guide,window=_blank]
 
