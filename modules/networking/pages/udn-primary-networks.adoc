@@ -5,15 +5,9 @@
 
 This tutorial shows you how to create a primary network using User Defined Networks (UDNs) with Layer 2 topology in OpenShift Virtualization. Instead of using the cluster's default network, UDNs let you define custom IP ranges and provide complete network isolation for applications within a specific namespace. This approach is ideal when applications need direct control over IP addressing or require custom networking requirements. The entire setup takes just 5 straightforward steps without requiring additional network attachment definitions.
 
-Versions tested:
-[source,text]
-----
-OpenShift 4.19, 4.20, 4.21
-----
-
 == Prerequisites
 
-* OpenShift 4.19+ cluster with OpenShift Virtualization operator installed
+* OpenShift {ocp-min-version}+ cluster with OpenShift Virtualization operator installed
 * OVN-Kubernetes network plugin (default in OpenShift)
 * Cluster admin access for creating namespaces and UserDefinedNetwork resources
 * CLI tools installed: `oc`, `virtctl`
@@ -151,7 +145,7 @@ EOF
 
 Create a Kubernetes Service to expose the VM's Python HTTP server with a LoadBalancer.
 
-NOTE: Cloud services like AWS automatically deploy a load balancer for this configuration. For bare metal deployments, consider using link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.19/html/ingress_and_load_balancing/load-balancing-with-metallb[MetalLB,window=_blank] as your load balancer.
+NOTE: Cloud services like AWS automatically deploy a load balancer for this configuration. For bare metal deployments, consider using link:https://docs.redhat.com/en/documentation/openshift_container_platform/{ocp-docs-version}/html/ingress_and_load_balancing/load-balancing-with-metallb[MetalLB,window=_blank] as your load balancer.
 
 xref:attachment$udn-primary-networks/fedora-vm-web-service.yaml[Download fedora-vm-web-service.yaml]
 
@@ -249,6 +243,6 @@ In this tutorial, you learned:
 
 == See Also
 
-* link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.19/html/multiple_networks/understanding-multiple-networks[OpenShift - Understanding Multiple Networks,window=_blank]
-* link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.19/html/multiple_networks/primary-networks[Configuring Primary Networks,window=_blank]
+* link:https://docs.redhat.com/en/documentation/openshift_container_platform/{ocp-docs-version}/html/multiple_networks/understanding-multiple-networks[OpenShift - Understanding Multiple Networks,window=_blank]
+* link:https://docs.redhat.com/en/documentation/openshift_container_platform/{ocp-docs-version}/html/multiple_networks/primary-networks[Configuring Primary Networks,window=_blank]
 

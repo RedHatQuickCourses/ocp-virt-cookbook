@@ -1,8 +1,6 @@
 SHELL := /bin/bash
 VENV  := tests/.venv
 PIP   := $(VENV)/bin/pip
-ANSIBLE := $(VENV)/bin/ansible-playbook
-GALAXY  := $(VENV)/bin/ansible-galaxy
 PYTHON  := $(VENV)/bin/python3
 BUILD_DIR := build
 NODE_MODULES := node_modules
@@ -39,11 +37,10 @@ help:
 	@echo "  make review             Review changed .adoc files"
 	@echo "  make review-all         Review all .adoc files"
 	@echo ""
-	@echo "Generate & Run Tests:"
-	@echo "  make generate TUTORIAL= Generate test from tutorial"
-	@echo "  make generate-dry       Preview test generation"
-	@echo "  make test MODULE= NAME= Run a specific test"
-	@echo "  make test-no-cleanup    Run test, keep resources"
+	@echo "Generate & Test:"
+	@echo "  make generate TUTORIAL= Generate attachments from tutorial"
+	@echo "  make generate-all       Generate attachments for all tutorials"
+	@echo "  make test               Generate attachments, lint, and dry-run test"
 	@echo ""
 	@echo "Clean:"
 	@echo "  make clean              Remove virtual environment"
@@ -64,8 +61,7 @@ setup: $(VENV)/bin/activate $(NODE_INSTALLED)
 $(VENV)/bin/activate:
 	python3 -m venv $(VENV)
 	$(PIP) install --upgrade pip
-	$(PIP) install kubernetes ansible yamllint
-	$(GALAXY) collection install -r tests/requirements.yaml
+	$(PIP) install -r tests/requirements.txt
 	@touch $(VENV)/bin/activate
 
 $(NODE_INSTALLED):
@@ -107,14 +103,18 @@ generate: setup
 ifndef TUTORIAL
 	$(error TUTORIAL is required. Example: make generate TUTORIAL=modules/vm-configuration/pages/internal-dns-for-vms.adoc)
 endif
-	$(PYTHON) tests/generate-test.py $(if $(DRY_RUN),--dry-run) $(if $(FORCE),--force) $(TUTORIAL)
+	$(PYTHON) tests/generate-attachments.py $(if $(DRY_RUN),--dry-run) $(if $(FORCE),--force) $(TUTORIAL)
+
+.PHONY: generate-all
+generate-all: setup
+	$(PYTHON) tests/generate-attachments.py --all
 
 .PHONY: generate-dry
 generate-dry: setup
 ifndef TUTORIAL
 	$(error TUTORIAL is required. Example: make generate-dry TUTORIAL=modules/vm-configuration/pages/internal-dns-for-vms.adoc)
 endif
-	$(PYTHON) tests/generate-test.py --dry-run $(TUTORIAL)
+	$(PYTHON) tests/generate-attachments.py --dry-run $(TUTORIAL)
 
 # ── Documentation ───────────────────────────────────────────────────
 
@@ -218,28 +218,9 @@ check-auth:
 # ── Test ────────────────────────────────────────────────────────────
 
 .PHONY: test
-test: setup check-auth
-ifndef MODULE
-	$(error MODULE is required. Example: make test MODULE=vm-configuration NAME=internal-dns-for-vms)
-endif
-ifndef NAME
-	$(error NAME is required. Example: make test MODULE=vm-configuration NAME=internal-dns-for-vms)
-endif
-	@$(ANSIBLE) tests/$(MODULE)/$(NAME)/test-$(NAME).yaml $(EXTRA_ARGS) \
-		&& echo "" && echo "PASS: $(MODULE)/$(NAME)" \
-		|| { echo "" && echo "FAIL: $(MODULE)/$(NAME)"; exit 1; }
-
-.PHONY: test-no-cleanup
-test-no-cleanup: setup check-auth
-ifndef MODULE
-	$(error MODULE is required. Example: make test-no-cleanup MODULE=vm-configuration NAME=internal-dns-for-vms)
-endif
-ifndef NAME
-	$(error NAME is required. Example: make test-no-cleanup MODULE=vm-configuration NAME=internal-dns-for-vms)
-endif
-	@$(ANSIBLE) tests/$(MODULE)/$(NAME)/test-$(NAME).yaml -e cleanup=false $(EXTRA_ARGS) \
-		&& echo "" && echo "PASS: $(MODULE)/$(NAME)" \
-		|| { echo "" && echo "FAIL: $(MODULE)/$(NAME)"; exit 1; }
+test: generate-all test-manifests test-manifests-dry
+	@echo ""
+	@echo "[OK] All tests passed (attachments generated, YAML valid, dry-run OK)"
 
 # ── Review ──────────────────────────────────────────────────────────
 

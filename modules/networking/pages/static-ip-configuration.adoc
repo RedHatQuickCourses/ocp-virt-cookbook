@@ -51,7 +51,7 @@ When to prefer DHCP or OVN-Kubernetes IPAM::
 
 == Prerequisites
 
-* OpenShift 4.18+ with OpenShift Virtualization operator installed
+* OpenShift {ocp-min-version}+ with OpenShift Virtualization operator installed
 * CLI tools: `oc`, `virtctl`
 * At least one configured network (primary pod network)
 * For secondary network scenarios: a NetworkAttachmentDefinition (NAD) configured (see xref:networking:localnet-vlan.adoc[Localnet VLAN Tutorial])
@@ -561,7 +561,7 @@ NOTE: MAC addresses starting with `02:` are in the locally administered range an
 When a VM with a static IP is live-migrated to another node, the behavior depends on the network type:
 
 * **Bridge-based secondary networks (localnet, Linux bridge)**: The VM retains its MAC address and IP during migration. The network fabric must support MAC mobility (for example, the switch must update its MAC address table). Static IPs assigned via cloud-init, DHCP reservations, or `nmcli` persist across migrations.
-* **SR-IOV networks**: Live migration with SR-IOV requires additional configuration and may not preserve the same network path. Consult the link:https://docs.openshift.com/container-platform/latest/virt/live_migration/virt-about-live-migration.html[OpenShift Virtualization live migration documentation,window=_blank] for details.
+* **SR-IOV networks**: Live migration with SR-IOV requires additional configuration and may not preserve the same network path. Consult the link:https://docs.openshift.com/container-platform/{ocp-docs-version}/virt/live_migration/virt-about-live-migration.html[OpenShift Virtualization live migration documentation,window=_blank] for details.
 
 The primary pod network interface receives a new pod IP after migration, but this is transparent to the guest OS when using masquerade mode.
 
@@ -724,7 +724,7 @@ The following snippet configures a static IP on a secondary network interface id
 
 === Injecting the Answer File
 
-Store the `unattend.xml` in a ConfigMap and reference it in the VM spec as a `sysprep` volume. For a complete walkthrough of Windows VM deployment with Sysprep, see the link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.18/html/virtualization/creating-a-virtual-machine[OpenShift documentation on creating Windows VMs with Sysprep,window=_blank].
+Store the `unattend.xml` in a ConfigMap and reference it in the VM spec as a `sysprep` volume. For a complete walkthrough of Windows VM deployment with Sysprep, see the link:https://docs.redhat.com/en/documentation/openshift_container_platform/{ocp-docs-version}/html/virtualization/managing-vms[OpenShift documentation on creating Windows VMs with Sysprep,window=_blank].
 
 Create a ConfigMap with the answer file:
 
@@ -926,9 +926,9 @@ In this tutorial, you learned:
 * link:https://cloudinit.readthedocs.io/en/latest/reference/datasources/nocloud.html[Cloud-init NoCloud Datasource,window=_blank]
 * link:https://kubevirt.io/user-guide/user_workloads/startup_scripts/[KubeVirt Startup Scripts (Cloud-init),window=_blank]
 * link:https://kubevirt.io/user-guide/network/interfaces_and_networks/[KubeVirt Network Interfaces and Networks,window=_blank]
-* link:https://docs.openshift.com/container-platform/latest/virt/vm_networking/virt-connecting-vm-to-default-pod-network.html[Connecting a VM to the Default Pod Network,window=_blank]
-* link:https://docs.openshift.com/container-platform/latest/virt/about_virt/about-virt.html[OpenShift Virtualization Documentation,window=_blank]
-* link:https://docs.openshift.com/container-platform/latest/virt/live_migration/virt-about-live-migration.html[OpenShift Virtualization Live Migration,window=_blank]
+* link:https://docs.openshift.com/container-platform/{ocp-docs-version}/virt/vm_networking/virt-connecting-vm-to-default-pod-network.html[Connecting a VM to the Default Pod Network,window=_blank]
+* link:https://docs.openshift.com/container-platform/{ocp-docs-version}/virt/about_virt/about-virt.html[OpenShift Virtualization Documentation,window=_blank]
+* link:https://docs.openshift.com/container-platform/{ocp-docs-version}/virt/live_migration/virt-about-live-migration.html[OpenShift Virtualization Live Migration,window=_blank]
 * link:https://learn.microsoft.com/en-us/windows-hardware/manufacture/desktop/automate-windows-setup[Microsoft Sysprep and Unattend Reference,window=_blank]
 * link:https://netplan.readthedocs.io/en/stable/netplan-yaml/[Netplan YAML Configuration Reference,window=_blank]
 * xref:cloud-init-troubleshooting.adoc[Cloud-init Troubleshooting Guide]
