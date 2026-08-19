@@ -107,6 +107,14 @@ def _remove_callout_markers(block: str) -> str:
     return "\n".join(cleaned)
 
 
+def _clean_yaml_content(yaml_text: str) -> str:
+    """Strip AsciiDoc artifacts from extracted YAML before writing."""
+    yaml_text = yaml_text.replace("\\$", "$")
+    lines = yaml_text.split("\n")
+    lines = [line.rstrip() for line in lines]
+    return "\n".join(lines).rstrip("\n") + "\n"
+
+
 # ── Tutorial parser ──────────────────────────────────────────────────
 
 
@@ -172,7 +180,7 @@ def parse_tutorial(adoc_path: str) -> tuple[str, list[Resource]]:
                     api_version=f.get("api_version", "v1"),
                     name=f["name"],
                     namespace=f.get("namespace"),
-                    yaml_content=y,
+                    yaml_content=_clean_yaml_content(y),
                     filename=xref or f"{f['kind'].lower()}-{f['name']}.yaml",
                 )
             )

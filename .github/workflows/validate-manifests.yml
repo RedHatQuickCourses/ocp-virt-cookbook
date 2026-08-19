@@ -1,0 +1,49 @@
+name: Validate manifests
+
+on:
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+    paths-ignore:
+      - ".gitignore"
+      - "README.md"
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+
+      - name: Install pnpm
+        run: npm install -g pnpm
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Python dependencies
+        run: pip install -r tests/requirements.txt
+
+      - name: Build site
+        run: pnpm run build
+
+      - name: Generate attachments
+        run: python tests/generate-attachments.py --all
+
+      - name: Lint YAML manifests
+        run: yamllint modules/

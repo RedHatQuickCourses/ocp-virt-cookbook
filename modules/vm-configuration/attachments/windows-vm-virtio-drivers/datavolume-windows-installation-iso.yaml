@@ -1,0 +1,15 @@
+apiVersion: cdi.kubevirt.io/v1beta1
+kind: DataVolume
+metadata:
+  name: windows-installation-iso
+  annotations:
+    cdi.kubevirt.io/storage.bind.immediate.requested: "true"
+spec:
+  storage:
+    resources:
+      requests:
+        storage: 6Gi
+    accessModes:
+      - ReadWriteOnce
+  source:
+    upload: {}

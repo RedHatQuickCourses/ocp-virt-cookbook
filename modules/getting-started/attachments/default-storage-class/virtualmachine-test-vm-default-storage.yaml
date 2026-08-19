@@ -1,0 +1,43 @@
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: test-vm-default-storage
+  namespace: default
+spec:
+  runStrategy: Always
+  dataVolumeTemplates:
+  - metadata:
+      name: test-vm-disk
+    spec:
+      pvc:
+        accessModes:
+        - ReadWriteOnce
+        resources:
+          requests:
+            storage: 10Gi
+      sourceRef:
+        kind: DataSource
+        name: fedora
+        namespace: openshift-virtualization-os-images
+  template:
+    metadata:
+      labels:
+        kubevirt.io/vm: test-vm-default-storage
+    spec:
+      domain:
+        devices:
+          disks:
+          - name: datavolumedisk
+            disk:
+              bus: virtio
+        resources:
+          requests:
+            memory: 1Gi
+            cpu: 1
+      networks:
+      - name: default
+        pod: {}
+      volumes:
+      - name: datavolumedisk
+        dataVolume:
+          name: test-vm-disk
