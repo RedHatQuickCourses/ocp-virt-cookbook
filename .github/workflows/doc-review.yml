@@ -36,3 +36,42 @@ jobs:
         env:
           FILES: ${{ steps.changed.outputs.files }}
         run: bash scripts/review-docs.sh $FILES
+
+      - name: Check for companion attachments
+        if: steps.changed.outputs.empty == 'false'
+        env:
+          FILES: ${{ steps.changed.outputs.files }}
+        run: |
+          missing=()
+          for file in $FILES; do
+            # Only check tutorial pages, skip index.adoc and nav.adoc
+            if [[ ! "$file" =~ modules/([^/]+)/pages/([^/]+)\.adoc$ ]]; then
+              continue
+            fi
+            module="${BASH_REMATCH[1]}"
+            tutorial="${BASH_REMATCH[2]}"
+            if [ "$tutorial" = "index" ] || [ "$tutorial" = "nav" ]; then
+              continue
+            fi
+
+            # Check if tutorial has manifests (heredocs or xref:attachment$)
+            if grep -qE 'oc\s+(apply|create)\s+-f\s+-\s*<<|xref:attachment\$' "$file"; then
+              att_dir="modules/$module/attachments/$tutorial"
+              if [ ! -d "$att_dir" ] || [ -z "$(ls -A "$att_dir" 2>/dev/null)" ]; then
+                missing+=("$module/$tutorial")
+                echo "::warning file=$file::Missing attachments for $module/$tutorial. Run: make generate TUTORIAL=$file"
+              fi
+            fi
+          done
+
+          if [ ${#missing[@]} -gt 0 ]; then
+            echo "## Missing Attachments" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "The following tutorials have manifests but no generated attachment files:" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            for t in "${missing[@]}"; do
+              echo "- \`$t\`" >> $GITHUB_STEP_SUMMARY
+            done
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Run \`make generate-all\` to generate them." >> $GITHUB_STEP_SUMMARY
+          fi
