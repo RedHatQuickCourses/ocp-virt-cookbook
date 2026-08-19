@@ -1,0 +1,15 @@
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: web-vm-passthrough
+  namespace: ingress-demo
+spec:
+  to:
+    kind: Service
+    name: web-vm-svc
+    weight: 100
+  port:
+    targetPort: 443
+  tls:
+    termination: passthrough
+  wildcardPolicy: None

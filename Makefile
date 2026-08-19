@@ -197,11 +197,33 @@ test-manifests: setup
 .PHONY: test-manifests-dry
 test-manifests-dry: check-auth
 	@echo "Testing manifests with oc dry-run..."
-	@find modules -type f \( -name "*.yaml" -o -name "*.yml" \) | while read file; do \
-		echo "Testing $$file..."; \
-		oc apply --dry-run=client -f "$$file" || exit 1; \
-	done
-	@echo "[OK] All manifests passed dry-run"
+	@tmpdir=$$(mktemp -d); \
+	for file in $$(find modules -type f \( -name "*.yaml" -o -name "*.yml" \) | sort); do \
+		result=$$(oc apply --dry-run=client -f "$$file" 2>&1); \
+		rc=$$?; \
+		if [ $$rc -eq 0 ]; then \
+			echo pass >> "$$tmpdir/results"; \
+		elif echo "$$result" | grep -q "no matches for kind\|cannot use generate name"; then \
+			echo "[skip] $$file (CRD not installed or generateName)"; \
+			echo skip >> "$$tmpdir/results"; \
+		else \
+			echo "[FAIL] $$file"; \
+			echo "  $$result" | head -2; \
+			echo fail >> "$$tmpdir/results"; \
+		fi; \
+	done; \
+	PASS=$$(grep -cx pass "$$tmpdir/results" || true); \
+	FAIL=$$(grep -cx fail "$$tmpdir/results" || true); \
+	SKIP=$$(grep -cx skip "$$tmpdir/results" || true); \
+	PASS=$${PASS:-0}; FAIL=$${FAIL:-0}; SKIP=$${SKIP:-0}; \
+	rm -rf "$$tmpdir"; \
+	echo ""; \
+	if [ "$$FAIL" -gt 0 ]; then \
+		echo "FAIL: $$FAIL manifest(s) failed dry-run ($$PASS passed, $$SKIP skipped)"; \
+		exit 1; \
+	else \
+		echo "[OK] All manifests passed dry-run ($$PASS passed, $$SKIP skipped — missing CRDs)"; \
+	fi
 
 # ── Auth check ──────────────────────────────────────────────────────
 
