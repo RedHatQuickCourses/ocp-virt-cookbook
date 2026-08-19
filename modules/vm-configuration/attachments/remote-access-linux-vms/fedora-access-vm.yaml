@@ -5,9 +5,7 @@ metadata:
   namespace: vm-access-demo
 spec:
   dataVolumeTemplates:
-    - apiVersion: cdi.kubevirt.io/v1beta1
-      kind: DataVolume
-      metadata:
+    - metadata:
         name: fedora-access-vm-disk
       spec:
         sourceRef:
@@ -19,30 +17,25 @@ spec:
             requests:
               storage: 30Gi
   runStrategy: RerunOnFailure
+  instancetype:
+    name: u1.large
+  preference:
+    name: fedora
   template:
     metadata:
       labels:
         kubevirt.io/domain: fedora-access-vm
     spec:
       domain:
-        cpu:
-          cores: 2
         devices:
           disks:
-            - disk:
-                bus: virtio
+            - disk: {}
               name: rootdisk
-            - disk:
-                bus: virtio
+            - disk: {}
               name: cloudinitdisk
           interfaces:
             - masquerade: {}
               name: default
-          rng: {}
-        machine:
-          type: pc-q35-rhel9.4.0
-        memory:
-          guest: 4Gi
       networks:
         - name: default
           pod: {}
@@ -55,7 +48,8 @@ spec:
               #cloud-config
               user: fedora
               password: fedora123
-              chpasswd: { expire: false }
+              chpasswd:
+                expire: false
               ssh_pwauth: true
               ssh_authorized_keys:
                 - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC... your-public-key-here

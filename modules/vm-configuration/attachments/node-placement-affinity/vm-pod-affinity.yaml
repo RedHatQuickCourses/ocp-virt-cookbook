@@ -5,6 +5,10 @@ metadata:
   namespace: vm-placement
 spec:
   runStrategy: Manual
+  instancetype:
+    name: u1.large
+  preference:
+    name: fedora
   template:
     metadata:
       labels:
@@ -14,34 +18,29 @@ spec:
       affinity:
         podAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
-          - labelSelector:
-              matchExpressions:
-              - key: app
-                operator: In
-                values:
-                - database
-            topologyKey: kubernetes.io/hostname
+            - labelSelector:
+                matchExpressions:
+                  - key: app
+                    operator: In
+                    values:
+                      - database
+              topologyKey: kubernetes.io/hostname
       domain:
-        cpu:
-          cores: 2
-        memory:
-          guest: 2Gi
         devices:
           disks:
-          - name: rootdisk
-            disk:
-              bus: virtio
-          - name: cloudinitdisk
-            disk:
-              bus: virtio
+            - name: rootdisk
+              disk: {}
+            - name: cloudinitdisk
+              disk: {}
       volumes:
-      - name: rootdisk
-        containerDisk:
-          image: quay.io/containerdisks/fedora:43
-      - name: cloudinitdisk
-        cloudInitNoCloud:
-          userData: |
-            #cloud-config
-            user: fedora
-            password: fedora
-            chpasswd: { expire: False }
+        - name: rootdisk
+          containerDisk:
+            image: quay.io/containerdisks/fedora:43
+        - name: cloudinitdisk
+          cloudInitNoCloud:
+            userData: |
+              #cloud-config
+              user: fedora
+              password: fedora
+              chpasswd:
+                expire: false

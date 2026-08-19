@@ -67,9 +67,7 @@ metadata:
   namespace: vm-access-demo
 spec:
   dataVolumeTemplates:
-    - apiVersion: cdi.kubevirt.io/v1beta1
-      kind: DataVolume
-      metadata:
+    - metadata:
         name: fedora-access-vm-disk
       spec:
         sourceRef:
@@ -81,30 +79,25 @@ spec:
             requests:
               storage: 30Gi
   runStrategy: RerunOnFailure
+  instancetype:
+    name: u1.large
+  preference:
+    name: fedora
   template:
     metadata:
       labels:
         kubevirt.io/domain: fedora-access-vm
     spec:
       domain:
-        cpu:
-          cores: 2
         devices:
           disks:
-            - disk:
-                bus: virtio
+            - disk: {}
               name: rootdisk
-            - disk:
-                bus: virtio
+            - disk: {}
               name: cloudinitdisk
           interfaces:
             - masquerade: {}
               name: default
-          rng: {}
-        machine:
-          type: pc-q35-rhel9.4.0
-        memory:
-          guest: 4Gi
       networks:
         - name: default
           pod: {}
@@ -253,7 +246,6 @@ spec:
     - protocol: TCP
       port: 22
       targetPort: 22
-      nodePort: 30022
 ----
 
 Apply the service:
@@ -270,20 +262,23 @@ oc apply -f fedora-ssh-nodeport.yaml
 oc get svc fedora-ssh-nodeport -n vm-access-demo
 ----
 
+Note the assigned NodePort in the output (will be in the range 30000-32767).
+
 === Connect via SSH
 
-Get your cluster node IP:
+Get your cluster node IP and the assigned NodePort:
 
 [source,bash,role=execute]
 ----
 oc get nodes -o wide
+oc get svc fedora-ssh-nodeport -n vm-access-demo -o jsonpath='{.spec.ports[0].nodePort}'
 ----
 
 Connect using the NodePort:
 
 [source,bash,role=execute]
 ----
-ssh fedora@<node-ip> -p 30022
+ssh fedora@<node-ip> -p <nodeport>
 ----
 
 === When to Use
@@ -371,9 +366,7 @@ metadata:
   namespace: vm-access-demo
 spec:
   dataVolumeTemplates:
-    - apiVersion: cdi.kubevirt.io/v1beta1
-      kind: DataVolume
-      metadata:
+    - metadata:
         name: fedora-vlan-vm-disk
       spec:
         sourceRef:
@@ -385,32 +378,27 @@ spec:
             requests:
               storage: 30Gi
   runStrategy: RerunOnFailure
+  instancetype:
+    name: u1.large
+  preference:
+    name: fedora
   template:
     metadata:
       labels:
         kubevirt.io/domain: fedora-vlan-vm
     spec:
       domain:
-        cpu:
-          cores: 2
         devices:
           disks:
-            - disk:
-                bus: virtio
+            - disk: {}
               name: rootdisk
-            - disk:
-                bus: virtio
+            - disk: {}
               name: cloudinitdisk
           interfaces:
             - masquerade: {}
               name: default
             - bridge: {}
               name: vlan-network
-          rng: {}
-        machine:
-          type: pc-q35-rhel9.4.0
-        memory:
-          guest: 4Gi
       networks:
         - name: default
           pod: {}
@@ -584,7 +572,7 @@ For troubleshooting of all access methods, see xref:remote-access-linux-troubles
 
 **Problem**: SSH service not running or authentication failure.
 
-**Solution**: 
+**Solution**:
 
 * Verify SSH service is running in the VM
 * Check that SSH keys are properly configured
