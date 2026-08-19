@@ -1,0 +1,26 @@
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: multi-storage-vm
+spec:
+  instancetype:
+    name: u1.small
+  preference:
+    name: fedora
+  runStrategy: Halted
+  template:
+    spec:
+      domain:
+        devices:
+          disks:
+          - disk: {}
+            name: boot-disk
+          - disk: {}
+            name: shared-data
+      volumes:
+      - name: boot-disk
+        persistentVolumeClaim:
+          claimName: vm-boot-rbd
+      - name: shared-data
+        persistentVolumeClaim:
+          claimName: vm-shared-cephfs
