@@ -16,12 +16,6 @@ This tutorial covers creating, managing, and restoring VM snapshots in OpenShift
 * How to restore a VM from a snapshot
 * Storage requirements and considerations for snapshots
 
-Versions tested:
-[source,text]
-----
-OpenShift 4.20
-----
-
 == When to Use Snapshots
 
 Snapshots map onto operational procedures that most virtualization administrators already follow. Common uses:
@@ -36,7 +30,7 @@ IMPORTANT: A snapshot is not a backup. Snapshots are stored on the same storage 
 
 == Prerequisites
 
-* OpenShift 4.18+ with OpenShift Virtualization installed
+* OpenShift {ocp-min-version}+ with OpenShift Virtualization installed
 * A running or stopped VM to snapshot
 * Storage class that supports CSI snapshots
 * `oc` and `virtctl` CLI tools installed
@@ -341,7 +335,7 @@ vmsnapshot-cd166db8-00be-4aa9-972e-dea669527bfd-volume-rootdisk   true         d
 
 Restoring a VM from a snapshot reverts the VM's disks to the state captured in the snapshot.
 
-IMPORTANT: The VM must be stopped before restoring from a snapshot. You can automate this by setting `targetReadinessPolicy: StopTarget` in the VirtualMachineRestore spec. Other options include `FailImmediate` (default), `WaitGracePeriod` (waits up to 5 minutes), and `WaitEventually` (waits indefinitely). See the link:https://docs.redhat.com/en/documentation/openshift_container_platform/latest/html/virtualization/backup-and-restore[official documentation,window=_blank] for details.
+IMPORTANT: The VM must be stopped before restoring from a snapshot. You can automate this by setting `targetReadinessPolicy: StopTarget` in the VirtualMachineRestore spec. Other options include `FailImmediate` (default), `WaitGracePeriod` (waits up to 5 minutes), and `WaitEventually` (waits indefinitely). See the link:https://docs.redhat.com/en/documentation/openshift_container_platform/{ocp-docs-version}/html/virtualization/backup-and-restore[official documentation,window=_blank] for details.
 
 === Restore via Web Console
 
@@ -601,5 +595,5 @@ In this tutorial you learned:
 * xref:getting-started:virtctl-basics.adoc[] - CLI commands for VM management
 * xref:custom-golden-images.adoc[] - Creating reusable VM images
 * xref:cloning-vms.adoc[] - Clone VMs, including creating clones from snapshots
-* link:https://docs.redhat.com/en/documentation/openshift_container_platform/latest/html/virtualization/backup-and-restore[Backup and Restore by Using VM Snapshots - Red Hat Documentation,window=_blank]
+* link:https://docs.redhat.com/en/documentation/openshift_container_platform/{ocp-docs-version}/html/virtualization/backup-and-restore[Backup and Restore by Using VM Snapshots - Red Hat Documentation,window=_blank]
 * link:https://kubevirt.io/user-guide/storage/snapshot_restore_api/[Snapshot Restore API - KubeVirt User Guide,window=_blank]

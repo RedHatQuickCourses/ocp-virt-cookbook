@@ -1,54 +1,49 @@
-# Tutorial Tests
+# Tutorial Test Framework
 
-Ansible playbooks to test cookbook tutorials against a live OpenShift cluster.
+Validates tutorial YAML manifests by extracting them from `.adoc` files and
+running `oc apply --dry-run=client` against an OpenShift cluster.
 
-## Prerequisites
-
-- OpenShift cluster with Virtualization operator installed
-- `oc` CLI authenticated to the cluster
-- Ansible with kubernetes.core collection
-
-## Setup
+## Quick start
 
 ```bash
-# Install required collections
-ansible-galaxy collection install -r requirements.yaml
+make setup               # create venv, install deps
+oc login <cluster>       # authenticate to the cluster
+
+make test                # generate attachments, yamllint, dry-run test
 ```
 
-## Running Tests
+## How it works
 
-```bash
-# Run a specific tutorial test
-cd tests/networking/cudn-localnet-vlan
-ansible-playbook test-cudn-localnet-vlan.yaml
+1. **`make generate-all`** — the parser reads each tutorial `.adoc` file, extracts
+   Kubernetes manifests (heredoc blocks, attachment-referenced YAML, namespace
+   creation commands), and writes them as individual files under
+   `modules/<module>/attachments/<tutorial>/`.
 
-# Override variables
-ansible-playbook test-cudn-localnet-vlan.yaml -e physical_interface=eth1
+2. **`make test-manifests`** — runs `yamllint` on all YAML files under `modules/`.
 
-# Skip cleanup to inspect resources
-ansible-playbook test-cudn-localnet-vlan.yaml -e cleanup=false
-```
+3. **`make test-manifests-dry`** — runs `oc apply --dry-run=client -f` on every
+   YAML file to validate against the cluster's API server.
 
-## Test Structure
+`make test` runs all three steps in sequence.
 
-Each tutorial test follows this structure:
+## Architecture
 
 ```
 tests/
-└── <module>/
-    └── <tutorial-name>/
-        ├── test-<tutorial-name>.yaml   # Main playbook
-        ├── vars.yaml                    # Default variables
-        └── manifests/                   # YAML manifests
-            ├── resource1.yaml
-            └── resource2.yaml
+  parser.py              # AsciiDoc parser — extracts Kubernetes manifests
+  generate-attachments.py # CLI — generates attachment YAML files
+  requirements.txt       # Python dependencies (pyyaml, yamllint)
+  README.md              # This file
 ```
 
-## Writing Tests
+## Individual targets
 
-1. Create folder matching tutorial name
-2. Extract manifests from tutorial to `manifests/`
-3. Create playbook that:
-   - Applies manifests in order
-   - Verifies resources are created correctly
-   - Cleans up in `always` block
+```bash
+make generate TUTORIAL=modules/vm-configuration/pages/internal-dns-for-vms.adoc
+make generate-all       # all tutorials
+make generate-dry TUTORIAL=...  # preview without writing
+
+make test-manifests     # yamllint validation
+make test-manifests-dry # oc apply --dry-run=client
+make test               # all of the above
+```
