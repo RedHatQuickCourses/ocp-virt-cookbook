@@ -1,0 +1,19 @@
+apiVersion: forklift.konveyor.io/v1beta1
+kind: StorageMap
+metadata:
+  name: vmware-storagemap
+  namespace: openshift-mtv
+spec:
+  map:
+    - source:
+        id: datastore-11
+      destination:
+        storageClass: gp3-csi
+        accessMode: ReadWriteOnce
+  provider:
+    source:
+      name: vsphere-provider
+      namespace: openshift-mtv
+    destination:
+      name: host
+      namespace: openshift-mtv
