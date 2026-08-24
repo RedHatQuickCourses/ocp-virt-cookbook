@@ -1,0 +1,12 @@
+apiVersion: migrations.kubevirt.io/v1alpha1
+kind: MigrationPolicy
+metadata:
+  name: fast-tier-policy
+spec:
+  selectors:
+    virtualMachineInstanceSelector:
+      migration-tier: fast
+  allowAutoConverge: true
+  bandwidthPerMigration: 128Mi
+  completionTimeoutPerGiB: 400
+  allowPostCopy: false
