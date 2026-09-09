@@ -1,0 +1,1182 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Enabling Nested Virtualization for Development and Testing :: OpenShift Virtualization cookbook</title>
+    <link rel="prev" href="vm-monitoring-metrics.html">
+    <link rel="next" href="../vm-lifecycle/index.html">
+    <meta name="generator" content="Antora 3.1.3">
+    <link rel="stylesheet" href="../../../_/css/site.css">
+    <script>var uiRootPath = '../../../_'</script>
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://www.redhat.com" target="_blank"><img src="../../../_/img/redhat-logo.png" height="40px" alt="Red Hat"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="../../..">OpenShift Virtualization cookbook</a>
+      <div class="navbar-item search hide-for-print">
+        <div id="search-field" class="field">
+          <input id="search-input" type="text" placeholder="Search the docs">
+        </div>
+      </div>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues" target="_blank">Report Issues</a>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="ocp-virt-cookbook" data-version="1">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="../index.html">OpenShift Virtualization cookbook</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../index.html">Introduction</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../getting-started/index.html">Getting Started</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/vm-quick-start.html">Quick Start</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/prerequisites.html">Prerequisites</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/architecture-overview.html">Architecture Overview</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/install-openshift-virtualization.html">Install OpenShift Virtualization</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/installing-qemu-guest-agent.html">Installing QEMU Guest Agent</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/default-storage-class.html">Storage Setup</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/create-vm-web-console.html">Create VM from Web Console</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/create-vm-cli-yaml.html">Create VM from CLI</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/vm-lifecycle-states.html">VM Lifecycle States</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/virtctl-basics.html">Virtctl Basics</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/cloud-init-fundamentals.html">Cloud-init Fundamentals</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../storage/index.html">Storage Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/lvm-operator.html">LVM Operator Installation</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/lvm-troubleshooting.html">LVM Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/odf-ceph-storage.html">ODF/Ceph Storage</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/hostpath-provisioner.html">HostPath Provisioner</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/creating-managing-storage-class.html">Creating and Managing Storage Classes</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/multi-disk-configuration.html">Multi-Disk VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/expanding-vm-disk-size.html">Expanding VM Disk Size</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/cdi-operations.html">CDI Operations</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/disk-io-tuning.html">Disk I/O Tuning</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../networking/index.html">Networking Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/static-ip-configuration.html">Static IP Configuration</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/cloud-init-troubleshooting.html">Cloud-init Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/udn-primary-networks.html">UDN Primary Networks</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/localnet-secondary.html">Localnet Secondary Networks with CUDN</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/localnet-vlan.html">Localnet Secondary Networks with VLAN using NAD</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/cudn-localnet-vlan.html">Localnet VLAN with CUDN</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/layer2-secondary.html">Layer 2 Secondary Networks</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/linux-bridges.html">Linux Bridges</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/sriov-secondary.html">SR-IOV Secondary Networks</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/network-policies-vms.html">Network Policies for VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/metallb-loadbalancer.html">MetalLB Load Balancer for VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/dual-stack-vms.html">Dual-Stack IPv4/IPv6 VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/vm-ingress-routes.html">VM Ingress and Routes</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/ovs-bridge-troubleshooting.html">Troubleshooting Localnet Networks</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../vm-configuration/index.html">Virtual Machine Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/internal-dns-for-vms.html">Internal DNS for VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/remote-access-linux-vms.html">Remote Access to Linux VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/remote-access-linux-troubleshooting.html">Remote Access to Linux VMs Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/remote-access-windows-vms.html">Remote Access to Windows VMs via RDP</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/ssh-access-windows-vms.html">Remote Access to Windows VMs via SSH</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/windows-vm-virtio-drivers.html">Windows VMs with VirtIO Drivers</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/legacy-windows-versions.html">Legacy Windows Versions</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/infrastructure-node-placement.html">Infrastructure Node Placement</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/node-placement-affinity.html">Node Placement and Affinity</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/hotplug-volumes-interfaces.html">Hotplug Volumes and Interfaces</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/vm-templates.html">Virtual Machine Templates</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/instancetype-preference.html">Instancetype and Preference</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="index.html">VM Performance Tuning</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="resource-limits-qos.html">Resource Limits and QoS</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="cpu-pinning.html">Dedicated CPU Placement</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="numa-hugepages.html">NUMA and Hugepages</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="realtime-vms.html">Real-Time VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="vm-monitoring-metrics.html">VM Monitoring and Metrics</a>
+  </li>
+  <li class="nav-item is-current-page" data-depth="2">
+    <a class="nav-link" href="nested-virtualization.html">Nested Virtualization</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../vm-lifecycle/index.html">VM Lifecycle Management</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/import-qcow2-boot-volume.html">Import qcow2 Boot Volume</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/custom-golden-images.html">Custom Golden Images</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/windows-golden-images.html">Windows Golden Images</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/golden-images-troubleshooting.html">Golden Images Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/cloning-vms.html">Cloning VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/vm-snapshots.html">VM Snapshots</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/boot-order-boot-sources.html">VM Boot Order and Boot Sources</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../manifests/index.html">Manifests</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../api/index.html">API Guide</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../api/api-component-overview.html">API Component Overview</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../agentic-vm-management/index.html">Agentic VM Management</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/getting-started.html">Getting Started with rh-virt</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/natural-language-vm-create.html">Natural Language VM Creation</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/ai-vm-lifecycle.html">AI VM Lifecycle Operations</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/vm-clone.html">Cloning VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/ai-vm-snapshot-management.html">VM Snapshot Management</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/ai-skill-chaining.html">Day-2 Skill Chaining</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/ai-vm-rebalance.html">VM Rebalancing and Live Migration</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../appendix/glossary.html">Glossary</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">OpenShift Virtualization cookbook</span>
+    <span class="version">1</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <a class="title" href="../index.html">OpenShift Virtualization cookbook</a>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">1</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">OpenShift Virtualization cookbook</a></li>
+    <li><a href="index.html">VM Performance Tuning</a></li>
+    <li><a href="nested-virtualization.html">Nested Virtualization</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">Enabling Nested Virtualization for Development and Testing</h1>
+<div class="sect1">
+<h2 id="_overview"><a class="anchor" href="#_overview"></a>Overview</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Nested virtualization lets a virtual machine run its own hypervisor, which in turn runs guest VMs. On OpenShift Virtualization, this requires the host node kernel to expose the hardware virtualization extension (<code>vmx</code> on Intel or <code>svm</code> on AMD) to the VM&#8217;s vCPUs.</p>
+</div>
+<div class="paragraph">
+<p>Use nested virtualization when you need:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>A VM that runs Kubernetes-in-VM or OpenShift-in-VM (dev/test cluster-in-a-VM workflows)</p>
+</li>
+<li>
+<p>A lab environment that provisions its own VMs inside the lab VM</p>
+</li>
+<li>
+<p>Software under test that requires <code>/dev/kvm</code> to be present</p>
+</li>
+<li>
+<p>Training environments where each participant gets a self-contained VM that can itself run VMs</p>
+</li>
+</ul>
+</div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+Nested virtualization is not supported for production workloads. The additional hypervisor layer adds CPU overhead, disables some host-level performance features, and is not covered by Red Hat support SLAs. Use it only for development and testing.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_what_you_will_learn"><a class="anchor" href="#_what_you_will_learn"></a>What You Will Learn</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p>How to check whether cluster nodes already support nested virtualization</p>
+</li>
+<li>
+<p>How to enable nested virtualization cluster-wide via a <code>MachineConfig</code> resource</p>
+</li>
+<li>
+<p>How to label nodes for scheduling nested virtualization workloads</p>
+</li>
+<li>
+<p>How to configure a VM to expose the virtualization extension to its guest OS</p>
+</li>
+<li>
+<p>How to verify that the VM can use KVM</p>
+</li>
+<li>
+<p>Performance characteristics and limitations of nested virtualization</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_prerequisites"><a class="anchor" href="#_prerequisites"></a>Prerequisites</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p>OpenShift 4.18+ with OpenShift Virtualization operator installed</p>
+</li>
+<li>
+<p>Cluster admin access (<code>system:admin</code> or equivalent)</p>
+</li>
+<li>
+<p><code>oc</code> and <code>virtctl</code> CLIs installed</p>
+</li>
+<li>
+<p>Worker nodes running RHCOS (standard for OpenShift clusters)</p>
+</li>
+<li>
+<p>The host nodes must have hardware virtualization extensions (<code>vmx</code> or <code>svm</code>) available — verify this in <code>cpuinfo</code> before proceeding</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_understanding_nested_virtualization"><a class="anchor" href="#_understanding_nested_virtualization"></a>Understanding Nested Virtualization</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>When a KVM guest runs with nested virtualization disabled, the host kernel intercepts all guest privileged instructions. The guest OS cannot run a nested hypervisor because it cannot access the VMX/SVM extensions.</p>
+</div>
+<div class="paragraph">
+<p>With nested virtualization enabled at the host kernel level, KVM exposes a virtualized version of the hardware extensions to the guest. The guest hypervisor then uses those extensions to run its own VMs through hardware acceleration rather than pure software emulation.</p>
+</div>
+<div class="paragraph">
+<p>Two changes are required:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p><strong>Host kernel</strong>: enable the <code>nested</code> parameter for the <code>kvm_intel</code> or <code>kvm_amd</code> kernel module so the host KVM passes the extension through to VMs.</p>
+</li>
+<li>
+<p><strong>VM spec</strong>: expose the <code>vmx</code> or <code>svm</code> CPU feature flag to the guest vCPUs.</p>
+</li>
+</ol>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_1_check_current_nested_virtualization_status_on_nodes"><a class="anchor" href="#_step_1_check_current_nested_virtualization_status_on_nodes"></a>Step 1: Check Current Nested Virtualization Status on Nodes</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Before making changes, check whether the nodes already have nested virtualization active.</p>
+</div>
+<div class="paragraph">
+<p>Open a debug shell on a worker node:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc debug node/&lt;node-name&gt;</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Inside the debug shell, read the <code>kvm_intel</code> parameter (replace with <code>kvm_amd</code> on AMD nodes):</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">chroot /host cat /sys/module/kvm_intel/parameters/nested</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Expected output when nested virtualization is disabled</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">N</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Expected output when nested virtualization is already enabled</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">Y</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Exit the debug shell:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">exit</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>To check whether the node&#8217;s CPU is Intel or AMD, read <code>/proc/cpuinfo</code> and look for the vendor ID:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc debug node/&lt;node-name&gt; -- chroot /host grep -m1 'vendor_id' /proc/cpuinfo</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Expected output on Intel nodes</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">vendor_id	: GenuineIntel</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Expected output on AMD nodes</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">vendor_id	: AuthenticAMD</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_2_enable_nested_virtualization_via_machineconfig"><a class="anchor" href="#_step_2_enable_nested_virtualization_via_machineconfig"></a>Step 2: Enable Nested Virtualization via MachineConfig</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>OpenShift cluster nodes run RHCOS and are configured through the Machine Config Operator. Apply a <code>MachineConfig</code> that writes a <code>modprobe.d</code> drop-in file setting the <code>nested</code> parameter for both <code>kvm_intel</code> and <code>kvm_amd</code>. Including both lines is safe — the kernel ignores a module option for a module that is not loaded.</p>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/nested-virtualization/machineconfig-kvm-nested.yaml" class="xref attachment">Download machineconfig-kvm-nested.yaml</a></p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f - &lt;&lt;EOF
+apiVersion: machineconfiguration.openshift.io/v1
+kind: MachineConfig
+metadata:
+  labels:
+    machineconfiguration.openshift.io/role: worker
+  name: 99-worker-kvm-nested
+spec:
+  config:
+    ignition:
+      version: 3.4.0
+    storage:
+      files:
+      - path: /etc/modprobe.d/kvm.conf
+        mode: 0644
+        overwrite: true
+        contents:
+          source: data:text/plain;charset=utf-8;base64,b3B0aW9ucyBrdm1faW50ZWwgbmVzdGVkPTEKb3B0aW9ucyBrdm1fYW1kIG5lc3RlZD0xCg==
+EOF</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The base64 value decodes to:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">options kvm_intel nested=1
+options kvm_amd nested=1</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The Machine Config Operator applies the new file to every worker node and reboots each node sequentially. Monitor the rollout:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get mcp worker -w</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Wait until <code>UPDATED</code> is <code>True</code> and <code>UPDATING</code> is <code>False</code>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">NAME     CONFIG                                             UPDATED   UPDATING   DEGRADED
+worker   rendered-worker-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx   True      False      False</code></pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+Each node reboots once during this rollout. On a cluster with multiple worker nodes, the Machine Config Operator drains and reboots one node at a time. Allow several minutes per node.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_3_verify_nested_virtualization_is_active"><a class="anchor" href="#_step_3_verify_nested_virtualization_is_active"></a>Step 3: Verify Nested Virtualization is Active</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>After the <code>MachineConfigPool</code> reports <code>UPDATED: True</code>, confirm that the kernel module parameter took effect:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc debug node/&lt;node-name&gt; -- chroot /host cat /sys/module/kvm_intel/parameters/nested</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Expected output</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">Y</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>On AMD nodes:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc debug node/&lt;node-name&gt; -- chroot /host cat /sys/module/kvm_amd/parameters/nested</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Expected output</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">1</code></pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+Intel nodes report <code>Y</code>; AMD nodes report <code>1</code>. Both indicate the nested parameter is active.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_4_label_nodes_for_nested_virtualization_workloads"><a class="anchor" href="#_step_4_label_nodes_for_nested_virtualization_workloads"></a>Step 4: Label Nodes for Nested Virtualization Workloads</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Label the nodes that have nested virtualization enabled so that VMs requiring nested support can be scheduled there. This is important when only a subset of worker nodes runs on hardware that supports nested virtualization, such as in a mixed bare-metal/virtual infrastructure.</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc label node &lt;node-name&gt; nested-virt=true</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Verify the label:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get nodes -L nested-virt</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Expected output</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">NAME         STATUS   ROLES    AGE   VERSION   NESTED-VIRT
+worker-01    Ready    worker   10d   v1.34.5   true
+worker-02    Ready    worker   10d   v1.34.5</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_5_deploy_a_vm_with_nested_virtualization_enabled"><a class="anchor" href="#_step_5_deploy_a_vm_with_nested_virtualization_enabled"></a>Step 5: Deploy a VM with Nested Virtualization Enabled</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Nested virtualization requires the VM&#8217;s vCPUs to expose the <code>vmx</code> (Intel) or <code>svm</code> (AMD) CPU feature to the guest OS. There are two ways to achieve this.</p>
+</div>
+<div class="sect2">
+<h3 id="_option_a_expose_specific_cpu_feature_flags_recommended"><a class="anchor" href="#_option_a_expose_specific_cpu_feature_flags_recommended"></a>Option A: Expose Specific CPU Feature Flags (Recommended)</h3>
+<div class="paragraph">
+<p>Use <code>cpu.features</code> to request the specific hardware extension. This is portable across Intel and AMD if you include both features with the <code>optional</code> policy, or <code>require</code> if you know the node type.</p>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/nested-virtualization/vm-nested-virt.yaml" class="xref attachment">Download vm-nested-virt.yaml</a></p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc create namespace nested-virt-demo</code></pre>
+</div>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f - &lt;&lt;EOF
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: vm-nested
+  namespace: nested-virt-demo
+spec:
+  runStrategy: Always
+  template:
+    spec:
+      nodeSelector:
+        nested-virt: "true"
+      domain:
+        cpu:
+          sockets: 2
+          cores: 1
+          threads: 1
+          features:
+          - name: vmx
+            policy: optional
+          - name: svm
+            policy: optional
+        memory:
+          guest: 2Gi
+        resources:
+          requests:
+            memory: 2Gi
+        devices:
+          disks:
+          - name: rootdisk
+            disk:
+              bus: virtio
+          - name: cloudinitdisk
+            disk:
+              bus: virtio
+          interfaces:
+          - name: default
+            masquerade: {}
+      networks:
+      - name: default
+        pod: {}
+      volumes:
+      - name: rootdisk
+        containerDisk:
+          image: quay.io/containerdisks/fedora:latest
+      - name: cloudinitdisk
+        cloudInitNoCloud:
+          userData: |
+            #cloud-config
+            password: redhat
+            chpasswd:
+              expire: false
+            packages:
+            - qemu-kvm
+EOF</code></pre>
+</div>
+</div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+The password above is for demonstration purposes only. Use SSH key authentication or a strong unique password in production environments.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>The <code>optional</code> policy schedules the VM even if the feature is not available on the node, but enables it when it is. Use <code>require</code> to reject scheduling on nodes without the feature.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_option_b_cpu_host_passthrough"><a class="anchor" href="#_option_b_cpu_host_passthrough"></a>Option B: CPU Host-Passthrough</h3>
+<div class="paragraph">
+<p>The <code>host-passthrough</code> CPU model exposes all host CPU features, including <code>vmx</code> and <code>svm</code>, to the guest. This is the simplest approach but makes the VM less portable across nodes with different CPU generations.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">domain:
+  cpu:
+    model: host-passthrough
+    sockets: 2
+    cores: 1
+    threads: 1</code></pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<code>host-passthrough</code> can prevent live migration if the destination node has a different CPU model. Use explicit feature flags (Option A) when live migration is required.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Wait for the VM to reach <code>Running</code> status:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vm vm-nested -n nested-virt-demo -w</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Expected output</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">NAME        AGE   STATUS    READY
+vm-nested   30s   Running   True</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_6_verify_nested_virtualization_inside_the_vm"><a class="anchor" href="#_step_6_verify_nested_virtualization_inside_the_vm"></a>Step 6: Verify Nested Virtualization Inside the VM</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Connect to the VM console:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">virtctl console vm-nested -n nested-virt-demo</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Log in as <code>fedora</code> with password <code>redhat</code>. Verify that <code>/dev/kvm</code> is present inside the VM:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">ls -la /dev/kvm</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Expected output</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">crw-rw-rw-. 1 root kvm 10, 232 Jan 15 12:00 /dev/kvm</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If <code>/dev/kvm</code> is absent, the CPU feature was not passed through. Check the troubleshooting section.</p>
+</div>
+<div class="paragraph">
+<p>Confirm the virtualization extension is visible in the guest CPU flags:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">grep -m1 -o 'vmx\|svm' /proc/cpuinfo</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Expected output on Intel</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">vmx</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Expected output on AMD</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">svm</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Verify that the KVM kernel module loaded:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">lsmod | grep kvm</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Expected output on Intel</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">kvm_intel             442368  0
+kvm                  1327104  1 kvm_intel</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Disconnect from the console by pressing <code>Ctrl+]</code>.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_performance_considerations"><a class="anchor" href="#_performance_considerations"></a>Performance Considerations</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Nested virtualization adds a hypervisor layer between the guest OS and the physical hardware. Expect the following compared to a non-nested VM:</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 40%;">
+<col style="width: 60%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Area</th>
+<th class="tableblock halign-left valign-top">Impact</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">CPU-intensive workloads</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Roughly 5–15% additional CPU overhead for nested hypervisor operations. VM exit/entry latency increases.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Memory</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The nested hypervisor&#8217;s shadow page tables consume extra RAM. Allocate at least 512 MiB more than the nested VMs need.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">I/O throughput</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Disk and network I/O pass through two virtio layers. Throughput is adequate for development, not for benchmarking.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Live migration</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">When using <code>host-passthrough</code>, live migration is blocked. When using explicit feature flags, migration is possible but requires the destination node to also expose the same features.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">CPU pinning</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">CPU pinning and dedicated CPU placement work normally on the outer VM. The inner nested hypervisor benefits from dedicated vCPUs on the outer VM.</p></td>
+</tr>
+</tbody>
+</table>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+For CI pipelines that need to provision clusters inside VMs, allocate at least 4 vCPUs and 8 GiB of memory per nested-virt VM to give the inner cluster enough headroom.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_troubleshooting"><a class="anchor" href="#_troubleshooting"></a>Troubleshooting</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_devkvm_is_absent_inside_the_vm"><a class="anchor" href="#_devkvm_is_absent_inside_the_vm"></a><code>/dev/kvm</code> is absent inside the VM</h3>
+<div class="paragraph">
+<p><strong>Cause</strong>: The <code>vmx</code>/<code>svm</code> CPU feature was not passed through, or the host kernel module parameter is not enabled.</p>
+</div>
+<div class="paragraph">
+<p>Check the VM&#8217;s VMI for the CPU features that were actually assigned:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vmi vm-nested -n nested-virt-demo -o jsonpath='{.spec.domain.cpu.features}' | python3 -m json.tool</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Verify the host node&#8217;s nested parameter again:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vmi vm-nested -n nested-virt-demo -o jsonpath='{.status.nodeName}'</code></pre>
+</div>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc debug node/&lt;node-name&gt; -- chroot /host cat /sys/module/kvm_intel/parameters/nested</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If the parameter still shows <code>N</code>, the MachineConfig may not have been applied. Check the MachineConfigPool:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get mcp worker</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If <code>DEGRADED</code> is <code>True</code>, inspect the MCO operator logs:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc logs -n openshift-machine-config-operator -l k8s-app=machine-config-operator --tail=50</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_vm_stuck_in_pending_state_with_failedscheduling"><a class="anchor" href="#_vm_stuck_in_pending_state_with_failedscheduling"></a>VM stuck in Pending state with <code>FailedScheduling</code></h3>
+<div class="paragraph">
+<p>The <code>nodeSelector: nested-virt: "true"</code> prevents scheduling on unlabeled nodes. Confirm nodes have the label:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get nodes -L nested-virt</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Apply the label to at least one node if missing:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc label node &lt;node-name&gt; nested-virt=true</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_vmx_or_svm_not_visible_in_proccpuinfo_inside_the_vm"><a class="anchor" href="#_vmx_or_svm_not_visible_in_proccpuinfo_inside_the_vm"></a><code>vmx</code> or <code>svm</code> not visible in <code>/proc/cpuinfo</code> inside the VM</h3>
+<div class="paragraph">
+<p>If the host CPU supports the extension but the guest does not see it, the VM spec may be using <code>policy: require</code> while the node does not expose the feature. Switch to <code>policy: optional</code> and check whether the feature appears:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc edit vm vm-nested -n nested-virt-demo</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Change <code>policy: require</code> to <code>policy: optional</code> for the <code>vmx</code> and <code>svm</code> entries, save, and restart the VM:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">virtctl restart vm-nested -n nested-virt-demo</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_machineconfig_rollout_degraded"><a class="anchor" href="#_machineconfig_rollout_degraded"></a>MachineConfig rollout degraded</h3>
+<div class="paragraph">
+<p>If the MCO reports a degraded state after applying the <code>MachineConfig</code>, check whether the <code>ignition</code> version in the manifest matches what the RHCOS version on the node expects:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get machineconfig 99-worker-kvm-nested -o jsonpath='{.spec.config.ignition.version}'</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>For OpenShift 4.18+ running RHCOS 9.x, <code>3.4.0</code> is the correct version. If the nodes run an older RHCOS, change it to <code>3.2.0</code>.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_cleanup"><a class="anchor" href="#_cleanup"></a>Cleanup</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Delete the namespace and all its resources:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc delete namespace nested-virt-demo</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Remove the node label:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc label node &lt;node-name&gt; nested-virt-</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>To revert nested virtualization on the nodes, delete the <code>MachineConfig</code>. This triggers another MCO rollout that removes the modprobe file and reboots each node:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc delete machineconfig 99-worker-kvm-nested</code></pre>
+</div>
+</div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+Deleting the <code>MachineConfig</code> reboots each worker node sequentially. Any running VMs on affected nodes are evacuated or interrupted depending on their <code>evictionStrategy</code>. Plan maintenance accordingly.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Monitor the revert rollout:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get mcp worker -w</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_summary"><a class="anchor" href="#_summary"></a>Summary</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>In this tutorial you learned how to:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Check whether worker nodes expose the KVM nested virtualization parameter</p>
+</li>
+<li>
+<p>Enable nested virtualization cluster-wide using a <code>MachineConfig</code> that writes a <code>modprobe.d</code> configuration file</p>
+</li>
+<li>
+<p>Label nodes to identify them as nested virtualization capable</p>
+</li>
+<li>
+<p>Configure a VM with the <code>vmx</code>/<code>svm</code> CPU feature flags to pass through virtualization extensions to the guest OS</p>
+</li>
+<li>
+<p>Verify that the guest OS can access <code>/dev/kvm</code> and use nested KVM</p>
+</li>
+<li>
+<p>Understand the performance overhead of nested virtualization and when to choose <code>host-passthrough</code> vs explicit feature flags</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_see_also"><a class="anchor" href="#_see_also"></a>See Also</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p><a href="cpu-pinning.html" class="xref page">Dedicated CPU Placement</a> — assigning physical CPUs to VMs for predictable performance</p>
+</li>
+<li>
+<p><a href="realtime-vms.html" class="xref page">Real-Time VMs</a> — reducing latency for latency-sensitive workloads</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<nav class="pagination">
+  <span class="prev"><a href="vm-monitoring-metrics.html">VM Monitoring and Metrics</a></span>
+  <span class="next"><a href="../vm-lifecycle/index.html">VM Lifecycle Management</a></span>
+</nav>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <img src="../../../_/img/rhl-logo-red.png" height="40px" alt="Red Hat"  href="https://redhat.com" >
+</footer><script id="site-script" src="../../../_/js/site.js" data-ui-root-path="../../../_"></script>
+<script async src="../../../_/js/vendor/highlight.js"></script>
+<script src="../../../_/js/vendor/lunr.js"></script>
+<script src="../../../_/js/search-ui.js" id="search-ui-script" data-site-root-path="../../.." data-snippet-length="100" data-stylesheet="../../../_/css/search.css"></script>
+<script async src="../../../search-index.js"></script>
+  </body>
+</html>
