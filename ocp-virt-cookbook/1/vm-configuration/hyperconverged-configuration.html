@@ -1,0 +1,1870 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Customizing the HyperConverged Operator Configuration :: OpenShift Virtualization cookbook</title>
+    <link rel="prev" href="instancetype-preference.html">
+    <link rel="next" href="../performance/index.html">
+    <meta name="generator" content="Antora 3.1.3">
+    <link rel="stylesheet" href="../../../_/css/site.css">
+    <script>var uiRootPath = '../../../_'</script>
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://www.redhat.com" target="_blank"><img src="../../../_/img/redhat-logo.png" height="40px" alt="Red Hat"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="../../..">OpenShift Virtualization cookbook</a>
+      <div class="navbar-item search hide-for-print">
+        <div id="search-field" class="field">
+          <input id="search-input" type="text" placeholder="Search the docs">
+        </div>
+      </div>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues" target="_blank">Report Issues</a>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="ocp-virt-cookbook" data-version="1">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="../index.html">OpenShift Virtualization cookbook</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../index.html">Introduction</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../getting-started/index.html">Getting Started</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/vm-quick-start.html">Quick Start</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/prerequisites.html">Prerequisites</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/architecture-overview.html">Architecture Overview</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/install-openshift-virtualization.html">Install OpenShift Virtualization</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/installing-qemu-guest-agent.html">Installing QEMU Guest Agent</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/default-storage-class.html">Storage Setup</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/create-vm-web-console.html">Create VM from Web Console</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/create-vm-cli-yaml.html">Create VM from CLI</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/vm-lifecycle-states.html">VM Lifecycle States</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/virtctl-basics.html">Virtctl Basics</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/cloud-init-fundamentals.html">Cloud-init Fundamentals</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../storage/index.html">Storage Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/lvm-operator.html">LVM Operator Installation</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/lvm-troubleshooting.html">LVM Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/odf-ceph-storage.html">ODF/Ceph Storage</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/hostpath-provisioner.html">HostPath Provisioner</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/creating-managing-storage-class.html">Creating and Managing Storage Classes</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/multi-disk-configuration.html">Multi-Disk VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/expanding-vm-disk-size.html">Expanding VM Disk Size</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/cdi-operations.html">CDI Operations</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/disk-io-tuning.html">Disk I/O Tuning</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../networking/index.html">Networking Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/static-ip-configuration.html">Static IP Configuration</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/cloud-init-troubleshooting.html">Cloud-init Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/udn-primary-networks.html">UDN Primary Networks</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/localnet-secondary.html">Localnet Secondary Networks with CUDN</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/localnet-vlan.html">Localnet Secondary Networks with VLAN using NAD</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/cudn-localnet-vlan.html">Localnet VLAN with CUDN</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/layer2-secondary.html">Layer 2 Secondary Networks</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/linux-bridges.html">Linux Bridges</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/sriov-secondary.html">SR-IOV Secondary Networks</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/network-policies-vms.html">Network Policies for VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/metallb-loadbalancer.html">MetalLB Load Balancer for VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/dual-stack-vms.html">Dual-Stack IPv4/IPv6 VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/vm-ingress-routes.html">VM Ingress and Routes</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/ovs-bridge-troubleshooting.html">Troubleshooting Localnet Networks</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="index.html">Virtual Machine Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="internal-dns-for-vms.html">Internal DNS for VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="remote-access-linux-vms.html">Remote Access to Linux VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="remote-access-linux-troubleshooting.html">Remote Access to Linux VMs Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="remote-access-windows-vms.html">Remote Access to Windows VMs via RDP</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="ssh-access-windows-vms.html">Remote Access to Windows VMs via SSH</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="windows-vm-virtio-drivers.html">Windows VMs with VirtIO Drivers</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="legacy-windows-versions.html">Legacy Windows Versions</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="infrastructure-node-placement.html">Infrastructure Node Placement</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="node-placement-affinity.html">Node Placement and Affinity</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="hotplug-volumes-interfaces.html">Hotplug Volumes and Interfaces</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="vm-templates.html">Virtual Machine Templates</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="instancetype-preference.html">Instancetype and Preference</a>
+  </li>
+  <li class="nav-item is-current-page" data-depth="2">
+    <a class="nav-link" href="hyperconverged-configuration.html">HyperConverged Configuration</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../performance/index.html">VM Performance Tuning</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/resource-limits-qos.html">Resource Limits and QoS</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/cpu-pinning.html">Dedicated CPU Placement</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/numa-hugepages.html">NUMA and Hugepages</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/realtime-vms.html">Real-Time VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/vm-monitoring-metrics.html">VM Monitoring and Metrics</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/nested-virtualization.html">Nested Virtualization</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../vm-lifecycle/index.html">VM Lifecycle Management</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/import-qcow2-boot-volume.html">Import qcow2 Boot Volume</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/custom-golden-images.html">Custom Golden Images</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/windows-golden-images.html">Windows Golden Images</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/golden-images-troubleshooting.html">Golden Images Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/cloning-vms.html">Cloning VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/vm-snapshots.html">VM Snapshots</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/boot-order-boot-sources.html">VM Boot Order and Boot Sources</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../manifests/index.html">Manifests</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../api/index.html">API Guide</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../api/api-component-overview.html">API Component Overview</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../agentic-vm-management/index.html">Agentic VM Management</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/getting-started.html">Getting Started with rh-virt</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/natural-language-vm-create.html">Natural Language VM Creation</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/ai-vm-lifecycle.html">AI VM Lifecycle Operations</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/vm-clone.html">Cloning VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/ai-vm-snapshot-management.html">VM Snapshot Management</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/ai-skill-chaining.html">Day-2 Skill Chaining</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/ai-vm-rebalance.html">VM Rebalancing and Live Migration</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../appendix/glossary.html">Glossary</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">OpenShift Virtualization cookbook</span>
+    <span class="version">1</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <a class="title" href="../index.html">OpenShift Virtualization cookbook</a>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">1</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">OpenShift Virtualization cookbook</a></li>
+    <li><a href="index.html">Virtual Machine Configuration</a></li>
+    <li><a href="hyperconverged-configuration.html">HyperConverged Configuration</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">Customizing the HyperConverged Operator Configuration</h1>
+<div class="sect1">
+<h2 id="_overview"><a class="anchor" href="#_overview"></a>Overview</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The <code>HyperConverged</code> custom resource (CR) is the single configuration entry point for OpenShift Virtualization. It owns and reconciles a set of sub-operators — KubeVirt, CDI, SSP, and the network addons operator — so you never need to edit their individual CRs directly.</p>
+</div>
+<div class="paragraph">
+<p>After installing OpenShift Virtualization, the operator creates one <code>HyperConverged</code> CR named <code>kubevirt-hyperconverged</code> in the <code>openshift-cnv</code> namespace. All configuration changes flow through this one object. When you patch a field in it, the operator propagates the change to the appropriate sub-CR within seconds.</p>
+</div>
+<div class="paragraph">
+<p>This tutorial covers the most commonly adjusted configuration areas: feature gates, live migration settings, CDI storage options, SSP boot image management, mediated devices for vGPU workloads, and certificate rotation.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_what_you_will_learn"><a class="anchor" href="#_what_you_will_learn"></a>What You Will Learn</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p>How the <code>HyperConverged</code> CR is structured and how to inspect it</p>
+</li>
+<li>
+<p>How to enable and disable feature gates</p>
+</li>
+<li>
+<p>How to tune live migration bandwidth, concurrency, and timeout settings</p>
+</li>
+<li>
+<p>How to configure CDI storage options: scratch space, VM state storage, filesystem overhead, and insecure registries</p>
+</li>
+<li>
+<p>How to configure CDI workload resource limits</p>
+</li>
+<li>
+<p>How to manage common boot image import, disable or modify specific images, add custom images, and configure VM template namespace placement</p>
+</li>
+<li>
+<p>How to configure mediated device (vGPU) creation, PCI device passthrough, and per-node overrides</p>
+</li>
+<li>
+<p>How to adjust certificate rotation intervals and TLS security profiles, including understanding cluster-wide defaults and validation constraints</p>
+</li>
+<li>
+<p>How to verify that changes took effect by checking operator status and sub-CRs</p>
+</li>
+<li>
+<p>How to revert changes by removing fields through a merge patch</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_prerequisites"><a class="anchor" href="#_prerequisites"></a>Prerequisites</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p>An OpenShift 4.18+ cluster with the OpenShift Virtualization operator installed</p>
+</li>
+<li>
+<p><code>cluster-admin</code> cluster role</p>
+</li>
+<li>
+<p>The <code>oc</code> CLI installed and configured</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Verify that the HyperConverged operator is ready before making any changes:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get hco -n openshift-cnv</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Expected output</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">NAME                        AGE   PHASE
+kubevirt-hyperconverged     5d    Running</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The <code>PHASE</code> must be <code>Running</code> before you proceed.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_core_concepts"><a class="anchor" href="#_core_concepts"></a>Core Concepts</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_the_hyperconverged_reconciliation_model"><a class="anchor" href="#_the_hyperconverged_reconciliation_model"></a>The HyperConverged Reconciliation Model</h3>
+<div class="paragraph">
+<p>The HyperConverged operator manages OpenShift Virtualization&#8217;s sub-operators as owned resources. When you change a field in the <code>HyperConverged</code> CR, the operator reconciles that change to the KubeVirt, CDI, or SSP CR automatically.</p>
+</div>
+<div class="paragraph">
+<p>Do not edit the KubeVirt, CDI, or SSP CRs directly. The HyperConverged operator will overwrite manual changes to those resources. If you need to set a field that the <code>HyperConverged</code> API does not yet expose, use the JSON patch annotation mechanism described in the See Also section.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_patching_vs_editing"><a class="anchor" href="#_patching_vs_editing"></a>Patching vs. Editing</h3>
+<div class="paragraph">
+<p>Two approaches work for modifying the <code>HyperConverged</code> CR:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>oc patch --type=merge</code> — applies a JSON merge patch. Only the fields you include change; all other fields remain as-is. Use this for targeted, scriptable changes.</p>
+</li>
+<li>
+<p><code>oc edit hco kubevirt-hyperconverged -n openshift-cnv</code> — opens the full CR in your editor. Use this when you want to see the current state alongside your changes.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>This tutorial uses <code>oc patch</code> for all examples.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_the_taintedconfiguration_status_condition"><a class="anchor" href="#_the_taintedconfiguration_status_condition"></a>The TaintedConfiguration Status Condition</h3>
+<div class="paragraph">
+<p>If you use a JSON patch annotation to bypass the <code>HyperConverged</code> spec API, the operator sets a <code>TaintedConfiguration</code> status condition to <code>True</code>. This signals that some configuration is coming from annotations rather than from the CR spec. Check for this condition after making changes.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_1_inspect_the_current_hyperconverged_cr"><a class="anchor" href="#_step_1_inspect_the_current_hyperconverged_cr"></a>Step 1: Inspect the Current HyperConverged CR</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>View the full <code>HyperConverged</code> CR to understand its current state:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get hco kubevirt-hyperconverged -n openshift-cnv -o yaml</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Most fields are absent in a default installation because unset fields use the operator&#8217;s built-in defaults.</p>
+</div>
+<div class="paragraph">
+<p>Check the operator status conditions:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get hco kubevirt-hyperconverged -n openshift-cnv \
+  -o jsonpath='{.status.conditions}' | python3 -m json.tool</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Confirm these condition states before making changes:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>Available: True</code> — all sub-components are running</p>
+</li>
+<li>
+<p><code>Progressing: False</code> — no reconciliation in progress</p>
+</li>
+<li>
+<p><code>Degraded: False</code> — no component has reported an error</p>
+</li>
+<li>
+<p><code>Upgradeable: True</code> — the operator can be upgraded</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_2_configure_feature_gates"><a class="anchor" href="#_step_2_configure_feature_gates"></a>Step 2: Configure Feature Gates</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Feature gates enable or disable optional capabilities of OpenShift Virtualization. They are set under <code>spec.featureGates</code> as boolean fields.</p>
+</div>
+<div class="paragraph">
+<p>The following feature gates are available in OpenShift Virtualization 4.22:</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 28.5714%;">
+<col style="width: 14.2857%;">
+<col style="width: 14.2857%;">
+<col style="width: 42.8572%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Feature Gate</th>
+<th class="tableblock halign-left valign-top">Phase</th>
+<th class="tableblock halign-left valign-top">Default</th>
+<th class="tableblock halign-left valign-top">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>decentralizedLiveMigration</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Beta</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Enabled</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Enables decentralized live migration (cross-cluster migration) for VirtualMachineInstances between different clusters</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>videoConfig</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Beta</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Enabled</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Allows users to configure video device types for their virtual machines</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>alignCPUs</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Alpha</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Disabled</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Requests up to two additional dedicated CPUs to complete the total CPU count to an even parity when using emulator thread isolation</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>containerPathVolumes</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Alpha</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Disabled</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Enables VMs to access files and directories from the virt-launcher pod&#8217;s filesystem via virtiofs</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>declarativeHotplugVolumes</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Alpha</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Disabled</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Enables volume hotplug through the VM spec instead of the VirtualMachineVolumeRequest API</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>deployKubeSecondaryDNS</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Alpha</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Disabled</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Deploys KubeSecondaryDNS for DNS resolution on secondary VM networks</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>disableMDevConfiguration</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Alpha</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Disabled</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Disables mediated devices handling on KubeVirt</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>downwardMetrics</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Alpha</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Disabled</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Exposes a limited set of host CPU and memory metrics inside VMs via a virtio serial device</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>enableMultiArchBootImageImport</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Alpha</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Disabled</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Allows the operator to run on heterogeneous clusters with different CPU architectures and create golden images for each architecture</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>incrementalBackup</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Alpha</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Disabled</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Enables changed-block tracking (CBT) for incremental VM backup workflows using QEMU capabilities</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>objectGraph</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Alpha</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Disabled</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Enables the ObjectGraph VM and VMI subresource for returning a structured list of related Kubernetes objects</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>persistentReservation</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Alpha</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Disabled</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Enables persistent reservation of a LUN through SCSI Persistent Reserve commands</p></td>
+</tr>
+</tbody>
+</table>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+The <code>withHostPassthroughCPU</code>, <code>enableCommonBootImageImport</code>, <code>deployVmConsoleProxy</code>, <code>deployTektonTaskResources</code>, <code>nonRoot</code>, and other deprecated feature gates are ignored. Their functionality either became always-on or moved to dedicated spec fields. Beta phase feature gates are enabled by default but can be disabled. Alpha phase feature gates are disabled by default but can be enabled.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Enable the <code>downwardMetrics</code> alpha feature gate:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc patch hco kubevirt-hyperconverged -n openshift-cnv --type=merge \
+  -p '{"spec":{"featureGates":[{"name":"downwardMetrics","state":"Enabled"}]}}'</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Enable multiple feature gates in one patch:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc patch hco kubevirt-hyperconverged -n openshift-cnv --type=merge \
+  -p '{"spec":{"featureGates":[{"name":"downwardMetrics"},{"name":"alignCPUs"}]}}'</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Verify the feature gates are set:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get hco kubevirt-hyperconverged -n openshift-cnv -o yaml | grep -A 10 "featureGates:"</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Expected output</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">  featureGates:
+  - name: downwardMetrics
+  - name: alignCPUs
+  security:</code></pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+The <code>state</code> field is omitted from the output when feature gates are enabled. Only feature gates with <code>state: Disabled</code> show the state field explicitly. If no feature gates are configured, the <code>featureGates</code> field will not appear in the spec.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Verify that the feature gates propagated to the KubeVirt CR:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get kubevirt kubevirt-kubevirt-hyperconverged -n openshift-cnv \
+  -o jsonpath='{.spec.configuration.developerConfiguration.featureGates}' | python3 -m json.tool | grep -E "(DownwardMetrics|AlignCPUs)"</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Expected output</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">    "DownwardMetrics",
+    "AlignCPUs",</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>When you disable a beta feature gate, the <code>state</code> field appears explicitly:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc patch hco kubevirt-hyperconverged -n openshift-cnv --type=merge \
+  -p '{"spec":{"featureGates":[{"name":"decentralizedLiveMigration","state":"Disabled"}]}}'</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Verify the disabled feature gate shows its state:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get hco kubevirt-hyperconverged -n openshift-cnv -o yaml | grep -A 5 "featureGates:"</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Expected output</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">  featureGates:
+  - name: decentralizedLiveMigration
+    state: Disabled
+  security:</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>When you remove a feature gate entry from the spec, it reverts to its default behavior.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_3_configure_live_migration_settings"><a class="anchor" href="#_step_3_configure_live_migration_settings"></a>Step 3: Configure Live Migration Settings</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Live migration settings control how running VMs are moved between nodes. These settings apply cluster-wide.</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 33.3333%;">
+<col style="width: 16.6666%;">
+<col style="width: 50.0001%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Field</th>
+<th class="tableblock halign-left valign-top">Default</th>
+<th class="tableblock halign-left valign-top">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>parallelMigrationsPerCluster</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>5</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Number of migrations running in parallel in the cluster</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>parallelOutboundMigrationsPerNode</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>2</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Maximum number of outbound migrations per node</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>bandwidthPerMigration</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">unset</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Bandwidth limit of each migration in MiB/s (for example, <code>"2048Mi"</code> = 2048 MiB/sec). When unset, migrations use available bandwidth without a cap.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>completionTimeoutPerGiB</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>800</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The migration will be canceled if it has not completed in this time, in seconds per GiB of memory. For VMs with block migration, migrating disk size is included in the calculation.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>progressTimeout</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>150</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The migration will be canceled if memory copy fails to make progress in this time, in seconds</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>network</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">unset</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Name of a Multus NetworkAttachmentDefinition for a dedicated network to minimize disruption to tenant workloads from network saturation during migrations</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>allowAutoConverge</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>false</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Allows the platform to compromise performance/availability of VMs to guarantee successful live migrations</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>allowPostCopy</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>false</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Attempts post-copy live migration if pre-copy reaches completion timeout. Post-copy allows busy VMs to migrate but risks VM loss if source or destination node fails during migration.</p></td>
+</tr>
+</tbody>
+</table>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+Enabling <code>allowPostCopy</code> allows post-copy migration when pre-copy cannot complete within the timeout. Post-copy migrations allow even the busiest VMs to successfully migrate. However, a network failure or a failure in the source or destination node during post-copy migration can cause the VM to crash or reach an inconsistent state. Enable this option only when evicting nodes is more important than keeping VMs alive.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Apply tuned live migration settings:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc patch hco kubevirt-hyperconverged -n openshift-cnv --type=merge -p '{
+  "spec": {
+    "virtualization": {
+      "liveMigrationConfig": {
+        "parallelMigrationsPerCluster": 5,
+        "parallelOutboundMigrationsPerNode": 2,
+        "completionTimeoutPerGiB": 800,
+        "progressTimeout": 150,
+        "allowAutoConverge": false,
+        "allowPostCopy": false
+      }
+    }
+  }
+}'</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Verify the settings were applied:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get hco kubevirt-hyperconverged -n openshift-cnv \
+  -o jsonpath='{.spec.virtualization.liveMigrationConfig}' | python3 -m json.tool</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Configure a dedicated migration network using a Multus <code>NetworkAttachmentDefinition</code> to minimize disruption to tenant workloads:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc patch hco kubevirt-hyperconverged -n openshift-cnv --type=merge \
+  -p '{"spec":{"virtualization":{"liveMigrationConfig":{"network":"migration-net"}}}}'</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The <code>network</code> field must reference an existing <code>NetworkAttachmentDefinition</code> name in the cluster. This network will be used for all VM live migrations to prevent network saturation from affecting regular workloads.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_4_configure_cdi_storage_settings"><a class="anchor" href="#_step_4_configure_cdi_storage_settings"></a>Step 4: Configure CDI Storage Settings</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>CDI (Containerized Data Importer) handles disk image imports, uploads, and cloning. Several <code>HyperConverged</code> spec fields control CDI behavior.</p>
+</div>
+<div class="sect2">
+<h3 id="_scratch_space_storage_class"><a class="anchor" href="#_scratch_space_storage_class"></a>Scratch Space Storage Class</h3>
+<div class="paragraph">
+<p>CDI creates temporary scratch PVCs during image processing. The scratch space storage class is determined in the following order:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Value of <code>scratchSpaceStorageClass</code> if set</p>
+</li>
+<li>
+<p>Default storage class if one exists</p>
+</li>
+<li>
+<p>DataVolume&#8217;s storage class</p>
+</li>
+<li>
+<p>No storage class for scratch space</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>Set a dedicated scratch storage class when your primary storage class is not well suited for temporary workloads:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc patch hco kubevirt-hyperconverged -n openshift-cnv --type=merge \
+  -p '{"spec":{"storage":{"scratchSpaceStorageClass":"ocs-storagecluster-ceph-rbd"}}}'</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_vm_state_storage_class"><a class="anchor" href="#_vm_state_storage_class"></a>VM State Storage Class</h3>
+<div class="paragraph">
+<p>The <code>vmStateStorageClass</code> field specifies the storage class to use for PVCs created to preserve VM state, such as TPM (Trusted Platform Module) data. When VMs require persistent state preservation across restarts, this storage class is used for those PVCs:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc patch hco kubevirt-hyperconverged -n openshift-cnv --type=merge \
+  -p '{"spec":{"storage":{"vmStateStorageClass":"ocs-storagecluster-ceph-rbd"}}}'</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_filesystem_overhead"><a class="anchor" href="#_filesystem_overhead"></a>Filesystem Overhead</h3>
+<div class="paragraph">
+<p>When importing disk images to filesystem-backed PVCs, CDI reserves space for filesystem overhead to account for reserved blocks and avoid performance degradation at full capacity. The default global overhead is 5.5% (<code>"0.055"</code>). You can set this globally or override it per storage class:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc patch hco kubevirt-hyperconverged -n openshift-cnv --type=merge -p '{
+  "spec": {
+    "storage": {
+      "filesystemOverhead": {
+        "global": "0.055",
+        "storageClass": {
+          "ocs-storagecluster-ceph-rbd": "0.1",
+          "local-storage": "0"
+        }
+      }
+    }
+  }
+}'</code></pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+Block-mode PVCs do not need filesystem overhead. Set the per-class value to <code>"0"</code> for storage classes that provision block-mode PVCs exclusively.
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_insecure_registries"><a class="anchor" href="#_insecure_registries"></a>Insecure Registries</h3>
+<div class="paragraph">
+<p>By default, CDI requires TLS verification for container image imports. To allow imports from registries without valid certificates:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc patch hco kubevirt-hyperconverged -n openshift-cnv --type=merge -p '{
+  "spec": {
+    "storage": {
+      "storageImport": {
+        "insecureRegistries": [
+          "internal-registry.example.com:5000",
+          "mirror-registry.example.com:8080"
+        ]
+      }
+    }
+  }
+}'</code></pre>
+</div>
+</div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+Only add registries you control to this list. Adding public registries bypasses certificate validation globally for those hosts.
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_cdi_workload_resource_limits"><a class="anchor" href="#_cdi_workload_resource_limits"></a>CDI Workload Resource Limits</h3>
+<div class="paragraph">
+<p>CDI spawns importer, cloner, and uploader pods for data operations. Set resource requests and limits for these pods to prevent them from competing with VM workloads:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc patch hco kubevirt-hyperconverged -n openshift-cnv --type=merge -p '{
+  "spec": {
+    "storage": {
+      "workloadResourceRequirements": {
+        "requests": {
+          "memory": "64Mi"
+        },
+        "limits": {
+          "memory": "128Mi"
+        }
+      }
+    }
+  }
+}'</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Verify that the CDI CR reflects the changes:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get cdi cdi-kubevirt-hyperconverged -n openshift-cnv -o jsonpath='{.spec}' | python3 -m json.tool</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_5_configure_ssp_and_common_boot_images"><a class="anchor" href="#_step_5_configure_ssp_and_common_boot_images"></a>Step 5: Configure SSP and Common Boot Images</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The SSP (Scheduling, Scale, and Performance) operator manages common VM templates and automatically imports and updates golden boot images. You control these behaviors through <code>HyperConverged</code> spec fields.</p>
+</div>
+<div class="sect2">
+<h3 id="_enabling_and_disabling_common_boot_image_import"><a class="anchor" href="#_enabling_and_disabling_common_boot_image_import"></a>Enabling and Disabling Common Boot Image Import</h3>
+<div class="paragraph">
+<p>OpenShift Virtualization ships with <code>DataImportCron</code> jobs that keep golden OS images (Fedora, RHEL, CentOS Stream, Windows) up to date in the <code>openshift-virtualization-os-images</code> namespace.</p>
+</div>
+<div class="paragraph">
+<p>To disable automatic boot image import across the cluster:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc patch hco kubevirt-hyperconverged -n openshift-cnv --type=merge \
+  -p '{"spec":{"workloadSources":{"enableCommonBootImageImport":false}}}'</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>To re-enable it:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc patch hco kubevirt-hyperconverged -n openshift-cnv --type=merge \
+  -p '{"spec":{"workloadSources":{"enableCommonBootImageImport":true}}}'</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_common_templates_namespace"><a class="anchor" href="#_common_templates_namespace"></a>Common Templates Namespace</h3>
+<div class="paragraph">
+<p>By default, OpenShift Virtualization deploys common VM templates into the <code>openshift</code> namespace. To move them to a different namespace:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc patch hco kubevirt-hyperconverged -n openshift-cnv --type=merge \
+  -p '{"spec":{"workloadSources":{"commonTemplatesNamespace":"my-vm-templates"}}}'</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_viewing_available_dataimportcron_templates"><a class="anchor" href="#_viewing_available_dataimportcron_templates"></a>Viewing Available DataImportCron Templates</h3>
+<div class="paragraph">
+<p>The common golden images are maintained by the operator and appear in the <code>HyperConverged</code> CR status. To see the list of available templates:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get hco kubevirt-hyperconverged -n openshift-cnv \
+  -o jsonpath='{.status.dataImportCronTemplates[*].metadata.name}' | tr ' ' '\n'</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This list shows the default common images (Fedora, RHEL, CentOS Stream, Windows) that you can modify or disable.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_disabling_specific_common_boot_images"><a class="anchor" href="#_disabling_specific_common_boot_images"></a>Disabling Specific Common Boot Images</h3>
+<div class="paragraph">
+<p>To disable a specific common golden image without disabling all imports, add it to <code>dataImportCronTemplates</code> with the disable annotation:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc patch hco kubevirt-hyperconverged -n openshift-cnv --type=merge -p '{
+  "spec": {
+    "workloadSources": {
+      "dataImportCronTemplates": [
+      {
+        "metadata": {
+          "name": "fedora-image-cron",
+          "annotations": {
+            "dataimportcrontemplate.kubevirt.io/enable": "false"
+          }
+        }
+      }
+      ]
+    }
+  }
+}'</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_modifying_common_boot_images"><a class="anchor" href="#_modifying_common_boot_images"></a>Modifying Common Boot Images</h3>
+<div class="paragraph">
+<p>You can modify common images to use different storage classes, change capacity, or point to a custom registry. Only the <code>storage</code> and <code>source</code> fields are modifiable. When modifying a common image, you must include the <code>schedule</code> field:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc patch hco kubevirt-hyperconverged -n openshift-cnv --type=merge -p '{
+  "spec": {
+    "workloadSources": {
+      "dataImportCronTemplates": [
+      {
+        "metadata": {
+          "name": "centos-stream8-image"
+        },
+        "spec": {
+          "schedule": "0 */12 * * *",
+          "managedDataSource": "centos-stream8",
+          "garbageCollect": "Outdated",
+          "template": {
+            "spec": {
+              "source": {
+                "registry": {
+                  "url": "docker://my-private-registry/centos-stream8:latest"
+                }
+              },
+              "storage": {
+                "resources": {
+                  "requests": {
+                    "storage": "40Gi"
+                  }
+                },
+                "storageClassName": "fast-storage"
+              }
+            }
+          }
+        }
+      }
+      ]
+    }
+  }
+}'</code></pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+Editing fields other than <code>storage</code>, <code>source</code>, and <code>schedule</code> will be ignored by the operator.
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_adding_custom_dataimportcron_templates"><a class="anchor" href="#_adding_custom_dataimportcron_templates"></a>Adding Custom DataImportCron Templates</h3>
+<div class="paragraph">
+<p>You can add custom <code>DataImportCron</code> entries to maintain golden images beyond the predefined set. The following example schedules automatic import of a custom RHEL 9 image every 12 hours with a retention policy:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc patch hco kubevirt-hyperconverged -n openshift-cnv --type=merge -p '{
+  "spec": {
+    "workloadSources": {
+      "dataImportCronTemplates": [
+      {
+        "metadata": {
+          "name": "custom-rhel9-latest"
+        },
+        "spec": {
+          "schedule": "0 */12 * * *",
+          "managedDataSource": "rhel9-custom",
+          "garbageCollect": "Outdated",
+          "retentionPolicy": "All",
+          "template": {
+            "spec": {
+              "source": {
+                "registry": {
+                  "url": "docker://registry.example.com/rhel9-minimal:latest"
+                }
+              },
+              "storage": {
+                "resources": {
+                  "requests": {
+                    "storage": "30Gi"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+      ]
+    }
+  }
+}'</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The <code>retentionPolicy</code> field controls cleanup behavior:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>"All"</code> — DataVolumes and DataSources are retained when their DataImportCron is deleted (default)</p>
+</li>
+<li>
+<p><code>"None"</code> — DataVolumes and DataSources are deleted when their DataImportCron is deleted</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>The <code>garbageCollect</code> field set to <code>"Outdated"</code> removes outdated versions of imported images to save storage space.</p>
+</div>
+<div class="paragraph">
+<p>Verify that the <code>DataImportCron</code> was created:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get dataimportcron -n openshift-virtualization-os-images</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_6_configure_mediated_devices"><a class="anchor" href="#_step_6_configure_mediated_devices"></a>Step 6: Configure Mediated Devices</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Mediated devices (mdevs) are software partitions of a physical GPU or other hardware accelerator, used to provide vGPU instances to VMs. OpenShift Virtualization provides two separate configurations for mediated devices:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p><strong>mediatedDevicesConfiguration</strong> — automatically creates mediated devices on compatible nodes</p>
+</li>
+<li>
+<p><strong>permittedHostDevices</strong> — allows these devices to be used by VMs in the cluster</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>Both configurations are required for VMs to successfully use mediated devices.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+Currently, it is possible to configure one mediated device type per physical card. The operator configures all available instances for each configured type.
+</td>
+</tr>
+</table>
+</div>
+<div class="sect2">
+<h3 id="_cluster_wide_mediated_device_types"><a class="anchor" href="#_cluster_wide_mediated_device_types"></a>Cluster-Wide Mediated Device Types</h3>
+<div class="paragraph">
+<p>To configure one mdev type across all eligible nodes, set <code>mediatedDeviceTypes</code>:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc patch hco kubevirt-hyperconverged -n openshift-cnv --type=merge -p '{
+  "spec": {
+    "virtualization": {
+      "mediatedDevicesConfiguration": {
+        "mediatedDeviceTypes": [
+          "nvidia-222"
+        ]
+      }
+    }
+  }
+}'</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Replace <code>nvidia-222</code> with the mdev type name from your GPU driver. To list available mdev types on a node:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc debug node/&lt;node-name&gt; -- ls /sys/class/mdev_bus/</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_per_node_mediated_device_overrides"><a class="anchor" href="#_per_node_mediated_device_overrides"></a>Per-Node Mediated Device Overrides</h3>
+<div class="paragraph">
+<p>When different nodes have different GPU models, use <code>nodeMediatedDeviceTypes</code> to set per-node overrides. The cluster-wide <code>mediatedDeviceTypes</code> list applies to all GPU nodes except those matched by a <code>nodeMediatedDeviceTypes</code> entry:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc patch hco kubevirt-hyperconverged -n openshift-cnv --type=merge -p '{
+  "spec": {
+    "virtualization": {
+      "mediatedDevicesConfiguration": {
+        "mediatedDeviceTypes": [
+          "nvidia-222"
+        ],
+        "nodeMediatedDeviceTypes": [
+          {
+            "nodeSelector": {
+              "kubernetes.io/hostname": "worker-gpu-02"
+            },
+            "mediatedDeviceTypes": [
+              "nvidia-233"
+            ]
+          }
+        ]
+      }
+    }
+  }
+}'</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_permitted_host_devices"><a class="anchor" href="#_permitted_host_devices"></a>Permitted Host Devices</h3>
+<div class="paragraph">
+<p>After configuring mediated device creation, you must register the devices as permitted in the cluster. The <code>permittedHostDevices</code> configuration propagates directly to the KubeVirt CR and controls which host devices VMs can use.</p>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-important" title="Important"></i>
+</td>
+<td class="content">
+The HyperConverged operator replaces the entire <code>permittedHostDevices</code> array when you update it, rather than merging with existing entries. Always include all permitted devices when patching this field.
+</td>
+</tr>
+</table>
+</div>
+<div class="sect3">
+<h4 id="_permitting_mediated_devices"><a class="anchor" href="#_permitting_mediated_devices"></a>Permitting Mediated Devices</h4>
+<div class="paragraph">
+<p>Register mediated device types so VMs can request them as Kubernetes resources:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc patch hco kubevirt-hyperconverged -n openshift-cnv --type=merge -p '{
+  "spec": {
+    "virtualization": {
+      "permittedHostDevices": {
+        "mediatedDevices": [
+          {
+            "mdevNameSelector": "GRID V100-4Q",
+            "resourceName": "nvidia.com/GRID_V100-4Q"
+          }
+        ]
+      }
+    }
+  }
+}'</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The <code>mdevNameSelector</code> matches against the mdev type name from <code>/sys/class/mdev_bus/&lt;uuid&gt;/mdev_type/name</code>. The <code>resourceName</code> is the Kubernetes extended resource name that VM specs will reference when requesting the device.</p>
+</div>
+<div class="paragraph">
+<p>To use an external device plugin for allocation and monitoring instead of KubeVirt&#8217;s built-in handling, set <code>externalResourceProvider</code> to <code>true</code>:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc patch hco kubevirt-hyperconverged -n openshift-cnv --type=merge -p '{
+  "spec": {
+    "virtualization": {
+      "permittedHostDevices": {
+        "mediatedDevices": [
+          {
+            "mdevNameSelector": "GRID T4-1Q",
+            "resourceName": "nvidia.com/GRID_T4-1Q",
+            "externalResourceProvider": true
+          }
+        ]
+      }
+    }
+  }
+}'</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>When <code>externalResourceProvider</code> is <code>true</code>, KubeVirt permits usage of the device but leaves allocation and monitoring to the external plugin.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_permitting_pci_host_devices"><a class="anchor" href="#_permitting_pci_host_devices"></a>Permitting PCI Host Devices</h4>
+<div class="paragraph">
+<p>You can also permit PCI host devices for passthrough to VMs. Use the vendor and product ID in <code>vendor_id:product_id</code> format. Find these identifiers using <code>lspci -nnv</code>:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc debug node/&lt;node-name&gt; -- chroot /host lspci -nnv | grep -i nvidia</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Configure PCI host device passthrough:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc patch hco kubevirt-hyperconverged -n openshift-cnv --type=merge -p '{
+  "spec": {
+    "virtualization": {
+      "permittedHostDevices": {
+        "pciHostDevices": [
+          {
+            "pciDeviceSelector": "10DE:1EB8",
+            "resourceName": "nvidia.com/TU104GL_Tesla_T4"
+          }
+        ]
+      }
+    }
+  }
+}'</code></pre>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_combining_mediated_and_pci_devices"><a class="anchor" href="#_combining_mediated_and_pci_devices"></a>Combining Mediated and PCI Devices</h4>
+<div class="paragraph">
+<p>To permit both mediated devices and PCI passthrough devices, include both arrays in a single configuration:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc patch hco kubevirt-hyperconverged -n openshift-cnv --type=merge -p '{
+  "spec": {
+    "virtualization": {
+      "permittedHostDevices": {
+        "pciHostDevices": [
+          {
+            "pciDeviceSelector": "10DE:1DB6",
+            "resourceName": "nvidia.com/GV100GL_Tesla_V100"
+          },
+          {
+            "pciDeviceSelector": "10DE:1EB8",
+            "resourceName": "nvidia.com/TU104GL_Tesla_T4"
+          }
+        ],
+        "mediatedDevices": [
+          {
+            "mdevNameSelector": "GRID T4-1Q",
+            "resourceName": "nvidia.com/GRID_T4-1Q"
+          }
+        ]
+      }
+    }
+  }
+}'</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Verify that the device resources appear in node allocatable capacity:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get node &lt;node-name&gt; -o jsonpath='{.status.allocatable}' \
+  | python3 -m json.tool | grep nvidia</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_7_configure_certificate_rotation"><a class="anchor" href="#_step_7_configure_certificate_rotation"></a>Step 7: Configure Certificate Rotation</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>OpenShift Virtualization uses internal TLS certificates for communication between its components. The <code>certConfig</code> spec field controls certificate validity duration and how early renewal occurs.</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 33.3333%;">
+<col style="width: 16.6666%;">
+<col style="width: 50.0001%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Field</th>
+<th class="tableblock halign-left valign-top">Default</th>
+<th class="tableblock halign-left valign-top">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>ca.duration</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>48h0m0s</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">How long the internal CA certificate is valid</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>ca.renewBefore</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>24h0m0s</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">How far in advance of expiry the CA certificate is rotated</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>server.duration</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>24h0m0s</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">How long server certificates signed by the internal CA are valid</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>server.renewBefore</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>12h0m0s</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">How far in advance of expiry server certificates are rotated</p></td>
+</tr>
+</tbody>
+</table>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-important" title="Important"></i>
+</td>
+<td class="content">
+<code>server.duration</code> must be less than <code>ca.duration</code>, and <code>renewBefore</code> must be less than <code>server.duration</code>. All duration values must be at least 10 minutes. Violating these constraints produces a validation error.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>To extend certificate lifetimes for clusters where frequent rotation is disruptive:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc patch hco kubevirt-hyperconverged -n openshift-cnv --type=merge -p '{
+  "spec": {
+    "security": {
+      "certConfig": {
+        "ca": {
+          "duration": "168h0m0s",
+          "renewBefore": "96h0m0s"
+        },
+        "server": {
+          "duration": "72h0m0s",
+          "renewBefore": "48h0m0s"
+        }
+      }
+    }
+  }
+}'</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Verify the certificate configuration was accepted:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get hco kubevirt-hyperconverged -n openshift-cnv \
+  -o jsonpath='{.spec.security.certConfig}' | python3 -m json.tool</code></pre>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_tls_security_profile"><a class="anchor" href="#_tls_security_profile"></a>TLS Security Profile</h3>
+<div class="paragraph">
+<p>The TLS security profile controls which cipher suites and minimum TLS version OpenShift Virtualization components accept. By default, OpenShift Virtualization inherits the cluster-wide crypto policy from the APIServer configuration. You can override this cluster-wide setting by configuring <code>tlsSecurityProfile</code> in the HyperConverged CR.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+The TLS security profile is currently propagated only to the Cluster Network Addons Operator.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>To enforce TLS 1.3 only:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc patch hco kubevirt-hyperconverged -n openshift-cnv --type=merge \
+  -p '{"spec":{"security":{"tlsSecurityProfile":{"type":"Modern"}}}}'</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Available profile types:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>Old</code> — TLS 1.0 and later, broad compatibility</p>
+</li>
+<li>
+<p><code>Intermediate</code> — TLS 1.2 and later (default on OpenShift)</p>
+</li>
+<li>
+<p><code>Modern</code> — TLS 1.3 only, no backward compatibility</p>
+</li>
+<li>
+<p><code>Custom</code> — fully configurable ciphers and minimum version</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_8_configure_vm_eviction_strategy"><a class="anchor" href="#_step_8_configure_vm_eviction_strategy"></a>Step 8: Configure VM Eviction Strategy</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The cluster-wide eviction strategy determines what happens to VMs when a node is drained for maintenance or upgrades. The operator sets defaults based on cluster topology: <code>LiveMigrate</code> for clusters with multiple worker nodes, <code>None</code> for single-worker clusters.</p>
+</div>
+<div class="paragraph">
+<p>Configure the eviction strategy:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc patch hco kubevirt-hyperconverged -n openshift-cnv --type=merge \
+  -p '{"spec":{"virtualization":{"evictionStrategy":"LiveMigrate"}}}'</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Available values:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>LiveMigrate</code> — migrate the VM to another node; fails if migration is not possible</p>
+</li>
+<li>
+<p><code>LiveMigrateIfPossible</code> — migrate if possible; otherwise stop the VM</p>
+</li>
+<li>
+<p><code>External</code> — an external controller handles evacuation</p>
+</li>
+<li>
+<p><code>None</code> — VMs are not automatically moved</p>
+</li>
+</ul>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+This setting is a cluster-wide default. Individual VMs can override it in their <code>VirtualMachine</code> spec under <code>spec.template.spec.evictionStrategy</code>.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_9_verify_the_full_configuration"><a class="anchor" href="#_step_9_verify_the_full_configuration"></a>Step 9: Verify the Full Configuration</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>After making changes, confirm that the operator reconciled successfully:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get hco kubevirt-hyperconverged -n openshift-cnv \
+  -o jsonpath='{.status.conditions}' | python3 -m json.tool</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Look for <code>Available: True</code>, <code>Progressing: False</code>, and <code>Degraded: False</code>.</p>
+</div>
+<div class="paragraph">
+<p>Check that settings propagated to the KubeVirt sub-CR:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get kubevirt kubevirt-kubevirt-hyperconverged -n openshift-cnv \
+  -o jsonpath='{.spec.configuration}' | python3 -m json.tool</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Check that CDI settings propagated:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get cdi cdi -n openshift-cnv -o jsonpath='{.spec}' | python3 -m json.tool</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If something is not behaving as expected, check the HyperConverged operator pod logs:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc logs -n openshift-cnv -l name=hyperconverged-cluster-operator --tail=50</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Look for reconcile errors or validation failures in the log output.</p>
+</div>
+<div class="sect2">
+<h3 id="_common_troubleshooting_checks"><a class="anchor" href="#_common_troubleshooting_checks"></a>Common Troubleshooting Checks</h3>
+<div class="paragraph">
+<p>If the <code>HyperConverged</code> CR shows <code>Degraded: True</code>, identify which sub-component is reporting the problem:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get hco kubevirt-hyperconverged -n openshift-cnv \
+  -o jsonpath='{.status.relatedObjects}' | python3 -m json.tool</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Check whether the <code>TaintedConfiguration</code> condition is set, which indicates annotation-based overrides are active:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get hco kubevirt-hyperconverged -n openshift-cnv \
+  -o jsonpath='{.status.conditions[?(@.type=="TaintedConfiguration")].status}'</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If you applied a feature gate that a running VM requires, you may need to restart the VM to pick up the new configuration. Running VMs do not automatically restart when <code>HyperConverged</code> spec changes.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_cleanup"><a class="anchor" href="#_cleanup"></a>Cleanup</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The changes in this tutorial modify cluster-level settings rather than creating discrete resources. To restore a field to its operator default, remove it from the spec using <code>null</code> in a JSON merge patch:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc patch hco kubevirt-hyperconverged -n openshift-cnv --type=merge -p '{
+  "spec": {
+    "featureGates": null,
+    "virtualization": {
+      "liveMigrationConfig": null,
+      "evictionStrategy": null,
+      "mediatedDevicesConfiguration": null,
+      "permittedHostDevices": null
+    },
+    "storage": {
+      "scratchSpaceStorageClass": null,
+      "vmStateStorageClass": null,
+      "filesystemOverhead": null,
+      "storageImport": null,
+      "workloadResourceRequirements": null
+    },
+    "security": {
+      "certConfig": null,
+      "tlsSecurityProfile": null
+    },
+    "workloadSources": {
+      "enableCommonBootImageImport": null,
+      "commonTemplatesNamespace": null,
+      "dataImportCronTemplates": null
+    }
+  }
+}'</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Setting a field to <code>null</code> in a merge patch removes it from the spec. The operator then reverts to its built-in default for that field.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_summary"><a class="anchor" href="#_summary"></a>Summary</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>In this tutorial, you learned:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>The <code>HyperConverged</code> CR is the single configuration entry point for OpenShift Virtualization. Do not edit the KubeVirt, CDI, or SSP CRs directly; the operator will overwrite manual changes.</p>
+</li>
+<li>
+<p>Use <code>oc patch --type=merge</code> for targeted, repeatable configuration changes.</p>
+</li>
+<li>
+<p>Feature gates enable optional capabilities like <code>downwardMetrics</code>, <code>alignCPUs</code>, and <code>incrementalBackup</code>. Check which gates are active versus deprecated before enabling them.</p>
+</li>
+<li>
+<p>Live migration settings control bandwidth, concurrency, and timeouts cluster-wide. Enabling <code>allowPostCopy</code> carries availability risk if a destination node fails.</p>
+</li>
+<li>
+<p>CDI storage settings control scratch space storage class, filesystem overhead per storage class, and which registries are trusted without TLS verification.</p>
+</li>
+<li>
+<p>CDI workload resource limits prevent importer and uploader pods from competing with VM workloads.</p>
+</li>
+<li>
+<p>SSP settings control common boot image import globally, where VM templates are deployed, and individual <code>DataImportCron</code> template modifications. You can disable specific common images, modify their storage settings, or add custom images with retention policies.</p>
+</li>
+<li>
+<p>Host device passthrough requires two separate configurations: <code>mediatedDevicesConfiguration</code> creates mediated device instances, and <code>permittedHostDevices</code> allows VMs to use them. The <code>permittedHostDevices</code> field supports both mediated devices and PCI passthrough devices, with optional external resource provider integration. The operator replaces the entire array when patching, so always include all permitted devices.</p>
+</li>
+<li>
+<p>Certificate rotation intervals are configured via <code>spec.security.certConfig</code> with validation rules: <code>server.duration</code> must be less than <code>ca.duration</code>, and <code>renewBefore</code> must be less than <code>server.duration</code>. All durations must be at least 10 minutes.</p>
+</li>
+<li>
+<p>The TLS security profile defaults to inheriting from the cluster-wide APIServer configuration. You can override this via <code>spec.security.tlsSecurityProfile</code>. The profile is currently propagated only to the Cluster Network Addons Operator.</p>
+</li>
+<li>
+<p>The eviction strategy defaults to <code>LiveMigrate</code> for multi-worker clusters and <code>None</code> for single-worker clusters. Individual VMs can override this cluster-wide default.</p>
+</li>
+<li>
+<p>Set a field to <code>null</code> in a merge patch to remove it from the spec and restore the operator default.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_see_also"><a class="anchor" href="#_see_also"></a>See Also</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p><a href="instancetype-preference.html" class="xref page">Instancetype and Preference</a> — using predefined VM sizing configurations</p>
+</li>
+<li>
+<p><a href="infrastructure-node-placement.html" class="xref page">Infrastructure Node Placement</a> — controlling where HyperConverged infrastructure pods run</p>
+</li>
+<li>
+<p><a href="https://docs.redhat.com/en/documentation/openshift_container_platform/4.22/html/virtualization/getting-started#virt-getting-started" target="_blank" rel="noopener">OpenShift Virtualization Getting Started</a></p>
+</li>
+<li>
+<p><a href="https://github.com/kubevirt/hyperconverged-cluster-operator/blob/release-1.8/docs/cluster-configuration.md" target="_blank" rel="noopener">HyperConverged Cluster Operator Configuration Reference</a> — upstream documentation for all cluster configuration options</p>
+</li>
+<li>
+<p><a href="https://access.redhat.com/articles/4855391" target="_blank" rel="noopener">OpenShift Virtualization Lifecycle and Version Mapping</a> — KubeVirt and component versions per OpenShift release</p>
+</li>
+<li>
+<p><a href="_attachments/hyperconverged-configuration/hyperconverged-full-example.yaml" class="xref attachment">Download hyperconverged-full-example.yaml</a> — annotated reference showing all configurable fields</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<nav class="pagination">
+  <span class="prev"><a href="instancetype-preference.html">Instancetype and Preference</a></span>
+  <span class="next"><a href="../performance/index.html">VM Performance Tuning</a></span>
+</nav>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <img src="../../../_/img/rhl-logo-red.png" height="40px" alt="Red Hat"  href="https://redhat.com" >
+</footer><script id="site-script" src="../../../_/js/site.js" data-ui-root-path="../../../_"></script>
+<script async src="../../../_/js/vendor/highlight.js"></script>
+<script src="../../../_/js/vendor/lunr.js"></script>
+<script src="../../../_/js/search-ui.js" id="search-ui-script" data-site-root-path="../../.." data-snippet-length="100" data-stylesheet="../../../_/css/search.css"></script>
+<script async src="../../../search-index.js"></script>
+  </body>
+</html>
