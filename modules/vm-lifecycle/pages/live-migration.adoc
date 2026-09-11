@@ -1,0 +1,630 @@
+= Live Migration of Virtual Machines Between Nodes
+:navtitle: Live Migration
+
+== Overview
+
+This tutorial shows how to live-migrate running virtual machines between nodes in an OpenShift Virtualization cluster. Live migration moves a running VM from one node to another while the guest keeps running. Guest memory and device state are copied to the target node, then execution switches over with a pause measured in milliseconds. Applications inside the VM stay up and network connections are preserved.
+
+You will migrate VMs by hand with `virtctl` and with a `VirtualMachineInstanceMigration` manifest, watch a migration during node drain, tune cluster-wide migration behavior in the `HyperConverged` custom resource, and apply per-group settings with a `MigrationPolicy`.
+
+== What You Will Learn
+
+* How live migration copies guest state between nodes
+* How to confirm that a VM can be live-migrated
+* How to start a migration with `virtctl` and with a manifest
+* How to monitor migration progress and outcome
+* How node maintenance triggers automatic migration
+* How to tune migration bandwidth, parallelism, and timeouts
+* How to scope migration settings to a group of VMs with a `MigrationPolicy`
+* How to cancel an in-progress migration
+
+== Prerequisites
+
+* OpenShift {ocp-min-version}+ with the OpenShift Virtualization operator installed
+* Cluster admin access to edit the `HyperConverged` custom resource
+* The `oc` and `virtctl` CLIs installed and logged in
+* At least two schedulable worker nodes so a VM has somewhere to move
+* A storage class that supports `ReadWriteMany` (RWX) access mode for VM disks
+* Familiarity with `VirtualMachine` and `VirtualMachineInstance` objects (see xref:cloning-vms.adoc[Cloning Virtual Machines])
+
+== How Live Migration Works
+
+A live migration keeps the guest running on the source node while its memory pages are copied to the target node. Pages that change during the copy are re-sent in successive passes. When the remaining state is small enough, the VM is paused briefly, the last state is transferred, and the guest resumes on the target node.
+
+Two conditions decide whether a VM can move without copying disks:
+
+* *Shared storage*: the VM's disks must live on `ReadWriteMany` volumes so both nodes can attach them at once. Without RWX, the VM is not live-migratable by default.
+* *Migratable device configuration*: the VM must avoid host-specific devices that cannot be reproduced on the target node, such as directly assigned PCI host devices without a compatible target.
+
+KubeVirt reports the chosen method in the VMI status:
+
+[cols="1,3",options="header"]
+|===
+|Method |Meaning
+
+|`LiveMigration`
+|Only guest memory and device state are copied. Disks stay on shared RWX storage.
+
+|`BlockMigration`
+|Disk contents are copied along with memory because storage is not shared. Slower and higher bandwidth.
+|===
+
+The following diagram shows the flow of a memory-only live migration:
+
+....
+Source node                                  Target node
++-------------------+                        +-------------------+
+| virt-launcher pod |                        | virt-launcher pod |
+|   +-----------+   |   copy memory passes   |   +-----------+   |
+|   |  guest VM |===|======================> |   |  guest VM |   |
+|   +-----------+   |   final brief pause     |   +-----------+   |
++-------------------+   then switch over      +-------------------+
+        |                                              |
+        +----------- shared RWX PVC (disks) -----------+
+....
+
+== Step 1: Deploy a Migratable VM
+
+Create a namespace for the tutorial:
+
+[source,bash,role=execute]
+----
+oc create namespace live-migration-demo
+----
+
+Deploy a Fedora VM backed by a `ReadWriteMany` disk. The `evictionStrategy: LiveMigrate` field tells OpenShift to migrate this VM instead of shutting it down when its node is drained.
+
+WARNING: The cloud-init password in this example is for demonstration only. Use SSH key authentication or a strong, unique password in production.
+
+xref:attachment$live-migration/migratable-vm.yaml[Download migratable-vm.yaml]
+
+[source,yaml]
+----
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: migratable-vm
+  namespace: live-migration-demo
+spec:
+  runStrategy: Always
+  dataVolumeTemplates:
+    - apiVersion: cdi.kubevirt.io/v1beta1
+      kind: DataVolume
+      metadata:
+        name: migratable-vm-disk
+      spec:
+        sourceRef:
+          kind: DataSource
+          name: fedora
+          namespace: openshift-virtualization-os-images
+        storage:
+          accessModes:
+            - ReadWriteMany
+          resources:
+            requests:
+              storage: 30Gi
+  template:
+    metadata:
+      labels:
+        kubevirt.io/domain: migratable-vm
+    spec:
+      evictionStrategy: LiveMigrate
+      domain:
+        cpu:
+          cores: 1
+        memory:
+          guest: 2Gi
+        devices:
+          disks:
+            - name: rootdisk
+              disk:
+                bus: virtio
+            - name: cloudinitdisk
+              disk:
+                bus: virtio
+          interfaces:
+            - name: default
+              masquerade: {}
+          rng: {}
+        machine:
+          type: pc-q35-rhel9.4.0
+      networks:
+        - name: default
+          pod: {}
+      volumes:
+        - name: rootdisk
+          dataVolume:
+            name: migratable-vm-disk
+        - name: cloudinitdisk
+          cloudInitNoCloud:
+            userData: |-
+              #cloud-config
+              user: fedora
+              password: fedora123
+              chpasswd:
+                expire: false
+              ssh_pwauth: true
+----
+
+Apply the manifest:
+
+[source,bash,role=execute]
+----
+oc apply -f migratable-vm.yaml
+----
+
+Wait for the VM to reach `Running`:
+
+[source,bash,role=execute]
+----
+oc get vm migratable-vm -n live-migration-demo -w
+----
+
+.Expected output
+[source,text]
+----
+NAME            AGE   STATUS    READY
+migratable-vm   90s   Running   True
+----
+
+Note which node the VM landed on. You will confirm it changes after migration.
+
+[source,bash,role=execute]
+----
+oc get vmi migratable-vm -n live-migration-demo -o wide
+----
+
+.Expected output
+[source,text]
+----
+NAME            AGE   PHASE     IP            NODENAME    READY   LIVE-MIGRATABLE
+migratable-vm   2m    Running   10.128.2.31   worker-01   True    True
+----
+
+== Step 2: Verify the VM Is Live-Migratable
+
+Before migrating, confirm the VMI reports the `LiveMigratable` condition as `True`. If it is `False`, migration will be rejected.
+
+[source,bash,role=execute]
+----
+oc get vmi migratable-vm -n live-migration-demo -o jsonpath='{range .status.conditions[?(@.type=="LiveMigratable")]}{.status}{" "}{.reason}{"\n"}{end}'
+----
+
+.Expected output
+[source,text]
+----
+True
+----
+
+If the value is `False`, the `reason` field explains why. A common reason is `DisksNotLiveMigratable`, which means a disk is not on `ReadWriteMany` storage.
+
+Check which migration method KubeVirt will use:
+
+[source,bash,role=execute]
+----
+oc get vmi migratable-vm -n live-migration-demo -o jsonpath='{.status.migrationMethod}{"\n"}'
+----
+
+A value of `LiveMigration` means only memory is copied. A value of `BlockMigration` means the disks are copied too.
+
+== Step 3: Migrate a VM with virtctl
+
+The simplest way to start a migration is `virtctl migrate`:
+
+[source,bash,role=execute]
+----
+virtctl migrate migratable-vm -n live-migration-demo
+----
+
+.Expected output
+[source,text]
+----
+VM migratable-vm was scheduled to migrate
+----
+
+This creates a `VirtualMachineInstanceMigration` object behind the scenes. Watch the migration objects for the namespace:
+
+[source,bash,role=execute]
+----
+oc get virtualmachineinstancemigration -n live-migration-demo
+----
+
+.Expected output
+[source,text]
+----
+NAME                    PHASE       VMI
+kubevirt-migrate-xxxxx  Succeeded   migratable-vm
+----
+
+Confirm the VM now runs on a different node:
+
+[source,bash,role=execute]
+----
+oc get vmi migratable-vm -n live-migration-demo -o wide
+----
+
+The `NODENAME` column shows a different worker than in Step 1.
+
+== Step 4: Migrate a VM with a VirtualMachineInstanceMigration Manifest
+
+For automation and GitOps workflows, declare the migration as a resource. A `VirtualMachineInstanceMigration` names the VMI to move; the controller picks a target node.
+
+xref:attachment$live-migration/vmi-migration.yaml[Download vmi-migration.yaml]
+
+[source,yaml]
+----
+apiVersion: kubevirt.io/v1
+kind: VirtualMachineInstanceMigration
+metadata:
+  name: migrate-migratable-vm
+  namespace: live-migration-demo
+spec:
+  vmiName: migratable-vm
+----
+
+Apply the manifest to start the migration:
+
+[source,bash,role=execute]
+----
+oc apply -f vmi-migration.yaml
+----
+
+Watch the object move through its phases:
+
+[source,bash,role=execute]
+----
+oc get virtualmachineinstancemigration migrate-migratable-vm -n live-migration-demo -w
+----
+
+The `PHASE` column advances through `Pending`, `Scheduling`, `Running`, and finally `Succeeded`.
+
+== Step 5: Monitor Migration Progress
+
+Migration state is recorded on the VMI under `status.migrationState`. While a migration runs, inspect the full block:
+
+[source,bash,role=execute]
+----
+oc get vmi migratable-vm -n live-migration-demo -o jsonpath='{.status.migrationState}{"\n"}'
+----
+
+For a readable view of the key fields, query them individually:
+
+[source,bash,role=execute]
+----
+oc get vmi migratable-vm -n live-migration-demo \
+  -o jsonpath='Source: {.status.migrationState.sourceNode}{"\n"}Target: {.status.migrationState.targetNode}{"\n"}Completed: {.status.migrationState.completed}{"\n"}Failed: {.status.migrationState.failed}{"\n"}'
+----
+
+.Expected output
+[source,text]
+----
+Source: worker-01
+Target: worker-02
+Completed: true
+Failed: <no value>
+----
+
+You can also follow migration events for the namespace:
+
+[source,bash,role=execute]
+----
+oc get events -n live-migration-demo --field-selector reason=Migrated
+----
+
+To confirm the guest never lost connectivity, log in and check uptime after a migration:
+
+[source,bash,role=execute]
+----
+virtctl console migratable-vm -n live-migration-demo
+----
+
+Inside the guest, verify the system has been up across the migration:
+
+[source,bash]
+----
+uptime
+----
+
+The uptime keeps climbing across migrations because the guest was never rebooted. Disconnect from the console with `Ctrl+]`.
+
+== Step 6: Migrate VMs with the Web Console
+
+The web console runs the same migration from a menu.
+
+. Navigate to *Virtualization* -> *VirtualMachines*.
+. Select the project `live-migration-demo`.
+. Click the *Options* menu (three vertical dots) for `migratable-vm`.
+. Select *Migrate* -> *Compute* -> *Node*.
+. Watch the VM status change to *Migrating*, then back to *Running* on the new node. The *Node* column on the VirtualMachines list updates when the migration completes.
+
+To stop a migration from the console, open the same *Options* menu and select *Cancel Migration* while the VM is in the *Migrating* state.
+
+== Step 7: Trigger Automatic Migration During Node Maintenance
+
+VMs with `evictionStrategy: LiveMigrate` are migrated automatically when their node is drained, so you can service hardware with no VM downtime.
+
+Find the node running the VM:
+
+[source,bash,role=execute]
+----
+oc get vmi migratable-vm -n live-migration-demo -o wide
+----
+
+Cordon and drain that node. Draining evicts pods; the `virt-launcher` pod for a `LiveMigrate` VM triggers a live migration instead of a shutdown.
+
+[source,bash,role=execute]
+----
+oc adm drain <node-name> --delete-emptydir-data --ignore-daemonsets --force --pod-selector=kubevirt.io=virt-launcher
+----
+
+While the drain runs, watch the migration object appear and complete:
+
+[source,bash,role=execute]
+----
+oc get virtualmachineinstancemigration -n live-migration-demo -w
+----
+
+After the VM has moved, return the node to service:
+
+[source,bash,role=execute]
+----
+oc adm uncordon <node-name>
+----
+
+NOTE: A VM without `evictionStrategy: LiveMigrate` is shut down on drain rather than migrated. Set this field on every VM that must survive node maintenance.
+
+== Step 8: Tune Cluster-Wide Migration Settings
+
+Cluster-wide migration behavior is set in the `HyperConverged` custom resource under `spec.liveMigrationConfig`. These settings control how fast and how many migrations run at once.
+
+[cols="2,3,1",options="header"]
+|===
+|Field |Purpose |Default
+
+|`bandwidthPerMigration`
+|Maximum network bandwidth used per migration. `0` means unlimited.
+|`0`
+
+|`parallelMigrationsPerCluster`
+|Maximum migrations running at once across the whole cluster.
+|`5`
+
+|`parallelOutboundMigrationsPerNode`
+|Maximum migrations leaving a single node at once.
+|`2`
+
+|`completionTimeoutPerGiB`
+|Seconds allowed per GiB of memory before the migration is aborted.
+|`800`
+
+|`progressTimeout`
+|Seconds with no progress before the migration is aborted.
+|`150`
+|===
+
+Edit the `HyperConverged` resource:
+
+[source,bash,role=execute]
+----
+oc edit hyperconverged kubevirt-hyperconverged -n openshift-cnv
+----
+
+Set the `liveMigrationConfig` block. The following example caps bandwidth and allows more migrations in parallel:
+
+xref:attachment$live-migration/hyperconverged-migration-config.yaml[Download hyperconverged-migration-config.yaml]
+
+[source,yaml]
+----
+apiVersion: hco.kubevirt.io/v1beta1
+kind: HyperConverged
+metadata:
+  name: kubevirt-hyperconverged
+  namespace: openshift-cnv
+spec:
+  liveMigrationConfig:
+    bandwidthPerMigration: 64Mi
+    parallelMigrationsPerCluster: 5
+    parallelOutboundMigrationsPerNode: 2
+    completionTimeoutPerGiB: 800
+    progressTimeout: 150
+----
+
+Apply the change directly with a patch instead of interactive editing:
+
+[source,bash,role=execute]
+----
+oc patch hyperconverged kubevirt-hyperconverged -n openshift-cnv --type merge \
+  -p '{"spec":{"liveMigrationConfig":{"bandwidthPerMigration":"64Mi","parallelMigrationsPerCluster":5,"parallelOutboundMigrationsPerNode":2}}}'
+----
+
+Confirm the applied values:
+
+[source,bash,role=execute]
+----
+oc get hyperconverged kubevirt-hyperconverged -n openshift-cnv -o jsonpath='{.spec.liveMigrationConfig}{"\n"}'
+----
+
+IMPORTANT: Limiting `bandwidthPerMigration` protects other network traffic but slows migrations. A migration that cannot keep up with a busy guest's memory changes may hit `completionTimeoutPerGiB` and abort. Tune bandwidth and timeouts together.
+
+== Step 9: Create a MigrationPolicy for a VM Group
+
+A `MigrationPolicy` applies migration settings to a group of VMs selected by labels, overriding the cluster-wide defaults for those VMs only. This is useful when one class of workload needs different tuning, such as post-copy migration for large memory VMs.
+
+First, label the VM so a policy can select it:
+
+[source,bash,role=execute]
+----
+oc label vm migratable-vm -n live-migration-demo migration-tier=fast
+----
+
+The label must reach the VMI. It is already present on the running VMI through the VM template if set at creation; for an existing VMI, restart the VM or add the label to the running VMI:
+
+[source,bash,role=execute]
+----
+oc label vmi migratable-vm -n live-migration-demo migration-tier=fast --overwrite
+----
+
+Create a policy that selects VMIs with `migration-tier: fast` and raises their bandwidth ceiling while enabling auto-converge:
+
+xref:attachment$live-migration/migration-policy.yaml[Download migration-policy.yaml]
+
+[source,yaml]
+----
+apiVersion: migrations.kubevirt.io/v1alpha1
+kind: MigrationPolicy
+metadata:
+  name: fast-tier-policy
+spec:
+  selectors:
+    virtualMachineInstanceSelector:
+      migration-tier: fast
+  allowAutoConverge: true
+  bandwidthPerMigration: 128Mi
+  completionTimeoutPerGiB: 400
+  allowPostCopy: false
+----
+
+Apply the policy:
+
+[source,bash,role=execute]
+----
+oc apply -f migration-policy.yaml
+----
+
+List policies to confirm it exists:
+
+[source,bash,role=execute]
+----
+oc get migrationpolicy
+----
+
+The next time a matching VM migrates, the controller records the policy on the VMI. Trigger a migration and check which policy was applied:
+
+[source,bash,role=execute]
+----
+virtctl migrate migratable-vm -n live-migration-demo
+oc get vmi migratable-vm -n live-migration-demo -o jsonpath='{.status.migrationState.migrationPolicyName}{"\n"}'
+----
+
+.Expected output
+[source,text]
+----
+fast-tier-policy
+----
+
+NOTE: `allowAutoConverge` throttles the guest's vCPUs when a migration cannot keep up with memory changes, which helps busy VMs finish migrating at the cost of temporary guest slowdown. `allowPostCopy` switches the guest to the target node before all memory is copied, pulling remaining pages on demand; it can complete otherwise-stuck migrations but risks the VM if the network fails mid-transfer.
+
+== Step 10: Cancel a Migration
+
+To stop an in-progress migration, use `virtctl migrate-cancel`:
+
+[source,bash,role=execute]
+----
+virtctl migrate-cancel migratable-vm -n live-migration-demo
+----
+
+The VM keeps running on its source node. You can also cancel by deleting the migration object:
+
+[source,bash,role=execute]
+----
+oc delete virtualmachineinstancemigration migrate-migratable-vm -n live-migration-demo
+----
+
+== Troubleshooting
+
+=== VM reports LiveMigratable: False
+
+Read the reason on the VMI condition:
+
+[source,bash,role=execute]
+----
+oc get vmi migratable-vm -n live-migration-demo -o jsonpath='{range .status.conditions[?(@.type=="LiveMigratable")]}{.reason}: {.message}{"\n"}{end}'
+----
+
+Common reasons:
+
+* `DisksNotLiveMigratable`: a disk is on `ReadWriteOnce` storage. Recreate the VM disk on a `ReadWriteMany` storage class.
+* `InterfaceNotLiveMigratable`: a network interface binding cannot be migrated. Use `masquerade` or bridge bindings that support migration.
+
+=== Migration stays in Running and never completes
+
+A guest that changes memory faster than the migration bandwidth can never converge. Inspect the migration state:
+
+[source,bash,role=execute]
+----
+oc get vmi migratable-vm -n live-migration-demo -o jsonpath='{.status.migrationState}{"\n"}'
+----
+
+Resolutions:
+
+* Raise `bandwidthPerMigration` in the `HyperConverged` resource or a `MigrationPolicy`.
+* Set `allowAutoConverge: true` in a `MigrationPolicy` to throttle the guest vCPUs.
+* Consider `allowPostCopy: true` for large, write-heavy VMs.
+
+=== Migration fails immediately
+
+Check the migration object and events:
+
+[source,bash,role=execute]
+----
+oc describe virtualmachineinstancemigration -n live-migration-demo
+----
+
+A frequent cause is that no target node has enough free CPU or memory. Confirm capacity:
+
+[source,bash,role=execute]
+----
+oc adm top nodes
+----
+
+=== Drain hangs waiting for a VM
+
+If `oc adm drain` stalls, a VM on the node may not be live-migratable and cannot be evicted. Confirm every VM on the node has `evictionStrategy: LiveMigrate` and reports `LiveMigratable: True`, or stop non-migratable VMs before draining.
+
+== Cleanup
+
+Remove all resources created in this tutorial:
+
+[source,bash,role=execute]
+----
+oc delete namespace live-migration-demo
+----
+
+[source,bash,role=execute]
+----
+oc delete migrationpolicy fast-tier-policy
+----
+
+If you changed `liveMigrationConfig` and want to restore defaults, remove the block from the `HyperConverged` resource:
+
+[source,bash,role=execute]
+----
+oc patch hyperconverged kubevirt-hyperconverged -n openshift-cnv --type json \
+  -p '[{"op":"remove","path":"/spec/liveMigrationConfig"}]'
+----
+
+NOTE: If you cordoned or drained a node during Step 7 and did not uncordon it, run `oc adm uncordon <node-name>` to return it to service.
+
+== Summary
+
+In this tutorial you learned how to:
+
+* Deploy a VM on `ReadWriteMany` storage with `evictionStrategy: LiveMigrate`
+* Confirm a VM is live-migratable through the `LiveMigratable` condition
+* Start migrations with `virtctl migrate` and with a `VirtualMachineInstanceMigration` manifest
+* Monitor migration progress through the VMI `migrationState` and events
+* Migrate VMs from the web console
+* Drain a node and watch VMs migrate automatically with no downtime
+* Tune bandwidth, parallelism, and timeouts in the `HyperConverged` resource
+* Apply per-group settings with a `MigrationPolicy`
+* Cancel an in-progress migration
+
+Live migration lets you patch hosts, rebalance load, and upgrade hardware while VMs keep running.
+
+== See Also
+
+* xref:cloning-vms.adoc[Cloning Virtual Machines for Rapid Deployment]
+* xref:vm-snapshots.adoc[VM Snapshots]
+* xref:performance:cpu-pinning.adoc[Dedicated CPU Placement for Virtual Machines]
+* link:https://kubevirt.io/user-guide/compute/live_migration/[KubeVirt Live Migration,window=_blank]
+* link:https://docs.redhat.com/en/documentation/openshift_container_platform/{ocp-docs-version}/html/virtualization/live-migration[Live migration - OpenShift Virtualization Documentation,window=_blank]
