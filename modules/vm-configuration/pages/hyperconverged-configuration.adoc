@@ -1,0 +1,1004 @@
+= Customizing the HyperConverged Operator Configuration
+:navtitle: HyperConverged Configuration
+
+== Overview
+
+The `HyperConverged` custom resource (CR) is the single configuration entry point for OpenShift Virtualization. It owns and reconciles a set of sub-operators — KubeVirt, CDI, SSP, and the network addons operator — so you never need to edit their individual CRs directly.
+
+After installing OpenShift Virtualization, the operator creates one `HyperConverged` CR named `kubevirt-hyperconverged` in the `openshift-cnv` namespace. All configuration changes flow through this one object. When you patch a field in it, the operator propagates the change to the appropriate sub-CR within seconds.
+
+This tutorial covers the most commonly adjusted configuration areas: feature gates, live migration settings, CDI storage options, SSP boot image management, mediated devices for vGPU workloads, and certificate rotation.
+
+== What You Will Learn
+
+* How the `HyperConverged` CR is structured and how to inspect it
+* How to enable and disable feature gates
+* How to tune live migration bandwidth, concurrency, and timeout settings
+* How to configure CDI storage options: scratch space, VM state storage, filesystem overhead, and insecure registries
+* How to configure CDI workload resource limits
+* How to manage common boot image import, disable or modify specific images, add custom images, and configure VM template namespace placement
+* How to configure mediated device (vGPU) creation, PCI device passthrough, and per-node overrides
+* How to adjust certificate rotation intervals and TLS security profiles, including understanding cluster-wide defaults and validation constraints
+* How to verify that changes took effect by checking operator status and sub-CRs
+* How to revert changes by removing fields through a merge patch
+
+== Prerequisites
+
+* An OpenShift {ocp-min-version}+ cluster with the OpenShift Virtualization operator installed
+* `cluster-admin` cluster role
+* The `oc` CLI installed and configured
+
+Verify that the HyperConverged operator is ready before making any changes:
+
+[source,bash,role=execute]
+----
+oc get hco -n openshift-cnv
+----
+
+.Expected output
+[source,text]
+----
+NAME                        AGE   PHASE
+kubevirt-hyperconverged     5d    Running
+----
+
+The `PHASE` must be `Running` before you proceed.
+
+== Core Concepts
+
+=== The HyperConverged Reconciliation Model
+
+The HyperConverged operator manages OpenShift Virtualization's sub-operators as owned resources. When you change a field in the `HyperConverged` CR, the operator reconciles that change to the KubeVirt, CDI, or SSP CR automatically.
+
+Do not edit the KubeVirt, CDI, or SSP CRs directly. The HyperConverged operator will overwrite manual changes to those resources. If you need to set a field that the `HyperConverged` API does not yet expose, use the JSON patch annotation mechanism described in the See Also section.
+
+=== Patching vs. Editing
+
+Two approaches work for modifying the `HyperConverged` CR:
+
+* `oc patch --type=merge` — applies a JSON merge patch. Only the fields you include change; all other fields remain as-is. Use this for targeted, scriptable changes.
+* `oc edit hco kubevirt-hyperconverged -n openshift-cnv` — opens the full CR in your editor. Use this when you want to see the current state alongside your changes.
+
+This tutorial uses `oc patch` for all examples.
+
+=== The TaintedConfiguration Status Condition
+
+If you use a JSON patch annotation to bypass the `HyperConverged` spec API, the operator sets a `TaintedConfiguration` status condition to `True`. This signals that some configuration is coming from annotations rather than from the CR spec. Check for this condition after making changes.
+
+== Step 1: Inspect the Current HyperConverged CR
+
+View the full `HyperConverged` CR to understand its current state:
+
+[source,bash,role=execute]
+----
+oc get hco kubevirt-hyperconverged -n openshift-cnv -o yaml
+----
+
+Most fields are absent in a default installation because unset fields use the operator's built-in defaults.
+
+Check the operator status conditions:
+
+[source,bash,role=execute]
+----
+oc get hco kubevirt-hyperconverged -n openshift-cnv \
+  -o jsonpath='{.status.conditions}' | python3 -m json.tool
+----
+
+Confirm these condition states before making changes:
+
+* `Available: True` — all sub-components are running
+* `Progressing: False` — no reconciliation in progress
+* `Degraded: False` — no component has reported an error
+* `Upgradeable: True` — the operator can be upgraded
+
+== Step 2: Configure Feature Gates
+
+Feature gates enable or disable optional capabilities of OpenShift Virtualization. They are set under `spec.featureGates` as boolean fields.
+
+The following feature gates are available in OpenShift Virtualization 4.22:
+
+[cols="2,1,1,3"]
+|===
+| Feature Gate | Phase | Default | Description
+
+| `decentralizedLiveMigration`
+| Beta
+| Enabled
+| Enables decentralized live migration (cross-cluster migration) for VirtualMachineInstances between different clusters
+
+| `videoConfig`
+| Beta
+| Enabled
+| Allows users to configure video device types for their virtual machines
+
+| `alignCPUs`
+| Alpha
+| Disabled
+| Requests up to two additional dedicated CPUs to complete the total CPU count to an even parity when using emulator thread isolation
+
+| `containerPathVolumes`
+| Alpha
+| Disabled
+| Enables VMs to access files and directories from the virt-launcher pod's filesystem via virtiofs
+
+| `declarativeHotplugVolumes`
+| Alpha
+| Disabled
+| Enables volume hotplug through the VM spec instead of the VirtualMachineVolumeRequest API
+
+| `deployKubeSecondaryDNS`
+| Alpha
+| Disabled
+| Deploys KubeSecondaryDNS for DNS resolution on secondary VM networks
+
+| `disableMDevConfiguration`
+| Alpha
+| Disabled
+| Disables mediated devices handling on KubeVirt
+
+| `downwardMetrics`
+| Alpha
+| Disabled
+| Exposes a limited set of host CPU and memory metrics inside VMs via a virtio serial device
+
+| `enableMultiArchBootImageImport`
+| Alpha
+| Disabled
+| Allows the operator to run on heterogeneous clusters with different CPU architectures and create golden images for each architecture
+
+| `incrementalBackup`
+| Alpha
+| Disabled
+| Enables changed-block tracking (CBT) for incremental VM backup workflows using QEMU capabilities
+
+| `objectGraph`
+| Alpha
+| Disabled
+| Enables the ObjectGraph VM and VMI subresource for returning a structured list of related Kubernetes objects
+
+| `persistentReservation`
+| Alpha
+| Disabled
+| Enables persistent reservation of a LUN through SCSI Persistent Reserve commands
+|===
+
+NOTE: The `withHostPassthroughCPU`, `enableCommonBootImageImport`, `deployVmConsoleProxy`, `deployTektonTaskResources`, `nonRoot`, and other deprecated feature gates are ignored. Their functionality either became always-on or moved to dedicated spec fields. Beta phase feature gates are enabled by default but can be disabled. Alpha phase feature gates are disabled by default but can be enabled.
+
+Enable the `downwardMetrics` alpha feature gate:
+
+[source,bash,role=execute]
+----
+oc patch hco kubevirt-hyperconverged -n openshift-cnv --type=merge \
+  -p '{"spec":{"featureGates":[{"name":"downwardMetrics","state":"Enabled"}]}}'
+----
+
+Enable multiple feature gates in one patch:
+
+[source,bash,role=execute]
+----
+oc patch hco kubevirt-hyperconverged -n openshift-cnv --type=merge \
+  -p '{"spec":{"featureGates":[{"name":"downwardMetrics"},{"name":"alignCPUs"}]}}'
+----
+
+Verify the feature gates are set:
+
+[source,bash,role=execute]
+----
+oc get hco kubevirt-hyperconverged -n openshift-cnv -o yaml | grep -A 10 "featureGates:"
+----
+
+.Expected output
+[source,yaml]
+----
+  featureGates:
+  - name: downwardMetrics
+  - name: alignCPUs
+  security:
+----
+
+NOTE: The `state` field is omitted from the output when feature gates are enabled. Only feature gates with `state: Disabled` show the state field explicitly. If no feature gates are configured, the `featureGates` field will not appear in the spec.
+
+Verify that the feature gates propagated to the KubeVirt CR:
+
+[source,bash,role=execute]
+----
+oc get kubevirt kubevirt-kubevirt-hyperconverged -n openshift-cnv \
+  -o jsonpath='{.spec.configuration.developerConfiguration.featureGates}' | python3 -m json.tool | grep -E "(DownwardMetrics|AlignCPUs)"
+----
+
+.Expected output
+[source,text]
+----
+    "DownwardMetrics",
+    "AlignCPUs",
+----
+
+When you disable a beta feature gate, the `state` field appears explicitly:
+
+[source,bash,role=execute]
+----
+oc patch hco kubevirt-hyperconverged -n openshift-cnv --type=merge \
+  -p '{"spec":{"featureGates":[{"name":"decentralizedLiveMigration","state":"Disabled"}]}}'
+----
+
+Verify the disabled feature gate shows its state:
+
+[source,bash,role=execute]
+----
+oc get hco kubevirt-hyperconverged -n openshift-cnv -o yaml | grep -A 5 "featureGates:"
+----
+
+.Expected output
+[source,yaml]
+----
+  featureGates:
+  - name: decentralizedLiveMigration
+    state: Disabled
+  security:
+----
+
+When you remove a feature gate entry from the spec, it reverts to its default behavior.
+
+== Step 3: Configure Live Migration Settings
+
+Live migration settings control how running VMs are moved between nodes. These settings apply cluster-wide.
+
+[cols="2,1,3"]
+|===
+| Field | Default | Description
+
+| `parallelMigrationsPerCluster`
+| `5`
+| Number of migrations running in parallel in the cluster
+
+| `parallelOutboundMigrationsPerNode`
+| `2`
+| Maximum number of outbound migrations per node
+
+| `bandwidthPerMigration`
+| unset
+| Bandwidth limit of each migration in MiB/s (for example, `"2048Mi"` = 2048 MiB/sec). When unset, migrations use available bandwidth without a cap.
+
+| `completionTimeoutPerGiB`
+| `800`
+| The migration will be canceled if it has not completed in this time, in seconds per GiB of memory. For VMs with block migration, migrating disk size is included in the calculation.
+
+| `progressTimeout`
+| `150`
+| The migration will be canceled if memory copy fails to make progress in this time, in seconds
+
+| `network`
+| unset
+| Name of a Multus NetworkAttachmentDefinition for a dedicated network to minimize disruption to tenant workloads from network saturation during migrations
+
+| `allowAutoConverge`
+| `false`
+| Allows the platform to compromise performance/availability of VMs to guarantee successful live migrations
+
+| `allowPostCopy`
+| `false`
+| Attempts post-copy live migration if pre-copy reaches completion timeout. Post-copy allows busy VMs to migrate but risks VM loss if source or destination node fails during migration.
+|===
+
+WARNING: Enabling `allowPostCopy` allows post-copy migration when pre-copy cannot complete within the timeout. Post-copy migrations allow even the busiest VMs to successfully migrate. However, a network failure or a failure in the source or destination node during post-copy migration can cause the VM to crash or reach an inconsistent state. Enable this option only when evicting nodes is more important than keeping VMs alive.
+
+Apply tuned live migration settings:
+
+[source,bash,role=execute]
+----
+oc patch hco kubevirt-hyperconverged -n openshift-cnv --type=merge -p '{
+  "spec": {
+    "virtualization": {
+      "liveMigrationConfig": {
+        "parallelMigrationsPerCluster": 5,
+        "parallelOutboundMigrationsPerNode": 2,
+        "completionTimeoutPerGiB": 800,
+        "progressTimeout": 150,
+        "allowAutoConverge": false,
+        "allowPostCopy": false
+      }
+    }
+  }
+}'
+----
+
+Verify the settings were applied:
+
+[source,bash,role=execute]
+----
+oc get hco kubevirt-hyperconverged -n openshift-cnv \
+  -o jsonpath='{.spec.virtualization.liveMigrationConfig}' | python3 -m json.tool
+----
+
+Configure a dedicated migration network using a Multus `NetworkAttachmentDefinition` to minimize disruption to tenant workloads:
+
+[source,bash,role=execute]
+----
+oc patch hco kubevirt-hyperconverged -n openshift-cnv --type=merge \
+  -p '{"spec":{"virtualization":{"liveMigrationConfig":{"network":"migration-net"}}}}'
+----
+
+The `network` field must reference an existing `NetworkAttachmentDefinition` name in the cluster. This network will be used for all VM live migrations to prevent network saturation from affecting regular workloads.
+
+== Step 4: Configure CDI Storage Settings
+
+CDI (Containerized Data Importer) handles disk image imports, uploads, and cloning. Several `HyperConverged` spec fields control CDI behavior.
+
+=== Scratch Space Storage Class
+
+CDI creates temporary scratch PVCs during image processing. The scratch space storage class is determined in the following order:
+
+1. Value of `scratchSpaceStorageClass` if set
+2. Default storage class if one exists
+3. DataVolume's storage class
+4. No storage class for scratch space
+
+Set a dedicated scratch storage class when your primary storage class is not well suited for temporary workloads:
+
+[source,bash,role=execute]
+----
+oc patch hco kubevirt-hyperconverged -n openshift-cnv --type=merge \
+  -p '{"spec":{"storage":{"scratchSpaceStorageClass":"ocs-storagecluster-ceph-rbd"}}}'
+----
+
+=== VM State Storage Class
+
+The `vmStateStorageClass` field specifies the storage class to use for PVCs created to preserve VM state, such as TPM (Trusted Platform Module) data. When VMs require persistent state preservation across restarts, this storage class is used for those PVCs:
+
+[source,bash,role=execute]
+----
+oc patch hco kubevirt-hyperconverged -n openshift-cnv --type=merge \
+  -p '{"spec":{"storage":{"vmStateStorageClass":"ocs-storagecluster-ceph-rbd"}}}'
+----
+
+=== Filesystem Overhead
+
+When importing disk images to filesystem-backed PVCs, CDI reserves space for filesystem overhead to account for reserved blocks and avoid performance degradation at full capacity. The default global overhead is 5.5% (`"0.055"`). You can set this globally or override it per storage class:
+
+[source,bash,role=execute]
+----
+oc patch hco kubevirt-hyperconverged -n openshift-cnv --type=merge -p '{
+  "spec": {
+    "storage": {
+      "filesystemOverhead": {
+        "global": "0.055",
+        "storageClass": {
+          "ocs-storagecluster-ceph-rbd": "0.1",
+          "local-storage": "0"
+        }
+      }
+    }
+  }
+}'
+----
+
+NOTE: Block-mode PVCs do not need filesystem overhead. Set the per-class value to `"0"` for storage classes that provision block-mode PVCs exclusively.
+
+=== Insecure Registries
+
+By default, CDI requires TLS verification for container image imports. To allow imports from registries without valid certificates:
+
+[source,bash,role=execute]
+----
+oc patch hco kubevirt-hyperconverged -n openshift-cnv --type=merge -p '{
+  "spec": {
+    "storage": {
+      "storageImport": {
+        "insecureRegistries": [
+          "internal-registry.example.com:5000",
+          "mirror-registry.example.com:8080"
+        ]
+      }
+    }
+  }
+}'
+----
+
+WARNING: Only add registries you control to this list. Adding public registries bypasses certificate validation globally for those hosts.
+
+=== CDI Workload Resource Limits
+
+CDI spawns importer, cloner, and uploader pods for data operations. Set resource requests and limits for these pods to prevent them from competing with VM workloads:
+
+[source,bash,role=execute]
+----
+oc patch hco kubevirt-hyperconverged -n openshift-cnv --type=merge -p '{
+  "spec": {
+    "storage": {
+      "workloadResourceRequirements": {
+        "requests": {
+          "memory": "64Mi"
+        },
+        "limits": {
+          "memory": "128Mi"
+        }
+      }
+    }
+  }
+}'
+----
+
+Verify that the CDI CR reflects the changes:
+
+[source,bash,role=execute]
+----
+oc get cdi cdi-kubevirt-hyperconverged -n openshift-cnv -o jsonpath='{.spec}' | python3 -m json.tool
+----
+
+== Step 5: Configure SSP and Common Boot Images
+
+The SSP (Scheduling, Scale, and Performance) operator manages common VM templates and automatically imports and updates golden boot images. You control these behaviors through `HyperConverged` spec fields.
+
+=== Enabling and Disabling Common Boot Image Import
+
+OpenShift Virtualization ships with `DataImportCron` jobs that keep golden OS images (Fedora, RHEL, CentOS Stream, Windows) up to date in the `openshift-virtualization-os-images` namespace.
+
+To disable automatic boot image import across the cluster:
+
+[source,bash,role=execute]
+----
+oc patch hco kubevirt-hyperconverged -n openshift-cnv --type=merge \
+  -p '{"spec":{"workloadSources":{"enableCommonBootImageImport":false}}}'
+----
+
+To re-enable it:
+
+[source,bash,role=execute]
+----
+oc patch hco kubevirt-hyperconverged -n openshift-cnv --type=merge \
+  -p '{"spec":{"workloadSources":{"enableCommonBootImageImport":true}}}'
+----
+
+=== Common Templates Namespace
+
+By default, OpenShift Virtualization deploys common VM templates into the `openshift` namespace. To move them to a different namespace:
+
+[source,bash,role=execute]
+----
+oc patch hco kubevirt-hyperconverged -n openshift-cnv --type=merge \
+  -p '{"spec":{"workloadSources":{"commonTemplatesNamespace":"my-vm-templates"}}}'
+----
+
+=== Viewing Available DataImportCron Templates
+
+The common golden images are maintained by the operator and appear in the `HyperConverged` CR status. To see the list of available templates:
+
+[source,bash,role=execute]
+----
+oc get hco kubevirt-hyperconverged -n openshift-cnv \
+  -o jsonpath='{.status.dataImportCronTemplates[*].metadata.name}' | tr ' ' '\n'
+----
+
+This list shows the default common images (Fedora, RHEL, CentOS Stream, Windows) that you can modify or disable.
+
+=== Disabling Specific Common Boot Images
+
+To disable a specific common golden image without disabling all imports, add it to `dataImportCronTemplates` with the disable annotation:
+
+[source,bash,role=execute]
+----
+oc patch hco kubevirt-hyperconverged -n openshift-cnv --type=merge -p '{
+  "spec": {
+    "workloadSources": {
+      "dataImportCronTemplates": [
+      {
+        "metadata": {
+          "name": "fedora-image-cron",
+          "annotations": {
+            "dataimportcrontemplate.kubevirt.io/enable": "false"
+          }
+        }
+      }
+      ]
+    }
+  }
+}'
+----
+
+=== Modifying Common Boot Images
+
+You can modify common images to use different storage classes, change capacity, or point to a custom registry. Only the `storage` and `source` fields are modifiable. When modifying a common image, you must include the `schedule` field:
+
+[source,bash,role=execute]
+----
+oc patch hco kubevirt-hyperconverged -n openshift-cnv --type=merge -p '{
+  "spec": {
+    "workloadSources": {
+      "dataImportCronTemplates": [
+      {
+        "metadata": {
+          "name": "centos-stream8-image"
+        },
+        "spec": {
+          "schedule": "0 */12 * * *",
+          "managedDataSource": "centos-stream8",
+          "garbageCollect": "Outdated",
+          "template": {
+            "spec": {
+              "source": {
+                "registry": {
+                  "url": "docker://my-private-registry/centos-stream8:latest"
+                }
+              },
+              "storage": {
+                "resources": {
+                  "requests": {
+                    "storage": "40Gi"
+                  }
+                },
+                "storageClassName": "fast-storage"
+              }
+            }
+          }
+        }
+      }
+      ]
+    }
+  }
+}'
+----
+
+NOTE: Editing fields other than `storage`, `source`, and `schedule` will be ignored by the operator.
+
+=== Adding Custom DataImportCron Templates
+
+You can add custom `DataImportCron` entries to maintain golden images beyond the predefined set. The following example schedules automatic import of a custom RHEL 9 image every 12 hours with a retention policy:
+
+[source,bash,role=execute]
+----
+oc patch hco kubevirt-hyperconverged -n openshift-cnv --type=merge -p '{
+  "spec": {
+    "workloadSources": {
+      "dataImportCronTemplates": [
+      {
+        "metadata": {
+          "name": "custom-rhel9-latest"
+        },
+        "spec": {
+          "schedule": "0 */12 * * *",
+          "managedDataSource": "rhel9-custom",
+          "garbageCollect": "Outdated",
+          "retentionPolicy": "All",
+          "template": {
+            "spec": {
+              "source": {
+                "registry": {
+                  "url": "docker://registry.example.com/rhel9-minimal:latest"
+                }
+              },
+              "storage": {
+                "resources": {
+                  "requests": {
+                    "storage": "30Gi"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+      ]
+    }
+  }
+}'
+----
+
+The `retentionPolicy` field controls cleanup behavior:
+
+* `"All"` — DataVolumes and DataSources are retained when their DataImportCron is deleted (default)
+* `"None"` — DataVolumes and DataSources are deleted when their DataImportCron is deleted
+
+The `garbageCollect` field set to `"Outdated"` removes outdated versions of imported images to save storage space.
+
+Verify that the `DataImportCron` was created:
+
+[source,bash,role=execute]
+----
+oc get dataimportcron -n openshift-virtualization-os-images
+----
+
+== Step 6: Configure Mediated Devices
+
+Mediated devices (mdevs) are software partitions of a physical GPU or other hardware accelerator, used to provide vGPU instances to VMs. OpenShift Virtualization provides two separate configurations for mediated devices:
+
+1. **mediatedDevicesConfiguration** — automatically creates mediated devices on compatible nodes
+2. **permittedHostDevices** — allows these devices to be used by VMs in the cluster
+
+Both configurations are required for VMs to successfully use mediated devices.
+
+NOTE: Currently, it is possible to configure one mediated device type per physical card. The operator configures all available instances for each configured type.
+
+=== Cluster-Wide Mediated Device Types
+
+To configure one mdev type across all eligible nodes, set `mediatedDeviceTypes`:
+
+[source,bash,role=execute]
+----
+oc patch hco kubevirt-hyperconverged -n openshift-cnv --type=merge -p '{
+  "spec": {
+    "virtualization": {
+      "mediatedDevicesConfiguration": {
+        "mediatedDeviceTypes": [
+          "nvidia-222"
+        ]
+      }
+    }
+  }
+}'
+----
+
+Replace `nvidia-222` with the mdev type name from your GPU driver. To list available mdev types on a node:
+
+[source,bash,role=execute]
+----
+oc debug node/<node-name> -- ls /sys/class/mdev_bus/
+----
+
+=== Per-Node Mediated Device Overrides
+
+When different nodes have different GPU models, use `nodeMediatedDeviceTypes` to set per-node overrides. The cluster-wide `mediatedDeviceTypes` list applies to all GPU nodes except those matched by a `nodeMediatedDeviceTypes` entry:
+
+[source,bash,role=execute]
+----
+oc patch hco kubevirt-hyperconverged -n openshift-cnv --type=merge -p '{
+  "spec": {
+    "virtualization": {
+      "mediatedDevicesConfiguration": {
+        "mediatedDeviceTypes": [
+          "nvidia-222"
+        ],
+        "nodeMediatedDeviceTypes": [
+          {
+            "nodeSelector": {
+              "kubernetes.io/hostname": "worker-gpu-02"
+            },
+            "mediatedDeviceTypes": [
+              "nvidia-233"
+            ]
+          }
+        ]
+      }
+    }
+  }
+}'
+----
+
+=== Permitted Host Devices
+
+After configuring mediated device creation, you must register the devices as permitted in the cluster. The `permittedHostDevices` configuration propagates directly to the KubeVirt CR and controls which host devices VMs can use.
+
+IMPORTANT: The HyperConverged operator replaces the entire `permittedHostDevices` array when you update it, rather than merging with existing entries. Always include all permitted devices when patching this field.
+
+==== Permitting Mediated Devices
+
+Register mediated device types so VMs can request them as Kubernetes resources:
+
+[source,bash,role=execute]
+----
+oc patch hco kubevirt-hyperconverged -n openshift-cnv --type=merge -p '{
+  "spec": {
+    "virtualization": {
+      "permittedHostDevices": {
+        "mediatedDevices": [
+          {
+            "mdevNameSelector": "GRID V100-4Q",
+            "resourceName": "nvidia.com/GRID_V100-4Q"
+          }
+        ]
+      }
+    }
+  }
+}'
+----
+
+The `mdevNameSelector` matches against the mdev type name from `/sys/class/mdev_bus/<uuid>/mdev_type/name`. The `resourceName` is the Kubernetes extended resource name that VM specs will reference when requesting the device.
+
+To use an external device plugin for allocation and monitoring instead of KubeVirt's built-in handling, set `externalResourceProvider` to `true`:
+
+[source,bash,role=execute]
+----
+oc patch hco kubevirt-hyperconverged -n openshift-cnv --type=merge -p '{
+  "spec": {
+    "virtualization": {
+      "permittedHostDevices": {
+        "mediatedDevices": [
+          {
+            "mdevNameSelector": "GRID T4-1Q",
+            "resourceName": "nvidia.com/GRID_T4-1Q",
+            "externalResourceProvider": true
+          }
+        ]
+      }
+    }
+  }
+}'
+----
+
+When `externalResourceProvider` is `true`, KubeVirt permits usage of the device but leaves allocation and monitoring to the external plugin.
+
+==== Permitting PCI Host Devices
+
+You can also permit PCI host devices for passthrough to VMs. Use the vendor and product ID in `vendor_id:product_id` format. Find these identifiers using `lspci -nnv`:
+
+[source,bash,role=execute]
+----
+oc debug node/<node-name> -- chroot /host lspci -nnv | grep -i nvidia
+----
+
+Configure PCI host device passthrough:
+
+[source,bash,role=execute]
+----
+oc patch hco kubevirt-hyperconverged -n openshift-cnv --type=merge -p '{
+  "spec": {
+    "virtualization": {
+      "permittedHostDevices": {
+        "pciHostDevices": [
+          {
+            "pciDeviceSelector": "10DE:1EB8",
+            "resourceName": "nvidia.com/TU104GL_Tesla_T4"
+          }
+        ]
+      }
+    }
+  }
+}'
+----
+
+==== Combining Mediated and PCI Devices
+
+To permit both mediated devices and PCI passthrough devices, include both arrays in a single configuration:
+
+[source,bash,role=execute]
+----
+oc patch hco kubevirt-hyperconverged -n openshift-cnv --type=merge -p '{
+  "spec": {
+    "virtualization": {
+      "permittedHostDevices": {
+        "pciHostDevices": [
+          {
+            "pciDeviceSelector": "10DE:1DB6",
+            "resourceName": "nvidia.com/GV100GL_Tesla_V100"
+          },
+          {
+            "pciDeviceSelector": "10DE:1EB8",
+            "resourceName": "nvidia.com/TU104GL_Tesla_T4"
+          }
+        ],
+        "mediatedDevices": [
+          {
+            "mdevNameSelector": "GRID T4-1Q",
+            "resourceName": "nvidia.com/GRID_T4-1Q"
+          }
+        ]
+      }
+    }
+  }
+}'
+----
+
+Verify that the device resources appear in node allocatable capacity:
+
+[source,bash,role=execute]
+----
+oc get node <node-name> -o jsonpath='{.status.allocatable}' \
+  | python3 -m json.tool | grep nvidia
+----
+
+== Step 7: Configure Certificate Rotation
+
+OpenShift Virtualization uses internal TLS certificates for communication between its components. The `certConfig` spec field controls certificate validity duration and how early renewal occurs.
+
+[cols="2,1,3"]
+|===
+| Field | Default | Description
+
+| `ca.duration`
+| `48h0m0s`
+| How long the internal CA certificate is valid
+
+| `ca.renewBefore`
+| `24h0m0s`
+| How far in advance of expiry the CA certificate is rotated
+
+| `server.duration`
+| `24h0m0s`
+| How long server certificates signed by the internal CA are valid
+
+| `server.renewBefore`
+| `12h0m0s`
+| How far in advance of expiry server certificates are rotated
+|===
+
+IMPORTANT: `server.duration` must be less than `ca.duration`, and `renewBefore` must be less than `server.duration`. All duration values must be at least 10 minutes. Violating these constraints produces a validation error.
+
+To extend certificate lifetimes for clusters where frequent rotation is disruptive:
+
+[source,bash,role=execute]
+----
+oc patch hco kubevirt-hyperconverged -n openshift-cnv --type=merge -p '{
+  "spec": {
+    "security": {
+      "certConfig": {
+        "ca": {
+          "duration": "168h0m0s",
+          "renewBefore": "96h0m0s"
+        },
+        "server": {
+          "duration": "72h0m0s",
+          "renewBefore": "48h0m0s"
+        }
+      }
+    }
+  }
+}'
+----
+
+Verify the certificate configuration was accepted:
+
+[source,bash,role=execute]
+----
+oc get hco kubevirt-hyperconverged -n openshift-cnv \
+  -o jsonpath='{.spec.security.certConfig}' | python3 -m json.tool
+----
+
+=== TLS Security Profile
+
+The TLS security profile controls which cipher suites and minimum TLS version OpenShift Virtualization components accept. By default, OpenShift Virtualization inherits the cluster-wide crypto policy from the APIServer configuration. You can override this cluster-wide setting by configuring `tlsSecurityProfile` in the HyperConverged CR.
+
+NOTE: The TLS security profile is currently propagated only to the Cluster Network Addons Operator.
+
+To enforce TLS 1.3 only:
+
+[source,bash,role=execute]
+----
+oc patch hco kubevirt-hyperconverged -n openshift-cnv --type=merge \
+  -p '{"spec":{"security":{"tlsSecurityProfile":{"type":"Modern"}}}}'
+----
+
+Available profile types:
+
+* `Old` — TLS 1.0 and later, broad compatibility
+* `Intermediate` — TLS 1.2 and later (default on OpenShift)
+* `Modern` — TLS 1.3 only, no backward compatibility
+* `Custom` — fully configurable ciphers and minimum version
+
+== Step 8: Configure VM Eviction Strategy
+
+The cluster-wide eviction strategy determines what happens to VMs when a node is drained for maintenance or upgrades. The operator sets defaults based on cluster topology: `LiveMigrate` for clusters with multiple worker nodes, `None` for single-worker clusters.
+
+Configure the eviction strategy:
+
+[source,bash,role=execute]
+----
+oc patch hco kubevirt-hyperconverged -n openshift-cnv --type=merge \
+  -p '{"spec":{"virtualization":{"evictionStrategy":"LiveMigrate"}}}'
+----
+
+Available values:
+
+* `LiveMigrate` — migrate the VM to another node; fails if migration is not possible
+* `LiveMigrateIfPossible` — migrate if possible; otherwise stop the VM
+* `External` — an external controller handles evacuation
+* `None` — VMs are not automatically moved
+
+NOTE: This setting is a cluster-wide default. Individual VMs can override it in their `VirtualMachine` spec under `spec.template.spec.evictionStrategy`.
+
+== Step 9: Verify the Full Configuration
+
+After making changes, confirm that the operator reconciled successfully:
+
+[source,bash,role=execute]
+----
+oc get hco kubevirt-hyperconverged -n openshift-cnv \
+  -o jsonpath='{.status.conditions}' | python3 -m json.tool
+----
+
+Look for `Available: True`, `Progressing: False`, and `Degraded: False`.
+
+Check that settings propagated to the KubeVirt sub-CR:
+
+[source,bash,role=execute]
+----
+oc get kubevirt kubevirt-kubevirt-hyperconverged -n openshift-cnv \
+  -o jsonpath='{.spec.configuration}' | python3 -m json.tool
+----
+
+Check that CDI settings propagated:
+
+[source,bash,role=execute]
+----
+oc get cdi cdi -n openshift-cnv -o jsonpath='{.spec}' | python3 -m json.tool
+----
+
+If something is not behaving as expected, check the HyperConverged operator pod logs:
+
+[source,bash,role=execute]
+----
+oc logs -n openshift-cnv -l name=hyperconverged-cluster-operator --tail=50
+----
+
+Look for reconcile errors or validation failures in the log output.
+
+=== Common Troubleshooting Checks
+
+If the `HyperConverged` CR shows `Degraded: True`, identify which sub-component is reporting the problem:
+
+[source,bash,role=execute]
+----
+oc get hco kubevirt-hyperconverged -n openshift-cnv \
+  -o jsonpath='{.status.relatedObjects}' | python3 -m json.tool
+----
+
+Check whether the `TaintedConfiguration` condition is set, which indicates annotation-based overrides are active:
+
+[source,bash,role=execute]
+----
+oc get hco kubevirt-hyperconverged -n openshift-cnv \
+  -o jsonpath='{.status.conditions[?(@.type=="TaintedConfiguration")].status}'
+----
+
+If you applied a feature gate that a running VM requires, you may need to restart the VM to pick up the new configuration. Running VMs do not automatically restart when `HyperConverged` spec changes.
+
+== Cleanup
+
+The changes in this tutorial modify cluster-level settings rather than creating discrete resources. To restore a field to its operator default, remove it from the spec using `null` in a JSON merge patch:
+
+[source,bash,role=execute]
+----
+oc patch hco kubevirt-hyperconverged -n openshift-cnv --type=merge -p '{
+  "spec": {
+    "featureGates": null,
+    "virtualization": {
+      "liveMigrationConfig": null,
+      "evictionStrategy": null,
+      "mediatedDevicesConfiguration": null,
+      "permittedHostDevices": null
+    },
+    "storage": {
+      "scratchSpaceStorageClass": null,
+      "vmStateStorageClass": null,
+      "filesystemOverhead": null,
+      "storageImport": null,
+      "workloadResourceRequirements": null
+    },
+    "security": {
+      "certConfig": null,
+      "tlsSecurityProfile": null
+    },
+    "workloadSources": {
+      "enableCommonBootImageImport": null,
+      "commonTemplatesNamespace": null,
+      "dataImportCronTemplates": null
+    }
+  }
+}'
+----
+
+Setting a field to `null` in a merge patch removes it from the spec. The operator then reverts to its built-in default for that field.
+
+== Summary
+
+In this tutorial, you learned:
+
+* The `HyperConverged` CR is the single configuration entry point for OpenShift Virtualization. Do not edit the KubeVirt, CDI, or SSP CRs directly; the operator will overwrite manual changes.
+* Use `oc patch --type=merge` for targeted, repeatable configuration changes.
+* Feature gates enable optional capabilities like `downwardMetrics`, `alignCPUs`, and `incrementalBackup`. Check which gates are active versus deprecated before enabling them.
+* Live migration settings control bandwidth, concurrency, and timeouts cluster-wide. Enabling `allowPostCopy` carries availability risk if a destination node fails.
+* CDI storage settings control scratch space storage class, filesystem overhead per storage class, and which registries are trusted without TLS verification.
+* CDI workload resource limits prevent importer and uploader pods from competing with VM workloads.
+* SSP settings control common boot image import globally, where VM templates are deployed, and individual `DataImportCron` template modifications. You can disable specific common images, modify their storage settings, or add custom images with retention policies.
+* Host device passthrough requires two separate configurations: `mediatedDevicesConfiguration` creates mediated device instances, and `permittedHostDevices` allows VMs to use them. The `permittedHostDevices` field supports both mediated devices and PCI passthrough devices, with optional external resource provider integration. The operator replaces the entire array when patching, so always include all permitted devices.
+* Certificate rotation intervals are configured via `spec.security.certConfig` with validation rules: `server.duration` must be less than `ca.duration`, and `renewBefore` must be less than `server.duration`. All durations must be at least 10 minutes.
+* The TLS security profile defaults to inheriting from the cluster-wide APIServer configuration. You can override this via `spec.security.tlsSecurityProfile`. The profile is currently propagated only to the Cluster Network Addons Operator.
+* The eviction strategy defaults to `LiveMigrate` for multi-worker clusters and `None` for single-worker clusters. Individual VMs can override this cluster-wide default.
+* Set a field to `null` in a merge patch to remove it from the spec and restore the operator default.
+
+== See Also
+
+* xref:instancetype-preference.adoc[Instancetype and Preference] — using predefined VM sizing configurations
+* xref:infrastructure-node-placement.adoc[Infrastructure Node Placement] — controlling where HyperConverged infrastructure pods run
+* link:https://docs.redhat.com/en/documentation/openshift_container_platform/{ocp-docs-version}/html/virtualization/getting-started#virt-getting-started[OpenShift Virtualization Getting Started,window=_blank]
+* link:https://github.com/kubevirt/hyperconverged-cluster-operator/blob/release-1.8/docs/cluster-configuration.md[HyperConverged Cluster Operator Configuration Reference,window=_blank] — upstream documentation for all cluster configuration options
+* link:https://access.redhat.com/articles/4855391[OpenShift Virtualization Lifecycle and Version Mapping,window=_blank] — KubeVirt and component versions per OpenShift release
+* xref:attachment$hyperconverged-configuration/hyperconverged-full-example.yaml[Download hyperconverged-full-example.yaml] — annotated reference showing all configurable fields
