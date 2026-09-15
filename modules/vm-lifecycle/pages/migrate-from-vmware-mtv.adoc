@@ -1,0 +1,758 @@
+= Migrating VMs from VMware vSphere Using MTV
+:navtitle: Migrate from VMware (MTV)
+
+== Overview
+
+This tutorial shows how to migrate virtual machines from VMware vSphere to OpenShift Virtualization using the Migration Toolkit for Virtualization (MTV). MTV is the Red Hat product built on the upstream Konveyor Forklift project. It connects to a source platform such as VMware vCenter, reads the source inventory, and copies VM disks into OpenShift Virtualization while converting each VM to run on KubeVirt.
+
+You will drive the migration from the command line using custom resources in the `forklift.konveyor.io` API group: a `Provider` for the vCenter connection, a `NetworkMap` and a `StorageMap` to translate source resources to OpenShift resources, a `Plan` that groups the VMs to migrate, and a `Migration` that runs the plan.
+
+NOTE: MTV also provides a web console plugin under the *Migration* menu. This tutorial uses the CLI so that every step is reproducible and can be committed to a Git repository.
+
+== What You Will Learn
+
+* How to install and configure the MTV operator
+* How to build a VMware Virtual Disk Development Kit (VDDK) image to speed up transfers
+* How to connect MTV to a VMware vCenter using a `Provider` and a `Secret`
+* How to map source networks and datastores to OpenShift networks and storage classes
+* The difference between warm and cold migration and when to use each
+* How to run, monitor, and validate a migration
+* How to add pre-migration and post-migration hooks
+* How to troubleshoot common migration failures
+
+== Prerequisites
+
+* OpenShift {ocp-min-version}+ with xref:getting-started:install-openshift-virtualization.adoc[OpenShift Virtualization operator installed]
+* Cluster administrator access (the MTV operator and its custom resources require `cluster-admin`)
+* CLI tools: `oc` and `podman`
+* A reachable VMware vCenter or ESXi endpoint, with a user that can read the inventory and export VM disks
+* Network connectivity from the OpenShift cluster to the vCenter SDK endpoint on port 443
+* A `StorageClass` configured for dynamic provisioning to receive the migrated disks
+* An image registry reachable from the cluster to host the VDDK image
+* The VMware VDDK archive downloaded from the VMware developer portal (license required)
+
+== Understanding the MTV Migration Workflow
+
+MTV separates the connection, the resource mapping, and the migration into distinct custom resources. This lets you reuse a provider and its maps across many plans.
+
+....
+VMware vCenter                         OpenShift Virtualization
+      │                                         │
+      │  Secret (credentials)                   │
+      │  Provider (spec.type: vsphere) ─────────┤
+      │                                         │
+      ▼                                         ▼
+  source inventory                      host provider (auto-created)
+      │                                         │
+      ├── NetworkMap  (source network  → pod / multus NAD)
+      ├── StorageMap  (source datastore → StorageClass)
+      │
+      ▼
+    Plan (list of VMs + maps + target namespace)
+      │
+      ▼
+  Migration (runs one Plan)
+      │
+      ▼
+  DataVolumes → PVCs → VirtualMachines in the target namespace
+....
+
+When you deploy the MTV operator it creates a destination `Provider` named `host` in the `openshift-mtv` namespace. That resource represents the local OpenShift Virtualization cluster and is the migration target for every plan in this tutorial.
+
+== Warm vs Cold Migration
+
+MTV supports two migration types. Choose based on how much downtime the workload can tolerate.
+
+[cols="1,3,3",options="header"]
+|===
+|Aspect |Cold migration |Warm migration
+
+|Source VM state
+|Shut down for the entire transfer
+|Runs during the bulk transfer, shut down only for cutover
+
+|Downtime
+|Full duration of the disk copy
+|Seconds to minutes during cutover
+
+|Data copy
+|All disk blocks copied once, sequentially
+|Incremental copies using Changed Block Tracking (CBT)
+
+|Prerequisite
+|None beyond provider access
+|CBT enabled on each source VM and each disk
+
+|Best for
+|Dev and test VMs, single large disks, fail-fast validation
+|Production and business-critical workloads
+
+|Plan setting
+|`spec.warm: false` (default)
+|`spec.warm: true`
+|===
+
+Warm migration copies most of the data while the VM keeps running. It takes CBT snapshots and copies only changed blocks on each pass (the precopy stage). When you are ready, MTV shuts down the source VM, copies the final delta, and starts the VM on OpenShift (the cutover stage). Data held in RAM is not transferred.
+
+IMPORTANT: Warm migration requires Changed Block Tracking on every source VM and every disk. Enable CBT in vSphere before you create a warm plan. Warm migration is supported only for VMware vSphere and Red Hat Virtualization sources.
+
+== Step 1: Install the MTV Operator
+
+Create the `openshift-mtv` namespace:
+
+[source,bash,role=execute]
+----
+oc create namespace openshift-mtv
+----
+
+Create an `OperatorGroup` and a `Subscription` for the operator:
+
+xref:attachment$migrate-from-vmware-mtv/forklift-controller.yaml[Download forklift-controller.yaml]
+
+[source,bash,role=execute]
+----
+cat << 'EOF' | oc apply -f -
+apiVersion: operators.coreos.com/v1
+kind: OperatorGroup
+metadata:
+  name: migration
+  namespace: openshift-mtv
+spec:
+  targetNamespaces:
+    - openshift-mtv
+---
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: mtv-operator
+  namespace: openshift-mtv
+spec:
+  channel: release-v2.8
+  installPlanApproval: Automatic
+  name: mtv-operator
+  source: redhat-operators
+  sourceNamespace: openshift-marketplace
+EOF
+----
+
+NOTE: Set the `channel` to the MTV release you want to install. Check available channels with `oc get packagemanifest mtv-operator -n openshift-marketplace -o jsonpath='{.status.channels[*].name}'`.
+
+Wait for the operator to reach the `Succeeded` phase:
+
+[source,bash,role=execute]
+----
+oc get csv -n openshift-mtv -w
+----
+
+Deploy the controller by creating a `ForkliftController` resource:
+
+[source,bash,role=execute]
+----
+cat << 'EOF' | oc apply -f -
+apiVersion: forklift.konveyor.io/v1beta1
+kind: ForkliftController
+metadata:
+  name: forklift-controller
+  namespace: openshift-mtv
+spec:
+  olm_managed: true
+EOF
+----
+
+Verify that the MTV pods are running:
+
+[source,bash,role=execute]
+----
+oc get pods -n openshift-mtv
+----
+
+.Expected output
+[source,text]
+----
+NAME                                                    READY   STATUS    RESTARTS   AGE
+forklift-api-bb45b8db4-cpzlg                            1/1     Running   0          6m
+forklift-controller-7649db6845-zd25p                    2/2     Running   0          6m
+forklift-must-gather-api-78fb4bcdf6-h2r4m               1/1     Running   0          6m
+forklift-operator-59c87cfbdc-pmkfc                      1/1     Running   0          28m
+forklift-ui-plugin-5c5564f6d6-zpd85                     1/1     Running   0          6m
+forklift-validation-7d84c74c6f-fj9xg                    1/1     Running   0          6m
+forklift-volume-populator-controller-85d5cb64b6-mrlmc   1/1     Running   0          6m
+----
+
+Confirm the destination provider was created automatically:
+
+[source,bash,role=execute]
+----
+oc get provider host -n openshift-mtv
+----
+
+== Step 2: Create a VDDK Image
+
+The VMware Virtual Disk Development Kit (VDDK) speeds up disk transfers and reduces the chance of plan failures. Building a VDDK image is optional but strongly recommended. Migrations of VMs backed by VMware vSAN do not work without VDDK.
+
+Perform these steps on a file system that preserves symbolic links. Extract the VDDK archive you downloaded from VMware:
+
+[source,bash,role=execute]
+----
+mkdir -p /tmp/vddk && cd /tmp/vddk
+tar -xzf VMware-vix-disklib-8.0.1-*.x86_64.tar.gz
+----
+
+Create a `Dockerfile` that copies the extracted library into the image:
+
+[source,bash,role=execute]
+----
+cat > Dockerfile << 'EOF'
+FROM registry.access.redhat.com/ubi9/ubi-minimal
+USER 1001
+COPY vmware-vix-disklib-distrib /vmware-vix-disklib-distrib
+RUN mkdir -p /opt
+ENTRYPOINT ["cp", "-r", "/vmware-vix-disklib-distrib", "/opt"]
+EOF
+----
+
+Build and push the image to a registry the cluster can reach:
+
+[source,bash,role=execute]
+----
+podman build . -t registry.example.com/vddk:8.0.1
+podman push registry.example.com/vddk:8.0.1
+----
+
+WARNING: Storing the VDDK image in a public registry might violate the VMware license terms. Use a private registry that only your cluster can reach.
+
+== Step 3: Create the Source Provider Credentials Secret
+
+The `Secret` holds the vCenter user, password, and certificate validation settings. Create it in the `openshift-mtv` namespace.
+
+xref:attachment$migrate-from-vmware-mtv/vsphere-secret.yaml[Download vsphere-secret.yaml]
+
+[source,yaml]
+----
+apiVersion: v1
+kind: Secret
+metadata:
+  name: vsphere-credentials
+  namespace: openshift-mtv
+  labels:
+    createdForResourceType: providers
+    createdForResource: vsphere-provider
+type: Opaque
+stringData:
+  user: administrator@vsphere.local
+  password: <vcenter_password>
+  insecureSkipVerify: "false"
+  cacert: |
+    -----BEGIN CERTIFICATE-----
+    <vcenter_ca_certificate_contents>
+    -----END CERTIFICATE-----
+----
+
+The credential fields work as follows:
+
+* `user` and `password` authenticate to vCenter or ESXi.
+* `insecureSkipVerify: "false"` validates the vCenter certificate. Set it to `"true"` only in a lab where you accept an untrusted endpoint.
+* `cacert` holds the CA certificate that signed the vCenter endpoint. Retrieve it with the command below and paste the contents into the manifest.
+
+Fetch the vCenter CA certificate:
+
+[source,bash,role=execute]
+----
+openssl s_client -connect vcenter.example.com:443 -showcerts </dev/null 2>/dev/null \
+  | openssl x509 -outform PEM
+----
+
+Apply the secret:
+
+[source,bash,role=execute]
+----
+oc apply -f vsphere-secret.yaml
+----
+
+== Step 4: Create the VMware vSphere Source Provider
+
+The `Provider` points MTV at the vCenter SDK endpoint and references the credentials secret and the VDDK image.
+
+xref:attachment$migrate-from-vmware-mtv/vsphere-provider.yaml[Download vsphere-provider.yaml]
+
+[source,yaml]
+----
+apiVersion: forklift.konveyor.io/v1beta1
+kind: Provider
+metadata:
+  name: vsphere-provider
+  namespace: openshift-mtv
+spec:
+  type: vsphere
+  url: https://vcenter.example.com/sdk
+  secret:
+    name: vsphere-credentials
+    namespace: openshift-mtv
+  settings:
+    vddkInitImage: registry.example.com/vddk:8.0.1
+    sdkEndpoint: vcenter
+----
+
+Note the following fields:
+
+* `url` must include the `/sdk` path. For an ESXi host that is not managed by vCenter, point at the ESXi SDK endpoint and set `sdkEndpoint: esxi`.
+* `vddkInitImage` is the image you built in Step 2. Omit it only if you accept slower transfers.
+
+Apply the provider:
+
+[source,bash,role=execute]
+----
+oc apply -f vsphere-provider.yaml
+----
+
+Wait for the provider to report `Ready`. MTV connects to vCenter and reads the inventory during this step:
+
+[source,bash,role=execute]
+----
+oc get provider vsphere-provider -n openshift-mtv -o jsonpath='{.status.conditions[?(@.type=="Ready")].status}'
+----
+
+A value of `True` means MTV connected successfully and populated the inventory.
+
+== Step 5: Find Source Networks, Datastores, and VMs
+
+The network map and storage map reference source resources by their vSphere managed object reference (moRef) `id`, such as `network-13` or `datastore-11`. The plan references VMs by `name` or `id`.
+
+Open the *Migration* menu in the OpenShift web console, select the `vsphere-provider`, and browse *Networks*, *Datastores*, and *Virtual Machines* to read the IDs and names. You can also confirm names directly in vCenter.
+
+TIP: Using the VM `name` in the plan is simpler than the `id`. Use the `id` when several VMs share the same name across clusters or folders.
+
+== Step 6: Create the Network Map
+
+The `NetworkMap` translates each vSphere network to an OpenShift network. Map a source network either to the pod network (`type: pod`) or to a Multus network attachment definition (`type: multus`).
+
+xref:attachment$migrate-from-vmware-mtv/vmware-networkmap.yaml[Download vmware-networkmap.yaml]
+
+[source,yaml]
+----
+apiVersion: forklift.konveyor.io/v1beta1
+kind: NetworkMap
+metadata:
+  name: vmware-networkmap
+  namespace: openshift-mtv
+spec:
+  map:
+    - source:
+        id: network-13
+      destination:
+        type: pod
+    - source:
+        id: network-31
+      destination:
+        type: multus
+        name: vlan-100
+        namespace: openshift-mtv
+  provider:
+    source:
+      name: vsphere-provider
+      namespace: openshift-mtv
+    destination:
+      name: host
+      namespace: openshift-mtv
+----
+
+Replace `network-13` and `network-31` with the IDs from Step 5. For a `multus` destination, `name` and `namespace` must match an existing `NetworkAttachmentDefinition`. Apply the map:
+
+[source,bash,role=execute]
+----
+oc apply -f vmware-networkmap.yaml
+----
+
+== Step 7: Create the Storage Map
+
+The `StorageMap` translates each vSphere datastore to an OpenShift `StorageClass`. MTV provisions the migrated disks on the mapped storage class.
+
+xref:attachment$migrate-from-vmware-mtv/vmware-storagemap.yaml[Download vmware-storagemap.yaml]
+
+[source,yaml]
+----
+apiVersion: forklift.konveyor.io/v1beta1
+kind: StorageMap
+metadata:
+  name: vmware-storagemap
+  namespace: openshift-mtv
+spec:
+  map:
+    - source:
+        id: datastore-11
+      destination:
+        storageClass: gp3-csi
+        accessMode: ReadWriteOnce
+  provider:
+    source:
+      name: vsphere-provider
+      namespace: openshift-mtv
+    destination:
+      name: host
+      namespace: openshift-mtv
+----
+
+Replace `datastore-11` with the datastore ID from Step 5 and `gp3-csi` with a storage class from your cluster. Use `accessMode: ReadWriteMany` when the storage class supports it and you plan to live-migrate the VMs later. Apply the map:
+
+[source,bash,role=execute]
+----
+oc apply -f vmware-storagemap.yaml
+----
+
+List the storage classes on the cluster if you need to confirm a name:
+
+[source,bash,role=execute]
+----
+oc get storageclass
+----
+
+== Step 8: Create a Migration Plan
+
+The `Plan` groups the VMs to migrate, references the two maps, and sets the target namespace. Create the target namespace first:
+
+[source,bash,role=execute]
+----
+oc create namespace vmware-migrated-vms
+----
+
+=== Cold Plan
+
+A cold plan sets `spec.warm: false`. The source VMs are shut down for the whole transfer.
+
+xref:attachment$migrate-from-vmware-mtv/migration-plan-cold.yaml[Download migration-plan-cold.yaml]
+
+[source,yaml]
+----
+apiVersion: forklift.konveyor.io/v1beta1
+kind: Plan
+metadata:
+  name: vmware-cold-plan
+  namespace: openshift-mtv
+spec:
+  warm: false
+  provider:
+    source:
+      name: vsphere-provider
+      namespace: openshift-mtv
+    destination:
+      name: host
+      namespace: openshift-mtv
+  map:
+    network:
+      name: vmware-networkmap
+      namespace: openshift-mtv
+    storage:
+      name: vmware-storagemap
+      namespace: openshift-mtv
+  targetNamespace: vmware-migrated-vms
+  vms:
+    - name: web-frontend-01
+    - name: web-frontend-02
+----
+
+Apply the plan:
+
+[source,bash,role=execute]
+----
+oc apply -f migration-plan-cold.yaml
+----
+
+=== Warm Plan
+
+A warm plan sets `spec.warm: true`. Enable Changed Block Tracking on the source VMs first, or the plan validation fails.
+
+xref:attachment$migrate-from-vmware-mtv/migration-plan-warm.yaml[Download migration-plan-warm.yaml]
+
+[source,yaml]
+----
+apiVersion: forklift.konveyor.io/v1beta1
+kind: Plan
+metadata:
+  name: vmware-warm-plan
+  namespace: openshift-mtv
+spec:
+  warm: true
+  provider:
+    source:
+      name: vsphere-provider
+      namespace: openshift-mtv
+    destination:
+      name: host
+      namespace: openshift-mtv
+  map:
+    network:
+      name: vmware-networkmap
+      namespace: openshift-mtv
+    storage:
+      name: vmware-storagemap
+      namespace: openshift-mtv
+  targetNamespace: vmware-migrated-vms
+  vms:
+    - name: db-primary-01
+----
+
+Wait for the plan to report `Ready`. MTV validates the maps, the target namespace, and the VM list:
+
+[source,bash,role=execute]
+----
+oc get plan vmware-cold-plan -n openshift-mtv -o jsonpath='{.status.conditions[?(@.type=="Ready")].status}'
+----
+
+== Step 9: Run the Migration
+
+A `Plan` describes the migration but does not run it. Create a `Migration` resource to execute a plan.
+
+xref:attachment$migrate-from-vmware-mtv/migration.yaml[Download migration.yaml]
+
+[source,yaml]
+----
+apiVersion: forklift.konveyor.io/v1beta1
+kind: Migration
+metadata:
+  name: vmware-cold-migration
+  namespace: openshift-mtv
+spec:
+  plan:
+    name: vmware-cold-plan
+    namespace: openshift-mtv
+----
+
+Apply it to start the migration:
+
+[source,bash,role=execute]
+----
+oc apply -f migration.yaml
+----
+
+For a warm migration, point the `Migration` at the warm plan. The precopy stage begins immediately and the VM keeps running. Trigger the cutover when you are ready by setting the cutover time on the plan:
+
+[source,bash,role=execute]
+----
+oc patch plan vmware-warm-plan -n openshift-mtv --type merge \
+  -p "{\"spec\":{\"cutover\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}}"
+----
+
+== Step 10: Monitor the Migration
+
+Watch the migration status. MTV reports per-VM progress in the migration and plan resources:
+
+[source,bash,role=execute]
+----
+oc get migration vmware-cold-migration -n openshift-mtv -o yaml | grep -A 40 "status:"
+----
+
+Follow the disk transfer progress for each VM:
+
+[source,bash,role=execute]
+----
+oc get plan vmware-cold-plan -n openshift-mtv -o jsonpath='{range .status.migration.vms[*]}{.name}{": "}{.phase}{"\n"}{end}'
+----
+
+.Expected output
+[source,text]
+----
+web-frontend-01: CopyingPaused
+web-frontend-02: Completed
+----
+
+MTV creates one importer or populator pod per disk. Watch those pods and the resulting PVCs in the target namespace:
+
+[source,bash,role=execute]
+----
+oc get pods,pvc -n vmware-migrated-vms
+----
+
+The migration is done when every VM reaches the `Completed` phase and the `Migration` resource reports `Succeeded`.
+
+== Step 11: Post-Migration Validation
+
+MTV creates a `VirtualMachine` for each migrated VM in the target namespace. Cold migrations create the VMs in a stopped state; warm migrations start them at cutover.
+
+List the migrated VMs:
+
+[source,bash,role=execute]
+----
+oc get vm -n vmware-migrated-vms
+----
+
+Start a migrated VM and watch it boot:
+
+[source,bash,role=execute]
+----
+virtctl start web-frontend-01 -n vmware-migrated-vms
+oc get vmi -n vmware-migrated-vms -w
+----
+
+Open the console to confirm the guest boots and the network is reachable:
+
+[source,bash,role=execute]
+----
+virtctl console web-frontend-01 -n vmware-migrated-vms
+----
+
+Inside the guest, confirm the disks, network, and QEMU guest agent:
+
+[source,bash]
+----
+lsblk
+ip addr show
+systemctl status qemu-guest-agent
+----
+
+Confirm the VM reports a guest agent connection to OpenShift:
+
+[source,bash,role=execute]
+----
+oc get vmi web-frontend-01 -n vmware-migrated-vms -o jsonpath='{.status.conditions[?(@.type=="AgentConnected")].status}'
+----
+
+TIP: Remove any VMware-specific tooling such as VMware Tools from the guest after migration. OpenShift Virtualization uses the QEMU guest agent instead.
+
+== Adding Pre-Migration and Post-Migration Hooks
+
+Hooks run an Ansible playbook before (`PreHook`) or after (`PostHook`) a VM migrates. Use a `PreHook` to quiesce an application, or a `PostHook` to reconfigure the guest for its new network. You can run one `PreHook` and one `PostHook` per VM.
+
+Create a `Hook` resource that references a runner image and a base64-encoded playbook:
+
+xref:attachment$migrate-from-vmware-mtv/migration-hook.yaml[Download migration-hook.yaml]
+
+[source,yaml]
+----
+apiVersion: forklift.konveyor.io/v1beta1
+kind: Hook
+metadata:
+  name: pre-migration-hook
+  namespace: openshift-mtv
+spec:
+  image: quay.io/kubev2v/hook-runner:latest
+  serviceAccount: migration-hook-sa
+  playbook: <base64_encoded_ansible_playbook>
+----
+
+Encode a playbook and paste the result into the `playbook` field:
+
+[source,bash,role=execute]
+----
+cat playbook.yml | base64 -w0
+----
+
+Reference the hook from a VM entry in the plan. Each hook runs during its own migration step:
+
+[source,yaml]
+----
+spec:
+  vms:
+    - name: web-frontend-01
+      hooks:
+        - hook:
+            name: pre-migration-hook
+            namespace: openshift-mtv
+          step: PreHook
+----
+
+NOTE: A `PreHook` runs against the source VM, which must be reachable over SSH with the public key already installed. A `PostHook` runs after the VM is created on OpenShift.
+
+== Cleanup
+
+Remove the migration resources when you are done. Deleting a `Plan` does not delete the migrated VMs.
+
+Delete the plans, maps, provider, and migration:
+
+[source,bash,role=execute]
+----
+oc delete migration vmware-cold-migration -n openshift-mtv
+oc delete plan vmware-cold-plan vmware-warm-plan -n openshift-mtv
+oc delete networkmap vmware-networkmap -n openshift-mtv
+oc delete storagemap vmware-storagemap -n openshift-mtv
+oc delete provider vsphere-provider -n openshift-mtv
+oc delete secret vsphere-credentials -n openshift-mtv
+----
+
+To remove the migrated VMs and their disks, delete the target namespace:
+
+[source,bash,role=execute]
+----
+oc delete namespace vmware-migrated-vms
+----
+
+WARNING: Deleting the target namespace permanently removes the migrated VMs and their PVCs. Confirm the VMs are validated and backed up before you delete it.
+
+To uninstall MTV entirely, delete the `ForkliftController`, the subscription, and the namespace:
+
+[source,bash,role=execute]
+----
+oc delete forkliftcontroller forklift-controller -n openshift-mtv
+oc delete subscription mtv-operator -n openshift-mtv
+oc delete namespace openshift-mtv
+----
+
+== Troubleshooting Common Migration Issues
+
+=== Provider stays in a non-ready state
+
+The provider cannot reach vCenter or the certificate does not validate. Inspect the conditions:
+
+[source,bash,role=execute]
+----
+oc get provider vsphere-provider -n openshift-mtv -o jsonpath='{.status.conditions}'
+----
+
+Confirm the `url` includes `/sdk`, the credentials are correct, and the `cacert` matches the vCenter endpoint. In a lab you can set `insecureSkipVerify: "true"` in the secret to bypass certificate validation.
+
+=== Plan validation fails for a warm migration
+
+Warm migration requires Changed Block Tracking. If CBT is disabled on a source VM or disk, the plan reports a validation error. Enable CBT in vSphere, or switch the plan to `spec.warm: false`.
+
+=== Disk transfer is slow or the plan fails during copy
+
+A missing VDDK image is the most common cause. Confirm `spec.settings.vddkInitImage` on the provider points to a reachable image. VMs backed by vSAN require VDDK. Check the importer pod logs in the target namespace:
+
+[source,bash,role=execute]
+----
+oc logs -n vmware-migrated-vms -l app=containerized-data-importer
+----
+
+=== VDDK image pull error
+
+The cluster cannot pull the VDDK image. Confirm the registry is reachable from every worker node and that any required pull secret is configured. Test the image reference:
+
+[source,bash,role=execute]
+----
+oc debug node/<worker-node> -- chroot /host podman pull registry.example.com/vddk:8.0.1
+----
+
+=== Migrated VM does not boot
+
+The guest may need drivers or a machine type change. Inspect the VM events and the guest console:
+
+[source,bash,role=execute]
+----
+oc describe vm web-frontend-01 -n vmware-migrated-vms
+virtctl console web-frontend-01 -n vmware-migrated-vms
+----
+
+Linux guests usually boot without changes because MTV installs virtio drivers during conversion. Windows guests require the virtio drivers, which MTV injects during migration.
+
+== Summary
+
+In this tutorial, you learned how to:
+
+* Install the MTV operator and deploy the `ForkliftController`
+* Build a VDDK image to accelerate VMware disk transfers
+* Connect MTV to VMware vCenter with a `Secret` and a `Provider`
+* Map source networks and datastores to OpenShift networks and storage classes
+* Choose between warm and cold migration based on downtime tolerance
+* Create and run a migration `Plan` with a `Migration` resource
+* Monitor disk transfer progress and validate the migrated VMs
+* Add pre-migration and post-migration hooks
+* Troubleshoot provider, VDDK, and boot failures
+
+MTV moves VMware vSphere workloads into OpenShift Virtualization with a declarative, repeatable set of custom resources, which makes large migrations scriptable and reviewable.
+
+== See Also
+
+* xref:import-qcow2-boot-volume.adoc[Creating a Boot Volume from a Local qcow2 Image]
+* xref:cloning-vms.adoc[Cloning Virtual Machines for Rapid Deployment]
+* link:https://docs.redhat.com/en/documentation/migration_toolkit_for_virtualization[Migration Toolkit for Virtualization documentation,window=_blank]
+* link:https://github.com/kubev2v/forklift[Konveyor Forklift project,window=_blank]
+* link:https://kb.vmware.com/s/article/1020128[Changed Block Tracking (CBT) on virtual machines,window=_blank]

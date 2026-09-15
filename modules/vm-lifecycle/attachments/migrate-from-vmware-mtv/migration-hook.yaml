@@ -1,0 +1,9 @@
+apiVersion: forklift.konveyor.io/v1beta1
+kind: Hook
+metadata:
+  name: pre-migration-hook
+  namespace: openshift-mtv
+spec:
+  image: quay.io/kubev2v/hook-runner:latest
+  serviceAccount: migration-hook-sa
+  playbook: <base64_encoded_ansible_playbook>
