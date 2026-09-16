@@ -1,0 +1,1327 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Live Migration of Virtual Machines Between Nodes :: OpenShift Virtualization cookbook</title>
+    <link rel="prev" href="boot-order-boot-sources.html">
+    <link rel="next" href="../manifests/index.html">
+    <meta name="generator" content="Antora 3.1.3">
+    <link rel="stylesheet" href="../../../_/css/site.css">
+    <script>var uiRootPath = '../../../_'</script>
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://www.redhat.com" target="_blank"><img src="../../../_/img/redhat-logo.png" height="40px" alt="Red Hat"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="../../..">OpenShift Virtualization cookbook</a>
+      <div class="navbar-item search hide-for-print">
+        <div id="search-field" class="field">
+          <input id="search-input" type="text" placeholder="Search the docs">
+        </div>
+      </div>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues" target="_blank">Report Issues</a>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="ocp-virt-cookbook" data-version="1">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="../index.html">OpenShift Virtualization cookbook</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../index.html">Introduction</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../getting-started/index.html">Getting Started</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/vm-quick-start.html">Quick Start</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/prerequisites.html">Prerequisites</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/architecture-overview.html">Architecture Overview</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/install-openshift-virtualization.html">Install OpenShift Virtualization</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/installing-qemu-guest-agent.html">Installing QEMU Guest Agent</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/default-storage-class.html">Storage Setup</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/create-vm-web-console.html">Create VM from Web Console</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/create-vm-cli-yaml.html">Create VM from CLI</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/vm-lifecycle-states.html">VM Lifecycle States</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/virtctl-basics.html">Virtctl Basics</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/cloud-init-fundamentals.html">Cloud-init Fundamentals</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../storage/index.html">Storage Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/lvm-operator.html">LVM Operator Installation</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/lvm-troubleshooting.html">LVM Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/odf-ceph-storage.html">ODF/Ceph Storage</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/hostpath-provisioner.html">HostPath Provisioner</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/creating-managing-storage-class.html">Creating and Managing Storage Classes</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/multi-disk-configuration.html">Multi-Disk VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/expanding-vm-disk-size.html">Expanding VM Disk Size</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/cdi-operations.html">CDI Operations</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/disk-io-tuning.html">Disk I/O Tuning</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../networking/index.html">Networking Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/static-ip-configuration.html">Static IP Configuration</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/cloud-init-troubleshooting.html">Cloud-init Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/udn-primary-networks.html">UDN Primary Networks</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/localnet-secondary.html">Localnet Secondary Networks with CUDN</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/localnet-vlan.html">Localnet Secondary Networks with VLAN using NAD</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/cudn-localnet-vlan.html">Localnet VLAN with CUDN</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/layer2-secondary.html">Layer 2 Secondary Networks</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/linux-bridges.html">Linux Bridges</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/sriov-secondary.html">SR-IOV Secondary Networks</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/network-policies-vms.html">Network Policies for VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/metallb-loadbalancer.html">MetalLB Load Balancer for VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/dual-stack-vms.html">Dual-Stack IPv4/IPv6 VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/vm-ingress-routes.html">VM Ingress and Routes</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/ovs-bridge-troubleshooting.html">Troubleshooting Localnet Networks</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../vm-configuration/index.html">Virtual Machine Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/internal-dns-for-vms.html">Internal DNS for VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/remote-access-linux-vms.html">Remote Access to Linux VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/remote-access-linux-troubleshooting.html">Remote Access to Linux VMs Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/remote-access-windows-vms.html">Remote Access to Windows VMs via RDP</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/ssh-access-windows-vms.html">Remote Access to Windows VMs via SSH</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/windows-vm-virtio-drivers.html">Windows VMs with VirtIO Drivers</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/legacy-windows-versions.html">Legacy Windows Versions</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/infrastructure-node-placement.html">Infrastructure Node Placement</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/node-placement-affinity.html">Node Placement and Affinity</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/hotplug-volumes-interfaces.html">Hotplug Volumes and Interfaces</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/vm-templates.html">Virtual Machine Templates</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/instancetype-preference.html">Instancetype and Preference</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/hyperconverged-configuration.html">HyperConverged Configuration</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../performance/index.html">VM Performance Tuning</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/resource-limits-qos.html">Resource Limits and QoS</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/cpu-pinning.html">Dedicated CPU Placement</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/numa-hugepages.html">NUMA and Hugepages</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/realtime-vms.html">Real-Time VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/vm-monitoring-metrics.html">VM Monitoring and Metrics</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/nested-virtualization.html">Nested Virtualization</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="index.html">VM Lifecycle Management</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="import-qcow2-boot-volume.html">Import qcow2 Boot Volume</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="custom-golden-images.html">Custom Golden Images</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="windows-golden-images.html">Windows Golden Images</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="golden-images-troubleshooting.html">Golden Images Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="cloning-vms.html">Cloning VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="vm-snapshots.html">VM Snapshots</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="boot-order-boot-sources.html">VM Boot Order and Boot Sources</a>
+  </li>
+  <li class="nav-item is-current-page" data-depth="2">
+    <a class="nav-link" href="live-migration.html">Live Migration</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../manifests/index.html">Manifests</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../api/index.html">API Guide</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../api/api-component-overview.html">API Component Overview</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../agentic-vm-management/index.html">Agentic VM Management</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/getting-started.html">Getting Started with rh-virt</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/natural-language-vm-create.html">Natural Language VM Creation</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/ai-vm-lifecycle.html">AI VM Lifecycle Operations</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/vm-clone.html">Cloning VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/ai-vm-snapshot-management.html">VM Snapshot Management</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/ai-skill-chaining.html">Day-2 Skill Chaining</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/ai-vm-rebalance.html">VM Rebalancing and Live Migration</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../appendix/glossary.html">Glossary</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">OpenShift Virtualization cookbook</span>
+    <span class="version">1</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <a class="title" href="../index.html">OpenShift Virtualization cookbook</a>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">1</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">OpenShift Virtualization cookbook</a></li>
+    <li><a href="index.html">VM Lifecycle Management</a></li>
+    <li><a href="live-migration.html">Live Migration</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">Live Migration of Virtual Machines Between Nodes</h1>
+<div class="sect1">
+<h2 id="_overview"><a class="anchor" href="#_overview"></a>Overview</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>This tutorial shows how to live-migrate running virtual machines between nodes in an OpenShift Virtualization cluster. Live migration moves a running VM from one node to another while the guest keeps running. Guest memory and device state are copied to the target node, then execution switches over with a pause measured in milliseconds. Applications inside the VM stay up and network connections are preserved.</p>
+</div>
+<div class="paragraph">
+<p>You will migrate VMs by hand with <code>virtctl</code> and with a <code>VirtualMachineInstanceMigration</code> manifest, watch a migration during node drain, tune cluster-wide migration behavior in the <code>HyperConverged</code> custom resource, and apply per-group settings with a <code>MigrationPolicy</code>.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_what_you_will_learn"><a class="anchor" href="#_what_you_will_learn"></a>What You Will Learn</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p>How live migration copies guest state between nodes</p>
+</li>
+<li>
+<p>How to confirm that a VM can be live-migrated</p>
+</li>
+<li>
+<p>How to start a migration with <code>virtctl</code> and with a manifest</p>
+</li>
+<li>
+<p>How to monitor migration progress and outcome</p>
+</li>
+<li>
+<p>How node maintenance triggers automatic migration</p>
+</li>
+<li>
+<p>How to tune migration bandwidth, parallelism, and timeouts</p>
+</li>
+<li>
+<p>How to scope migration settings to a group of VMs with a <code>MigrationPolicy</code></p>
+</li>
+<li>
+<p>How to cancel an in-progress migration</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_prerequisites"><a class="anchor" href="#_prerequisites"></a>Prerequisites</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p>OpenShift 4.18+ with the OpenShift Virtualization operator installed</p>
+</li>
+<li>
+<p>Cluster admin access to edit the <code>HyperConverged</code> custom resource</p>
+</li>
+<li>
+<p>The <code>oc</code> and <code>virtctl</code> CLIs installed and logged in</p>
+</li>
+<li>
+<p>At least two schedulable worker nodes so a VM has somewhere to move</p>
+</li>
+<li>
+<p>A storage class that supports <code>ReadWriteMany</code> (RWX) access mode for VM disks</p>
+</li>
+<li>
+<p>Familiarity with <code>VirtualMachine</code> and <code>VirtualMachineInstance</code> objects (see <a href="cloning-vms.html" class="xref page">Cloning Virtual Machines</a>)</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_how_live_migration_works"><a class="anchor" href="#_how_live_migration_works"></a>How Live Migration Works</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>A live migration keeps the guest running on the source node while its memory pages are copied to the target node. Pages that change during the copy are re-sent in successive passes. When the remaining state is small enough, the VM is paused briefly, the last state is transferred, and the guest resumes on the target node.</p>
+</div>
+<div class="paragraph">
+<p>Two conditions decide whether a VM can move without copying disks:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Shared storage</strong>: the VM&#8217;s disks must live on <code>ReadWriteMany</code> volumes so both nodes can attach them at once. Without RWX, the VM is not live-migratable by default.</p>
+</li>
+<li>
+<p><strong>Migratable device configuration</strong>: the VM must avoid host-specific devices that cannot be reproduced on the target node, such as directly assigned PCI host devices without a compatible target.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>KubeVirt reports the chosen method in the VMI status:</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 25%;">
+<col style="width: 75%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Method</th>
+<th class="tableblock halign-left valign-top">Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>LiveMigration</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Only guest memory and device state are copied. Disks stay on shared RWX storage.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>BlockMigration</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Disk contents are copied along with memory because storage is not shared. Slower and higher bandwidth.</p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>The following diagram shows the flow of a memory-only live migration:</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>Source node                                  Target node
++-------------------+                        +-------------------+
+| virt-launcher pod |                        | virt-launcher pod |
+|   +-----------+   |   copy memory passes   |   +-----------+   |
+|   |  guest VM |===|======================&gt; |   |  guest VM |   |
+|   +-----------+   |   final brief pause     |   +-----------+   |
++-------------------+   then switch over      +-------------------+
+        |                                              |
+        +----------- shared RWX PVC (disks) -----------+</pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_1_deploy_a_migratable_vm"><a class="anchor" href="#_step_1_deploy_a_migratable_vm"></a>Step 1: Deploy a Migratable VM</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Create a namespace for the tutorial:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc create namespace live-migration-demo</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Deploy a Fedora VM backed by a <code>ReadWriteMany</code> disk. The <code>evictionStrategy: LiveMigrate</code> field tells OpenShift to migrate this VM instead of shutting it down when its node is drained.</p>
+</div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+The cloud-init password in this example is for demonstration only. Use SSH key authentication or a strong, unique password in production.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/live-migration/migratable-vm.yaml" class="xref attachment">Download migratable-vm.yaml</a></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: migratable-vm
+  namespace: live-migration-demo
+spec:
+  runStrategy: Always
+  dataVolumeTemplates:
+    - apiVersion: cdi.kubevirt.io/v1beta1
+      kind: DataVolume
+      metadata:
+        name: migratable-vm-disk
+      spec:
+        sourceRef:
+          kind: DataSource
+          name: fedora
+          namespace: openshift-virtualization-os-images
+        storage:
+          accessModes:
+            - ReadWriteMany
+          resources:
+            requests:
+              storage: 30Gi
+          storageClassName: nfs-storage
+  template:
+    metadata:
+      labels:
+        kubevirt.io/domain: migratable-vm
+    spec:
+      evictionStrategy: LiveMigrate
+      domain:
+        cpu:
+          cores: 1
+        memory:
+          guest: 2Gi
+        devices:
+          disks:
+            - name: rootdisk
+              disk:
+                bus: virtio
+            - name: cloudinitdisk
+              disk:
+                bus: virtio
+          interfaces:
+            - name: default
+              masquerade:
+          rng:
+        machine:
+          type: pc-q35-rhel9.4.0
+      networks:
+        - name: default
+          pod:
+      volumes:
+        - name: rootdisk
+          dataVolume:
+            name: migratable-vm-disk
+        - name: cloudinitdisk
+          cloudInitNoCloud:
+            userData: |-
+              #cloud-config
+              user: fedora
+              password: fedora123
+              chpasswd:
+                expire: false
+              ssh_pwauth: true</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Apply the manifest:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f migratable-vm.yaml</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Wait for the VM to reach <code>Running</code>:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vm migratable-vm -n live-migration-demo -w</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Expected output</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">NAME            AGE   STATUS    READY
+migratable-vm   90s   Running   True</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Note which node the VM landed on. You will confirm it changes after migration.</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vmi migratable-vm -n live-migration-demo -o wide</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Expected output</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">NAME            AGE   PHASE     IP            NODENAME    READY   LIVE-MIGRATABLE
+migratable-vm   2m    Running   10.128.2.31   worker-01   True    True</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_2_verify_the_vm_is_live_migratable"><a class="anchor" href="#_step_2_verify_the_vm_is_live_migratable"></a>Step 2: Verify the VM Is Live-Migratable</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Before migrating, confirm the VMI reports the <code>LiveMigratable</code> condition as <code>True</code>. If it is <code>False</code>, migration will be rejected.</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vmi migratable-vm -n live-migration-demo -o jsonpath='{range .status.conditions[?(@.type=="LiveMigratable")]}{.status}{" "}{.reason}{"\n"}{end}'</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Expected output</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">True</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If the value is <code>False</code>, the <code>reason</code> field explains why. A common reason is <code>DisksNotLiveMigratable</code>, which means a disk is not on <code>ReadWriteMany</code> storage.</p>
+</div>
+<div class="paragraph">
+<p>Check which migration method KubeVirt will use:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vmi migratable-vm -n live-migration-demo -o jsonpath='{.status.migrationMethod}{"\n"}'</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>A value of <code>LiveMigration</code> means only memory is copied. A value of <code>BlockMigration</code> means the disks are copied too.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_3_migrate_a_vm_with_virtctl"><a class="anchor" href="#_step_3_migrate_a_vm_with_virtctl"></a>Step 3: Migrate a VM with virtctl</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The simplest way to start a migration is <code>virtctl migrate</code>:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">virtctl migrate migratable-vm -n live-migration-demo</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Expected output</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">VM migratable-vm was scheduled to migrate</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This creates a <code>VirtualMachineInstanceMigration</code> object behind the scenes. Watch the migration objects for the namespace:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get virtualmachineinstancemigration -n live-migration-demo</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Expected output</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">NAME                    PHASE       VMI
+kubevirt-migrate-xxxxx  Succeeded   migratable-vm</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Confirm the VM now runs on a different node:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vmi migratable-vm -n live-migration-demo -o wide</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The <code>NODENAME</code> column shows a different worker than in Step 1.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_4_migrate_a_vm_with_a_virtualmachineinstancemigration_manifest"><a class="anchor" href="#_step_4_migrate_a_vm_with_a_virtualmachineinstancemigration_manifest"></a>Step 4: Migrate a VM with a VirtualMachineInstanceMigration Manifest</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>For automation and GitOps workflows, declare the migration as a resource. A <code>VirtualMachineInstanceMigration</code> names the VMI to move; the controller picks a target node.</p>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/live-migration/vmi-migration.yaml" class="xref attachment">Download vmi-migration.yaml</a></p>
+</div>
+<div class="paragraph">
+<p>Apply the manifest to start the migration:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f - &lt;&lt;EOF
+apiVersion: kubevirt.io/v1
+kind: VirtualMachineInstanceMigration
+metadata:
+  name: migrate-migratable-vm
+  namespace: live-migration-demo
+spec:
+  vmiName: migratable-vm
+EOF</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Watch the object move through its phases:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get virtualmachineinstancemigration migrate-migratable-vm -n live-migration-demo -w</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The <code>PHASE</code> column advances through <code>Pending</code>, <code>Scheduling</code>, <code>Running</code>, and finally <code>Succeeded</code>.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_5_monitor_migration_progress"><a class="anchor" href="#_step_5_monitor_migration_progress"></a>Step 5: Monitor Migration Progress</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Migration state is recorded on the VMI under <code>status.migrationState</code>. While a migration runs, inspect the full block:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vmi migratable-vm -n live-migration-demo -o jsonpath='{.status.migrationState}{"\n"}'</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>For a readable view of the key fields, query them individually:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vmi migratable-vm -n live-migration-demo \
+  -o jsonpath='Source: {.status.migrationState.sourceNode}{"\n"}Target: {.status.migrationState.targetNode}{"\n"}Completed: {.status.migrationState.completed}{"\n"}Failed: {.status.migrationState.failed}{"\n"}'</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Expected output</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">Source: worker-01
+Target: worker-02
+Completed: true
+Failed: &lt;no value&gt;</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>You can also follow migration events for the namespace:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get events -n live-migration-demo --field-selector reason=Migrated</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>To confirm the guest never lost connectivity, log in and check uptime after a migration:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">virtctl console migratable-vm -n live-migration-demo</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Inside the guest, verify the system has been up across the migration:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">uptime</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The uptime keeps climbing across migrations because the guest was never rebooted. Disconnect from the console with <code>Ctrl+]</code>.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_6_migrate_vms_with_the_web_console"><a class="anchor" href="#_step_6_migrate_vms_with_the_web_console"></a>Step 6: Migrate VMs with the Web Console</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The web console runs the same migration from a menu.</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Navigate to <strong>Virtualization</strong> &#8594; <strong>VirtualMachines</strong>.</p>
+</li>
+<li>
+<p>Select the project <code>live-migration-demo</code>.</p>
+</li>
+<li>
+<p>Click the <strong>Options</strong> menu (three vertical dots) for <code>migratable-vm</code>.</p>
+</li>
+<li>
+<p>Select <strong>Migrate</strong> &#8594; <strong>Compute</strong> &#8594; <strong>Node</strong>.</p>
+</li>
+<li>
+<p>Watch the VM status change to <strong>Migrating</strong>, then back to <strong>Running</strong> on the new node. The <strong>Node</strong> column on the VirtualMachines list updates when the migration completes.</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>To stop a migration from the console, open the same <strong>Options</strong> menu and select <strong>Cancel Migration</strong> while the VM is in the <strong>Migrating</strong> state.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_7_trigger_automatic_migration_during_node_maintenance"><a class="anchor" href="#_step_7_trigger_automatic_migration_during_node_maintenance"></a>Step 7: Trigger Automatic Migration During Node Maintenance</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>VMs with <code>evictionStrategy: LiveMigrate</code> are migrated automatically when their node is drained, so you can service hardware with no VM downtime.</p>
+</div>
+<div class="paragraph">
+<p>Find the node running the VM:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vmi migratable-vm -n live-migration-demo -o wide</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Cordon and drain that node. Draining evicts pods; the <code>virt-launcher</code> pod for a <code>LiveMigrate</code> VM triggers a live migration instead of a shutdown.</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc adm drain &lt;node-name&gt; --delete-emptydir-data --ignore-daemonsets --force --pod-selector=kubevirt.io=virt-launcher</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>While the drain runs, watch the migration object appear and complete:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get virtualmachineinstancemigration -n live-migration-demo -w</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>After the VM has moved, return the node to service:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc adm uncordon &lt;node-name&gt;</code></pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+A VM without <code>evictionStrategy: LiveMigrate</code> is shut down on drain rather than migrated. Set this field on every VM that must survive node maintenance.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_8_tune_cluster_wide_migration_settings"><a class="anchor" href="#_step_8_tune_cluster_wide_migration_settings"></a>Step 8: Tune Cluster-Wide Migration Settings</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Cluster-wide migration behavior is set in the <code>HyperConverged</code> custom resource under <code>spec.virtualization.liveMigrationConfig</code>. These settings control how fast and how many migrations run at once.</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 33.3333%;">
+<col style="width: 50%;">
+<col style="width: 16.6667%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Field</th>
+<th class="tableblock halign-left valign-top">Purpose</th>
+<th class="tableblock halign-left valign-top">Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>bandwidthPerMigration</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Maximum network bandwidth used per migration. <code>0</code> means unlimited.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>0</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>parallelMigrationsPerCluster</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Maximum migrations running at once across the whole cluster.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>5</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>parallelOutboundMigrationsPerNode</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Maximum migrations leaving a single node at once.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>2</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>completionTimeoutPerGiB</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Seconds allowed per GiB of memory before the migration is aborted.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>800</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>progressTimeout</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Seconds with no progress before the migration is aborted.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>150</code></p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>Set the <code>liveMigrationConfig</code> block. The following example caps bandwidth and allows more migrations in parallel:</p>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/live-migration/hyperconverged-migration-config.yaml" class="xref attachment">Download hyperconverged-migration-config.yaml</a></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: hco.kubevirt.io/v1beta1
+kind: HyperConverged
+metadata:
+  name: kubevirt-hyperconverged
+  namespace: openshift-cnv
+spec:
+  virtualization:
+    liveMigrationConfig:
+      bandwidthPerMigration: 64Mi
+      parallelMigrationsPerCluster: 5
+      parallelOutboundMigrationsPerNode: 2
+      completionTimeoutPerGiB: 800
+      progressTimeout: 150</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Apply the change with a patch:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc patch hyperconverged kubevirt-hyperconverged -n openshift-cnv --type merge \
+  -p '{"spec":{"virtualization":{"liveMigrationConfig":{"bandwidthPerMigration":"64Mi","parallelMigrationsPerCluster":5,"parallelOutboundMigrationsPerNode":2}}}}'</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Confirm the applied values:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get hyperconverged kubevirt-hyperconverged -n openshift-cnv -o jsonpath='{.spec.virtualization.liveMigrationConfig}{"\n"}'</code></pre>
+</div>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-important" title="Important"></i>
+</td>
+<td class="content">
+Limiting <code>bandwidthPerMigration</code> protects other network traffic but slows migrations. A migration that cannot keep up with a busy guest&#8217;s memory changes may hit <code>completionTimeoutPerGiB</code> and abort. Tune bandwidth and timeouts together.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_9_create_a_migrationpolicy_for_a_vm_group"><a class="anchor" href="#_step_9_create_a_migrationpolicy_for_a_vm_group"></a>Step 9: Create a MigrationPolicy for a VM Group</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>A <code>MigrationPolicy</code> applies migration settings to a group of VMs selected by labels, overriding the cluster-wide defaults for those VMs only. This is useful when one class of workload needs different tuning, such as post-copy migration for large memory VMs.</p>
+</div>
+<div class="paragraph">
+<p>First, label the VM so a policy can select it:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc label vm migratable-vm -n live-migration-demo migration-tier=fast</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The label must reach the VMI. It is already present on the running VMI through the VM template if set at creation; for an existing VMI, restart the VM or add the label to the running VMI:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc label vmi migratable-vm -n live-migration-demo migration-tier=fast --overwrite</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Create a policy that selects VMIs with <code>migration-tier: fast</code> and raises their bandwidth ceiling while enabling auto-converge:</p>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/live-migration/migration-policy.yaml" class="xref attachment">Download migration-policy.yaml</a></p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f - &lt;&lt;EOF
+apiVersion: migrations.kubevirt.io/v1alpha1
+kind: MigrationPolicy
+metadata:
+  name: fast-tier-policy
+spec:
+  selectors:
+    virtualMachineInstanceSelector:
+      migration-tier: fast
+  allowAutoConverge: true
+  bandwidthPerMigration: 128Mi
+  completionTimeoutPerGiB: 400
+  allowPostCopy: false
+EOF</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>List policies to confirm it exists:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get migrationpolicy</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The next time a matching VM migrates, the controller records the policy on the VMI. Trigger a migration and check which policy was applied:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">virtctl migrate migratable-vm -n live-migration-demo
+oc get vmi migratable-vm -n live-migration-demo -o jsonpath='{.status.migrationState.migrationPolicyName}{"\n"}'</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Expected output</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">fast-tier-policy</code></pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<code>allowAutoConverge</code> throttles the guest&#8217;s vCPUs when a migration cannot keep up with memory changes, which helps busy VMs finish migrating at the cost of temporary guest slowdown. <code>allowPostCopy</code> switches the guest to the target node before all memory is copied, pulling remaining pages on demand; it can complete otherwise-stuck migrations but risks the VM if the network fails mid-transfer.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_10_cancel_a_migration"><a class="anchor" href="#_step_10_cancel_a_migration"></a>Step 10: Cancel a Migration</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>To stop an in-progress migration, use <code>virtctl migrate-cancel</code>:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">virtctl migrate-cancel migratable-vm -n live-migration-demo</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The VM keeps running on its source node. You can also cancel by deleting the migration object:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc delete virtualmachineinstancemigration migrate-migratable-vm -n live-migration-demo</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_troubleshooting"><a class="anchor" href="#_troubleshooting"></a>Troubleshooting</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_vm_reports_livemigratable_false"><a class="anchor" href="#_vm_reports_livemigratable_false"></a>VM reports LiveMigratable: False</h3>
+<div class="paragraph">
+<p>Read the reason on the VMI condition:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vmi migratable-vm -n live-migration-demo -o jsonpath='{range .status.conditions[?(@.type=="LiveMigratable")]}{.reason}: {.message}{"\n"}{end}'</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Common reasons:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>DisksNotLiveMigratable</code>: a disk is on <code>ReadWriteOnce</code> storage. Recreate the VM disk on a <code>ReadWriteMany</code> storage class.</p>
+</li>
+<li>
+<p><code>InterfaceNotLiveMigratable</code>: a network interface binding cannot be migrated. Use <code>masquerade</code> or bridge bindings that support migration.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_migration_stays_in_running_and_never_completes"><a class="anchor" href="#_migration_stays_in_running_and_never_completes"></a>Migration stays in Running and never completes</h3>
+<div class="paragraph">
+<p>A guest that changes memory faster than the migration bandwidth can never converge. Inspect the migration state:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vmi migratable-vm -n live-migration-demo -o jsonpath='{.status.migrationState}{"\n"}'</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Resolutions:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Raise <code>bandwidthPerMigration</code> in the <code>HyperConverged</code> resource or a <code>MigrationPolicy</code>.</p>
+</li>
+<li>
+<p>Set <code>allowAutoConverge: true</code> in a <code>MigrationPolicy</code> to throttle the guest vCPUs.</p>
+</li>
+<li>
+<p>Consider <code>allowPostCopy: true</code> for large, write-heavy VMs.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_migration_fails_immediately"><a class="anchor" href="#_migration_fails_immediately"></a>Migration fails immediately</h3>
+<div class="paragraph">
+<p>Check the migration object and events:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc describe virtualmachineinstancemigration -n live-migration-demo</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>A frequent cause is that no target node has enough free CPU or memory. Confirm capacity:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc adm top nodes</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_drain_hangs_waiting_for_a_vm"><a class="anchor" href="#_drain_hangs_waiting_for_a_vm"></a>Drain hangs waiting for a VM</h3>
+<div class="paragraph">
+<p>If <code>oc adm drain</code> stalls, a VM on the node may not be live-migratable and cannot be evicted. Confirm every VM on the node has <code>evictionStrategy: LiveMigrate</code> and reports <code>LiveMigratable: True</code>, or stop non-migratable VMs before draining.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_cleanup"><a class="anchor" href="#_cleanup"></a>Cleanup</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Remove all resources created in this tutorial:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc delete namespace live-migration-demo</code></pre>
+</div>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc delete migrationpolicy fast-tier-policy</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If you changed <code>liveMigrationConfig</code> and want to restore defaults, remove the block from the <code>HyperConverged</code> resource:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc patch hyperconverged kubevirt-hyperconverged -n openshift-cnv --type json \
+  -p '[{"op":"remove","path":"/spec/virtualization/liveMigrationConfig"}]'</code></pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+If you cordoned or drained a node during Step 7 and did not uncordon it, run <code>oc adm uncordon &lt;node-name&gt;</code> to return it to service.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_summary"><a class="anchor" href="#_summary"></a>Summary</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>In this tutorial you learned how to:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Deploy a VM on <code>ReadWriteMany</code> storage with <code>evictionStrategy: LiveMigrate</code></p>
+</li>
+<li>
+<p>Confirm a VM is live-migratable through the <code>LiveMigratable</code> condition</p>
+</li>
+<li>
+<p>Start migrations with <code>virtctl migrate</code> and with a <code>VirtualMachineInstanceMigration</code> manifest</p>
+</li>
+<li>
+<p>Monitor migration progress through the VMI <code>migrationState</code> and events</p>
+</li>
+<li>
+<p>Migrate VMs from the web console</p>
+</li>
+<li>
+<p>Drain a node and watch VMs migrate automatically with no downtime</p>
+</li>
+<li>
+<p>Tune bandwidth, parallelism, and timeouts in the <code>HyperConverged</code> resource</p>
+</li>
+<li>
+<p>Apply per-group settings with a <code>MigrationPolicy</code></p>
+</li>
+<li>
+<p>Cancel an in-progress migration</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Live migration lets you patch hosts, rebalance load, and upgrade hardware while VMs keep running.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_see_also"><a class="anchor" href="#_see_also"></a>See Also</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p><a href="cloning-vms.html" class="xref page">Cloning Virtual Machines for Rapid Deployment</a></p>
+</li>
+<li>
+<p><a href="vm-snapshots.html" class="xref page">VM Snapshots</a></p>
+</li>
+<li>
+<p><a href="../performance/cpu-pinning.html" class="xref page">Dedicated CPU Placement for Virtual Machines</a></p>
+</li>
+<li>
+<p><a href="https://kubevirt.io/user-guide/compute/live_migration/" target="_blank" rel="noopener">KubeVirt Live Migration</a></p>
+</li>
+<li>
+<p><a href="https://docs.redhat.com/en/documentation/openshift_container_platform/4.22/html/virtualization/live-migration" target="_blank" rel="noopener">Live migration - OpenShift Virtualization Documentation</a></p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<nav class="pagination">
+  <span class="prev"><a href="boot-order-boot-sources.html">VM Boot Order and Boot Sources</a></span>
+  <span class="next"><a href="../manifests/index.html">Manifests</a></span>
+</nav>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <img src="../../../_/img/rhl-logo-red.png" height="40px" alt="Red Hat"  href="https://redhat.com" >
+</footer><script id="site-script" src="../../../_/js/site.js" data-ui-root-path="../../../_"></script>
+<script async src="../../../_/js/vendor/highlight.js"></script>
+<script src="../../../_/js/vendor/lunr.js"></script>
+<script src="../../../_/js/search-ui.js" id="search-ui-script" data-site-root-path="../../.." data-snippet-length="100" data-stylesheet="../../../_/css/search.css"></script>
+<script async src="../../../search-index.js"></script>
+  </body>
+</html>
