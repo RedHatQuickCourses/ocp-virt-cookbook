@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: virt-kernel-args
+  namespace: clusters
+data:
+  config: |
+    apiVersion: machineconfiguration.openshift.io/v1
+    kind: MachineConfig
+    metadata:
+      name: 99-virt-kernel-args
+      labels:
+        machineconfiguration.openshift.io/role: worker
+    spec:
+      kernelArguments:
+      - intel_iommu=on
+      - iommu=pt
