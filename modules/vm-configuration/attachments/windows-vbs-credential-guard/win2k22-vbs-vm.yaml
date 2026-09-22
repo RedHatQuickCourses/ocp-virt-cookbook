@@ -1,0 +1,109 @@
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: win2k22-vbs
+  namespace: windows-vbs
+spec:
+  runStrategy: RerunOnFailure
+  dataVolumeTemplates:
+    - metadata:
+        name: win2k22-vbs-rootdisk
+      spec:
+        sourceRef:
+          kind: DataSource
+          name: win2k22
+          namespace: openshift-virtualization-os-images
+        storage:
+          resources:
+            requests:
+              storage: 80Gi
+  template:
+    metadata:
+      labels:
+        kubevirt.io/domain: win2k22-vbs
+    spec:
+      evictionStrategy: None
+      terminationGracePeriodSeconds: 3600
+      domain:
+        cpu:
+          sockets: 1
+          cores: 4
+          threads: 1
+          model: host-passthrough
+          features:
+            - name: vmx
+              policy: require
+        memory:
+          guest: 8Gi
+        firmware:
+          bootloader:
+            efi:
+              secureBoot: true
+              persistent: true
+        features:
+          acpi:
+            enabled: true
+          apic:
+            enabled: true
+          smm:
+            enabled: true
+          hyperv:
+            relaxed:
+              enabled: true
+            vapic:
+              enabled: true
+            vpindex:
+              enabled: true
+            runtime:
+              enabled: true
+            synic:
+              enabled: true
+            synictimer:
+              enabled: true
+              direct:
+                enabled: true
+            frequencies:
+              enabled: true
+            reenlightenment:
+              enabled: true
+            ipi:
+              enabled: true
+            tlbflush:
+              enabled: true
+            reset:
+              enabled: true
+            spinlocks:
+              spinlocks: 8191
+        clock:
+          utc: {}
+          timer:
+            hpet:
+              present: false
+            hyperv: {}
+            pit:
+              tickPolicy: delay
+            rtc:
+              tickPolicy: catchup
+        devices:
+          tpm:
+            persistent: true
+          disks:
+            - name: rootdisk
+              bootOrder: 1
+              disk:
+                bus: virtio
+          interfaces:
+            - name: default
+              masquerade: {}
+              model: virtio
+          inputs:
+            - name: tablet
+              type: tablet
+              bus: usb
+      networks:
+        - name: default
+          pod: {}
+      volumes:
+        - name: rootdisk
+          dataVolume:
+            name: win2k22-vbs-rootdisk
