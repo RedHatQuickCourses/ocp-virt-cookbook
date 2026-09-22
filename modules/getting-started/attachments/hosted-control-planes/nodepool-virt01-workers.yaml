@@ -1,0 +1,23 @@
+apiVersion: hypershift.openshift.io/v1beta1
+kind: NodePool
+metadata:
+  name: virt01-workers
+  namespace: clusters
+spec:
+  clusterName: virt01
+  replicas: 3
+  management:
+    autoRepair: false
+    upgradeType: InPlace
+  platform:
+    type: Agent
+    agent:
+      agentLabelSelector:
+        matchLabels:
+          virtualization: "true"
+  config:
+  - name: virt-kernel-args
+  tuningConfig:
+  - name: virt-performance-profile
+  release:
+    image: quay.io/openshift-release-dev/ocp-release:4.18.20-x86_64

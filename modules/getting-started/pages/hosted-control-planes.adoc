@@ -1,0 +1,1053 @@
+= Deep Dive: OpenShift Virtualization with Hosted Control Planes
+:navtitle: Hosted Control Planes
+
+== Overview
+
+Hosted control planes (HCP) move the control plane of an OpenShift cluster off dedicated control plane nodes and into pods that run on another OpenShift cluster. The cluster that hosts those pods is the management cluster. The cluster that consumes them is the hosted cluster. A hosted cluster has worker nodes and no control plane nodes of its own.
+
+This changes the economics of running virtual machines. A standalone bare-metal cluster spends three physical machines on the control plane before a single VM runs. With hosted control planes, those three machines go back into the worker pool, and one management cluster carries the control planes of many virtualization clusters.
+
+This guide explains the architecture, documents which OpenShift Virtualization features work on a hosted cluster and which do not, and walks through deploying a hosted cluster whose worker nodes are ready to run VMs.
+
+Applies to:
+
+[source,text]
+----
+OpenShift Container Platform 4.18+
+OpenShift Virtualization 4.18+
+multicluster engine for Kubernetes operator 2.8+
+----
+
+== What You Will Learn
+
+* How a hosted control plane is laid out across the management cluster and the hosted cluster
+* The two ways HCP and OpenShift Virtualization are combined, and which one is supported for production VMs
+* Which virtualization features are supported, conditionally supported, or unavailable on a hosted cluster
+* How to deploy a hosted cluster with bare-metal worker nodes configured for virtualization
+* How to install and verify OpenShift Virtualization on that hosted cluster
+* How node tuning, networking, upgrades, and failure domains differ from a standalone cluster
+
+== Prerequisites
+
+* A management cluster running OpenShift {ocp-min-version}+ with cluster admin access
+* The multicluster engine for Kubernetes operator installed on the management cluster, with hosted control planes enabled
+* The Infrastructure Operator (assisted service) enabled through an `AgentServiceConfig` resource for bare-metal provisioning
+* A default storage class on the management cluster that can back hosted control plane etcd volumes
+* MetalLB or an equivalent load balancer on the management cluster to expose the hosted cluster API and ingress
+* At least three bare-metal hosts with hardware virtualization extensions (`vmx` on Intel, `svm` on AMD) available in BIOS
+* DNS records for `api.<cluster-name>.<base-domain>` and `*.apps.<cluster-name>.<base-domain>`
+* The `oc`, `hcp`, and `virtctl` CLIs installed locally
+* A pull secret and an SSH public key
+* Familiarity with the xref:architecture-overview.adoc[OpenShift Virtualization architecture]
+
+== Hosted Control Planes Architecture
+
+=== Where Each Component Runs
+
+On a standalone cluster, `etcd`, `kube-apiserver`, the controller manager, the scheduler, and the OpenShift API servers run as static pods on control plane nodes inside the same cluster they serve. On a hosted cluster, those components run as ordinary Deployments in a namespace on the management cluster.
+
+....
+ MANAGEMENT CLUSTER  (standalone OpenShift, 3 control plane nodes)
+ ┌────────────────────────────────────────────────────────────────────┐
+ │  multicluster engine  +  HyperShift operator                       │
+ │                                                                    │
+ │  namespace: clusters          namespace: clusters-virt01           │
+ │  ┌──────────────────────┐     ┌─────────────────────────────────┐  │
+ │  │ HostedCluster virt01 │     │ etcd          kube-apiserver    │  │
+ │  │ NodePool  virt01-wk  │────►│ kube-controller-manager         │  │
+ │  │ Secrets (pull, ssh)  │     │ openshift-apiserver   OAuth     │  │
+ │  └──────────────────────┘     │ ignition-server  MCO  cluster   │  │
+ │                               │ version operator  konnectivity  │  │
+ │                               └───────────────┬─────────────────┘  │
+ └───────────────────────────────────────────────┼────────────────────┘
+                                                 │ kubelet, ignition,
+                                                 │ konnectivity tunnel
+ HOSTED CLUSTER  virt01                          │
+ ┌───────────────────────────────────────────────┴────────────────────┐
+ │  worker-01 (bare metal)   worker-02        worker-03               │
+ │                                                                    │
+ │  virt-handler DaemonSet       CNV operator pods (hco, virt-api,    │
+ │  virt-launcher pods (VMs)     virt-controller, cdi, ssp)           │
+ │                                                                    │
+ │  No control plane nodes. oc get nodes returns workers only.        │
+ └────────────────────────────────────────────────────────────────────┘
+....
+
+Two custom resources drive the whole thing:
+
+* `HostedCluster` defines the control plane: release image, networking, service publishing strategy, and availability policy.
+* `NodePool` defines a group of worker nodes: replica count, platform, release image, node configuration, and upgrade behavior.
+
+Both live on the management cluster in a namespace such as `clusters`. The control plane pods are created in a derived namespace named `clusters-<hosted-cluster-name>`.
+
+=== Two Ways to Combine HCP and Virtualization
+
+The phrase "OpenShift Virtualization and hosted control planes" covers two different topologies. They are easy to confuse and have opposite support statements.
+
+....
+ TOPOLOGY A — VMs run on the hosted cluster (production path)
+
+   Management cluster  ──►  hosted control plane pods
+   Hosted cluster      ──►  bare-metal workers (Agent platform)
+                            OpenShift Virtualization installed here
+                            VMs run directly on bare-metal KVM
+
+ TOPOLOGY B — The hosted cluster is made of VMs (KubeVirt platform)
+
+   Management cluster  ──►  hosted control plane pods
+                       ──►  OpenShift Virtualization installed here
+                            worker nodes are VMs on the management cluster
+   Hosted cluster      ──►  workers are VMs; running VMs inside them
+                            means nested virtualization
+....
+
+Topology A is what this guide deploys. The hosted cluster uses the Agent platform, its workers are physical machines, and OpenShift Virtualization runs on those machines with direct access to `/dev/kvm`.
+
+Topology B is the KubeVirt platform for hosted control planes. It is a supported way to build hosted clusters quickly on top of an existing virtualization cluster, and it is a good fit for application workloads. Installing OpenShift Virtualization inside such a hosted cluster requires nested virtualization, which is not supported for production. Use topology B for demos and CI, never for production VMs.
+
+WARNING: Do not run production virtual machines on a hosted cluster whose worker nodes are themselves virtual machines. Nested virtualization is unsupported and carries a heavy performance penalty. See xref:performance:nested-virtualization.adoc[] for the constraints.
+
+=== What Changes for Virtualization
+
+The virtualization stack itself is unchanged: the same operator, the same `HyperConverged` resource, the same `VirtualMachine` API. What changes is everything around it.
+
+[cols="1,2,2",options="header"]
+|===
+|Area |Standalone cluster |Hosted cluster
+
+|Control plane placement
+|3 control plane nodes in the cluster
+|Pods in a management cluster namespace
+
+|CNV operator pods
+|Scheduled on worker or infra nodes
+|Scheduled on worker nodes only; there are no other nodes
+
+|Node configuration
+|`MachineConfig` plus `MachineConfigPool`
+|ConfigMaps referenced by `NodePool.spec.config`
+
+|Node tuning
+|`PerformanceProfile` applied to a pool
+|ConfigMap referenced by `NodePool.spec.tuningConfig`
+
+|Machine API
+|`Machine` and `MachineSet` in the cluster
+|Not present in the hosted cluster; `Agent` and `BareMetalHost` live on the management cluster
+
+|Upgrades
+|One `ClusterVersion` update
+|`HostedCluster` release first, then each `NodePool`
+
+|API availability
+|Fails with the cluster
+|Depends on the management cluster
+|===
+
+The last row deserves attention. Running VMs keep running when the hosted control plane is unavailable, because `virt-launcher` pods and their QEMU processes do not need the API server to stay alive. Lifecycle operations do not: starting, stopping, live migrating, hotplugging, and console access all go through the hosted `kube-apiserver` in the management cluster.
+
+== Resource Savings
+
+The saving is structural, not incremental. Every standalone OpenShift cluster needs three control plane nodes for high availability. A hosted cluster needs zero.
+
+[cols="2,1,1",options="header"]
+|===
+|Fleet of 10 virtualization clusters |Standalone |Hosted control planes
+
+|Control plane machines
+|30
+|0
+
+|Management cluster machines
+|0
+|3 (shared by all 10)
+
+|Machines available for VMs
+|Workers only
+|Workers plus the 30 reclaimed machines
+
+|Places to patch a control plane
+|10
+|1
+|===
+
+Beyond machine count, three properties matter in day-to-day operation:
+
+* Control planes are provisioned in minutes, because no hardware is installed. A hosted cluster is ready as soon as its worker nodes join.
+* Control plane capacity is pooled. A quiet cluster and a busy cluster share the same management nodes instead of each holding three idle machines.
+* Control planes are managed centrally. Upgrades, etcd backups, and monitoring for every hosted control plane happen on one cluster.
+
+The trade is concentration of risk. The management cluster becomes a dependency for the API of every hosted cluster it carries. Size it for high availability, keep etcd on fast storage, and set `controllerAvailabilityPolicy` to `HighlyAvailable` for production hosted clusters.
+
+== Feature Support Matrix
+
+The matrix below covers topology A: OpenShift Virtualization {ocp-min-version}+ installed on a hosted cluster with bare-metal worker nodes from an Agent node pool.
+
+[cols="2,1,3",options="header"]
+|===
+|Feature |Status |Notes
+
+|VM create, start, stop, restart
+|Supported
+|Identical API and behavior to a standalone cluster.
+
+|Templates, boot sources, instance types
+|Supported
+|The SSP operator and boot source imports work unchanged.
+
+|Containerized Data Importer (import, upload, clone)
+|Supported
+|Requires a storage class in the hosted cluster.
+
+|Live migration
+|Supported
+|Requires `ReadWriteMany` storage in the hosted cluster, same as standalone.
+
+|Snapshots, clones, restore
+|Supported
+|Requires a CSI driver with snapshot support in the hosted cluster.
+
+|Secondary networks (Linux bridge, localnet, Layer 2)
+|Supported
+|`NodeNetworkConfigurationPolicy` is applied inside the hosted cluster by the NMState operator.
+
+|User-defined networks on OVN-Kubernetes
+|Supported
+|The hosted cluster must use the OVN-Kubernetes network type, which is the default.
+
+|MetalLB services for VMs
+|Supported
+|Install MetalLB in the hosted cluster, separate from the management cluster instance.
+
+|Hugepages, CPU pinning, NUMA, real-time
+|Supported with caveats
+|Configured through `NodePool.spec.tuningConfig` instead of a `PerformanceProfile` applied to a `MachineConfigPool`.
+
+|Kernel arguments and kernel modules
+|Supported with caveats
+|Delivered as a `MachineConfig` inside a ConfigMap referenced by `NodePool.spec.config`. A `MachineConfig` created directly in the hosted cluster is not reconciled.
+
+|SR-IOV and PCI passthrough
+|Supported with caveats
+|The operators run in the hosted cluster, but IOMMU kernel arguments come from the node pool. Validate against your hardware before committing to a design.
+
+|Node remediation and VM high availability
+|Supported with caveats
+|Self Node Remediation works. Remediation strategies that delete `Machine` objects do not, because the Machine API is absent. Fencing through `BareMetalHost` is driven from the management cluster.
+
+|Backup and restore of VMs with OADP
+|Supported
+|Install OADP in the hosted cluster. Backing up the hosted control plane itself is a separate procedure on the management cluster.
+
+|Monitoring and metrics for VMs
+|Supported
+|The hosted cluster runs its own monitoring stack on worker nodes. Control plane metrics are scraped on the management cluster.
+
+|Nested virtualization for production VMs
+|Not supported
+|Applies to topology B, where the hosted cluster workers are VMs.
+
+|Single-node hosted cluster with local storage only
+|Not supported for live migration
+|A single worker node has nowhere to migrate to, and `ReadWriteOnce` local storage blocks migration.
+
+|Editing control plane components from the hosted cluster
+|Not available
+|`etcd`, `kube-apiserver`, and their tuning live on the management cluster.
+|===
+
+NOTE: Support statements change between releases. Confirm anything marked "supported with caveats" against the link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.18/html/hosted_control_planes/index[hosted control planes documentation,window=_blank] for the exact version you deploy.
+
+== Bare Metal Standalone vs HCP by Scenario
+
+[cols="2,2,2",options="header"]
+|===
+|Scenario |Bare metal standalone |Hosted control planes
+
+|Single production virtualization cluster
+|Better fit. No management cluster to build or maintain.
+|Adds a dependency without amortizing it.
+
+|Many small virtualization clusters (per team, per site, per tenant)
+|Three control plane machines per cluster becomes the dominant cost.
+|Better fit. Control planes collapse onto shared infrastructure.
+
+|Strong tenant isolation with separate APIs
+|Full isolation, full cost.
+|Better fit. Each tenant gets its own API server, etcd, and RBAC, with shared hardware.
+
+|Edge site with 2 or 3 machines
+|Control plane consumes the whole site.
+|Better fit. All local machines run VMs; the control plane lives centrally.
+
+|Edge site with an unreliable link to the data center
+|Better fit. The cluster is self-contained.
+|Lifecycle operations stop when the link is down, although running VMs continue.
+
+|Short-lived clusters for testing or CI
+|Hardware install for each cluster.
+|Better fit. Control planes are created and destroyed in minutes.
+
+|Deep node customization (kernel, drivers, real-time)
+|Direct `MachineConfig` and `PerformanceProfile` workflow.
+|Same capabilities, applied through node pool ConfigMaps. Extra indirection.
+
+|Regulated environment requiring physical control plane separation
+|Better fit. Control plane hardware is dedicated per cluster.
+|Control planes of several tenants share nodes.
+
+|Fleet upgrade of 20 clusters
+|20 independent upgrades.
+|Better fit. Control planes upgrade centrally; node pools upgrade on their own schedule.
+|===
+
+== Step 1: Verify the Management Cluster
+
+Confirm that the multicluster engine operator is installed and that hosted control planes are available:
+
+[source,bash,role=execute]
+----
+oc get multiclusterengine multiclusterengine -o jsonpath='{range .spec.overrides.components[?(@.name=="hypershift")]}{.name}{"="}{.enabled}{"\n"}{end}'
+----
+
+.Expected output
+[source,text]
+----
+hypershift=true
+----
+
+Confirm that the HyperShift operator is running:
+
+[source,bash,role=execute]
+----
+oc get pods -n hypershift
+----
+
+Check that a default storage class exists for hosted control plane etcd volumes:
+
+[source,bash,role=execute]
+----
+oc get storageclass
+----
+
+== Step 2: Register Bare-Metal Hosts as Agents
+
+Hosted clusters on the Agent platform draw their worker nodes from a pool of registered hosts. Each host boots a discovery image, registers with the assisted service, and appears as an `Agent` resource.
+
+Create a namespace and an infrastructure environment for the hosts:
+
+xref:attachment$hosted-control-planes/namespace-hardware-inventory.yaml[Download namespace-hardware-inventory.yaml]
+
+[source,bash,role=execute]
+----
+oc create namespace hardware-inventory
+----
+
+Copy your pull secret into the namespace:
+
+[source,bash,role=execute]
+----
+oc create secret generic pull-secret \
+  --namespace hardware-inventory \
+  --from-file=.dockerconfigjson=$HOME/pull-secret.json \
+  --type=kubernetes.io/dockerconfigjson
+----
+
+Create the `InfraEnv` resource that generates the discovery ISO:
+
+xref:attachment$hosted-control-planes/infraenv-hardware-inventory.yaml[Download infraenv-hardware-inventory.yaml]
+
+[source,bash,role=execute]
+----
+oc apply -f - <<EOF
+apiVersion: agent-install.openshift.io/v1beta1
+kind: InfraEnv
+metadata:
+  name: hardware-inventory
+  namespace: hardware-inventory
+spec:
+  pullSecretRef:
+    name: pull-secret
+  sshAuthorizedKey: "$(cat $HOME/.ssh/id_rsa.pub)"
+EOF
+----
+
+Retrieve the discovery ISO URL and boot each bare-metal host from it:
+
+[source,bash,role=execute]
+----
+oc get infraenv hardware-inventory -n hardware-inventory -o jsonpath='{.status.isoDownloadURL}'
+----
+
+TIP: If the hosts are managed through Redfish, create a `BareMetalHost` resource for each machine instead of booting the ISO manually. The Infrastructure Operator then attaches the ISO and powers the host on.
+
+After the hosts boot, they appear as agents:
+
+[source,bash,role=execute]
+----
+oc get agents -n hardware-inventory
+----
+
+Approve each agent and label the ones reserved for virtualization:
+
+[source,bash,role=execute]
+----
+oc patch agent <agent-name> -n hardware-inventory --type merge \
+  -p '{"spec":{"approved":true}}'
+----
+
+[source,bash,role=execute]
+----
+oc label agent <agent-name> -n hardware-inventory virtualization=true
+----
+
+Verify that the hardware inventory reports the virtualization CPU flag before you commit a host to a virtualization node pool:
+
+[source,bash,role=execute]
+----
+oc get agent <agent-name> -n hardware-inventory \
+  -o jsonpath='{.status.inventory.cpu.flags}' | tr ' ' '\n' | grep -E '^(vmx|svm)$'
+----
+
+.Expected output on an Intel host
+[source,text]
+----
+vmx
+----
+
+== Step 3: Create the Hosted Cluster
+
+Take the release image from the management cluster so that the hosted control plane matches its version:
+
+[source,bash,role=execute]
+----
+export RELEASE_IMAGE=$(oc get clusterversion version -o jsonpath='{.status.desired.image}')
+----
+
+Create the hosted cluster with no worker replicas. The node pool comes next, configured for virtualization:
+
+[source,bash,role=execute]
+----
+hcp create cluster agent \
+  --name virt01 \
+  --namespace clusters \
+  --base-domain example.com \
+  --api-server-address api.virt01.example.com \
+  --agent-namespace hardware-inventory \
+  --pull-secret $HOME/pull-secret.json \
+  --ssh-key $HOME/.ssh/id_rsa.pub \
+  --release-image $RELEASE_IMAGE \
+  --control-plane-availability-policy HighlyAvailable \
+  --etcd-storage-class ocs-storagecluster-ceph-rbd \
+  --node-pool-replicas 0
+----
+
+Watch the control plane come up in its own namespace:
+
+[source,bash,role=execute]
+----
+oc get pods -n clusters-virt01
+----
+
+[source,bash,role=execute]
+----
+oc get hostedcluster virt01 -n clusters
+----
+
+.Expected output
+[source,text]
+----
+NAME     VERSION   KUBECONFIG                PROGRESS    AVAILABLE   REASON
+virt01   4.18.x    virt01-admin-kubeconfig   Completed   True        HostedClusterAsExpected
+----
+
+== Step 4: Configure the Node Pool for Virtualization
+
+Node configuration for a hosted cluster is authored on the management cluster. You wrap a `MachineConfig` in a ConfigMap under the `config` key, wrap tuning objects under the `tuning` key, and reference both from the `NodePool`.
+
+Create the kernel argument configuration used by device passthrough and SR-IOV:
+
+xref:attachment$hosted-control-planes/configmap-virt-kernel-args.yaml[Download configmap-virt-kernel-args.yaml]
+
+[source,yaml]
+----
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: virt-kernel-args
+  namespace: clusters
+data:
+  config: |
+    apiVersion: machineconfiguration.openshift.io/v1
+    kind: MachineConfig
+    metadata:
+      name: 99-virt-kernel-args
+      labels:
+        machineconfiguration.openshift.io/role: worker
+    spec:
+      kernelArguments:
+      - intel_iommu=on
+      - iommu=pt
+----
+
+Apply it:
+
+[source,bash,role=execute]
+----
+oc apply -f - <<EOF
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: virt-kernel-args
+  namespace: clusters
+data:
+  config: |
+    apiVersion: machineconfiguration.openshift.io/v1
+    kind: MachineConfig
+    metadata:
+      name: 99-virt-kernel-args
+      labels:
+        machineconfiguration.openshift.io/role: worker
+    spec:
+      kernelArguments:
+      - intel_iommu=on
+      - iommu=pt
+EOF
+----
+
+Create the performance profile used for hugepages and CPU isolation. Adjust the CPU ranges to your hardware:
+
+xref:attachment$hosted-control-planes/configmap-virt-performance-profile.yaml[Download configmap-virt-performance-profile.yaml]
+
+[source,yaml]
+----
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: virt-performance-profile
+  namespace: clusters
+data:
+  tuning: |
+    apiVersion: performance.openshift.io/v2
+    kind: PerformanceProfile
+    metadata:
+      name: virt-workers
+    spec:
+      cpu:
+        isolated: "4-31"
+        reserved: "0-3"
+      hugepages:
+        defaultHugepagesSize: "1G"
+        pages:
+        - size: "1G"
+          count: 16
+      numa:
+        topologyPolicy: restricted
+      nodeSelector:
+        node-role.kubernetes.io/worker: ""
+----
+
+Apply it:
+
+[source,bash,role=execute]
+----
+oc apply -f - <<EOF
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: virt-performance-profile
+  namespace: clusters
+data:
+  tuning: |
+    apiVersion: performance.openshift.io/v2
+    kind: PerformanceProfile
+    metadata:
+      name: virt-workers
+    spec:
+      cpu:
+        isolated: "4-31"
+        reserved: "0-3"
+      hugepages:
+        defaultHugepagesSize: "1G"
+        pages:
+        - size: "1G"
+          count: 16
+      numa:
+        topologyPolicy: restricted
+      nodeSelector:
+        node-role.kubernetes.io/worker: ""
+EOF
+----
+
+Create the node pool that consumes both ConfigMaps and selects the labeled agents:
+
+xref:attachment$hosted-control-planes/nodepool-virt01-workers.yaml[Download nodepool-virt01-workers.yaml]
+
+[source,yaml]
+----
+apiVersion: hypershift.openshift.io/v1beta1
+kind: NodePool
+metadata:
+  name: virt01-workers
+  namespace: clusters
+spec:
+  clusterName: virt01
+  replicas: 3
+  management:
+    autoRepair: false
+    upgradeType: InPlace # <1>
+  platform:
+    type: Agent
+    agent:
+      agentLabelSelector:
+        matchLabels:
+          virtualization: "true" # <2>
+  config:
+  - name: virt-kernel-args # <3>
+  tuningConfig:
+  - name: virt-performance-profile # <4>
+  release:
+    image: quay.io/openshift-release-dev/ocp-release:4.18.20-x86_64 # <5>
+----
+<1> `InPlace` updates the existing machines. `Replace` reprovisions them, which requires spare agents and forces every VM off the node. Prefer `InPlace` for virtualization node pools.
+<2> Only agents labeled `virtualization=true` are consumed by this pool.
+<3> Kernel arguments delivered as a `MachineConfig`.
+<4> Node tuning delivered as a `PerformanceProfile`.
+<5> Use the same release as the hosted control plane. Replace the tag with the version reported by `oc get clusterversion`.
+
+Apply the node pool and watch the agents get installed:
+
+[source,bash,role=execute]
+----
+oc apply -f - <<EOF
+apiVersion: hypershift.openshift.io/v1beta1
+kind: NodePool
+metadata:
+  name: virt01-workers
+  namespace: clusters
+spec:
+  clusterName: virt01
+  replicas: 3
+  management:
+    autoRepair: false
+    upgradeType: InPlace
+  platform:
+    type: Agent
+    agent:
+      agentLabelSelector:
+        matchLabels:
+          virtualization: "true"
+  config:
+  - name: virt-kernel-args
+  tuningConfig:
+  - name: virt-performance-profile
+  release:
+    image: quay.io/openshift-release-dev/ocp-release:4.18.20-x86_64
+EOF
+----
+
+[source,bash,role=execute]
+----
+oc get nodepool virt01-workers -n clusters -w
+----
+
+.Expected output once the nodes join
+[source,text]
+----
+NAME             CLUSTER   DESIRED NODES   CURRENT NODES   AUTOSCALING   AUTOREPAIR   VERSION   UPDATINGVERSION   UPDATINGCONFIG   MESSAGE
+virt01-workers   virt01    3               3               False         False        4.18.x    False             False
+----
+
+IMPORTANT: Do not create `MachineConfig` or `PerformanceProfile` objects directly in the hosted cluster. They are not reconciled there. All node-level configuration flows from the node pool.
+
+== Step 5: Access the Hosted Cluster
+
+Extract the kubeconfig and point your shell at the hosted cluster:
+
+[source,bash,role=execute]
+----
+hcp create kubeconfig --name virt01 --namespace clusters > virt01-kubeconfig
+----
+
+[source,bash,role=execute]
+----
+export KUBECONFIG=$PWD/virt01-kubeconfig
+----
+
+List the nodes:
+
+[source,bash,role=execute]
+----
+oc get nodes
+----
+
+.Expected output
+[source,text]
+----
+NAME        STATUS   ROLES    AGE   VERSION
+worker-01   Ready    worker   12m   v1.31.x
+worker-02   Ready    worker   12m   v1.31.x
+worker-03   Ready    worker   12m   v1.31.x
+----
+
+There are no nodes with the `master` role. Every pod in this cluster, including the virtualization operators, runs on these three machines.
+
+== Step 6: Verify Hardware Virtualization on the Workers
+
+Open a debug shell on a worker node:
+
+[source,bash,role=execute]
+----
+oc debug node/worker-01
+----
+
+Inside the debug shell, check the CPU flags and the KVM device:
+
+[source,bash]
+----
+chroot /host grep -o -m1 -E 'vmx|svm' /proc/cpuinfo
+----
+
+[source,bash]
+----
+chroot /host ls -l /dev/kvm
+----
+
+.Expected output
+[source,text]
+----
+crw-rw----. 1 root kvm 10, 232 Jan 14 10:02 /dev/kvm
+----
+
+Leave the debug shell:
+
+[source,bash]
+----
+exit
+----
+
+If `/dev/kvm` is missing, the host is either a virtual machine or has virtualization disabled in BIOS. Fix that before installing the operator.
+
+== Step 7: Provide Storage in the Hosted Cluster
+
+A hosted cluster starts with no storage class. The hosted control plane uses management cluster storage for etcd, but VM disks need a CSI driver inside the hosted cluster.
+
+Live migration requires `ReadWriteMany` block or filesystem volumes. Choose accordingly:
+
+* OpenShift Data Foundation or external Ceph provides RWX and snapshots. Use this when live migration matters.
+* LVM Storage provides fast local `ReadWriteOnce` volumes only. VMs run, but they cannot live migrate.
+* An external NFS or vendor CSI driver works if it supports RWX and the snapshot API.
+
+After installing a storage provider, confirm the access modes your default class supports:
+
+[source,bash,role=execute]
+----
+oc get storageclass
+----
+
+[source,bash,role=execute]
+----
+oc get storageprofile -o custom-columns=NAME:.metadata.name,ACCESSMODES:.status.claimPropertySets[*].accessModes
+----
+
+See xref:default-storage-class.adoc[] for the full storage configuration walkthrough.
+
+== Step 8: Install OpenShift Virtualization on the Hosted Cluster
+
+The installation is the same as on a standalone cluster. Verify that `KUBECONFIG` still points at the hosted cluster, then create the namespace, operator group, and subscription:
+
+[source,bash,role=execute]
+----
+oc apply -f - <<EOF
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: openshift-cnv
+---
+apiVersion: operators.coreos.com/v1
+kind: OperatorGroup
+metadata:
+  name: kubevirt-hyperconverged-group
+  namespace: openshift-cnv
+spec:
+  targetNamespaces:
+  - openshift-cnv
+---
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: hco-operatorhub
+  namespace: openshift-cnv
+spec:
+  source: redhat-operators
+  sourceNamespace: openshift-marketplace
+  name: kubevirt-hyperconverged
+  channel: stable
+  installPlanApproval: Automatic
+EOF
+----
+
+Wait for the operator to install:
+
+[source,bash,role=execute]
+----
+oc wait --for=jsonpath='{.status.phase}'=Succeeded csv \
+  -l operators.coreos.com/kubevirt-hyperconverged.openshift-cnv \
+  -n openshift-cnv --timeout=600s
+----
+
+Create the `HyperConverged` resource:
+
+[source,bash,role=execute]
+----
+oc apply -f - <<EOF
+apiVersion: hco.kubevirt.io/v1beta1
+kind: HyperConverged
+metadata:
+  name: kubevirt-hyperconverged
+  namespace: openshift-cnv
+spec:
+EOF
+----
+
+Wait until the deployment is available:
+
+[source,bash,role=execute]
+----
+oc wait hyperconverged kubevirt-hyperconverged -n openshift-cnv \
+  --for=condition=Available --timeout=900s
+----
+
+Confirm that the nodes are schedulable for VMs:
+
+[source,bash,role=execute]
+----
+oc get nodes -l kubevirt.io/schedulable=true
+----
+
+.Expected output
+[source,text]
+----
+NAME        STATUS   ROLES    AGE   VERSION
+worker-01   Ready    worker   34m   v1.31.x
+worker-02   Ready    worker   34m   v1.31.x
+worker-03   Ready    worker   34m   v1.31.x
+----
+
+NOTE: The operator pods land on worker nodes because the hosted cluster has no other nodes. Reserve capacity for them when you size the pool, or add a second node pool labeled for infrastructure workloads.
+
+== Step 9: Run a Virtual Machine
+
+Create a namespace and a VM:
+
+xref:attachment$hosted-control-planes/namespace-hcp-virt-demo.yaml[Download namespace-hcp-virt-demo.yaml]
+
+[source,bash,role=execute]
+----
+oc create namespace hcp-virt-demo
+----
+
+xref:attachment$hosted-control-planes/vm-hcp-demo.yaml[Download vm-hcp-demo.yaml]
+
+[source,bash,role=execute]
+----
+oc apply -f - <<EOF
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: hcp-demo
+  namespace: hcp-virt-demo
+spec:
+  runStrategy: Always
+  template:
+    metadata:
+      labels:
+        kubevirt.io/domain: hcp-demo
+    spec:
+      domain:
+        cpu:
+          cores: 1
+        memory:
+          guest: 2Gi
+        resources:
+          requests:
+            memory: 2Gi
+        devices:
+          disks:
+          - name: rootdisk
+            disk:
+              bus: virtio
+          - name: cloudinitdisk
+            disk:
+              bus: virtio
+          interfaces:
+          - name: default
+            masquerade: {}
+      networks:
+      - name: default
+        pod: {}
+      volumes:
+      - name: rootdisk
+        containerDisk:
+          image: quay.io/containerdisks/fedora:latest
+      - name: cloudinitdisk
+        cloudInitNoCloud:
+          userData: |
+            #cloud-config
+            user: fedora
+            password: hcpdemo
+            chpasswd:
+              expire: false
+EOF
+----
+
+WARNING: The password above is for a throwaway demo VM. Use SSH keys for anything else.
+
+Wait for the VM to start and check where it landed:
+
+[source,bash,role=execute]
+----
+oc get vmi -n hcp-virt-demo -o wide
+----
+
+Log in from the serial console to confirm the guest booted:
+
+[source,bash,role=execute]
+----
+virtctl console hcp-demo -n hcp-virt-demo
+----
+
+Inside the guest, confirm that the CPU is KVM-accelerated rather than emulated:
+
+[source,bash]
+----
+lscpu | grep -i hypervisor
+----
+
+.Expected output
+[source,text]
+----
+Hypervisor vendor:                    KVM
+----
+
+Disconnect from the console with `Ctrl+]`.
+
+== Step 10: Check Live Migration Readiness
+
+Live migration on a hosted cluster has the same requirements as on a standalone cluster: more than one schedulable node and shared storage for every VM disk.
+
+Check the `LiveMigratable` condition:
+
+[source,bash,role=execute]
+----
+oc get vmi hcp-demo -n hcp-virt-demo \
+  -o jsonpath='{range .status.conditions[?(@.type=="LiveMigratable")]}{.status}{" "}{.reason}{"\n"}{end}'
+----
+
+If the condition is `True`, migrate the VM:
+
+[source,bash,role=execute]
+----
+virtctl migrate hcp-demo -n hcp-virt-demo
+----
+
+[source,bash,role=execute]
+----
+oc get virtualmachineinstancemigration -n hcp-virt-demo
+----
+
+If the condition is `False` with a `DisksNotLiveMigratable` reason, the VM has a disk that is not on shared storage. Move the disk to an RWX storage class and retry.
+
+The migration itself is handled entirely by `virt-handler` on the two worker nodes. The management cluster is in the path only for the API calls that start and track it, which is why a slow or saturated link to the management cluster shows up as slow migration startup rather than slow data transfer.
+
+== Limitations and Considerations
+
+=== Networking
+
+The hosted cluster API endpoint is published by the management cluster, usually through a MetalLB `LoadBalancer` service or a NodePort. Worker nodes reach it over the network, and every `oc`, `virtctl`, and console request crosses that path. Latency between the worker sites and the management cluster directly affects how responsive VM operations feel.
+
+Secondary networks behave as they do on a standalone cluster. The NMState operator runs in the hosted cluster and applies `NodeNetworkConfigurationPolicy` resources to the bare-metal workers, so bridges, bonds, and VLANs work the same way. See xref:networking:linux-bridges.adoc[] and xref:networking:localnet-vlan.adoc[].
+
+Two network details are specific to hosted clusters:
+
+* The hosted cluster ingress needs its own load balancer inside the hosted cluster. The management cluster load balancer only publishes the control plane endpoints.
+* Pod, service, and machine CIDRs of the hosted cluster must not collide with the management cluster ranges, because the two are joined by the konnectivity tunnel.
+
+=== Upgrades
+
+Upgrades are two operations instead of one:
+
+. Update `HostedCluster.spec.release.image` to the new version. The control plane pods roll in the management cluster.
+. Update `NodePool.spec.release.image` for each pool. The worker nodes update according to `upgradeType`.
+
+Rules to follow:
+
+* Upgrade the control plane first. A node pool must never run a newer version than its control plane.
+* Keep the skew small. Node pools may trail the control plane, but validate against the version skew policy for your release before letting them drift.
+* Use `InPlace` for virtualization pools. `Replace` reprovisions machines from scratch, which discards local storage and requires spare agents.
+* Drain behavior still applies. During an `InPlace` update, each node is cordoned and drained, so VMs live migrate off it. Without RWX storage, they are shut down instead. Plan maintenance windows accordingly.
+* The management cluster must be upgraded before hosted clusters can move to a newer release than it supports.
+
+=== Feature Parity Gaps
+
+* No Machine API in the hosted cluster. Tooling that reads `Machine` or `MachineSet` objects, including some node remediation operators and capacity dashboards, finds nothing.
+* No control plane node access. You cannot debug a control plane node, tune etcd from the hosted cluster, or place workloads on control plane machines.
+* Node configuration indirection. Every kernel argument, kubelet setting, and tuning profile is authored on the management cluster. GitOps pipelines that target the cluster itself need to be split across two clusters.
+* Operators that assume control plane nodes exist may schedule incorrectly. Check node selectors for `node-role.kubernetes.io/master` before installing third-party operators.
+* Infrastructure and worker roles overlap. Monitoring, logging, ingress, and the virtualization operators all compete with VMs for the same worker capacity.
+
+=== Failure Domains
+
+If the management cluster fails, hosted cluster VMs keep running, but you lose the API. No new VMs start, no migrations happen, and the console is unavailable. If a worker node fails, the hosted control plane reschedules its workloads exactly as a standalone control plane would, as long as the management cluster is reachable.
+
+Back up both layers: `etcd` of the hosted control plane on the management cluster, and VM data in the hosted cluster with OADP.
+
+== Cleanup
+
+Delete the demo namespace in the hosted cluster:
+
+[source,bash,role=execute]
+----
+oc delete namespace hcp-virt-demo
+----
+
+To remove the whole hosted cluster, switch back to the management cluster kubeconfig and destroy it:
+
+[source,bash,role=execute]
+----
+unset KUBECONFIG
+----
+
+[source,bash,role=execute]
+----
+hcp destroy cluster agent --name virt01 --namespace clusters
+----
+
+Delete the node pool ConfigMaps if they are no longer referenced:
+
+[source,bash,role=execute]
+----
+oc delete configmap virt-kernel-args virt-performance-profile -n clusters
+----
+
+The agents return to the pool and can be reused by another hosted cluster after they are reset.
+
+== Summary
+
+* Hosted control planes run the control plane of a cluster as pods on a management cluster, leaving the hosted cluster with worker nodes only.
+* Production VMs belong on a hosted cluster with bare-metal workers from an Agent node pool. Hosted clusters whose workers are VMs require nested virtualization and are limited to testing.
+* The virtualization API and feature set are unchanged; storage, tuning, node configuration, and upgrade workflows are what differ.
+* Node configuration reaches the workers through ConfigMaps referenced by `NodePool.spec.config` and `NodePool.spec.tuningConfig`, not through `MachineConfigPool`.
+* The saving is three control plane machines per cluster, which matters most for fleets, tenants, and edge sites, and least for a single large cluster.
+* Running VMs survive a management cluster outage; VM lifecycle operations do not.
+* Upgrades are two steps: control plane first, then each node pool, preferably with `upgradeType: InPlace`.
+
+== See Also
+
+* xref:architecture-overview.adoc[]
+* xref:install-openshift-virtualization.adoc[]
+* xref:default-storage-class.adoc[]
+* xref:performance:nested-virtualization.adoc[]
+* xref:vm-lifecycle:live-migration.adoc[]
+* link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.18/html/hosted_control_planes/index[Hosted control planes documentation,window=_blank]
+* link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.18/html/virtualization/index[OpenShift Virtualization documentation,window=_blank]
