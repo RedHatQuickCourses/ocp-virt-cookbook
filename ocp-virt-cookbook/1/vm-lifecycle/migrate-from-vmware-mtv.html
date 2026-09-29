@@ -1,0 +1,1500 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Migrating VMs from VMware vSphere Using MTV :: OpenShift Virtualization cookbook</title>
+    <link rel="prev" href="live-migration.html">
+    <link rel="next" href="../manifests/index.html">
+    <meta name="generator" content="Antora 3.1.3">
+    <link rel="stylesheet" href="../../../_/css/site.css">
+    <script>var uiRootPath = '../../../_'</script>
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://www.redhat.com" target="_blank"><img src="../../../_/img/redhat-logo.png" height="40px" alt="Red Hat"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="../../..">OpenShift Virtualization cookbook</a>
+      <div class="navbar-item search hide-for-print">
+        <div id="search-field" class="field">
+          <input id="search-input" type="text" placeholder="Search the docs">
+        </div>
+      </div>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues" target="_blank">Report Issues</a>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="ocp-virt-cookbook" data-version="1">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="../index.html">OpenShift Virtualization cookbook</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../index.html">Introduction</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../getting-started/index.html">Getting Started</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/vm-quick-start.html">Quick Start</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/prerequisites.html">Prerequisites</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/architecture-overview.html">Architecture Overview</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/install-openshift-virtualization.html">Install OpenShift Virtualization</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/installing-qemu-guest-agent.html">Installing QEMU Guest Agent</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/default-storage-class.html">Storage Setup</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/create-vm-web-console.html">Create VM from Web Console</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/create-vm-cli-yaml.html">Create VM from CLI</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/vm-lifecycle-states.html">VM Lifecycle States</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/virtctl-basics.html">Virtctl Basics</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/cloud-init-fundamentals.html">Cloud-init Fundamentals</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../storage/index.html">Storage Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/lvm-operator.html">LVM Operator Installation</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/lvm-troubleshooting.html">LVM Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/odf-ceph-storage.html">ODF/Ceph Storage</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/hostpath-provisioner.html">HostPath Provisioner</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/creating-managing-storage-class.html">Creating and Managing Storage Classes</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/multi-disk-configuration.html">Multi-Disk VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/expanding-vm-disk-size.html">Expanding VM Disk Size</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/cdi-operations.html">CDI Operations</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/disk-io-tuning.html">Disk I/O Tuning</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../networking/index.html">Networking Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/static-ip-configuration.html">Static IP Configuration</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/cloud-init-troubleshooting.html">Cloud-init Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/udn-primary-networks.html">UDN Primary Networks</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/localnet-secondary.html">Localnet Secondary Networks with CUDN</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/localnet-vlan.html">Localnet Secondary Networks with VLAN using NAD</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/cudn-localnet-vlan.html">Localnet VLAN with CUDN</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/layer2-secondary.html">Layer 2 Secondary Networks</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/linux-bridges.html">Linux Bridges</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/sriov-secondary.html">SR-IOV Secondary Networks</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/network-policies-vms.html">Network Policies for VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/metallb-loadbalancer.html">MetalLB Load Balancer for VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/dual-stack-vms.html">Dual-Stack IPv4/IPv6 VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/vm-ingress-routes.html">VM Ingress and Routes</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/ovs-bridge-troubleshooting.html">Troubleshooting Localnet Networks</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../vm-configuration/index.html">Virtual Machine Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/internal-dns-for-vms.html">Internal DNS for VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/remote-access-linux-vms.html">Remote Access to Linux VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/remote-access-linux-troubleshooting.html">Remote Access to Linux VMs Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/remote-access-windows-vms.html">Remote Access to Windows VMs via RDP</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/ssh-access-windows-vms.html">Remote Access to Windows VMs via SSH</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/windows-vm-virtio-drivers.html">Windows VMs with VirtIO Drivers</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/legacy-windows-versions.html">Legacy Windows Versions</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/infrastructure-node-placement.html">Infrastructure Node Placement</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/node-placement-affinity.html">Node Placement and Affinity</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/hotplug-volumes-interfaces.html">Hotplug Volumes and Interfaces</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/vm-templates.html">Virtual Machine Templates</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/instancetype-preference.html">Instancetype and Preference</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/hyperconverged-configuration.html">HyperConverged Configuration</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../performance/index.html">VM Performance Tuning</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/resource-limits-qos.html">Resource Limits and QoS</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/cpu-pinning.html">Dedicated CPU Placement</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/numa-hugepages.html">NUMA and Hugepages</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/realtime-vms.html">Real-Time VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/vm-monitoring-metrics.html">VM Monitoring and Metrics</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/nested-virtualization.html">Nested Virtualization</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="index.html">VM Lifecycle Management</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="import-qcow2-boot-volume.html">Import qcow2 Boot Volume</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="custom-golden-images.html">Custom Golden Images</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="windows-golden-images.html">Windows Golden Images</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="golden-images-troubleshooting.html">Golden Images Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="cloning-vms.html">Cloning VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="vm-snapshots.html">VM Snapshots</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="boot-order-boot-sources.html">VM Boot Order and Boot Sources</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="live-migration.html">Live Migration</a>
+  </li>
+  <li class="nav-item is-current-page" data-depth="2">
+    <a class="nav-link" href="migrate-from-vmware-mtv.html">Migrate from VMware (MTV)</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../manifests/index.html">Manifests</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../api/index.html">API Guide</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../api/api-component-overview.html">API Component Overview</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../agentic-vm-management/index.html">Agentic VM Management</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/getting-started.html">Getting Started with rh-virt</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/natural-language-vm-create.html">Natural Language VM Creation</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/ai-vm-lifecycle.html">AI VM Lifecycle Operations</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/vm-clone.html">Cloning VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/ai-vm-snapshot-management.html">VM Snapshot Management</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/ai-skill-chaining.html">Day-2 Skill Chaining</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/ai-vm-rebalance.html">VM Rebalancing and Live Migration</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../appendix/glossary.html">Glossary</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">OpenShift Virtualization cookbook</span>
+    <span class="version">1</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <a class="title" href="../index.html">OpenShift Virtualization cookbook</a>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">1</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">OpenShift Virtualization cookbook</a></li>
+    <li><a href="index.html">VM Lifecycle Management</a></li>
+    <li><a href="migrate-from-vmware-mtv.html">Migrate from VMware (MTV)</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">Migrating VMs from VMware vSphere Using MTV</h1>
+<div class="sect1">
+<h2 id="_overview"><a class="anchor" href="#_overview"></a>Overview</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>This tutorial shows how to migrate virtual machines from VMware vSphere to OpenShift Virtualization using the Migration Toolkit for Virtualization (MTV). MTV is the Red Hat product built on the upstream Konveyor Forklift project. It connects to a source platform such as VMware vCenter, reads the source inventory, and copies VM disks into OpenShift Virtualization while converting each VM to run on KubeVirt.</p>
+</div>
+<div class="paragraph">
+<p>You will drive the migration from the command line using custom resources in the <code>forklift.konveyor.io</code> API group: a <code>Provider</code> for the vCenter connection, a <code>NetworkMap</code> and a <code>StorageMap</code> to translate source resources to OpenShift resources, a <code>Plan</code> that groups the VMs to migrate, and a <code>Migration</code> that runs the plan.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+MTV also provides a web console plugin under the <strong>Migration</strong> menu. This tutorial uses the CLI so that every step is reproducible and can be committed to a Git repository.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_what_you_will_learn"><a class="anchor" href="#_what_you_will_learn"></a>What You Will Learn</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p>How to install and configure the MTV operator</p>
+</li>
+<li>
+<p>How to build a VMware Virtual Disk Development Kit (VDDK) image to speed up transfers</p>
+</li>
+<li>
+<p>How to connect MTV to a VMware vCenter using a <code>Provider</code> and a <code>Secret</code></p>
+</li>
+<li>
+<p>How to map source networks and datastores to OpenShift networks and storage classes</p>
+</li>
+<li>
+<p>The difference between warm and cold migration and when to use each</p>
+</li>
+<li>
+<p>How to run, monitor, and validate a migration</p>
+</li>
+<li>
+<p>How to add pre-migration and post-migration hooks</p>
+</li>
+<li>
+<p>How to troubleshoot common migration failures</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_prerequisites"><a class="anchor" href="#_prerequisites"></a>Prerequisites</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p>OpenShift 4.18+ with <a href="../getting-started/install-openshift-virtualization.html" class="xref page">OpenShift Virtualization operator installed</a></p>
+</li>
+<li>
+<p>Cluster administrator access (the MTV operator and its custom resources require <code>cluster-admin</code>)</p>
+</li>
+<li>
+<p>CLI tools: <code>oc</code> and <code>podman</code></p>
+</li>
+<li>
+<p>A reachable VMware vCenter or ESXi endpoint, with a user that can read the inventory and export VM disks</p>
+</li>
+<li>
+<p>Network connectivity from the OpenShift cluster to the vCenter SDK endpoint on port 443</p>
+</li>
+<li>
+<p>A <code>StorageClass</code> configured for dynamic provisioning to receive the migrated disks</p>
+</li>
+<li>
+<p>An image registry reachable from the cluster to host the VDDK image</p>
+</li>
+<li>
+<p>The VMware VDDK archive downloaded from the VMware developer portal (license required)</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_understanding_the_mtv_migration_workflow"><a class="anchor" href="#_understanding_the_mtv_migration_workflow"></a>Understanding the MTV Migration Workflow</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>MTV separates the connection, the resource mapping, and the migration into distinct custom resources. This lets you reuse a provider and its maps across many plans.</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>VMware vCenter                         OpenShift Virtualization
+      │                                         │
+      │  Secret (credentials)                   │
+      │  Provider (spec.type: vsphere) ─────────┤
+      │                                         │
+      ▼                                         ▼
+  source inventory                      host provider (auto-created)
+      │                                         │
+      ├── NetworkMap  (source network  → pod / multus NAD)
+      ├── StorageMap  (source datastore → StorageClass)
+      │
+      ▼
+    Plan (list of VMs + maps + target namespace)
+      │
+      ▼
+  Migration (runs one Plan)
+      │
+      ▼
+  DataVolumes → PVCs → VirtualMachines in the target namespace</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>When you deploy the MTV operator it creates a destination <code>Provider</code> named <code>host</code> in the <code>openshift-mtv</code> namespace. That resource represents the local OpenShift Virtualization cluster and is the migration target for every plan in this tutorial.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_warm_vs_cold_migration"><a class="anchor" href="#_warm_vs_cold_migration"></a>Warm vs Cold Migration</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>MTV supports two migration types. Choose based on how much downtime the workload can tolerate.</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 14.2857%;">
+<col style="width: 42.8571%;">
+<col style="width: 42.8572%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Aspect</th>
+<th class="tableblock halign-left valign-top">Cold migration</th>
+<th class="tableblock halign-left valign-top">Warm migration</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Source VM state</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Shut down for the entire transfer</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Runs during the bulk transfer, shut down only for cutover</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Downtime</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Full duration of the disk copy</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Seconds to minutes during cutover</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Data copy</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">All disk blocks copied once, sequentially</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Incremental copies using Changed Block Tracking (CBT)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Prerequisite</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">None beyond provider access</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">CBT enabled on each source VM and each disk</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Best for</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Dev and test VMs, single large disks, fail-fast validation</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Production and business-critical workloads</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Plan setting</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>spec.warm: false</code> (default)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>spec.warm: true</code></p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>Warm migration copies most of the data while the VM keeps running. It takes CBT snapshots and copies only changed blocks on each pass (the precopy stage). When you are ready, MTV shuts down the source VM, copies the final delta, and starts the VM on OpenShift (the cutover stage). Data held in RAM is not transferred.</p>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-important" title="Important"></i>
+</td>
+<td class="content">
+Warm migration requires Changed Block Tracking on every source VM and every disk. Enable CBT in vSphere before you create a warm plan. Warm migration is supported only for VMware vSphere and Red Hat Virtualization sources.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_1_install_the_mtv_operator"><a class="anchor" href="#_step_1_install_the_mtv_operator"></a>Step 1: Install the MTV Operator</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Create the <code>openshift-mtv</code> namespace:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc create namespace openshift-mtv</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Create an <code>OperatorGroup</code> and a <code>Subscription</code> for the operator:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">cat &lt;&lt; 'EOF' | oc apply -f -
+apiVersion: operators.coreos.com/v1
+kind: OperatorGroup
+metadata:
+  name: migration
+  namespace: openshift-mtv
+spec:
+  targetNamespaces:
+    - openshift-mtv
+---
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: mtv-operator
+  namespace: openshift-mtv
+spec:
+  channel: release-v2.12
+  installPlanApproval: Automatic
+  name: mtv-operator
+  source: redhat-operators
+  sourceNamespace: openshift-marketplace
+EOF</code></pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+Set the <code>channel</code> to the MTV release you want to install. Check available channels with <code>oc get packagemanifest mtv-operator -n openshift-marketplace -o jsonpath='{.status.channels[*].name}'</code>.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Wait for the operator to reach the <code>Succeeded</code> phase:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get csv -n openshift-mtv -w</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Deploy the controller by creating a <code>ForkliftController</code> resource:</p>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/migrate-from-vmware-mtv/forklift-controller.yaml" class="xref attachment">Download forklift-controller.yaml</a></p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f - &lt;&lt;EOF
+apiVersion: forklift.konveyor.io/v1beta1
+kind: ForkliftController
+metadata:
+  name: forklift-controller
+  namespace: openshift-mtv
+spec:
+  feature_ui_plugin: "true"
+  feature_validation: "true"
+  feature_volume_populator: "true"
+EOF</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Verify that the MTV pods are running:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get pods -n openshift-mtv</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Expected output</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">NAME                                                    READY   STATUS    RESTARTS   AGE
+forklift-api-bb45b8db4-cpzlg                            1/1     Running   0          6m
+forklift-controller-7649db6845-zd25p                    2/2     Running   0          6m
+forklift-must-gather-api-78fb4bcdf6-h2r4m               1/1     Running   0          6m
+forklift-operator-59c87cfbdc-pmkfc                      1/1     Running   0          28m
+forklift-ui-plugin-5c5564f6d6-zpd85                     1/1     Running   0          6m
+forklift-validation-7d84c74c6f-fj9xg                    1/1     Running   0          6m
+forklift-volume-populator-controller-85d5cb64b6-mrlmc   1/1     Running   0          6m</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Confirm the destination provider was created automatically:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get provider host -n openshift-mtv</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_2_create_a_vddk_image"><a class="anchor" href="#_step_2_create_a_vddk_image"></a>Step 2: Create a VDDK Image</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The VMware Virtual Disk Development Kit (VDDK) speeds up disk transfers and reduces the chance of plan failures. Building a VDDK image is optional but strongly recommended. Migrations of VMs backed by VMware vSAN do not work without VDDK.</p>
+</div>
+<div class="paragraph">
+<p>Perform these steps on a file system that preserves symbolic links. Extract the VDDK archive you downloaded from VMware:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">mkdir -p /tmp/vddk &amp;&amp; cd /tmp/vddk
+tar -xzf VMware-vix-disklib-8.0.1-*.x86_64.tar.gz</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Create a <code>Dockerfile</code> that copies the extracted library into the image:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">cat &gt; Dockerfile &lt;&lt; 'EOF'
+FROM registry.access.redhat.com/ubi9/ubi-minimal
+USER 1001
+COPY vmware-vix-disklib-distrib /vmware-vix-disklib-distrib
+RUN mkdir -p /opt
+ENTRYPOINT ["cp", "-r", "/vmware-vix-disklib-distrib", "/opt"]
+EOF</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Build and push the image to a registry the cluster can reach:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">podman build . -t registry.example.com/vddk:8.0.1
+podman push registry.example.com/vddk:8.0.1</code></pre>
+</div>
+</div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+Storing the VDDK image in a public registry might violate the VMware license terms. Use a private registry that only your cluster can reach.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_3_create_the_source_provider_credentials_secret"><a class="anchor" href="#_step_3_create_the_source_provider_credentials_secret"></a>Step 3: Create the Source Provider Credentials Secret</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The <code>Secret</code> holds the vCenter user, password, and certificate validation settings. Create it in the <code>openshift-mtv</code> namespace.</p>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/migrate-from-vmware-mtv/vsphere-secret.yaml" class="xref attachment">Download vsphere-secret.yaml</a></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: v1
+kind: Secret
+metadata:
+  name: vsphere-credentials
+  namespace: openshift-mtv
+  labels:
+    createdForResourceType: providers
+    createdForProviderType: vsphere
+    createdForResource: vsphere-provider
+type: Opaque
+stringData:
+  user: administrator@vsphere.local
+  password: &lt;vcenter_password&gt;
+  insecureSkipVerify: "false"
+  cacert: |
+    -----BEGIN CERTIFICATE-----
+    &lt;vcenter_ca_certificate_contents&gt;
+    -----END CERTIFICATE-----</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The credential fields work as follows:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>user</code> and <code>password</code> authenticate to vCenter or ESXi.</p>
+</li>
+<li>
+<p><code>insecureSkipVerify: "false"</code> validates the vCenter certificate. Set it to <code>"true"</code> only in a lab where you accept an untrusted endpoint.</p>
+</li>
+<li>
+<p><code>cacert</code> holds the CA certificate that signed the vCenter endpoint. Retrieve it with the command below and paste the contents into the manifest.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Fetch the vCenter CA certificate:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">openssl s_client -connect vcenter.example.com:443 -showcerts &lt;/dev/null 2&gt;/dev/null \
+  | openssl x509 -outform PEM</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Apply the secret:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f vsphere-secret.yaml</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_4_create_the_vmware_vsphere_source_provider"><a class="anchor" href="#_step_4_create_the_vmware_vsphere_source_provider"></a>Step 4: Create the VMware vSphere Source Provider</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The <code>Provider</code> points MTV at the vCenter SDK endpoint and references the credentials secret and the VDDK image.</p>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/migrate-from-vmware-mtv/vsphere-provider.yaml" class="xref attachment">Download vsphere-provider.yaml</a></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: forklift.konveyor.io/v1beta1
+kind: Provider
+metadata:
+  name: vsphere-provider
+  namespace: openshift-mtv
+spec:
+  type: vsphere
+  url: https://vcenter.example.com/sdk
+  secret:
+    name: vsphere-credentials
+    namespace: openshift-mtv
+  settings:
+    vddkInitImage: registry.example.com/vddk:8.0.1
+    sdkEndpoint: vcenter</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Note the following fields:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>url</code> must include the <code>/sdk</code> path. For an ESXi host that is not managed by vCenter, point at the ESXi SDK endpoint and set <code>sdkEndpoint: esxi</code>.</p>
+</li>
+<li>
+<p><code>vddkInitImage</code> is the image you built in Step 2. Omit it only if you accept slower transfers.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Apply the provider:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f vsphere-provider.yaml</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Wait for the provider to report <code>Ready</code>. MTV connects to vCenter and reads the inventory during this step:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get provider vsphere-provider -n openshift-mtv -o jsonpath='{.status.conditions[?(@.type=="Ready")].status}'</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>A value of <code>True</code> means MTV connected successfully and populated the inventory.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_5_find_source_networks_datastores_and_vms"><a class="anchor" href="#_step_5_find_source_networks_datastores_and_vms"></a>Step 5: Find Source Networks, Datastores, and VMs</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The network map and storage map reference source resources by their vSphere managed object reference (moRef) <code>id</code>, such as <code>network-13</code> or <code>datastore-11</code>. The plan references VMs by <code>name</code> or <code>id</code>.</p>
+</div>
+<div class="paragraph">
+<p>Open the <strong>Migration</strong> menu in the OpenShift web console, select the <code>vsphere-provider</code>, and browse <strong>Networks</strong>, <strong>Datastores</strong>, and <strong>Virtual Machines</strong> to read the IDs and names. You can also confirm names directly in vCenter.</p>
+</div>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+Using the VM <code>name</code> in the plan is simpler than the <code>id</code>. Use the <code>id</code> when several VMs share the same name across clusters or folders.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_6_create_the_network_map"><a class="anchor" href="#_step_6_create_the_network_map"></a>Step 6: Create the Network Map</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The <code>NetworkMap</code> translates each vSphere network to an OpenShift network. Map a source network either to the pod network (<code>type: pod</code>) or to a Multus network attachment definition (<code>type: multus</code>).</p>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/migrate-from-vmware-mtv/vmware-networkmap.yaml" class="xref attachment">Download vmware-networkmap.yaml</a></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: forklift.konveyor.io/v1beta1
+kind: NetworkMap
+metadata:
+  name: vmware-networkmap
+  namespace: openshift-mtv
+spec:
+  map:
+    - source:
+        id: network-13
+      destination:
+        type: pod
+    - source:
+        id: network-31
+      destination:
+        type: multus
+        name: vlan-100
+        namespace: openshift-mtv
+  provider:
+    source:
+      name: vsphere-provider
+      namespace: openshift-mtv
+    destination:
+      name: host
+      namespace: openshift-mtv</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Replace <code>network-13</code> and <code>network-31</code> with the IDs from Step 5. For a <code>multus</code> destination, <code>name</code> and <code>namespace</code> must match an existing <code>NetworkAttachmentDefinition</code>. Apply the map:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f vmware-networkmap.yaml</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_7_create_the_storage_map"><a class="anchor" href="#_step_7_create_the_storage_map"></a>Step 7: Create the Storage Map</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The <code>StorageMap</code> translates each vSphere datastore to an OpenShift <code>StorageClass</code>. MTV provisions the migrated disks on the mapped storage class.</p>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/migrate-from-vmware-mtv/vmware-storagemap.yaml" class="xref attachment">Download vmware-storagemap.yaml</a></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: forklift.konveyor.io/v1beta1
+kind: StorageMap
+metadata:
+  name: vmware-storagemap
+  namespace: openshift-mtv
+spec:
+  map:
+    - source:
+        id: datastore-11
+      destination:
+        storageClass: gp3-csi
+        accessMode: ReadWriteOnce
+  provider:
+    source:
+      name: vsphere-provider
+      namespace: openshift-mtv
+    destination:
+      name: host
+      namespace: openshift-mtv</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Replace <code>datastore-11</code> with the datastore ID from Step 5 and <code>gp3-csi</code> with a storage class from your cluster. Use <code>accessMode: ReadWriteMany</code> when the storage class supports it and you plan to live-migrate the VMs later. Apply the map:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f vmware-storagemap.yaml</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>List the storage classes on the cluster if you need to confirm a name:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get storageclass</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_8_create_a_migration_plan"><a class="anchor" href="#_step_8_create_a_migration_plan"></a>Step 8: Create a Migration Plan</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The <code>Plan</code> groups the VMs to migrate, references the two maps, and sets the target namespace. Create the target namespace first:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc create namespace vmware-migrated-vms</code></pre>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_cold_plan"><a class="anchor" href="#_cold_plan"></a>Cold Plan</h3>
+<div class="paragraph">
+<p>A cold plan sets <code>spec.warm: false</code>. The source VMs are shut down for the whole transfer.</p>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/migrate-from-vmware-mtv/migration-plan-cold.yaml" class="xref attachment">Download migration-plan-cold.yaml</a></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: forklift.konveyor.io/v1beta1
+kind: Plan
+metadata:
+  name: vmware-cold-plan
+  namespace: openshift-mtv
+spec:
+  warm: false
+  provider:
+    source:
+      name: vsphere-provider
+      namespace: openshift-mtv
+    destination:
+      name: host
+      namespace: openshift-mtv
+  map:
+    network:
+      name: vmware-networkmap
+      namespace: openshift-mtv
+    storage:
+      name: vmware-storagemap
+      namespace: openshift-mtv
+  targetNamespace: vmware-migrated-vms
+  vms:
+    - name: web-frontend-01
+    - name: web-frontend-02</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Apply the plan:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f migration-plan-cold.yaml</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_warm_plan"><a class="anchor" href="#_warm_plan"></a>Warm Plan</h3>
+<div class="paragraph">
+<p>A warm plan sets <code>spec.warm: true</code>. Enable Changed Block Tracking on the source VMs first, or the plan validation fails.</p>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/migrate-from-vmware-mtv/migration-plan-warm.yaml" class="xref attachment">Download migration-plan-warm.yaml</a></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: forklift.konveyor.io/v1beta1
+kind: Plan
+metadata:
+  name: vmware-warm-plan
+  namespace: openshift-mtv
+spec:
+  warm: true
+  provider:
+    source:
+      name: vsphere-provider
+      namespace: openshift-mtv
+    destination:
+      name: host
+      namespace: openshift-mtv
+  map:
+    network:
+      name: vmware-networkmap
+      namespace: openshift-mtv
+    storage:
+      name: vmware-storagemap
+      namespace: openshift-mtv
+  targetNamespace: vmware-migrated-vms
+  vms:
+    - name: db-primary-01</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Wait for the plan to report <code>Ready</code>. MTV validates the maps, the target namespace, and the VM list:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get plan vmware-cold-plan -n openshift-mtv -o jsonpath='{.status.conditions[?(@.type=="Ready")].status}'</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_9_run_the_migration"><a class="anchor" href="#_step_9_run_the_migration"></a>Step 9: Run the Migration</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>A <code>Plan</code> describes the migration but does not run it. Create a <code>Migration</code> resource to execute a plan.</p>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/migrate-from-vmware-mtv/migration.yaml" class="xref attachment">Download migration.yaml</a></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: forklift.konveyor.io/v1beta1
+kind: Migration
+metadata:
+  name: vmware-cold-migration
+  namespace: openshift-mtv
+spec:
+  plan:
+    name: vmware-cold-plan
+    namespace: openshift-mtv</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Apply it to start the migration:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f migration.yaml</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>For a warm migration, point the <code>Migration</code> at the warm plan. The precopy stage begins immediately and the VM keeps running. Trigger the cutover when you are ready by setting the cutover time on the plan:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc patch plan vmware-warm-plan -n openshift-mtv --type merge \
+  -p "{\"spec\":{\"cutover\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}}"</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_10_monitor_the_migration"><a class="anchor" href="#_step_10_monitor_the_migration"></a>Step 10: Monitor the Migration</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Watch the migration status. MTV reports per-VM progress in the migration and plan resources:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get migration vmware-cold-migration -n openshift-mtv -o yaml | grep -A 40 "status:"</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Follow the disk transfer progress for each VM:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get plan vmware-cold-plan -n openshift-mtv -o jsonpath='{range .status.migration.vms[*]}{.name}{": "}{.phase}{"\n"}{end}'</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Expected output</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">web-frontend-01: CopyingPaused
+web-frontend-02: Completed</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>MTV creates one importer or populator pod per disk. Watch those pods and the resulting PVCs in the target namespace:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get pods,pvc -n vmware-migrated-vms</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The migration is done when every VM reaches the <code>Completed</code> phase and the <code>Migration</code> resource reports <code>Succeeded</code>.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_11_post_migration_validation"><a class="anchor" href="#_step_11_post_migration_validation"></a>Step 11: Post-Migration Validation</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>MTV creates a <code>VirtualMachine</code> for each migrated VM in the target namespace. Cold migrations create the VMs in a stopped state; warm migrations start them at cutover.</p>
+</div>
+<div class="paragraph">
+<p>List the migrated VMs:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vm -n vmware-migrated-vms</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Start a migrated VM and watch it boot:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">virtctl start web-frontend-01 -n vmware-migrated-vms
+oc get vmi -n vmware-migrated-vms -w</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Open the console to confirm the guest boots and the network is reachable:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">virtctl console web-frontend-01 -n vmware-migrated-vms</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Inside the guest, confirm the disks, network, and QEMU guest agent:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">lsblk
+ip addr show
+systemctl status qemu-guest-agent</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Confirm the VM reports a guest agent connection to OpenShift:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vmi web-frontend-01 -n vmware-migrated-vms -o jsonpath='{.status.conditions[?(@.type=="AgentConnected")].status}'</code></pre>
+</div>
+</div>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+Remove any VMware-specific tooling such as VMware Tools from the guest after migration. OpenShift Virtualization uses the QEMU guest agent instead.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_adding_pre_migration_and_post_migration_hooks"><a class="anchor" href="#_adding_pre_migration_and_post_migration_hooks"></a>Adding Pre-Migration and Post-Migration Hooks</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Hooks run an Ansible playbook before (<code>PreHook</code>) or after (<code>PostHook</code>) a VM migrates. Use a <code>PreHook</code> to quiesce an application, or a <code>PostHook</code> to reconfigure the guest for its new network. You can run one <code>PreHook</code> and one <code>PostHook</code> per VM.</p>
+</div>
+<div class="paragraph">
+<p>Create a <code>Hook</code> resource that references a runner image and a base64-encoded playbook:</p>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/migrate-from-vmware-mtv/migration-hook.yaml" class="xref attachment">Download migration-hook.yaml</a></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: forklift.konveyor.io/v1beta1
+kind: Hook
+metadata:
+  name: pre-migration-hook
+  namespace: openshift-mtv
+spec:
+  image: quay.io/kubev2v/hook-runner:latest
+  serviceAccount: migration-hook-sa
+  playbook: &lt;base64_encoded_ansible_playbook&gt;</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Encode a playbook and paste the result into the <code>playbook</code> field:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">cat playbook.yml | base64 -w0</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Reference the hook from a VM entry in the plan. Each hook runs during its own migration step:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">spec:
+  vms:
+    - name: web-frontend-01
+      hooks:
+        - hook:
+            name: pre-migration-hook
+            namespace: openshift-mtv
+          step: PreHook</code></pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+A <code>PreHook</code> runs against the source VM, which must be reachable over SSH with the public key already installed. A <code>PostHook</code> runs after the VM is created on OpenShift.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_cleanup"><a class="anchor" href="#_cleanup"></a>Cleanup</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Remove the migration resources when you are done. Deleting a <code>Plan</code> does not delete the migrated VMs.</p>
+</div>
+<div class="paragraph">
+<p>Delete the plans, maps, provider, and migration:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc delete migration vmware-cold-migration -n openshift-mtv
+oc delete plan vmware-cold-plan vmware-warm-plan -n openshift-mtv
+oc delete networkmap vmware-networkmap -n openshift-mtv
+oc delete storagemap vmware-storagemap -n openshift-mtv
+oc delete provider vsphere-provider -n openshift-mtv
+oc delete secret vsphere-credentials -n openshift-mtv</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>To remove the migrated VMs and their disks, delete the target namespace:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc delete namespace vmware-migrated-vms</code></pre>
+</div>
+</div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+Deleting the target namespace permanently removes the migrated VMs and their PVCs. Confirm the VMs are validated and backed up before you delete it.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>To uninstall MTV entirely, delete the <code>ForkliftController</code>, the subscription, and the namespace:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc delete forkliftcontroller forklift-controller -n openshift-mtv
+oc delete subscription mtv-operator -n openshift-mtv
+oc delete namespace openshift-mtv</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_troubleshooting_common_migration_issues"><a class="anchor" href="#_troubleshooting_common_migration_issues"></a>Troubleshooting Common Migration Issues</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_provider_stays_in_a_non_ready_state"><a class="anchor" href="#_provider_stays_in_a_non_ready_state"></a>Provider stays in a non-ready state</h3>
+<div class="paragraph">
+<p>The provider cannot reach vCenter or the certificate does not validate. Inspect the conditions:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get provider vsphere-provider -n openshift-mtv -o jsonpath='{.status.conditions}'</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Confirm the <code>url</code> includes <code>/sdk</code>, the credentials are correct, and the <code>cacert</code> matches the vCenter endpoint. In a lab you can set <code>insecureSkipVerify: "true"</code> in the secret to bypass certificate validation.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_plan_validation_fails_for_a_warm_migration"><a class="anchor" href="#_plan_validation_fails_for_a_warm_migration"></a>Plan validation fails for a warm migration</h3>
+<div class="paragraph">
+<p>Warm migration requires Changed Block Tracking. If CBT is disabled on a source VM or disk, the plan reports a validation error. Enable CBT in vSphere, or switch the plan to <code>spec.warm: false</code>.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_disk_transfer_is_slow_or_the_plan_fails_during_copy"><a class="anchor" href="#_disk_transfer_is_slow_or_the_plan_fails_during_copy"></a>Disk transfer is slow or the plan fails during copy</h3>
+<div class="paragraph">
+<p>A missing VDDK image is the most common cause. Confirm <code>spec.settings.vddkInitImage</code> on the provider points to a reachable image. VMs backed by vSAN require VDDK. Check the importer pod logs in the target namespace:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc logs -n vmware-migrated-vms -l app=containerized-data-importer</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_vddk_image_pull_error"><a class="anchor" href="#_vddk_image_pull_error"></a>VDDK image pull error</h3>
+<div class="paragraph">
+<p>The cluster cannot pull the VDDK image. Confirm the registry is reachable from every worker node and that any required pull secret is configured. Test the image reference:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc debug node/&lt;worker-node&gt; -- chroot /host podman pull registry.example.com/vddk:8.0.1</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_migrated_vm_does_not_boot"><a class="anchor" href="#_migrated_vm_does_not_boot"></a>Migrated VM does not boot</h3>
+<div class="paragraph">
+<p>The guest may need drivers or a machine type change. Inspect the VM events and the guest console:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc describe vm web-frontend-01 -n vmware-migrated-vms
+virtctl console web-frontend-01 -n vmware-migrated-vms</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Linux guests usually boot without changes because MTV installs virtio drivers during conversion. Windows guests require the virtio drivers, which MTV injects during migration.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_summary"><a class="anchor" href="#_summary"></a>Summary</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>In this tutorial, you learned how to:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Install the MTV operator and deploy the <code>ForkliftController</code></p>
+</li>
+<li>
+<p>Build a VDDK image to accelerate VMware disk transfers</p>
+</li>
+<li>
+<p>Connect MTV to VMware vCenter with a <code>Secret</code> and a <code>Provider</code></p>
+</li>
+<li>
+<p>Map source networks and datastores to OpenShift networks and storage classes</p>
+</li>
+<li>
+<p>Choose between warm and cold migration based on downtime tolerance</p>
+</li>
+<li>
+<p>Create and run a migration <code>Plan</code> with a <code>Migration</code> resource</p>
+</li>
+<li>
+<p>Monitor disk transfer progress and validate the migrated VMs</p>
+</li>
+<li>
+<p>Add pre-migration and post-migration hooks</p>
+</li>
+<li>
+<p>Troubleshoot provider, VDDK, and boot failures</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>MTV moves VMware vSphere workloads into OpenShift Virtualization with a declarative, repeatable set of custom resources, which makes large migrations scriptable and reviewable.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_see_also"><a class="anchor" href="#_see_also"></a>See Also</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p><a href="import-qcow2-boot-volume.html" class="xref page">Creating a Boot Volume from a Local qcow2 Image</a></p>
+</li>
+<li>
+<p><a href="cloning-vms.html" class="xref page">Cloning Virtual Machines for Rapid Deployment</a></p>
+</li>
+<li>
+<p><a href="https://docs.redhat.com/en/documentation/migration_toolkit_for_virtualization" target="_blank" rel="noopener">Migration Toolkit for Virtualization documentation</a></p>
+</li>
+<li>
+<p><a href="https://github.com/kubev2v/forklift" target="_blank" rel="noopener">Konveyor Forklift project</a></p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<nav class="pagination">
+  <span class="prev"><a href="live-migration.html">Live Migration</a></span>
+  <span class="next"><a href="../manifests/index.html">Manifests</a></span>
+</nav>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <img src="../../../_/img/rhl-logo-red.png" height="40px" alt="Red Hat"  href="https://redhat.com" >
+</footer><script id="site-script" src="../../../_/js/site.js" data-ui-root-path="../../../_"></script>
+<script async src="../../../_/js/vendor/highlight.js"></script>
+<script src="../../../_/js/vendor/lunr.js"></script>
+<script src="../../../_/js/search-ui.js" id="search-ui-script" data-site-root-path="../../.." data-snippet-length="100" data-stylesheet="../../../_/css/search.css"></script>
+<script async src="../../../search-index.js"></script>
+  </body>
+</html>

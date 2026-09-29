@@ -1,0 +1,24 @@
+apiVersion: forklift.konveyor.io/v1beta1
+kind: Plan
+metadata:
+  name: vmware-warm-plan
+  namespace: openshift-mtv
+spec:
+  warm: true
+  provider:
+    source:
+      name: vsphere-provider
+      namespace: openshift-mtv
+    destination:
+      name: host
+      namespace: openshift-mtv
+  map:
+    network:
+      name: vmware-networkmap
+      namespace: openshift-mtv
+    storage:
+      name: vmware-storagemap
+      namespace: openshift-mtv
+  targetNamespace: vmware-migrated-vms
+  vms:
+    - name: db-primary-01
