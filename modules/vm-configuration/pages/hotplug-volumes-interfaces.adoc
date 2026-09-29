@@ -5,7 +5,7 @@
 
 This tutorial demonstrates how to dynamically add and remove storage volumes to running virtual machines without requiring a restart. Hotplugging enables zero-downtime storage expansion, flexible resource allocation, and reduced maintenance windows.
 
-You will use `virtctl addvolume` to attach a new PVC to a running VM, verify it appears as a new block device inside the guest, and then remove it with `virtctl removevolume`. The tutorial also covers network interface hotplugging concepts and requirements.
+You will use `virtctl addvolume` to attach a new PVC to a running VM, verify it appears as a new block device inside the guest, and then remove it with `virtctl removevolume`. The network interface section explains its cluster prerequisites and prepares a one-interface VM and secondary network for a later hotplug exercise.
 
 == When to Use Hotplugging
 
@@ -139,6 +139,7 @@ oc get vmi hotplug-vm -n hotplug-demo -o jsonpath='{range .status.volumeStatus[*
 ----
 
 Expected output:
+[source,text]
 ----
 rootdisk: vda
 cloudinitdisk: vdb
@@ -188,6 +189,7 @@ virtctl addvolume hotplug-vm --volume-name=hotplug-disk --namespace=hotplug-demo
 ----
 
 Expected output:
+[source,text]
 ----
 Successfully submitted addvolume request to VM hotplug-vm for volume hotplug-disk
 ----
@@ -204,6 +206,7 @@ oc get vmi hotplug-vm -n hotplug-demo -o jsonpath='{range .status.volumeStatus[*
 ----
 
 Expected output:
+[source,text]
 ----
 rootdisk: vda (hotplugVolume: )
 cloudinitdisk: vdb (hotplugVolume: )
@@ -220,6 +223,7 @@ oc get pvc hotplug-disk -n hotplug-demo
 ----
 
 Expected output:
+[source,text]
 ----
 NAME           STATUS   VOLUME       CAPACITY   ACCESS MODES   STORAGECLASS   AGE
 hotplug-disk   Bound    pvc-xxxx     5Gi        RWO            lvms-vg1       1m
@@ -271,6 +275,7 @@ cat /mnt/hotplug/test.txt
 ----
 
 Expected output:
+[source,text]
 ----
 Hotplug test
 ----
@@ -294,6 +299,7 @@ virtctl removevolume hotplug-vm --volume-name=hotplug-disk --namespace=hotplug-d
 ----
 
 Expected output:
+[source,text]
 ----
 Successfully submitted removevolume request to VM hotplug-vm for volume hotplug-disk
 ----
@@ -308,6 +314,7 @@ oc get vmi hotplug-vm -n hotplug-demo -o jsonpath='{range .status.volumeStatus[*
 ----
 
 Expected output:
+[source,text]
 ----
 rootdisk: vda
 cloudinitdisk: vdb
@@ -359,13 +366,325 @@ Hotplugged volumes use the SCSI bus by default (appearing as `sda`, `sdb`, etc.)
 
 == Network Interface Hotplugging (Reference)
 
-OpenShift Virtualization also supports hotplugging network interfaces. This requires additional infrastructure that may not be available on all clusters.
+OpenShift Virtualization also supports hotplugging network interfaces. Unlike the storage steps above, network interface hotplugging depends on cluster-level Multus components and a secondary network. This section checks those prerequisites and creates a clean baseline for a later hotplug exercise.
 
-=== Requirements
+=== Prerequisites
 
-* **Multus CNI thick plugin**: The standard Multus deployment must be running as a thick plugin.
-* **Multus Dynamic Networks Controller**: A daemon that watches for annotation changes and triggers Multus to configure new attachments.
+* **Cluster admin access** (`system:admin` or equivalent)
+* **Thick Multus CNI plugin**: Included by default in the OpenShift versions supported by this tutorial; required for direct network interface hotplugging.
+* **Multus Dynamic Networks Controller (DNC)**: Not included with OpenShift by default; watches network attachment changes and triggers Multus to configure new attachments.
+* **Secondary network**: A NetworkAttachmentDefinition (NAD) must refer to a bridge already configured on the nodes where the VM can run.
 * **Multi-node cluster**: On single-node clusters, migration-based hotplug is not available.
+
+Network interface hotplugging is generally available in KubeVirt 1.4 and later. Earlier KubeVirt versions may require the `HotplugNICs` feature gate. Check the KubeVirt version bundled with your OpenShift Virtualization release before proceeding.
+
+=== Step 1: Verify Cluster Prerequisites
+
+OpenShift installs Multus in the `openshift-multus` namespace, but does not include the DNC by default. Check whether the DNC is already running:
+
+[source,bash,role=execute]
+----
+oc rollout status daemonset/dynamic-networks-controller-ds -n openshift-multus
+----
+
+Expected output when the DNC is NOT installed:
+[source,text]
+----
+Error from server (NotFound): daemonsets.apps "dynamic-networks-controller-ds" not found
+----
+
+If the DaemonSet is not found, install the DNC using the example manifest. The manifest creates cluster-scoped RBAC resources and a privileged DNC DaemonSet in `openshift-multus`.
+
+If you downloaded the manifest, apply it with `oc apply -f multus-dynamic-network-controller.yaml`. To apply it inline, use the example below:
+
+xref:attachment$hotplug-volumes-interfaces/multus-dynamic-network-controller.yaml[Download multus-dynamic-network-controller.yaml]
+
+[source,bash,role=execute]
+----
+oc apply -f - <<EOF
+---
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: dynamic-networks-controller
+rules:
+  - apiGroups: ["k8s.cni.cncf.io"]
+    resources:
+      - network-attachment-definitions
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - ""
+    resources:
+      - pods
+      - pods/status
+    verbs:
+      - get
+      - list
+      - update
+      - watch
+  - apiGroups:
+      - ""
+      - events.k8s.io
+    resources:
+      - events
+    verbs:
+      - create
+      - patch
+      - update
+---
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: dynamic-networks-controller
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: dynamic-networks-controller
+subjects:
+  - kind: ServiceAccount
+    name: dynamic-networks-controller
+    namespace: openshift-multus
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: dynamic-networks-controller
+  namespace: openshift-multus
+---
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: dynamic-networks-controller-config
+  namespace: openshift-multus
+  labels:
+    tier: node
+    app: multus-dynamic-networks-controller
+data:
+  dynamic-networks-config.json: |
+    {
+        "criSocketPath": "/host/run/crio/crio.sock",
+        "multusSocketPath": "/host/run/multus/socket/multus.sock"
+    }
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: dynamic-networks-controller-ds
+  namespace: openshift-multus
+  labels:
+    tier: node
+    app: dynamic-networks-controller
+    name: dynamic-networks-controller
+spec:
+  selector:
+    matchLabels:
+      name: dynamic-networks-controller
+  updateStrategy:
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        tier: node
+        app: dynamic-networks-controller
+        name: dynamic-networks-controller
+    spec:
+      tolerations:
+        - operator: Exists
+          effect: NoSchedule
+        - operator: Exists
+          effect: NoExecute
+      serviceAccountName: dynamic-networks-controller
+      containers:
+        - name: dynamic-networks-controller
+          env:
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+          image: ghcr.io/k8snetworkplumbingwg/multus-dynamic-networks-controller:latest-amd64
+          command: ["/dynamic-networks-controller"]
+          args:
+            - "-config=/etc/dynamic-networks-controller/dynamic-networks-config.json"
+            - "-v=5"
+          livenessProbe:
+            exec:
+              command:
+                - curl
+                - --fail
+                - --unix-socket
+                - /host/run/multus/socket/multus.sock
+                - localhost/healthz
+            initialDelaySeconds: 15
+            periodSeconds: 5
+          readinessProbe:
+            exec:
+              command:
+                - curl
+                - --fail
+                - --unix-socket
+                - /host/run/multus/socket/multus.sock
+                - localhost/healthz
+            initialDelaySeconds: 15
+            periodSeconds: 5
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "50Mi"
+          securityContext:
+            privileged: true
+          volumeMounts:
+            - name: dynamic-networks-controller-config-dir
+              mountPath: /etc/dynamic-networks-controller/
+              readOnly: true
+            - name: multus-server-socket
+              mountPath: /host/run/multus/socket/multus.sock
+            - name: cri-socket
+              mountPath: /host/run/crio/crio.sock
+          terminationMessagePolicy: FallbackToLogsOnError
+      terminationGracePeriodSeconds: 10
+      volumes:
+        - name: dynamic-networks-controller-config-dir
+          configMap:
+            name: dynamic-networks-controller-config
+            items:
+              - key: dynamic-networks-config.json
+                path: dynamic-networks-config.json
+        - name: multus-server-socket
+          hostPath:
+            path: /run/multus/socket/multus.sock
+            type: Socket
+        - name: cri-socket
+          hostPath:
+            path: /run/crio/crio.sock
+            type: Socket
+EOF
+----
+
+After applying the manifest, rerun the rollout check above and continue when the DNC is ready.
+
+=== Step 2: Create the Secondary Network
+
+The example NAD uses the `lnbr0` bridge and VLAN 1 from the tested lab setup. These values are cluster-specific: replace them with a bridge and VLAN configured by your network administrator on every node where the VM may run.
+
+xref:attachment$hotplug-volumes-interfaces/network-attachment-definition.yaml[Download network-attachment-definition.yaml]
+
+[source,bash,role=execute]
+----
+oc apply -f - <<EOF
+apiVersion: k8s.cni.cncf.io/v1
+kind: NetworkAttachmentDefinition
+metadata:
+  name: lnbr0-bridge
+  namespace: hotplug-demo
+spec:
+  config: |
+    {
+      "cniVersion": "0.3.1",
+      "name": "lnbr0-bridge",
+      "type": "bridge",
+      "bridge": "lnbr0",
+      "vlan": 1,
+      "ipam": {}
+    }
+EOF
+----
+
+Expected output on first apply:
+[source,text]
+----
+networkattachmentdefinition.k8s.cni.cncf.io/lnbr0-bridge created
+----
+
+If the NAD already exists with this configuration, `oc apply` may report `configured` or `unchanged` instead. The sample uses empty IPAM configuration, so it prepares a layer-2 attachment but does not assign an IP address. Use the IPAM configuration appropriate for your network if the VM needs an address on the secondary network.
+
+=== Step 3: Deploy the One-Interface Baseline VM
+
+The baseline VM starts with only its default pod network. The `hotplug-demo` namespace is created in Step 1 of the storage tutorial. If you are following only this network section, create the namespace if it does not already exist:
+
+[source,bash,role=execute]
+----
+oc get namespace hotplug-demo >/dev/null 2>&1 || oc create namespace hotplug-demo
+----
+
+WARNING: The cloud-init password in this example is for demo purposes only. Always use a strong, unique password or SSH key authentication in production environments.
+
+xref:attachment$hotplug-volumes-interfaces/vm-network-baseline.yaml[Download vm-network-baseline.yaml]
+
+[source,bash,role=execute]
+----
+oc apply -f - <<EOF
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: network-hotplug-vm
+  namespace: hotplug-demo
+spec:
+  runStrategy: Always
+  template:
+    metadata:
+      labels:
+        kubevirt.io/domain: network-hotplug-vm
+    spec:
+      domain:
+        devices:
+          disks:
+          - name: rootdisk
+            disk:
+              bus: virtio
+          - name: cloudinitdisk
+            disk:
+              bus: virtio
+          interfaces:
+          - name: default
+            masquerade: {}
+        resources:
+          requests:
+            memory: 1Gi
+      networks:
+      - name: default
+        pod: {}
+      volumes:
+      - name: rootdisk
+        containerDisk:
+          image: quay.io/kubevirt/fedora-with-test-tooling-container-disk:devel
+      - name: cloudinitdisk
+        cloudInitNoCloud:
+          userData: |
+            #cloud-config
+            password: redhat
+            chpasswd:
+              expire: false
+EOF
+----
+
+Wait for the VM to start:
+
+[source,bash,role=execute]
+----
+oc get vm network-hotplug-vm -n hotplug-demo -w
+----
+
+Once the VM is `Running` and `READY=True`, press `Ctrl+C` to exit the watch.
+
+=== Step 4: Verify the Default Interface
+
+Confirm the running VMI has only its default interface before beginning a later hotplug exercise:
+
+[source,bash,role=execute]
+----
+oc get vmi network-hotplug-vm -n hotplug-demo -o jsonpath='{range .status.interfaces[*]}{.name}{"\n"}{end}'
+----
+
+Expected output:
+[source,text]
+----
+default
+----
+
+The VM in this demo uses a Fedora ContainerDisk image. Data written to a ContainerDisk-backed VM is not preserved across VM restarts or stop/start cycles. Use a PVC-backed disk when VM data must persist. For a PVC-backed VM using the migration-based hotplug path, use migration-compatible shared RWX storage and verify that the VMI has the `StorageLiveMigratable=True` condition.
 
 === How It Works
 
@@ -373,7 +692,7 @@ Unlike volume hotplugging (which uses `virtctl addvolume`), network interface ho
 
 . Create a NetworkAttachmentDefinition (NAD) for the secondary network.
 . Edit the VM spec to add the new interface and network definitions.
-. The interface is attached to the running VM (if thick Multus is available) or after a live migration.
+. The interface is attached directly when thick Multus and the DNC are available; otherwise, it is attached after a live migration using the migration-based hotplug path.
 
 The result is the same pattern as volume hotplug, the running VM gains a device it did not boot with:
 
@@ -404,7 +723,7 @@ interfaces:
 
 NOTE: Hot-unplug is only supported for bridge-binding interfaces. SR-IOV interfaces cannot be hot-unplugged.
 
-For detailed network hotplug procedures, see the link:https://kubevirt.io/user-guide/network/hotplug_interfaces/[KubeVirt Hotplug Network Interfaces documentation,window=_blank].
+For detailed network hotplug procedures, see the link:https://kubevirt.io/user-guide/network/hotplug/interfaces/[KubeVirt Hotplug Network Interfaces documentation,window=_blank].
 
 == Cleanup
 
@@ -426,10 +745,11 @@ In this tutorial you learned how to:
 * Verify hotplugged volumes appear as new block devices inside the guest
 * Format and mount hotplugged storage within the VM
 * Remove hotplugged volumes with `virtctl removevolume`
-* Understand the requirements and methods for network interface hotplugging
+* Verify network interface hotplug prerequisites and prepare a one-interface VM baseline
 
 == See Also
 
 * link:https://kubevirt.io/user-guide/storage/hotplug_volumes/[Hotplug Volumes - KubeVirt User Guide,window=_blank]
-* link:https://kubevirt.io/user-guide/network/hotplug_interfaces/[Hotplug Network Interfaces - KubeVirt User Guide,window=_blank]
+* link:https://kubevirt.io/user-guide/network/hotplug/interfaces/[Hotplug Network Interfaces - KubeVirt User Guide,window=_blank]
+* link:https://github.com/k8snetworkplumbingwg/multus-dynamic-networks-controller/[Multus Dynamic Networks Controller,window=_blank]
 * xref:vm-lifecycle:boot-order-boot-sources.adoc[Boot Order and Boot Sources]
