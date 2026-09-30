@@ -1,0 +1,393 @@
+= Uploading Files to a Virtual Machine
+:navtitle: Upload Files to a VM
+
+== Overview
+
+This guide covers how to upload files to virtual machines using the command-line interface.
+The same procedure will work for both Linux and Windows VMs, provided that OpenSSH is installed and running on the target VM.
+
+Thus, OpenSSH server (on the VM side) and the `ssh` protocol are required to transfer files to and from VMs using this tutorial.
+
+WARNING: Using `virtctl` for especially large file transfers (in size, duration, or concurrent connections) can put a heavy strain on the API server,
+as it relies on port-forwarding through the control-plane. It is best to use a Kubernetes `Service` resource to expose the `ssh` port on the VM,
+and then using native tools such as `scp` or `rsync` instead.
+
+Versions tested: v4.22
+
+== What You Will Learn
+
+In this guide, you will learn how to:
+
+* <<enable_ssh_linux,Enable OpenSSH server on RHEL, Fedora and most other Linux distros>>.
+* <<enable_ssh_windows,Install and enable OpenSSH server on Windows>>.
+** <<install_ssh_win11,Install OpenSSH server on Windows 11 and Server 2022 or older>>.
+** <<start_ssh_windows,Start OpenSSH server on Windows Server 2025.>>
+* <<transfer_files_virtctl,Transfer Files using virtctl.>>
+** <<prepare_local_env,Prepare the Local Environment.>>
+** <<upload_files_vm,Upload Files to a VirtualMachine.>>
+*** <<upload_to_rhel,Upload Files to a RHEL VM.>>
+*** <<upload_to_windows,Upload Files to a Windows VM.>>
+** <<download_files_vm,Download Files from a Virtual Machine.>>
+*** <<download_from_rhel,Download Files from a RHEL VM.>>
+*** <<download_from_windows,Download Files from a Windows VM.>>
+* <<cleanup_disable_ssh,Optionally disable OpenSSH>> after file transfer is complete.
+
+== Business Use Cases
+
+While using `virtctl` for transferring files to VMs does have drawbacks (see the warning in the Overview section),
+there are legitimate use cases for when transferring files using `virtctl` may be desired or even preferred:
+
+* If your VMs do not have direct internet access and you need a means to download files to a VM
+* When you do not want VMs to have the `ssh` protocol available via Kubernetes Service (cluster-internal)
+* If you especially do not want `ssh` access from the public internet
+* When ephemeral access to VMs using the `ssh` protocol is preferred over persistent access
+
+== Prerequisites
+
+This guide assumes that you have the following tools or infrastructure installed or available (respectively):
+
+* OpenShift v4.18 or later cluster
+* OpenShift Virtualization add-on
+* The `virtctl` binary
+* A compatible client shell environment; `bash` is mostly used here, but some PowerShell examples are shown for configuring Windows guests.
+* Virtual Machine(s) which can be used to host file transfers (not provided in this guide).
+* The `git` binary, which is used to seed file and directory transfers.
+
+== Enable OpenSSH server on RHEL, Fedora and other distros [[enable_ssh_linux]]
+
+The OpenSSH server comes preinstalled on RHEL, Fedora and most other Linux distributions. However, it is not always enabled by default.
+
+IMPORTANT: You must first connect to the VM console using either the `virtctl console vm/<vm-name>` command or the console viewer in OpenShift Virtualization in order to setup OpenSSH server.
+
+Start the OpenSSH server:
+
+.On RHEL and Fedora
+[source=bash,role=execute]
+----
+sudo systemctl start sshd
+----
+
+.On Debian and Ubuntu
+[source=bash,role=execute]
+----
+sudo systemctl start ssh
+----
+
+**Optional** To ensure that OpenSSH is enabled at startup:
+
+.On RHEL and Fedora
+[source=bash,role=execute]
+----
+sudo systemctl enable sshd
+----
+
+.On Debian and Ubuntu
+[source=bash,role=execute]
+----
+sudo systemctl enable ssh
+----
+
+Now that the OpenSSH server is enabled, skip ahead to <<transfer_files_virtctl,Transfer Files using virtctl>>
+
+== Install and Enable OpenSSH server on Windows [[enable_ssh_windows]]
+
+On Windows guests, to enable file transfers using the `virtctl` client tool, as well as Ansible management using the `ssh` protocol,
+the OpenSSH server is required to be installed and running.
+
+IMPORTANT: You must first connect to the VM console using `virtctl vnc vm/<vm-name>` or by using the console viewer in OpenShift Virtualization to execute the installation steps.
+
+<<install_ssh_win11,On Windows 11 and Windows Server 2022 or older>>, OpenSSH is an optional feature that must be installed first.
+
+<<start_ssh_windows,On Windows Server 2025>>, OpenSSH is pre-installed, but the service must be started.
+
+=== Install OpenSSH Feature Add-on (Windows 11 & Server 2022 or older) [[install_ssh_win11]]
+
+From the Desktop, open an administrator PowerShell terminal by pressing **WIN+R** and typing `powershell`, and finally press **CTRL+SHIFT+ENTER**.
+
+Enter the following line into the PowerShell terminal:
+
+[source=powershell,role=execute]
+----
+Add-WindowsCapability -Online -Name OpenSSH.Server~~~~0.0.1.0
+----
+
+NOTE: The above process takes a few minutes, but a progress bar will be visible.
+
+With OpenSSH server installed, continue on with starting the `sshd` service.
+
+=== Start the OpenSSH Server on Windows (all supported versions) [[start_ssh_windows]]
+
+On all recent versions of Windows (including Windows 11 and Server 2022 or older, which requires installing OpenSSH first),
+the following procedure can be used to start the `sshd` service and (optionally) start it automatically at boot-up.
+
+If you haven't already, start an Administrator PowerShell terminal by pressing **WIN+R** and typing `powershell`, and then pressing **CTRL+SHIFT+ENTER**.
+
+To start the `sshd` service, enter the following command into the administrative terminal:
+
+[source=powershell,role=execute]
+----
+Start-Service sshd
+----
+
+**Optional**: With the administrator PowerShell window still open, paste the following command to enable `sshd` to start at boot-up:
+
+[source=powershell,role=execute]
+----
+Set-Service -Name sshd -StartupType 'Automatic'
+----
+
+The OpenSSH Server (`sshd`) is configured to only allow connections which originate from within a private network environment.
+
+Ensure that the `Private` network profile is selected by running the following command in a privileged PowerShell window:
+
+[source=powershell,role=execute]
+----
+Get-NetConnectionProfile | Set-NetConnectionProfile -NetworkCategory Private
+----
+
+[WARNING]
+====
+If the default network profile is set to `Public`, then a connection timeout will occur when establishing an `ssh` connection.
+====
+
+With the OpenSSH server running, you can proceed to <<transfer_files_virtctl,Transfer Files using virtctl>>.
+
+== Transfer files using virtctl [[transfer_files_virtctl]]
+
+IMPORTANT: This section uses `<placeholders>` which must be replaced with the actual username, `VirtualMachine` (or `VirtualMachineInstance`) name, or file path.
+The commands cannot be copied and pasted to run as-is.
+
+With the setup of OpenSSH out of the way, we can proceed to actually transferring files to and from VMs.
+
+The process is essentially the same for all platforms, with the main difference being Windows systems having lettered disk volumes (and therefore absolute file paths).
+
+The basic syntax is (as with `cp` and `scp`) `virtctl scp <src> <dest>`, where either the `<src>` or `<dest>` would alternate between
+being a local file path or an `ssh` connection string.
+
+A breakdown of the `ssh` connection string is provided below:
+
+[source=bash,role=execute]
+----
+<username>@<vm-name>:<filepath>
+----
+
+* **<username>** - The name of a user account on the remote machine.
+* **<vm-name>** - The k8s resource name of the `VirtualMachine` or `VsirtualMachineInstance` with either the `vm/` or `vmi/` prefix, respectively.
+* **<filepath>** - Either the relative (to the user's home directory) or absolute path to a file or directory on the remote machine.
+
+[NOTE]
+.On SSH / SCP Options
+====
+The following options are supported in `virtctl scp` as they are in the actual `scp` command, where options are passed before the `<src>` or `<dest>` parameters.
+
+* **-i <ssh-keypath>** - Provide this option to pass an RSA private key which can be used in lieu of a password when connecting. A matching public key must be in the user's `.ssh/authorized_keys` file on the remote host.
+* **-r** --------------- Copy recursively. Use this as with the `cp` command to allow copying the entire contents (files and subdirectories) of a source directory, whether local or remote.
+====
+
+=== Prepare the Local Environment [[prepare_local_env]]
+
+To actually transfer data, a repeatable source of data is required. For that, we shall use the very git repo which houses this documentation.
+
+With the `ssh` and `scp` nuances explained, go ahead and use the `git` command to clone the docs repo:
+
+[source=bash,role=execute]
+----
+git clone https://github.com/RedHatQuickCourses/ocp-virt-cookbook
+----
+
+Change directory to the repo that was just downloaded:
+
+[source=bash,role=execute]
+----
+cd ocp-virt-cookbook
+----
+
+With our local data downloaded, proceed with <<upload_files_vm,Uploading Files>>.
+
+=== Upload Files to a Virtual Machine [[upload_files_vm]]
+
+Using files located in our locally downloaded git repo,
+the following command examples show a few different upload operations performed on both RHEL (or Fedora) and Windows systems.
+
+When uploading, the `ssh` host connection string will be the last parameter or the destination portion of the `virtctl scp` command.
+Be mindful of the `<placeholders>` used in the commands below. They will each need to be replaced with the applicable value for your use case.
+
+==== Upload to RHEL, Fedora and other Linux VMs [[upload_to_rhel]]
+
+Upload the `README.md` file to the `/var/tmp` directory on the VM, replacing `<username>` and `<vm-name>` with the values for _your_ VM:
+
+[source=bash,role=execute]
+----
+virtctl scp README.md <username>@vm/<vm-name>:/var/tmp/
+----
+
+Upload the `images` directory to the user's home directory by passing the `-r` flag (meaning to copy recursively):
+
+[source=bash,role=execute]
+----
+virtctl scp -r images/ <username>@vm/<vm-name>:
+----
+
+NOTE: An empty path (specifically, the part after the `:` in the `ssh` connection string) will default to the user's home directory.
+
+==== Upload to Windows VMs [[upload_to_windows]]
+
+Upload the `README.md` file to the user's home directory on the Windows VM, replacing `<username>` and `<vm-name>` with the applicable values:
+
+[source=bash,role=execute]
+----
+virtctl scp README.md <username>@vm/<vm-name>:
+----
+
+NOTE: As with Linux systems, an empty path (defined after the `:` symbol) still defaults to the user's home directory on Windows systems.
+
+Upload the `images/` directory from the root of the git repo (should still be the current working directory on our client machine) to the Public Pictures directory.
+Replace the `<username>` and `<vm-name>` as in the previous step:
+
+[source=bash,role=execute]
+----
+virtctl scp -r images/ <username>@vm/<vm-name>:C:/Users/Public/Pictures/
+----
+
+NOTE: The only difference in syntax between uploading to a Linux or Windows host is the file path,
+since Windows uses lettered drives (`C:`) and Linux systems use a single root filesystem (`/`).
+Also, note that directory paths when using `scp` on a Windows target use the forward-slash (`/`) separator and not the backslash (`\`) as within Windows itself.
+
+=== Download Files from a Virtual Machine [[download_files_vm]]
+
+Downloading is (syntactically speaking) the inverse operation from uploading.
+The `virtctl scp` source parameter is now the `ssh` connection string, while the destination parameter is a local path or filename.
+
+Using the files and directories uploaded previously, we will make backup copies of the same files and directories locally.
+This will show how to change the name of files being downloaded (or uploaded) instead of simply inheriting the existing file or directory name, as before.
+
+Remember that `<placeholders>` still need replacing with values that match your environment.
+
+==== Download from RHEL, Fedora and other Linux VMs [[download_from_rhel]]
+
+Download the `README.md` file from `/var/tmp` on the RHEL VM to the current directory and name it `README.bak`:
+
+[source=bash,role=execute]
+----
+virtctl scp <username>@vm/<vm-name>:/var/tmp/README.md ./README.bak
+----
+
+Download the `images` folder from the user's home directory on the RHEL VM (using the `-r` flag to copy recursively), name it `images.d`, and place it in the current directory:
+
+[source=bash,role=execute]
+----
+virtctl scp -r <username>@vm/<vm-name>:images ./images.d
+----
+
+==== Download from Windows VMs [[download_from_windows]]
+
+Download the `README.md` file from the user's home directory, save it locally as `README.bkp`. Replace `<username>` and `<vm-name>` as required:
+
+[source=bash,role=execute]
+----
+virtctl scp <username>@vm/<vm-name>:README.md ./README.bkp
+----
+
+Download the `images` folder from the Public Pictures directory, saved locally as `images.bak.d`. Replace `<username>` and `<vm-name>` as before:
+
+[source=bash,role=execute]
+----
+virtctl scp -r <username>@vm/<vm-name>:C:/Users/Public/Pictures/images ./images.bak.d
+----
+
+Continue on to clean up from the exercise.
+
+== Cleanup and Disable OpenSSH [[cleanup_disable_ssh]]
+
+IMPORTANT: As with setup, you will need to connect to the VM console using `virtctl console` (RHEL/Fedora), `virtctl vnc` (Windows), or by simply using the console viewer provided with OpenShift Virtualization to run the cleanup steps.
+
+To clean up the local files, simply back out of the git repo directory and then remove it:
+
+.Change to the parent directory
+[source=bash,role=execute]
+----
+cd ../
+----
+
+.Remove the git repo
+[source=bash,role=execute]
+----
+rm -rf ocp-virt-cookbook/
+----
+
+To clean up leftover files from the VMs, run the following commands as desired.
+
+To remove leftover files from RHEL/Fedora, simply run the following `rm` command on the VM itself:
+
+[source=bash,role=execute]
+----
+rm -rf /var/tmp/README.md ~/images
+----
+
+To remove leftover files from Windows, open a PowerShell window (`WIN+R` then type `powershell` and hit `ENTER`) and run the following command:
+
+[source=powershell,role=execute]
+----
+Remove-Item -Path "$HOME/README.md", "C:\Users\Public\Pictures\images" -Recurse
+----
+
+=== Optional: Disable OpenSSH server
+
+Once you've finished transferring files and would like to reduce the attack surface of your VM,
+or if you have no use for `ssh` or `scp` access for remote management or future file transfers,
+then proceed on to disable OpenSSH server.
+
+To stop the OpenSSH server process:
+
+.On RHEL and Fedora
+[source=bash,role=execute]
+----
+sudo systemctl stop sshd
+----
+
+.On Debian and Ubuntu
+[source=bash,role=execute]
+----
+sudo systemctl stop ssh
+----
+
+.On Windows (in a privileged PowerShell window)
+[source=powershell,role=execute]
+----
+Stop-Service sshd
+----
+
+To disable OpenSSH from running at startup:
+
+.On RHEL and Fedora
+[source=bash,role=execute]
+----
+sudo systemctl disable sshd
+----
+
+.On Debian and Ubuntu
+[source=bash,role=execute]
+----
+sudo systemctl disable ssh
+----
+
+.On Windows (in a privileged powershell window)
+[source=powershell,role=execute]
+----
+Set-Service -Name sshd -StartupType 'Manual'
+----
+
+== Summary
+
+In this guide, you've learned the following topics:
+
+* How to enable OpenSSH server on RHEL, Fedora and other Linux systems, as well as Windows
+* How to upload files and directories from your client machine to a VM using `virtctl`
+* How to download files and directories from a VM to your client machine using `virtctl`
+* Optionally, how to disable OpenSSH server on a VM once file transfers are complete
+
+== See Also
+
+* link:https://docs.redhat.com/en/documentation/openshift_container_platform/{ocp-docs-version}/html/virtualization/getting-started#vm-connection-commands_virt-using-the-cli-tools[OpenShift Virtualization - Getting Started - VM Connection Commands,window=_blank]
+* link:https://docs.redhat.com/en/documentation/openshift_container_platform/{ocp-docs-version}/html/virtualization/managing-vms#virt-accessing-vm-ssh[OpenShift Virtualization - Managing VMs - SSH Access for VMs,window=_blank]
+
