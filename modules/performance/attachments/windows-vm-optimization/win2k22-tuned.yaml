@@ -1,0 +1,121 @@
+# Windows Server 2022 VM tuned for production: explicit Hyper-V
+# enlightenments, Windows-friendly clock and timers, and multi-queue
+# virtio disk and network.
+#
+# Replace the containerDisk image with the value from the virtio-win
+# ConfigMap on your cluster:
+#   oc get configmap virtio-win -n openshift-cnv \
+#     -o jsonpath='{.data.virtio-win-image}'
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: win2k22-perf
+  namespace: windows-perf
+  labels:
+    app: win2k22-perf
+spec:
+  runStrategy: Always
+  preference:
+    kind: VirtualMachineClusterPreference
+    name: windows.2k22.virtio
+  dataVolumeTemplates:
+    - metadata:
+        name: win2k22-perf-rootdisk
+      spec:
+        sourceRef:
+          kind: DataSource
+          name: win2k22
+          namespace: openshift-virtualization-os-images
+        storage:
+          accessModes:
+            - ReadWriteMany
+          resources:
+            requests:
+              storage: 80Gi
+  template:
+    metadata:
+      labels:
+        kubevirt.io/domain: win2k22-perf
+    spec:
+      domain:
+        cpu:
+          sockets: 2
+          cores: 2
+          threads: 1
+        memory:
+          guest: 8Gi
+        resources:
+          requests:
+            memory: 8Gi
+            cpu: "4"
+        clock:
+          utc: {}
+          timer:
+            hpet:
+              present: false
+            pit:
+              tickPolicy: delay
+            rtc:
+              tickPolicy: catchup
+            hyperv: {}
+        features:
+          acpi:
+            enabled: true
+          apic:
+            enabled: true
+          smm:
+            enabled: true
+          hyperv:
+            relaxed:
+              enabled: true
+            vapic:
+              enabled: true
+            vpindex:
+              enabled: true
+            runtime:
+              enabled: true
+            synic:
+              enabled: true
+            synictimer:
+              enabled: true
+              direct:
+                enabled: true
+            reset:
+              enabled: true
+            frequencies:
+              enabled: true
+            reenlightenment:
+              enabled: true
+            tlbflush:
+              enabled: true
+            ipi:
+              enabled: true
+            spinlocks:
+              enabled: true
+              spinlocks: 8191
+        devices:
+          blockMultiQueue: true
+          networkInterfaceMultiqueue: true
+          disks:
+            - name: rootdisk
+              bootOrder: 1
+              disk:
+                bus: virtio
+            - name: virtio-drivers
+              cdrom:
+                bus: sata
+          interfaces:
+            - name: default
+              model: virtio
+              masquerade: {}
+      networks:
+        - name: default
+          pod: {}
+      terminationGracePeriodSeconds: 3600
+      volumes:
+        - name: rootdisk
+          dataVolume:
+            name: win2k22-perf-rootdisk
+        - name: virtio-drivers
+          containerDisk:
+            image: registry.redhat.io/container-native-virtualization/virtio-win-rhel9:v4.22

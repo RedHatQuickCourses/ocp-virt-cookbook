@@ -1,0 +1,67 @@
+# Baseline Windows Server 2022 VM with the virtio-win driver ISO attached
+# as a CD-ROM. The windows.2k22.virtio cluster preference supplies the
+# virtio disk bus, virtio NIC model, EFI/SecureBoot and TPM settings.
+#
+# Replace the containerDisk image with the value from the virtio-win
+# ConfigMap on your cluster:
+#   oc get configmap virtio-win -n openshift-cnv \
+#     -o jsonpath='{.data.virtio-win-image}'
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: win2k22-perf
+  namespace: windows-perf
+  labels:
+    app: win2k22-perf
+spec:
+  runStrategy: Always
+  instancetype:
+    kind: VirtualMachineClusterInstancetype
+    name: u1.large
+  preference:
+    kind: VirtualMachineClusterPreference
+    name: windows.2k22.virtio
+  dataVolumeTemplates:
+    - metadata:
+        name: win2k22-perf-rootdisk
+      spec:
+        sourceRef:
+          kind: DataSource
+          name: win2k22
+          namespace: openshift-virtualization-os-images
+        storage:
+          accessModes:
+            - ReadWriteMany
+          resources:
+            requests:
+              storage: 80Gi
+  template:
+    metadata:
+      labels:
+        kubevirt.io/domain: win2k22-perf
+    spec:
+      domain:
+        devices:
+          disks:
+            - name: rootdisk
+              bootOrder: 1
+              disk:
+                bus: virtio
+            - name: virtio-drivers
+              cdrom:
+                bus: sata
+          interfaces:
+            - name: default
+              model: virtio
+              masquerade: {}
+      networks:
+        - name: default
+          pod: {}
+      terminationGracePeriodSeconds: 3600
+      volumes:
+        - name: rootdisk
+          dataVolume:
+            name: win2k22-perf-rootdisk
+        - name: virtio-drivers
+          containerDisk:
+            image: registry.redhat.io/container-native-virtualization/virtio-win-rhel9:v4.22

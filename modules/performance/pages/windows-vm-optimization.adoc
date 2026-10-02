@@ -1,0 +1,1199 @@
+= Windows VM Performance Optimization: VirtIO Drivers and Kernel Tuning
+:navtitle: Windows VM Optimization
+
+== Overview
+
+A Windows guest that boots on OpenShift Virtualization is not automatically a fast Windows guest. Windows ships with no VirtIO drivers, defaults to a power plan written for laptops, assumes the hardware clock holds local time, and runs background services that were designed for spinning disks attached to a single machine. Each of those defaults costs measurable throughput or latency on a KVM guest.
+
+This tutorial covers the production-grade layer on top of a working Windows VM: the `virtio-win` driver lifecycle, the QEMU guest agent, Hyper-V enlightenments, clock and timer configuration, multi-queue virtio devices, Windows power and registry tuning, in-guest benchmarks, and a BSOD triage workflow.
+
+The examples use Windows Server 2022. Everything applies unchanged to Windows 11 apart from the preference name (`windows.11.virtio`) and the driver subdirectory on the ISO (`w11` instead of `2k22`).
+
+NOTE: For first-time Windows deployment, start with xref:vm-configuration:windows-vm-virtio-drivers.adoc[Deploying Windows VMs with VirtIO Drivers] and come back here.
+
+== What You Will Learn
+
+* How the `virtio-win` driver package is delivered to a VM and how to install, update, and roll back individual drivers
+* How to install the QEMU guest agent and what the cluster gains from it
+* How to configure Hyper-V enlightenments and what each one does for a Windows guest
+* How to configure the guest clock and timer sources so Windows keeps accurate time
+* How to enable multi-queue virtio disk and network devices
+* Which Windows power plan, service, and registry settings to change for virtual hardware
+* How to benchmark disk I/O and network throughput from inside the guest
+* How to triage a BSOD: stop codes, crash dumps, Driver Verifier, and host-side memory dumps
+
+== Prerequisites
+
+* OpenShift {ocp-min-version}+ with the OpenShift Virtualization operator installed
+* `oc` and `virtctl` CLIs installed and logged in to the cluster
+* A namespace where you can create VMs, or permission to create one
+* A Windows Server 2022 or Windows 11 boot source available as a `DataSource` in `openshift-virtualization-os-images`, or an existing Windows VM you can modify
+* A `StorageClass` that supports `ReadWriteMany` if you plan to live migrate the VM
+* RDP or VNC access to the Windows guest, plus local administrator credentials
+* At least 8 GiB of memory and 4 vCPUs of spare capacity on a worker node
+
+== Understanding the Windows Guest Stack
+
+Three layers decide how fast a Windows guest runs. The VM spec controls what the guest sees, the drivers decide how efficiently the guest talks to it, and the guest OS settings decide how much work Windows wastes on assumptions that do not hold in a VM.
+
+[source,text]
+----
+  Windows guest OS
+  ┌──────────────────────────────────────────────────────────┐
+  │  Power plan · services · registry · page file            │  Layer 3
+  │  Tuned by PowerShell inside the guest                    │
+  ├──────────────────────────────────────────────────────────┤
+  │  viostor / vioscsi   netkvm   balloon   vioinput         │  Layer 2
+  │  qemu-ga  +  VSS provider    (virtio-win package)        │
+  ├──────────────────────────────────────────────────────────┤
+  │  Hyper-V enlightenments · clock/timers · multi-queue     │  Layer 1
+  │  spec.domain.features / clock / devices                  │
+  └──────────────────────────────────────────────────────────┘
+  QEMU / KVM on the worker node
+----
+
+Layer 1 is declarative and lives in Git. Layer 2 and Layer 3 live inside the guest image and belong in your golden image or a configuration management tool. Skipping Layer 2 is the most common cause of poor Windows performance, and skipping Layer 1 is the most common cause of clock drift and high idle CPU.
+
+== Step 1: Create the Namespace
+
+[source,bash,role=execute]
+----
+oc new-project windows-perf
+----
+
+If the project already exists, switch to it:
+
+[source,bash,role=execute]
+----
+oc project windows-perf
+----
+
+== Step 2: Attach the VirtIO Driver Disk
+
+OpenShift Virtualization ships the `virtio-win` ISO as a container image. The HyperConverged operator records the exact image in a `ConfigMap`, so you never have to guess a tag or download the ISO by hand.
+
+Read the image reference:
+
+[source,bash,role=execute]
+----
+oc get configmap virtio-win -n openshift-cnv -o jsonpath='{.data.virtio-win-image}{"\n"}'
+----
+
+.Expected output
+[source,text]
+----
+registry.redhat.io/container-native-virtualization/virtio-win-rhel9@sha256:dbbba8ff...
+----
+
+The same `ConfigMap` also exposes a download URL for the ISO, which is useful when you build golden images outside the cluster:
+
+[source,bash,role=execute]
+----
+oc get configmap virtio-win -n openshift-cnv -o jsonpath='{.data.virtio-win-image-download-url}{"\n"}'
+----
+
+Create the Windows VM with the driver ISO attached as a SATA CD-ROM. The `windows.2k22.virtio` cluster preference already sets the virtio disk bus, the virtio NIC model, EFI with Secure Boot, and a persistent TPM, so the manifest only has to add the devices.
+
+xref:attachment$windows-vm-optimization/win2k22-baseline.yaml[Download win2k22-baseline.yaml]
+
+[source,bash,role=execute]
+----
+VIRTIO_WIN=$(oc get configmap virtio-win -n openshift-cnv -o jsonpath='{.data.virtio-win-image}')
+
+oc apply -f - <<EOF
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: win2k22-perf
+  namespace: windows-perf
+  labels:
+    app: win2k22-perf
+spec:
+  runStrategy: Always
+  instancetype:
+    kind: VirtualMachineClusterInstancetype
+    name: u1.large
+  preference:
+    kind: VirtualMachineClusterPreference
+    name: windows.2k22.virtio
+  dataVolumeTemplates:
+    - metadata:
+        name: win2k22-perf-rootdisk
+      spec:
+        sourceRef:
+          kind: DataSource
+          name: win2k22
+          namespace: openshift-virtualization-os-images
+        storage:
+          accessModes:
+            - ReadWriteMany
+          resources:
+            requests:
+              storage: 80Gi
+  template:
+    metadata:
+      labels:
+        kubevirt.io/domain: win2k22-perf
+    spec:
+      domain:
+        devices:
+          disks:
+            - name: rootdisk
+              bootOrder: 1
+              disk:
+                bus: virtio
+            - name: virtio-drivers
+              cdrom:
+                bus: sata
+          interfaces:
+            - name: default
+              model: virtio
+              masquerade: {}
+      networks:
+        - name: default
+          pod: {}
+      terminationGracePeriodSeconds: 3600
+      volumes:
+        - name: rootdisk
+          dataVolume:
+            name: win2k22-perf-rootdisk
+        - name: virtio-drivers
+          containerDisk:
+            image: ${VIRTIO_WIN}
+EOF
+----
+
+Wait for the VM to report `Running` and `Ready`:
+
+[source,bash,role=execute]
+----
+oc wait vm win2k22-perf -n windows-perf --for=condition=Ready --timeout=20m
+----
+
+TIP: If you already have a Windows VM, add the `virtio-drivers` CD-ROM device and volume to its spec instead of creating a new one. The device is hot-pluggable only as a persistent change plus restart, so plan a reboot.
+
+== Step 3: Install VirtIO Drivers and Guest Tools
+
+Connect to the guest console:
+
+[source,bash,role=execute]
+----
+virtctl vnc win2k22-perf -n windows-perf
+----
+
+Inside the guest, open an elevated PowerShell prompt. The driver CD mounts as the next free drive letter, usually `D:` or `E:`.
+
+The `virtio-win-guest-tools.exe` installer is the supported way to install everything at once. It installs the storage, network, balloon, serial, RNG, and input drivers, the QEMU guest agent, and the VSS provider used for application-consistent snapshots.
+
+[source,powershell]
+----
+D:\virtio-win-guest-tools.exe /install /quiet /norestart
+----
+
+.Expected result
+[source,text]
+----
+The installer exits silently with code 0. No window appears.
+----
+
+Reboot the guest so the storage and network drivers bind:
+
+[source,powershell]
+----
+Restart-Computer -Force
+----
+
+=== Installing Individual Drivers
+
+When you need one driver rather than the whole bundle -- for example, updating only the NIC driver in a change window -- use `pnputil` with the matching `.inf`. Each driver lives under `<DriverName>\<os-version>\amd64\`.
+
+[source,powershell]
+----
+pnputil /add-driver D:\NetKVM\2k22\amd64\netkvm.inf /install
+pnputil /add-driver D:\viostor\2k22\amd64\viostor.inf /install
+pnputil /add-driver D:\Balloon\2k22\amd64\balloon.inf /install
+pnputil /add-driver D:\vioserial\2k22\amd64\vioser.inf /install
+pnputil /add-driver D:\viorng\2k22\amd64\viorng.inf /install
+pnputil /add-driver D:\vioinput\2k22\amd64\vioinput.inf /install
+----
+
+For Windows 11, replace `2k22` with `w11` in every path.
+
+WARNING: Never uninstall `viostor.sys` or `vioscsi.sys` while the VM boots from a virtio disk. Windows will fail the next boot with `INACCESSIBLE_BOOT_DEVICE` (stop code `0x0000007B`).
+
+== Step 4: Manage the Driver Lifecycle
+
+=== Inventory the Installed Drivers
+
+List every Red Hat driver package currently in the guest, with its version and date:
+
+[source,powershell]
+----
+Get-CimInstance Win32_PnPSignedDriver |
+    Where-Object { $_.Manufacturer -like '*Red Hat*' } |
+    Select-Object DeviceName, DriverVersion, DriverDate |
+    Sort-Object DeviceName |
+    Format-Table -AutoSize
+----
+
+.Expected output
+[source,text]
+----
+ DeviceName                        DriverVersion     DriverDate
+ ----------                        -------------     ----------
+ Red Hat VirtIO Ethernet Adapter   100.95.104.26200  6/12/2025 12:00:00 AM
+ Red Hat VirtIO SCSI controller    100.95.104.26200  6/12/2025 12:00:00 AM
+ VirtIO Balloon Driver             100.95.104.26200  6/12/2025 12:00:00 AM
+ VirtIO Serial Driver              100.95.104.26200  6/12/2025 12:00:00 AM
+----
+
+The DriverStore view shows the OEM package names you need for removal or rollback:
+
+[source,powershell]
+----
+pnputil /enum-drivers | Select-String -Pattern 'Published Name|Original Name|Driver Version' -Context 0,0
+----
+
+=== Back Up Drivers Before an Update
+
+Export the current DriverStore so you can reinstall the exact package you were running if an update misbehaves:
+
+[source,powershell]
+----
+New-Item -Path C:\driver-backup -ItemType Directory -Force
+pnputil /export-driver * C:\driver-backup
+----
+
+=== Update to a Newer virtio-win Release
+
+Driver updates arrive with OpenShift Virtualization upgrades. After an upgrade, the `virtio-win` `ConfigMap` points at a new image, so a VM restart picks up the new ISO automatically -- but the drivers inside the guest do not change until you run the installer again.
+
+Check whether the cluster image changed:
+
+[source,bash,role=execute]
+----
+oc get configmap virtio-win -n openshift-cnv -o jsonpath='{.data.virtio-win-image}{"\n"}'
+----
+
+Restart the VM so the new container disk is attached, then run the installer in upgrade mode inside the guest:
+
+[source,bash,role=execute]
+----
+virtctl restart win2k22-perf -n windows-perf
+----
+
+[source,powershell]
+----
+D:\virtio-win-guest-tools.exe /install /quiet /norestart
+Restart-Computer -Force
+----
+
+The installer replaces every driver in place and upgrades the guest agent. Confirm the new versions with the `Win32_PnPSignedDriver` query above.
+
+IMPORTANT: Update drivers on one VM first and let it run a full business cycle before rolling the change out. Driver regressions in the network path often only appear under sustained load.
+
+=== Roll Back a Driver
+
+Windows keeps the previous driver package after an in-place update, so the fastest rollback is the built-in one. From an elevated PowerShell prompt, open Device Manager:
+
+[source,powershell]
+----
+devmgmt.msc
+----
+
+Right-click the device, choose **Properties**, open the **Driver** tab, and click **Roll Back Driver**. Windows restores the previous package and prompts for a reboot.
+
+When **Roll Back Driver** is greyed out -- typically because the previous package was cleaned up -- remove the current package and reinstall the known-good one from your backup:
+
+[source,powershell]
+----
+pnputil /delete-driver oem42.inf /uninstall /force
+pnputil /add-driver C:\driver-backup\netkvm.inf_amd64_<hash>\netkvm.inf /install
+----
+
+Replace `oem42.inf` with the published name from `pnputil /enum-drivers`.
+
+WARNING: Do not roll back the boot storage driver from inside a running guest. Shut the VM down, temporarily switch the root disk to `bus: sata` in the VM spec, boot, fix the driver, and switch back. Rolling back `viostor` in place leaves the next boot with no driver for its own boot device.
+
+== Step 5: Verify the QEMU Guest Agent
+
+The guest agent is installed by `virtio-win-guest-tools.exe`. Confirm the service is running inside the guest:
+
+[source,powershell]
+----
+Get-Service QEMU-GA | Select-Object Name, Status, StartType
+----
+
+.Expected output
+[source,text]
+----
+ Name    Status  StartType
+ ----    ------  ---------
+ QEMU-GA Running Automatic
+----
+
+From the cluster side, the `AgentConnected` condition appears on the `VirtualMachineInstance`:
+
+[source,bash,role=execute]
+----
+oc get vmi win2k22-perf -n windows-perf \
+  -o jsonpath='{range .status.conditions[*]}{.type}={.status}{"\n"}{end}'
+----
+
+.Expected output
+[source,text]
+----
+Ready=True
+LiveMigratable=True
+AgentConnected=True
+----
+
+=== What the Agent Gives You
+
+Guest IP addresses appear in `oc get vmi`, which is what most automation keys off:
+
+[source,bash,role=execute]
+----
+oc get vmi win2k22-perf -n windows-perf -o wide
+----
+
+Guest OS details become queryable:
+
+[source,bash,role=execute]
+----
+virtctl guestosinfo win2k22-perf -n windows-perf
+----
+
+Mounted filesystems and logged-in users are readable without opening a console:
+
+[source,bash,role=execute]
+----
+virtctl fslist win2k22-perf -n windows-perf
+virtctl userlist win2k22-perf -n windows-perf
+----
+
+`virtctl stop` becomes a graceful, coordinated shutdown instead of an ACPI power button press that Windows may ignore at a login prompt or during updates:
+
+[source,bash,role=execute]
+----
+virtctl stop win2k22-perf -n windows-perf
+----
+
+The VSS provider installed alongside the agent lets the snapshot controller quiesce the filesystem, which is what makes an online `VirtualMachineSnapshot` application-consistent rather than crash-consistent.
+
+NOTE: Without the agent, `terminationGracePeriodSeconds` expires and the VM is killed. The Windows preferences set that grace period to 3600 seconds so that a patch-installing guest is not cut off mid-update.
+
+== Step 6: Configure Hyper-V Enlightenments
+
+Enlightenments are paravirtualized interfaces that KVM exposes through the Hyper-V hypervisor ABI. Windows detects them and switches from emulated hardware paths to direct hypercalls. The effect is largest on idle CPU, interrupt handling, and timekeeping.
+
+The following fragment enables the full supported set:
+
+[source,yaml]
+----
+features:
+  acpi:
+    enabled: true
+  apic:
+    enabled: true
+  smm:
+    enabled: true
+  hyperv:
+    relaxed:
+      enabled: true
+    vapic:
+      enabled: true
+    vpindex:
+      enabled: true
+    runtime:
+      enabled: true
+    synic:
+      enabled: true
+    synictimer:
+      enabled: true
+      direct:
+        enabled: true
+    reset:
+      enabled: true
+    frequencies:
+      enabled: true
+    reenlightenment:
+      enabled: true
+    tlbflush:
+      enabled: true
+    ipi:
+      enabled: true
+    spinlocks:
+      enabled: true
+      spinlocks: 8191
+----
+
+[cols="1,3,1",options="header"]
+|===
+|Enlightenment |What it does |Requires
+
+|`relaxed`
+|Tells Windows to disable its watchdog timeouts. Prevents spurious `CLOCK_WATCHDOG_TIMEOUT` bugchecks when a vCPU is descheduled by the host.
+|-
+
+|`vapic`
+|Paravirtualized APIC. Replaces MMIO access to the local APIC with hypercalls, cutting VM exits on every interrupt.
+|-
+
+|`vpindex`
+|Exposes a virtual processor index to the guest. Required by the IPI and TLB flush enlightenments.
+|-
+
+|`runtime`
+|Reports how much time each virtual processor actually ran, so the Windows scheduler accounts for steal time.
+|-
+
+|`synic`
+|Synthetic Interrupt Controller. Provides the message and event channels used by `synictimer` and `reset`.
+|-
+
+|`synictimer`
+|Synthetic timers. With `direct` enabled, timer expiry is delivered as a direct interrupt instead of a synthetic message, which lowers idle CPU noticeably.
+|`synic`
+
+|`reset`
+|Lets Windows reset and reboot itself through a hypercall rather than the emulated reset line.
+|`synic`
+
+|`frequencies`
+|Exposes TSC and APIC frequency MSRs so Windows trusts the TSC as a clock source instead of falling back to slower timers.
+|-
+
+|`reenlightenment`
+|Notifies the guest when the TSC frequency changes, which happens when a VM migrates to a node with a different clock. Required for reliable timekeeping across live migration.
+|`frequencies`
+
+|`tlbflush`
+|Remote TLB shootdowns become a single hypercall instead of an IPI storm. The gain grows with vCPU count and host overcommit.
+|`vpindex`
+
+|`ipi`
+|Bulk inter-processor interrupts through one hypercall. Same rationale as `tlbflush`.
+|`vpindex`
+
+|`spinlocks`
+|Tells Windows how many times to spin before yielding to the hypervisor. 8191 is the value the Red Hat Windows preferences use.
+|-
+|===
+
+=== Enlightenments You Should Not Enable
+
+`evmcs` (Enlightened VMCS) speeds up nested VM exits but disables other virtualization features and blocks live migration. Leave it off unless you are running Hyper-V inside the Windows guest and have accepted that the VM cannot migrate.
+
+`hypervPassthrough` enables every supported flag automatically, but it makes the VM non-migratable and forbids setting individual flags. Use the explicit list above for anything you expect to migrate:
+
+[source,yaml]
+----
+features:
+  hypervPassthrough:
+    enabled: true
+----
+
+TIP: The `windows.2k22.virtio` and `windows.11.virtio` cluster preferences already apply the full explicit list. Check what you are inheriting before writing it out by hand.
+
+Inspect the preference:
+
+[source,bash,role=execute]
+----
+oc get virtualmachineclusterpreference windows.2k22.virtio \
+  -o jsonpath='{.spec.features.preferredHyperv}{"\n"}'
+----
+
+== Step 7: Configure the Clock and Timers
+
+Windows reads the emulated RTC at boot and then maintains time from a monotonic counter. Both halves need configuration.
+
+[source,yaml]
+----
+clock:
+  utc:
+    offsetSeconds: 0
+  timer:
+    hpet:
+      present: false
+    pit:
+      tickPolicy: delay
+    rtc:
+      tickPolicy: catchup
+    hyperv:
+      present: true
+----
+
+`hpet` is disabled because the emulated High Precision Event Timer is expensive and Windows does not need it when the Hyper-V reference time source is present. `pit` with `tickPolicy: delay` delivers missed ticks late rather than in a burst. `rtc` with `tickPolicy: catchup` gradually re-injects missed RTC ticks so the guest catches up without a jump. The `hyperv` timer exposes the Hyper-V reference TSC page, which is the clock source Windows prefers.
+
+Setting `utc` means QEMU presents UTC in the RTC. Windows assumes the RTC holds local time, so a guest in any non-UTC timezone will be wrong by its offset until you tell it otherwise. Set the `RealTimeIsUniversal` registry value inside the guest:
+
+[source,powershell]
+----
+New-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Control\TimeZoneInformation' `
+    -Name 'RealTimeIsUniversal' -PropertyType DWord -Value 1 -Force
+----
+
+Alternatively, drop `utc` and set `clock.timezone` to the guest's timezone. Pick one approach and apply it consistently -- mixing them produces a guest that is correct at boot and wrong after the first daylight saving change.
+
+Verify the clock source Windows selected after the next reboot:
+
+[source,powershell]
+----
+w32tm /query /status
+----
+
+.Expected output
+[source,text]
+----
+Leap Indicator: 0(no warning)
+Stratum: 3 (secondary reference - syncd by (S)NTP)
+Precision: -23 (119.209ns per tick)
+Source: time.windows.com
+----
+
+== Step 8: Enable Multi-Queue Virtio Devices
+
+By default a virtio device has a single request queue, so all I/O funnels through one vCPU. Multi-queue gives each vCPU its own queue.
+
+[source,yaml]
+----
+devices:
+  blockMultiQueue: true
+  networkInterfaceMultiqueue: true
+----
+
+`blockMultiQueue` applies to virtio disks and requires `spec.domain.resources.requests.memory` to be set on the VM. `networkInterfaceMultiqueue` applies to virtio NICs. Both need more than one vCPU to do anything, and KubeVirt caps the queue count at the vCPU count.
+
+NOTE: Each additional queue pair costs host memory for its virtio rings, and KubeVirt adds that to the `virt-launcher` pod's computed overhead. Watch actual pod memory usage on high vCPU guests rather than assuming the overhead is free.
+
+Inside the guest, the NetKVM driver needs Receive Side Scaling enabled to spread receive processing across the queues:
+
+[source,powershell]
+----
+Get-NetAdapter | Where-Object { $_.InterfaceDescription -like '*VirtIO*' } | ForEach-Object {
+    Set-NetAdapterAdvancedProperty -Name $_.Name -RegistryKeyword '*RSS' -RegistryValue 1 -NoRestart
+}
+Restart-NetAdapter -Name (Get-NetAdapter | Where-Object { $_.InterfaceDescription -like '*VirtIO*' }).Name
+----
+
+== Step 9: Apply the Tuned VM Spec
+
+Apply the complete manifest with enlightenments, clock, timers, and multi-queue. This example drops the instance type and sets CPU and memory explicitly so that `blockMultiQueue` has the memory request it needs.
+
+xref:attachment$windows-vm-optimization/win2k22-tuned.yaml[Download win2k22-tuned.yaml]
+
+[source,bash,role=execute]
+----
+VIRTIO_WIN=$(oc get configmap virtio-win -n openshift-cnv -o jsonpath='{.data.virtio-win-image}')
+
+oc apply -f - <<EOF
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: win2k22-perf
+  namespace: windows-perf
+  labels:
+    app: win2k22-perf
+spec:
+  runStrategy: Always
+  preference:
+    kind: VirtualMachineClusterPreference
+    name: windows.2k22.virtio
+  dataVolumeTemplates:
+    - metadata:
+        name: win2k22-perf-rootdisk
+      spec:
+        sourceRef:
+          kind: DataSource
+          name: win2k22
+          namespace: openshift-virtualization-os-images
+        storage:
+          accessModes:
+            - ReadWriteMany
+          resources:
+            requests:
+              storage: 80Gi
+  template:
+    metadata:
+      labels:
+        kubevirt.io/domain: win2k22-perf
+    spec:
+      domain:
+        cpu:
+          sockets: 2
+          cores: 2
+          threads: 1
+        memory:
+          guest: 8Gi
+        resources:
+          requests:
+            memory: 8Gi
+            cpu: "4"
+        clock:
+          utc: {}
+          timer:
+            hpet:
+              present: false
+            pit:
+              tickPolicy: delay
+            rtc:
+              tickPolicy: catchup
+            hyperv: {}
+        features:
+          acpi:
+            enabled: true
+          apic:
+            enabled: true
+          smm:
+            enabled: true
+          hyperv:
+            relaxed:
+              enabled: true
+            vapic:
+              enabled: true
+            vpindex:
+              enabled: true
+            runtime:
+              enabled: true
+            synic:
+              enabled: true
+            synictimer:
+              enabled: true
+              direct:
+                enabled: true
+            reset:
+              enabled: true
+            frequencies:
+              enabled: true
+            reenlightenment:
+              enabled: true
+            tlbflush:
+              enabled: true
+            ipi:
+              enabled: true
+            spinlocks:
+              enabled: true
+              spinlocks: 8191
+        devices:
+          blockMultiQueue: true
+          networkInterfaceMultiqueue: true
+          disks:
+            - name: rootdisk
+              bootOrder: 1
+              disk:
+                bus: virtio
+            - name: virtio-drivers
+              cdrom:
+                bus: sata
+          interfaces:
+            - name: default
+              model: virtio
+              masquerade: {}
+      networks:
+        - name: default
+          pod: {}
+      terminationGracePeriodSeconds: 3600
+      volumes:
+        - name: rootdisk
+          dataVolume:
+            name: win2k22-perf-rootdisk
+        - name: virtio-drivers
+          containerDisk:
+            image: ${VIRTIO_WIN}
+EOF
+----
+
+Restart the VM so the new domain definition takes effect:
+
+[source,bash,role=execute]
+----
+virtctl restart win2k22-perf -n windows-perf
+oc wait vm win2k22-perf -n windows-perf --for=condition=Ready --timeout=15m
+----
+
+=== Verify the Domain Definition
+
+Find the `virt-launcher` pod and dump the libvirt domain XML:
+
+[source,bash,role=execute]
+----
+LAUNCHER=$(oc get pod -n windows-perf -l kubevirt.io/domain=win2k22-perf \
+  -o jsonpath='{.items[0].metadata.name}')
+
+oc exec -n windows-perf "$LAUNCHER" -c compute -- \
+  virsh dumpxml windows-perf_win2k22-perf | sed -n '/<hyperv/,/<\/hyperv>/p'
+----
+
+.Expected output
+[source,xml]
+----
+<hyperv mode='custom'>
+  <relaxed state='on'/>
+  <vapic state='on'/>
+  <spinlocks state='on' retries='8191'/>
+  <vpindex state='on'/>
+  <runtime state='on'/>
+  <synic state='on'/>
+  <stimer state='on'>
+    <direct state='on'/>
+  </stimer>
+  <reset state='on'/>
+  <frequencies state='on'/>
+  <reenlightenment state='on'/>
+  <tlbflush state='on'/>
+  <ipi state='on'/>
+</hyperv>
+----
+
+Confirm the queue counts on the disk and the NIC:
+
+[source,bash,role=execute]
+----
+oc exec -n windows-perf "$LAUNCHER" -c compute -- \
+  virsh dumpxml windows-perf_win2k22-perf | grep -E 'queues=|driver name'
+----
+
+== Step 10: Tune the Windows Guest
+
+Copy the tuning script into the guest and run it from an elevated PowerShell prompt.
+
+xref:attachment$windows-vm-optimization/windows-guest-tuning.ps1[Download windows-guest-tuning.ps1]
+
+[source,powershell]
+----
+Set-ExecutionPolicy -Scope Process Bypass -Force
+.\windows-guest-tuning.ps1
+Restart-Computer -Force
+----
+
+The script applies the following changes.
+
+[cols="1,2,2",options="header"]
+|===
+|Setting |Change |Reason
+
+|Power plan
+|High performance, all timeouts disabled
+|The Balanced plan parks cores and lowers the guest's requested frequency. On a VM the host already manages frequency, so parking only adds wake-up latency.
+
+|Hibernation
+|Disabled
+|`hiberfil.sys` consumes disk equal to RAM and hibernation is meaningless for a VM.
+
+|`RealTimeIsUniversal`
+|DWORD `1`
+|Makes Windows read the emulated RTC as UTC, matching `spec.domain.clock.utc`.
+
+|SysMain (Superfetch)
+|Disabled
+|Speculative prefetch generates read I/O against shared cluster storage for no benefit when the backing store already caches.
+
+|Scheduled defrag
+|Disabled
+|Defragmenting a thin-provisioned virtual disk rewrites blocks and inflates the image without improving layout on the physical storage.
+
+|`DisableDeleteNotify`
+|`0`
+|Keeps TRIM/UNMAP enabled so deletes in the guest are passed down and thin-provisioned volumes actually shrink.
+
+|`Win32PrioritySeparation`
+|`24`
+|Favors background services. Already the Server default; this enforces it on Windows 11 guests running server roles.
+
+|Visual effects
+|Best performance
+|Removes compositing work that is pure overhead over RDP or VNC.
+
+|NIC power management
+|Disabled, RSS enabled
+|Stops Windows from powering down a virtual NIC and lets receive processing use every multi-queue ring.
+|===
+
+Verify a few of them afterwards:
+
+[source,powershell]
+----
+powercfg /getactivescheme
+Get-Service SysMain | Select-Object Name, Status, StartType
+fsutil behavior query DisableDeleteNotify
+Get-ItemProperty 'HKLM:\SYSTEM\CurrentControlSet\Control\TimeZoneInformation' |
+    Select-Object RealTimeIsUniversal
+----
+
+.Expected output
+[source,text]
+----
+ Power Scheme GUID: 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c  (High performance)
+
+ Name    Status  StartType
+ ----    ------  ---------
+ SysMain Stopped Disabled
+
+ DisableDeleteNotify = 0
+
+ RealTimeIsUniversal
+ -------------------
+                   1
+----
+
+WARNING: Do not disable the Windows page file. Windows needs it to stage a kernel or complete crash dump, and without a dump you cannot diagnose a BSOD.
+
+== Step 11: Validate Performance
+
+Benchmarks only mean something as a before-and-after pair. Run them once on the baseline VM from Step 2 and again on the tuned VM from Step 9, on the same node and the same storage class.
+
+WARNING: These benchmarks generate sustained I/O and network load that bypasses guest caching. On a shared cluster they will degrade other workloads. Run them on a test cluster or during a maintenance window.
+
+=== Install the Benchmark Tools
+
+Download DiskSpd and NTttcp inside the guest and unpack both into `C:\bench`:
+
+* link:https://github.com/microsoft/diskspd/releases[DiskSpd releases,window=_blank]
+* link:https://github.com/microsoft/ntttcp/releases[NTttcp releases,window=_blank]
+
+[source,powershell]
+----
+New-Item -Path C:\bench -ItemType Directory -Force
+# Copy diskspd.exe and ntttcp.exe into C:\bench, then confirm:
+Get-ChildItem C:\bench
+----
+
+=== Disk I/O
+
+xref:attachment$windows-vm-optimization/windows-benchmark.ps1[Download windows-benchmark.ps1]
+
+Run the random read test directly to see the flag meanings:
+
+[source,powershell]
+----
+C:\bench\diskspd.exe -c4G -b4K -r4K -o32 -t4 -d60 -w0 -Sh -L -D C:\bench\diskspd.dat
+----
+
+`-c4G` creates a 4 GiB test file, `-b4K` sets the block size, `-r4K` makes access random at 4 KiB alignment, `-o32` sets queue depth 32 per thread, `-t4` uses four threads, `-d60` runs for 60 seconds, `-w0` is read-only, `-Sh` disables both software and hardware write caching so you measure the storage path rather than guest RAM, and `-L` collects latency percentiles.
+
+Then run the full sweep:
+
+[source,powershell]
+----
+.\windows-benchmark.ps1
+----
+
+.Expected output shape
+[source,text]
+----
+ Total IO
+ thread |       bytes     |    I/Os    | MiB/s  | I/O per s | AvgLat | LatStdDev
+ ------------------------------------------------------------------------------
+      0 |      2147483648 |     524288 |  34.13 |   8738.13 |  3.660 |     1.204
+ ...
+ Total:   137.52 MiB/s |  35201.41 IOPS |  AvgLat 3.641
+----
+
+Record MiB/s, IOPS, and the 99th percentile latency for each of the four patterns. The typical gain from virtio plus multi-queue over emulated SATA is several times the IOPS at 4 KiB, with most of it coming from the driver rather than the queue count.
+
+=== Network Throughput
+
+NTttcp needs a peer. Start a receiver on a second VM or a Linux host on the same network, then run the sender in the Windows guest.
+
+On the receiver:
+
+[source,bash]
+----
+ntttcp.exe -r -m 8,*,0.0.0.0 -t 60
+----
+
+On the Windows guest, replace the address with the receiver's IP:
+
+[source,powershell]
+----
+C:\bench\ntttcp.exe -s -m 8,*,10.128.2.44 -t 60
+----
+
+`-s` is sender mode, `-m 8,*,<ip>` creates eight threads bound to any core targeting that address, and `-t 60` runs for 60 seconds.
+
+.Expected output shape
+[source,text]
+----
+Throughput(MB/s)  Throughput(Buffers/s)  Cycles/Byte  Buffers
+   1187.443            18999.09            1.452      1139945
+----
+
+Compare the tuned run against the baseline. If throughput does not improve after enabling `networkInterfaceMultiqueue`, check that RSS is enabled on the adapter and that the guest has more than one vCPU:
+
+[source,powershell]
+----
+Get-NetAdapterRss -Name (Get-NetAdapter | Where-Object { $_.InterfaceDescription -like '*VirtIO*' }).Name
+----
+
+=== Host-Side Confirmation
+
+Cross-check the guest numbers against the metrics the cluster reports:
+
+[source,bash,role=execute]
+----
+oc exec -n windows-perf "$LAUNCHER" -c compute -- \
+  virsh domblkstat windows-perf_win2k22-perf vda
+----
+
+[source,bash,role=execute]
+----
+oc adm top pod -n windows-perf --containers
+----
+
+TIP: For dashboards and alerting on these metrics over time, see xref:vm-monitoring-metrics.adoc[Monitoring VM Performance and Health].
+
+== Step 12: Troubleshoot BSODs
+
+A Windows stop error on a VM is almost always a driver problem, a resource starvation problem, or a change to virtual hardware that the guest was not prepared for.
+
+=== Common Stop Codes
+
+[cols="1,1,3",options="header"]
+|===
+|Code |Name |Usual cause on OpenShift Virtualization
+
+|`0x0000007B`
+|`INACCESSIBLE_BOOT_DEVICE`
+|The boot disk bus changed (virtio to SATA or back), or `viostor`/`vioscsi` was uninstalled or rolled back. Fix by booting with the previous bus and reinstalling the driver.
+
+|`0x000000D1`
+|`DRIVER_IRQL_NOT_LESS_OR_EQUAL`
+|A driver touched pageable memory at high IRQL. On a VM the usual culprit is `netkvm.sys` after a partial driver update. Check that all virtio drivers are the same version.
+
+|`0x00000133`
+|`DPC_WATCHDOG_VIOLATION`
+|A DPC ran too long. Frequently host-side I/O stalls surfacing as a guest bugcheck. Check storage latency and whether the node is overcommitted.
+
+|`0x00000101`
+|`CLOCK_WATCHDOG_TIMEOUT`
+|A vCPU did not respond to an interrupt in time. Caused by CPU overcommit on the node, or by the `relaxed` enlightenment being disabled.
+
+|`0x0000009F`
+|`DRIVER_POWER_STATE_FAILURE`
+|A driver blocked a power transition. Disable NIC power management and check the balloon driver version.
+
+|`0x000000C4`
+|`DRIVER_VERIFIER_DETECTED_VIOLATION`
+|Driver Verifier is enabled and caught a violation. Expected while verifying; the dump names the offending driver.
+
+|`0x0000005D`
+|`UNSUPPORTED_PROCESSOR`
+|The CPU model presented to the guest lacks features Windows 11 requires. Use a `host-model` or `host-passthrough` CPU, or a newer named model.
+
+|`0x0000001E`
+|`KMODE_EXCEPTION_NOT_HANDLED`
+|Generic kernel exception. Only the dump identifies the driver; treat the stop code alone as no information.
+|===
+
+=== Enable Crash Dumps First
+
+You cannot diagnose what you did not capture. Apply the crash dump configuration before you try to reproduce a fault.
+
+xref:attachment$windows-vm-optimization/windows-crashdump-config.ps1[Download windows-crashdump-config.ps1]
+
+[source,powershell]
+----
+Set-ExecutionPolicy -Scope Process Bypass -Force
+.\windows-crashdump-config.ps1
+Restart-Computer -Force
+----
+
+The script sets an automatic memory dump, keeps the dump file, disables automatic reboot so the stop screen stays visible in the console, enables a system-managed page file, and turns on `CrashOnCtrlScroll` so you can force a bugcheck from the VNC console when the guest hangs without crashing.
+
+To force a dump on a hung guest, open the console and press right `Ctrl` + `Scroll Lock` + `Scroll Lock`:
+
+[source,bash,role=execute]
+----
+virtctl vnc win2k22-perf -n windows-perf
+----
+
+=== Run Driver Verifier
+
+Driver Verifier stresses driver code paths and bugchecks on the first violation instead of letting corruption spread. Limit it to the virtio drivers so that unrelated drivers do not trip it.
+
+[source,powershell]
+----
+verifier /standard /driver netkvm.sys viostor.sys vioscsi.sys balloon.sys vioser.sys viorng.sys vioinput.sys
+Restart-Computer -Force
+----
+
+WARNING: Driver Verifier can make a guest unbootable. Take a `VirtualMachineSnapshot` before enabling it, and know the recovery path: boot into Safe Mode and run `verifier /reset`.
+
+Take the snapshot from the cluster side:
+
+[source,bash,role=execute]
+----
+oc apply -f - <<EOF
+apiVersion: snapshot.kubevirt.io/v1beta1
+kind: VirtualMachineSnapshot
+metadata:
+  name: win2k22-perf-preverifier
+  namespace: windows-perf
+spec:
+  source:
+    apiGroup: kubevirt.io
+    kind: VirtualMachine
+    name: win2k22-perf
+EOF
+----
+
+Reproduce the workload that triggers the fault. Check the verifier state at any time:
+
+[source,powershell]
+----
+verifier /querysettings
+----
+
+Turn it off when you are done. Leaving it on costs a large amount of performance:
+
+[source,powershell]
+----
+verifier /reset
+Restart-Computer -Force
+----
+
+=== Analyze the Dump
+
+After a bugcheck, the dump is at `C:\Windows\MEMORY.DMP` with minidumps in `C:\Windows\Minidump`. Confirm one was written:
+
+[source,powershell]
+----
+Get-ChildItem C:\Windows\MEMORY.DMP, C:\Windows\Minidump\*.dmp -ErrorAction SilentlyContinue |
+    Select-Object FullName, Length, LastWriteTime
+----
+
+Read the bugcheck summary from the event log without leaving the guest:
+
+[source,powershell]
+----
+Get-WinEvent -FilterHashtable @{ LogName = 'System'; Id = 1001 } -MaxEvents 5 |
+    Where-Object { $_.ProviderName -eq 'Microsoft-Windows-WER-SystemErrorReporting' } |
+    Format-List TimeCreated, Message
+----
+
+For the full analysis, copy the dump out and open it in WinDbg on a workstation. `virtctl scp` needs the OpenSSH server running in the guest -- see xref:vm-configuration:ssh-access-windows-vms.adoc[SSH Access to Windows VMs]. If the guest no longer boots, attach its disk to a helper VM instead and read the dump from there.
+
+[source,bash,role=execute]
+----
+virtctl scp 'Administrator@vm/win2k22-perf.windows-perf:C:/Windows/MEMORY.DMP' ./MEMORY.DMP
+----
+
+In WinDbg, load the Microsoft symbol server and run the standard triage commands:
+
+[source,text]
+----
+.symfix
+.reload
+!analyze -v
+lm kv
+!irp
+----
+
+`!analyze -v` names the probable faulting module. When it points at `netkvm.sys`, `viostor.sys`, or another virtio driver, compare the version against the current `virtio-win` release before assuming a product defect -- mixed driver versions inside one guest cause most of these.
+
+=== Capture Guest Memory from the Host
+
+When the guest is too broken to copy a dump out, take the memory dump from the cluster side. KubeVirt writes the full guest RAM to a PVC while the VM keeps running.
+
+[source,bash,role=execute]
+----
+virtctl memory-dump get win2k22-perf -n windows-perf \
+  --claim-name=win2k22-perf-memdump --create-claim
+----
+
+Watch for completion:
+
+[source,bash,role=execute]
+----
+oc get vm win2k22-perf -n windows-perf -o jsonpath='{.status.memoryDumpRequest}{"\n"}'
+----
+
+Download it:
+
+[source,bash,role=execute]
+----
+virtctl memory-dump download win2k22-perf -n windows-perf \
+  --output=win2k22-perf-memory.dump.gz
+----
+
+Release the PVC association so a later dump can use a different claim:
+
+[source,bash,role=execute]
+----
+virtctl memory-dump remove win2k22-perf -n windows-perf
+----
+
+NOTE: The result is a raw guest memory image, not a Windows crash dump. Analyze it with a memory forensics tool such as Volatility, or convert it before loading into WinDbg.
+
+=== Cluster-Side Signals
+
+Before blaming a driver, check whether the node was the problem:
+
+[source,bash,role=execute]
+----
+oc get events -n windows-perf --sort-by=.lastTimestamp | tail -20
+----
+
+[source,bash,role=execute]
+----
+oc describe vmi win2k22-perf -n windows-perf | grep -A 10 'Events:'
+----
+
+Repeated `CLOCK_WATCHDOG_TIMEOUT` or `DPC_WATCHDOG_VIOLATION` on a busy node points at overcommit. See xref:cpu-pinning.adoc[Dedicated CPU Placement] for removing CPU contention and xref:resource-limits-qos.adoc[Resource Limits and QoS] for sizing requests so the guest gets a Guaranteed QoS class.
+
+== Cleanup
+
+Delete the snapshot and the memory dump PVC:
+
+[source,bash,role=execute]
+----
+oc delete virtualmachinesnapshot win2k22-perf-preverifier -n windows-perf --ignore-not-found
+oc delete pvc win2k22-perf-memdump -n windows-perf --ignore-not-found
+----
+
+Delete the namespace and everything in it:
+
+[source,bash,role=execute]
+----
+oc delete namespace windows-perf
+----
+
+If you tuned an existing VM rather than the example one, remove the driver CD-ROM once the drivers are installed. It occupies a device slot and pins the container image:
+
+[source,bash,role=execute]
+----
+oc patch vm <vm-name> -n <namespace> --type=json -p '[
+  {"op": "remove", "path": "/spec/template/spec/domain/devices/disks/1"},
+  {"op": "remove", "path": "/spec/template/spec/volumes/1"}
+]'
+----
+
+Verify the index positions in your own spec before running that patch.
+
+== Summary
+
+In this tutorial you learned how to:
+
+* Find the cluster's `virtio-win` image through the `virtio-win` `ConfigMap` and attach it as a CD-ROM
+* Install the full driver set with `virtio-win-guest-tools.exe` and individual drivers with `pnputil`
+* Inventory, back up, update, and roll back VirtIO drivers, and why the boot storage driver needs special handling
+* Verify the QEMU guest agent and use IP reporting, `guestosinfo`, `fslist`, graceful shutdown, and VSS-backed snapshots
+* Configure the full set of Hyper-V enlightenments, and why `evmcs` and `hypervPassthrough` block live migration
+* Configure the guest clock with `utc`, disable HPET, set PIT and RTC tick policies, and pair them with `RealTimeIsUniversal`
+* Enable `blockMultiQueue` and `networkInterfaceMultiqueue`, and enable RSS in the guest to use them
+* Apply Windows power plan, service, and registry changes suited to virtual hardware
+* Benchmark disk I/O with DiskSpd and network throughput with NTttcp, and cross-check against host metrics
+* Triage a BSOD: read the stop code, capture a crash dump, isolate a driver with Driver Verifier, analyze with WinDbg, and pull guest memory with `virtctl memory-dump`
+
+== See Also
+
+* xref:vm-configuration:windows-vm-virtio-drivers.adoc[Deploying Windows VMs with VirtIO Drivers] -- first-time Windows installation
+* xref:vm-configuration:remote-access-windows-vms.adoc[Remote Access to Windows VMs] -- RDP and console access
+* xref:vm-configuration:ssh-access-windows-vms.adoc[SSH Access to Windows VMs] -- OpenSSH server in the guest
+* xref:cpu-pinning.adoc[Dedicated CPU Placement] -- removing CPU contention for latency-sensitive guests
+* xref:resource-limits-qos.adoc[Resource Limits and QoS] -- sizing requests and limits
+* xref:vm-monitoring-metrics.adoc[Monitoring VM Performance and Health] -- Prometheus metrics and dashboards
+* xref:storage:disk-io-tuning.adoc[Disk I/O Tuning] -- storage-side tuning that applies to Windows guests too
+* link:https://github.com/virtio-win/virtio-win-pkg-scripts[virtio-win packaging project,window=_blank]
+* link:https://docs.redhat.com/en/documentation/openshift_container_platform/{ocp-docs-version}/html/virtualization/virtual-machines#virt-installing-virtio-drivers-on-new-windows-vm[Installing VirtIO drivers on a Windows VM,window=_blank]
