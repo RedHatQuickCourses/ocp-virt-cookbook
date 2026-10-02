@@ -6,7 +6,10 @@ This tutorial shows how to create, configure, and troubleshoot storage profiles.
 
 == Prerequisites
 
+* OpenShift v4.18 or later
 * OpenShift CLI installed
+* OpenShift Virtualization operator
+* cluster admin access
 
 == Understanding Storage Profiles and Their Role
 In OpenShift Virtualization, a Storage Profile (StorageProfile) is a custom resource managed by the Containerized Data Importer (CDI). Its primary role is to tell OpenShift Virtualization how to optimally request storage (Persistent Volume Claims or PVCs) for Virtual Machines based on the underlying Storage Class.
@@ -26,7 +29,7 @@ NOTE: If CDI doesn't recognize your provisioner, it will create a profile with e
 == Storage Profile Parameters
 To customize a storage profile, you define Claim Property Sets (claimPropertySets). These sets represent the preferred configurations when provisioning a PVC for a VM.
 
-The two main parameters are:
+The main parameters are:
 
 * volumeMode:
 ** *Block*: Provides raw block storage to the VM. (Highly Recommended for VMs). It eliminates the overhead of a filesystem, offering significantly better I/O performance.
@@ -46,6 +49,7 @@ The two main parameters are:
 ** *snapshot*: Golden images will be stored as snapshots
 
 * snapshotClass
+** specifies the VolumeSnapshotClass. Only needs to be specified if you have multiple snapshot classes.
 
 == StorageProfile Resource Definition & Customization
 If your default StorageProfile is configured for RWO/Filesystem, but you know your backend storage (like Ceph RBD or an NFS share) supports RWX/Block, you should patch the auto-generated profile.
@@ -67,10 +71,8 @@ spec:
   - accessModes:
     - ReadWriteOnce
     volumeMode: Filesystem
-  cloneStrategy:
-    - csi-clone
-  dataImportCronSourceFormat:
-    - snapshot
+  cloneStrategy: csi-clone
+  dataImportCronSourceFormat: snapshot
 ----
 
 NOTE: The CDI controller reads the claimPropertySets list from top to bottom. The first set in the array is treated as the primary preference.
@@ -122,12 +124,21 @@ status:
 === Scenario B: Cloning a VM Fails or Hangs
 * Symptom: When cloning a VM from a template, the DataVolume gets stuck, and events show "DataVolume.storage spec is missing accessMode and volumeMode, cannot get access mode from StorageProfile".
 * Cause: The StorageProfile for your destination StorageClass has empty or misconfigured claimPropertySets. The cloner doesn't know what access mode or volume mode to use.
-* Fix: Explicitly define the claimPropertySets in the StorageProfile. See <link to heading here>
+* Fix: Explicitly define the claimPropertySets in the StorageProfile. See <<Storage Profile Parameters>> for details.
 
 === Scenario C: CDIStorageProfilesIncomplete alert
 * Symptom: There is a CDIStorageProfilesIncomplete alert, and virtual disks are not created
 * Cause: The CDI was unable to fill in all the necessary fields for the storage profile
 * Fix: Manually define the missing necessary fields for the storage profile
 
+== Cleanup
+If you need to revert a patched storage profile that was initially created by the CDI controller, you can delete the profile and let the CDI controller recreate it automatically to the original configuration. Otherwise, you can simply patch the profile back to the configuration you want. (This will work on any profile, whether it was auto-generated or manually created.)
+
+== Summary
+* Storage profiles are used tell OpenShift Virtualization how to optimally request storage for VMs.
+* In general, the CDI controller will automatically handle storage profiles
+* If the CDI controller doesn't correctgly create a storage profile, you can make one mnually or patch the existing one to your needs.
+
 == See Also
-link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/virtualization/storage#virt-configuring-storage-profile[text,window=_blank].
+link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/virtualization/storage#virt-configuring-storage-profile[window=_blank].
+
