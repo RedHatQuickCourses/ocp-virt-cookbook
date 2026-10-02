@@ -1,0 +1,1541 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Choosing the Right Storage Class for VM Disks :: OpenShift Virtualization cookbook</title>
+    <link rel="prev" href="creating-managing-storage-class.html">
+    <link rel="next" href="multi-disk-configuration.html">
+    <meta name="generator" content="Antora 3.1.3">
+    <link rel="stylesheet" href="../../../_/css/site.css">
+    <script>var uiRootPath = '../../../_'</script>
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://www.redhat.com" target="_blank"><img src="../../../_/img/redhat-logo.png" height="40px" alt="Red Hat"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="../../..">OpenShift Virtualization cookbook</a>
+      <div class="navbar-item search hide-for-print">
+        <div id="search-field" class="field">
+          <input id="search-input" type="text" placeholder="Search the docs">
+        </div>
+      </div>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues" target="_blank">Report Issues</a>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="ocp-virt-cookbook" data-version="1">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="../index.html">OpenShift Virtualization cookbook</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../index.html">Introduction</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../getting-started/index.html">Getting Started</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/vm-quick-start.html">Quick Start</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/prerequisites.html">Prerequisites</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/architecture-overview.html">Architecture Overview</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/install-openshift-virtualization.html">Install OpenShift Virtualization</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/installing-qemu-guest-agent.html">Installing QEMU Guest Agent</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/default-storage-class.html">Storage Setup</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/create-vm-web-console.html">Create VM from Web Console</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/create-vm-cli-yaml.html">Create VM from CLI</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/vm-lifecycle-states.html">VM Lifecycle States</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/virtctl-basics.html">Virtctl Basics</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/cloud-init-fundamentals.html">Cloud-init Fundamentals</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="index.html">Storage Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="lvm-operator.html">LVM Operator Installation</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="lvm-troubleshooting.html">LVM Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="odf-ceph-storage.html">ODF/Ceph Storage</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="hostpath-provisioner.html">HostPath Provisioner</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="creating-managing-storage-class.html">Creating and Managing Storage Classes</a>
+  </li>
+  <li class="nav-item is-current-page" data-depth="2">
+    <a class="nav-link" href="choosing-storage-class.html">Choosing a Storage Class</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="multi-disk-configuration.html">Multi-Disk VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="expanding-vm-disk-size.html">Expanding VM Disk Size</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="cdi-operations.html">CDI Operations</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="disk-io-tuning.html">Disk I/O Tuning</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../networking/index.html">Networking Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/static-ip-configuration.html">Static IP Configuration</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/cloud-init-troubleshooting.html">Cloud-init Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/udn-primary-networks.html">UDN Primary Networks</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/localnet-secondary.html">Localnet Secondary Networks with CUDN</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/localnet-vlan.html">Localnet Secondary Networks with VLAN using NAD</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/cudn-localnet-vlan.html">Localnet VLAN with CUDN</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/layer2-secondary.html">Layer 2 Secondary Networks</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/linux-bridges.html">Linux Bridges</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/sriov-secondary.html">SR-IOV Secondary Networks</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/network-policies-vms.html">Network Policies for VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/metallb-loadbalancer.html">MetalLB Load Balancer for VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/dual-stack-vms.html">Dual-Stack IPv4/IPv6 VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/vm-ingress-routes.html">VM Ingress and Routes</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/ovs-bridge-troubleshooting.html">Troubleshooting Localnet Networks</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../vm-configuration/index.html">Virtual Machine Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/internal-dns-for-vms.html">Internal DNS for VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/remote-access-linux-vms.html">Remote Access to Linux VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/remote-access-linux-troubleshooting.html">Remote Access to Linux VMs Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/remote-access-windows-vms.html">Remote Access to Windows VMs via RDP</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/ssh-access-windows-vms.html">Remote Access to Windows VMs via SSH</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/windows-vm-virtio-drivers.html">Windows VMs with VirtIO Drivers</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/legacy-windows-versions.html">Legacy Windows Versions</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/infrastructure-node-placement.html">Infrastructure Node Placement</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/node-placement-affinity.html">Node Placement and Affinity</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/hotplug-volumes-interfaces.html">Hotplug Volumes and Interfaces</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/vm-templates.html">Virtual Machine Templates</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/instancetype-preference.html">Instancetype and Preference</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/hyperconverged-configuration.html">HyperConverged Configuration</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../performance/index.html">VM Performance Tuning</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/resource-limits-qos.html">Resource Limits and QoS</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/cpu-pinning.html">Dedicated CPU Placement</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/numa-hugepages.html">NUMA and Hugepages</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/realtime-vms.html">Real-Time VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/vm-monitoring-metrics.html">VM Monitoring and Metrics</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/nested-virtualization.html">Nested Virtualization</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../vm-lifecycle/index.html">VM Lifecycle Management</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/import-qcow2-boot-volume.html">Import qcow2 Boot Volume</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/custom-golden-images.html">Custom Golden Images</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/windows-golden-images.html">Windows Golden Images</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/golden-images-troubleshooting.html">Golden Images Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/cloning-vms.html">Cloning VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/vm-snapshots.html">VM Snapshots</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/boot-order-boot-sources.html">VM Boot Order and Boot Sources</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/live-migration.html">Live Migration</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/migrate-from-vmware-mtv.html">Migrate from VMware (MTV)</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../manifests/index.html">Manifests</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../api/index.html">API Guide</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../api/api-component-overview.html">API Component Overview</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../agentic-vm-management/index.html">Agentic VM Management</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/getting-started.html">Getting Started with rh-virt</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/natural-language-vm-create.html">Natural Language VM Creation</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/ai-vm-lifecycle.html">AI VM Lifecycle Operations</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/vm-clone.html">Cloning VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/ai-vm-snapshot-management.html">VM Snapshot Management</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/ai-skill-chaining.html">Day-2 Skill Chaining</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/ai-vm-rebalance.html">VM Rebalancing and Live Migration</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../appendix/glossary.html">Glossary</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">OpenShift Virtualization cookbook</span>
+    <span class="version">1</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <a class="title" href="../index.html">OpenShift Virtualization cookbook</a>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">1</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">OpenShift Virtualization cookbook</a></li>
+    <li><a href="index.html">Storage Configuration</a></li>
+    <li><a href="choosing-storage-class.html">Choosing a Storage Class</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">Choosing the Right Storage Class for VM Disks</h1>
+<div class="sect1">
+<h2 id="_overview"><a class="anchor" href="#_overview"></a>Overview</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The StorageClass behind a VM disk decides how fast the disk is, whether the VM can live migrate, whether you can snapshot or clone it, and whether you can grow it later. Changing that decision after a fleet of VMs is running means copying data, so it is worth getting right the first time.</p>
+</div>
+<div class="paragraph">
+<p>This guide compares the storage options available to OpenShift Virtualization: <code>Block</code> and <code>Filesystem</code> volume modes, <code>ReadWriteOnce</code> and <code>ReadWriteMany</code> access modes, CSI drivers, and the HostPath Provisioner. It ends with a decision matrix and a set of commands you can run against your own cluster to confirm what a StorageClass actually supports.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_what_you_will_learn"><a class="anchor" href="#_what_you_will_learn"></a>What You Will Learn</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p>How OpenShift Virtualization turns a StorageClass into a VM disk through StorageProfiles</p>
+</li>
+<li>
+<p>When to use <code>volumeMode: Block</code> and when <code>Filesystem</code> is acceptable</p>
+</li>
+<li>
+<p>How access modes control live migration</p>
+</li>
+<li>
+<p>Which CSI capabilities matter for VMs: snapshots, clones, expansion, and <code>ReadWriteOncePod</code></p>
+</li>
+<li>
+<p>Where the HostPath Provisioner fits and where it does not</p>
+</li>
+<li>
+<p>How to probe a StorageClass for volume mode, access mode, and expansion support</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_prerequisites"><a class="anchor" href="#_prerequisites"></a>Prerequisites</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p><strong>OpenShift 4.18+</strong> with the OpenShift Virtualization operator installed</p>
+</li>
+<li>
+<p><strong>Cluster admin access</strong> (<code>system:admin</code> or equivalent)</p>
+</li>
+<li>
+<p><strong><code>oc</code> CLI</strong> installed and logged in</p>
+</li>
+<li>
+<p><strong>At least one StorageClass</strong> with a working CSI provisioner</p>
+</li>
+<li>
+<p>Roughly <strong>35Gi of free capacity</strong> in the target StorageClass for the optional VM validation step</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_how_a_storageclass_becomes_a_vm_disk"><a class="anchor" href="#_how_a_storageclass_becomes_a_vm_disk"></a>How a StorageClass Becomes a VM Disk</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>A VM disk starts as a DataVolume or a PVC and ends as a block device or a disk image file attached to the <code>virt-launcher</code> pod. The Containerized Data Importer (CDI) fills in anything the manifest leaves out by reading the StorageProfile for the StorageClass.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">VirtualMachine
+  └── dataVolumeTemplates[].spec.storage
+        │  storageClassName, accessModes, volumeMode (all optional)
+        ▼
+   StorageProfile  ──►  claimPropertySets: defaults for this provisioner
+        │                cloneStrategy, snapshotClass
+        ▼
+      PVC  ──►  CSI driver  ──►  PV
+        │
+        ▼
+  virt-launcher pod
+     volumeDevices  (volumeMode: Block)     → /dev/&lt;disk&gt;
+     volumeMounts   (volumeMode: Filesystem) → /disk.img on a mounted filesystem</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Two consequences follow from this flow:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>If you omit <code>accessModes</code> or <code>volumeMode</code>, CDI uses the first entry in the StorageProfile <code>claimPropertySets</code> list. Defaults differ between provisioners, so a manifest that produces a block RWX disk on Ceph can produce a filesystem RWO disk elsewhere.</p>
+</li>
+<li>
+<p>Spelling out <code>accessModes</code> and <code>volumeMode</code> in the manifest makes the disk behave the same way on every cluster, as long as the backend supports the combination.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_volume_mode_block_or_filesystem"><a class="anchor" href="#_volume_mode_block_or_filesystem"></a>Volume Mode: Block or Filesystem</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p><code>volumeMode</code> is a PVC field with two values.</p>
+</div>
+<div class="sect2">
+<h3 id="_block"><a class="anchor" href="#_block"></a>Block</h3>
+<div class="paragraph">
+<p>The PV is handed to the pod as a raw device. QEMU writes to the device directly, with no filesystem and no <code>disk.img</code> file in the path.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>No filesystem layer between the guest and the device, so fewer copies and less metadata overhead</p>
+</li>
+<li>
+<p>Required for <code>ReadWriteMany</code> live migration on most CSI drivers</p>
+</li>
+<li>
+<p>Supports <code>virtio-blk</code> and <code>virtio-scsi</code> without extra configuration</p>
+</li>
+<li>
+<p>Cannot be browsed with normal file tools from the host side</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_filesystem"><a class="anchor" href="#_filesystem"></a>Filesystem</h3>
+<div class="paragraph">
+<p>The PV is mounted into the pod and the disk lives as a <code>disk.img</code> file inside it.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>The guest disk is a file, so a sparse image can consume less space than the requested capacity</p>
+</li>
+<li>
+<p>CDI has to reserve filesystem overhead, so usable disk capacity is smaller than the PVC request (the default overhead is 5.5 percent)</p>
+</li>
+<li>
+<p>Adds a host filesystem layer to every guest I/O operation</p>
+</li>
+<li>
+<p>The only option on backends that do not offer raw block volumes, such as most NFS storage</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_which_one_to_use"><a class="anchor" href="#_which_one_to_use"></a>Which One to Use</h3>
+<div class="paragraph">
+<p>Use <code>Block</code> for any VM where disk performance matters, and for any VM that must live migrate. Use <code>Filesystem</code> when the backend has no block mode, when you want sparse allocation, or when you need to inspect the image file directly.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+A <code>Filesystem</code> PVC on a shared filesystem such as CephFS or NFS can still support <code>ReadWriteMany</code>, so live migration is possible there. The trade-off is I/O latency, not migratability.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_access_modes_and_live_migration"><a class="anchor" href="#_access_modes_and_live_migration"></a>Access Modes and Live Migration</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Access modes describe how many nodes can attach a volume at once. This is what decides whether a VM can live migrate.</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 20%;">
+<col style="width: 20%;">
+<col style="width: 60%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Access Mode</th>
+<th class="tableblock halign-left valign-top">Short</th>
+<th class="tableblock halign-left valign-top">Behavior for VMs</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ReadWriteOnce</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">RWO</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">One node at a time. The VM runs, but live migration is rejected because source and target <code>virt-launcher</code> pods would need the volume on two nodes at once.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ReadWriteMany</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">RWX</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Many nodes at once. Required for live migration. The hypervisor, not the storage, arbitrates writes during the handover.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ReadOnlyMany</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ROX</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Many nodes, read only. Used for shared boot images and CD-ROM style disks, not for writable VM disks.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ReadWriteOncePod</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">RWOP</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">A single pod, cluster-wide. Blocks a second pod from attaching the volume even on the same node. Useful for data disks that must never be double-mounted, but it prevents live migration.</p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>A VM with any RWO disk is not migratable. Check the condition rather than guessing:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vmi -A -o custom-columns='NAME:.metadata.name,NAMESPACE:.metadata.namespace,MIGRATABLE:.status.conditions[?(@.type=="LiveMigratable")].status,REASON:.status.conditions[?(@.type=="LiveMigratable")].reason'</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>A VMI backed by RWO disks reports <code>MIGRATABLE=False</code> with reason <code>DisksNotLiveMigratable</code>.</p>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-important" title="Important"></i>
+</td>
+<td class="content">
+Node draining during a cluster upgrade evicts VMs. With RWO disks, the eviction strategy falls back to a shutdown instead of a migration, so plan maintenance windows for those VMs.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_csi_driver_capabilities_that_matter_for_vms"><a class="anchor" href="#_csi_driver_capabilities_that_matter_for_vms"></a>CSI Driver Capabilities That Matter for VMs</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Four capabilities separate a usable VM StorageClass from a marginal one.</p>
+</div>
+<div class="sect2">
+<h3 id="_snapshots"><a class="anchor" href="#_snapshots"></a>Snapshots</h3>
+<div class="paragraph">
+<p>VM snapshots (<code>VirtualMachineSnapshot</code>) rely on CSI volume snapshots. Without a VolumeSnapshotClass bound to the same provisioner, a snapshot of a running VM either fails or degrades to an offline copy. The StorageProfile <code>status.snapshotClass</code> field tells you what CDI found.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_clones"><a class="anchor" href="#_clones"></a>Clones</h3>
+<div class="paragraph">
+<p>CDI clones a golden image into each new VM disk. The StorageProfile <code>status.cloneStrategy</code> field reports which method is used:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>snapshot</code> — creates a volume snapshot and restores it into the new PVC. Fast, and the usual choice on Ceph RBD.</p>
+</li>
+<li>
+<p><code>csi-clone</code> — asks the CSI driver for a native volume clone. Fast where the driver implements it.</p>
+</li>
+<li>
+<p><code>copy</code> — starts a helper pod and copies the data block by block. Always works, but the copy time scales with disk size.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>A <code>copy</code> strategy on a 100Gi golden image means every new VM waits for a full 100Gi copy.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_volume_expansion"><a class="anchor" href="#_volume_expansion"></a>Volume Expansion</h3>
+<div class="paragraph">
+<p><code>allowVolumeExpansion: true</code> on the StorageClass lets you grow a VM disk by editing the PVC request. Without it, growing a disk means creating a larger disk and copying data. Expansion on a running VM also requires the driver to support online expansion; otherwise the VM must be stopped.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_capability_summary_by_backend"><a class="anchor" href="#_capability_summary_by_backend"></a>Capability Summary by Backend</h3>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 28.5714%;">
+<col style="width: 14.2857%;">
+<col style="width: 14.2857%;">
+<col style="width: 14.2857%;">
+<col style="width: 14.2857%;">
+<col style="width: 14.2858%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Backend</th>
+<th class="tableblock halign-left valign-top">Block</th>
+<th class="tableblock halign-left valign-top">RWX</th>
+<th class="tableblock halign-left valign-top">Snapshots</th>
+<th class="tableblock halign-left valign-top">Clone Strategy</th>
+<th class="tableblock halign-left valign-top">Expansion</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Ceph RBD (ODF)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Yes</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Yes</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Yes</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>snapshot</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Yes</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">CephFS (ODF)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">No</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Yes</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Yes</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>snapshot</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Yes</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">LVM Storage (topolvm)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Yes</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">No</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Yes</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>copy</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Yes</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">HostPath Provisioner</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">No</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">No</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">No</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>copy</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">No</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">NFS CSI</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">No</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Yes</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Driver dependent</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>copy</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Driver dependent</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Cloud block (EBS, Azure Disk, GCE PD)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Yes</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">No</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Yes</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>csi-clone</code> or <code>snapshot</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Yes</p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>Treat this table as a starting point. Verify against your own cluster with the commands in the procedure below, because driver versions and cluster configuration change the answers.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_the_hostpath_provisioner"><a class="anchor" href="#_the_hostpath_provisioner"></a>The HostPath Provisioner</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The HostPath Provisioner (HPP) creates PVs from a directory on a node&#8217;s local disk. It ships with OpenShift Virtualization and needs no storage array.</p>
+</div>
+<div class="sect2">
+<h3 id="_where_it_fits"><a class="anchor" href="#_where_it_fits"></a>Where It Fits</h3>
+<div class="ulist">
+<ul>
+<li>
+<p>Single-node OpenShift, where there is nowhere to migrate to anyway</p>
+</li>
+<li>
+<p>Development and test clusters that need working storage with no external dependency</p>
+</li>
+<li>
+<p>Scratch or cache disks whose contents can be rebuilt</p>
+</li>
+<li>
+<p>Bare-metal labs with fast local NVMe and no shared storage</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_limitations"><a class="anchor" href="#_limitations"></a>Limitations</h3>
+<div class="ulist">
+<ul>
+<li>
+<p>RWO only, so no live migration</p>
+</li>
+<li>
+<p><code>Filesystem</code> volume mode only</p>
+</li>
+<li>
+<p>No CSI snapshots, so <code>VirtualMachineSnapshot</code> objects will not work</p>
+</li>
+<li>
+<p>No volume expansion</p>
+</li>
+<li>
+<p>The volume is pinned to one node. If that node is lost, the data is gone.</p>
+</li>
+<li>
+<p>Capacity is whatever is left on the node path, and nothing stops other workloads from filling it</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>For the installation procedure, see <a href="hostpath-provisioner.html" class="xref page">HostPath Provisioner</a>.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_decision_matrix"><a class="anchor" href="#_decision_matrix"></a>Decision Matrix</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Start with the workload, then pick the configuration.</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 25%;">
+<col style="width: 25%;">
+<col style="width: 12.5%;">
+<col style="width: 12.5%;">
+<col style="width: 25%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Workload</th>
+<th class="tableblock halign-left valign-top">Preferred Backend</th>
+<th class="tableblock halign-left valign-top">Volume Mode</th>
+<th class="tableblock halign-left valign-top">Access Mode</th>
+<th class="tableblock halign-left valign-top">Why</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Production VM needing live migration</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Ceph RBD or other RWX block CSI</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Block</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">RWX</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Migration needs the volume on two nodes at once.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Production VM, migration not required</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Any CSI block driver</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Block</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">RWO</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Simplest configuration with full block performance.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Database VM, latency sensitive</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Local NVMe via LVM Storage</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Block</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">RWO</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Lowest latency. Accept the loss of migration, or use application-level replication.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">VM needing snapshots and fast cloning</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">CSI driver with a VolumeSnapshotClass</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Block</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">RWX or RWO</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>snapshot</code> or <code>csi-clone</code> strategy avoids full-copy clones.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Golden image and template storage</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">CSI driver with snapshot support</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Block</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">RWX</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Clone targets can land on any node.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Single-node OpenShift, any VM</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">LVM Storage or HostPath</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Block or Filesystem</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">RWO</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">There is no second node, so RWO costs nothing.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Dev and test VMs, disposable</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">HostPath Provisioner</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Filesystem</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">RWO</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">No external storage needed.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Shared data disk across VMs</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">CephFS or NFS</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Filesystem</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">RWX</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">A shared filesystem handles concurrent access.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Windows VM with Sysprep and templates</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">CSI block with snapshots</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Block</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">RWX</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Template cloning dominates provisioning time.</p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>Two rules cover most of the remaining cases:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>If live migration is a requirement, start from RWX and work backwards. Everything else can be adjusted later; migration capability cannot be added to an RWO disk without copying it.</p>
+</li>
+<li>
+<p>If the workload is a database or anything else with a small-block write pattern, start from <code>Block</code> volume mode on the lowest-latency backend that still meets your availability requirements.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_1_inventory_the_storage_classes"><a class="anchor" href="#_step_1_inventory_the_storage_classes"></a>Step 1: Inventory the Storage Classes</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>List every StorageClass with the fields that matter for VM disks:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get storageclass -o custom-columns='NAME:.metadata.name,PROVISIONER:.provisioner,EXPANSION:.allowVolumeExpansion,BINDING:.volumeBindingMode,RECLAIM:.reclaimPolicy,DEFAULT:.metadata.annotations.storageclass\.kubernetes\.io/is-default-class'</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Expected output</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">NAME       PROVISIONER   EXPANSION   BINDING                RECLAIM   DEFAULT
+lvms-vg1   topolvm.io    true        WaitForFirstConsumer   Delete    true</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Read the row as follows:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>EXPANSION: true</code> means you can grow VM disks in place.</p>
+</li>
+<li>
+<p><code>BINDING: WaitForFirstConsumer</code> delays provisioning until a pod is scheduled. Local and topology-aware backends need this. It also means a PVC with no consumer stays <code>Pending</code>, which is normal rather than an error.</p>
+</li>
+<li>
+<p><code>RECLAIM: Delete</code> removes the backing volume when the PVC is deleted. Use <code>Retain</code> for data you cannot lose to an accidental VM deletion.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Check which CSI drivers are registered:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get csidrivers</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Expected output</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">NAME         ATTACHREQUIRED   PODINFOONMOUNT   STORAGECAPACITY   TOKENREQUESTS   REQUIRESREPUBLISH   MODES        AGE
+topolvm.io   false            true             true              &lt;unset&gt;         false               Persistent   88d</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_2_inspect_the_storageprofile"><a class="anchor" href="#_step_2_inspect_the_storageprofile"></a>Step 2: Inspect the StorageProfile</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>CDI creates one StorageProfile per StorageClass and fills in the defaults it will apply to VM disks:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get storageprofile -o custom-columns='NAME:.metadata.name,PROVISIONER:.status.provisioner,CLONE:.status.cloneStrategy,SNAPCLASS:.status.snapshotClass'</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Expected output</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">NAME       PROVISIONER   CLONE   SNAPCLASS
+lvms-vg1   topolvm.io    copy    lvms-vg1</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>List the volume mode and access mode combinations CDI considers valid for this class:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get storageprofile lvms-vg1 -o jsonpath='{range .status.claimPropertySets[*]}{.volumeMode}{"\t"}{.accessModes}{"\n"}{end}'</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Expected output</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">Block	["ReadWriteOnce"]
+Filesystem	["ReadWriteOnce"]</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The first entry is the default. Here, a DataVolume that omits <code>volumeMode</code> and <code>accessModes</code> gets a <code>Block</code> RWO disk, and RWX is not offered at all, which tells you up front that VMs on this class cannot live migrate.</p>
+</div>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+If the profile shows <code>Recognized: False</code>, CDI does not know the provisioner. Set <code>spec.claimPropertySets</code> on the StorageProfile yourself so CDI stops guessing.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Inspect the full profile when you need the conditions as well:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get storageprofile lvms-vg1 -o yaml</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_3_confirm_snapshot_support"><a class="anchor" href="#_step_3_confirm_snapshot_support"></a>Step 3: Confirm Snapshot Support</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>A VolumeSnapshotClass must exist for the same driver, otherwise VM snapshots and snapshot-based clones are unavailable:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get volumesnapshotclass</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Expected output</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">NAME       DRIVER       DELETIONPOLICY   AGE
+lvms-vg1   topolvm.io   Delete           88d</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Match the <code>DRIVER</code> column against the <code>PROVISIONER</code> value from Step 2. If there is no matching row, the StorageClass cannot back <code>VirtualMachineSnapshot</code> objects.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_4_probe_volume_mode_and_access_mode_support"><a class="anchor" href="#_step_4_probe_volume_mode_and_access_mode_support"></a>Step 4: Probe Volume Mode and Access Mode Support</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The StorageProfile reports what CDI believes. This step confirms what the driver actually does. Create a namespace for the probes:</p>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/choosing-storage-class/namespace-storage-selection-demo.yaml" class="xref attachment">Download namespace-storage-selection-demo.yaml</a></p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc create namespace storage-selection-demo</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Create three small PVCs. The first requests block RWO:</p>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/choosing-storage-class/pvc-block-probe.yaml" class="xref attachment">Download pvc-block-probe.yaml</a></p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f - &lt;&lt;EOF
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: probe-block
+  namespace: storage-selection-demo
+spec:
+  accessModes:
+    - ReadWriteOnce
+  volumeMode: Block
+  resources:
+    requests:
+      storage: 1Gi
+  storageClassName: lvms-vg1
+EOF</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The second requests filesystem RWO:</p>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/choosing-storage-class/pvc-filesystem-probe.yaml" class="xref attachment">Download pvc-filesystem-probe.yaml</a></p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f - &lt;&lt;EOF
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: probe-filesystem
+  namespace: storage-selection-demo
+spec:
+  accessModes:
+    - ReadWriteOnce
+  volumeMode: Filesystem
+  resources:
+    requests:
+      storage: 1Gi
+  storageClassName: lvms-vg1
+EOF</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The third requests block RWX, the combination live migration needs:</p>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/choosing-storage-class/pvc-rwx-probe.yaml" class="xref attachment">Download pvc-rwx-probe.yaml</a></p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f - &lt;&lt;EOF
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: probe-rwx
+  namespace: storage-selection-demo
+spec:
+  accessModes:
+    - ReadWriteMany
+  volumeMode: Block
+  resources:
+    requests:
+      storage: 1Gi
+  storageClassName: lvms-vg1
+EOF</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>On a <code>WaitForFirstConsumer</code> class the PVCs stay <code>Pending</code> until a pod consumes them, so schedule a consumer pod for the two RWO claims:</p>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/choosing-storage-class/pod-probe-consumer.yaml" class="xref attachment">Download pod-probe-consumer.yaml</a></p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f - &lt;&lt;EOF
+apiVersion: v1
+kind: Pod
+metadata:
+  name: probe-consumer
+  namespace: storage-selection-demo
+spec:
+  restartPolicy: Never
+  containers:
+    - name: probe
+      image: registry.access.redhat.com/ubi9/ubi-minimal:latest
+      command:
+        - sleep
+        - "600"
+      volumeMounts:
+        - name: fs
+          mountPath: /mnt/fs
+      volumeDevices:
+        - name: blk
+          devicePath: /dev/probe
+  volumes:
+    - name: fs
+      persistentVolumeClaim:
+        claimName: probe-filesystem
+    - name: blk
+      persistentVolumeClaim:
+        claimName: probe-block
+EOF</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Wait for the pod, then check the claims:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc wait --for=condition=Ready pod/probe-consumer -n storage-selection-demo --timeout=180s
+oc get pvc -n storage-selection-demo -o custom-columns='NAME:.metadata.name,MODE:.spec.volumeMode,ACCESS:.spec.accessModes,STATUS:.status.phase'</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Expected output</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">NAME               MODE         ACCESS            STATUS
+probe-block        Block        [ReadWriteOnce]   Bound
+probe-filesystem   Filesystem   [ReadWriteOnce]   Bound
+probe-rwx          Block        [ReadWriteMany]   Pending</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Both RWO claims bound, so this driver supports block and filesystem volume modes. Now give the RWX claim a consumer so the provisioner is forced to act on it:</p>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/choosing-storage-class/pod-probe-rwx-consumer.yaml" class="xref attachment">Download pod-probe-rwx-consumer.yaml</a></p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f - &lt;&lt;EOF
+apiVersion: v1
+kind: Pod
+metadata:
+  name: probe-rwx-consumer
+  namespace: storage-selection-demo
+spec:
+  restartPolicy: Never
+  containers:
+    - name: probe
+      image: registry.access.redhat.com/ubi9/ubi-minimal:latest
+      command:
+        - sleep
+        - "600"
+      volumeDevices:
+        - name: blk
+          devicePath: /dev/probe
+  volumes:
+    - name: blk
+      persistentVolumeClaim:
+        claimName: probe-rwx
+EOF</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Inspect the events on the RWX claim:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc describe pvc probe-rwx -n storage-selection-demo | tail -8</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Expected output</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">Events:
+  Type     Reason                Age   From                          Message
+  ----     ------                ----  ----                          -------
+  Normal   ExternalProvisioning  20s   persistentvolume-controller   Waiting for a volume to be created either by the external provisioner 'topolvm.io' or manually by the system administrator.
+  Normal   Provisioning          20s   topolvm.io_lvms-operator      External provisioner is provisioning volume for claim "storage-selection-demo/probe-rwx"
+  Warning  ProvisioningFailed    20s   topolvm.io_lvms-operator      failed to provision volume with StorageClass "lvms-vg1": rpc error: code = InvalidArgument desc = unsupported access mode: MULTI_NODE_MULTI_WRITER</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><code>MULTI_NODE_MULTI_WRITER</code> is the CSI name for RWX. The rejection confirms that VMs on this StorageClass cannot live migrate. On an RWX-capable backend such as Ceph RBD, the claim binds instead.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_5_confirm_expansion_support"><a class="anchor" href="#_step_5_confirm_expansion_support"></a>Step 5: Confirm Expansion Support</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Grow the filesystem probe claim from 1Gi to 2Gi:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc patch pvc probe-filesystem -n storage-selection-demo --type merge \
+  -p '{"spec":{"resources":{"requests":{"storage":"2Gi"}}}}'</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Expansion is asynchronous. Poll until the status capacity catches up:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get pvc probe-filesystem -n storage-selection-demo -w \
+  -o custom-columns='NAME:.metadata.name,REQUESTED:.spec.resources.requests.storage,ACTUAL:.status.capacity.storage'</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Expected output</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">NAME               REQUESTED   ACTUAL
+probe-filesystem   2Gi         1Gi
+probe-filesystem   2Gi         2Gi</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Press <code>Ctrl+C</code> to stop watching. If <code>ACTUAL</code> never changes, check the events:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc describe pvc probe-filesystem -n storage-selection-demo | tail -6</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>A successful online expansion reports <code>Resizing</code>, then <code>FileSystemResizeRequired</code>, then <code>FileSystemResizeSuccessful</code>. A driver that only supports offline expansion leaves the claim in <code>FileSystemResizePending</code> until the consumer pod restarts.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_6_validate_the_choice_with_a_vm"><a class="anchor" href="#_step_6_validate_the_choice_with_a_vm"></a>Step 6: Validate the Choice with a VM</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Deploy a VM that pins the storage configuration explicitly instead of relying on StorageProfile defaults:</p>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/choosing-storage-class/vm-storage-choice.yaml" class="xref attachment">Download vm-storage-choice.yaml</a></p>
+</div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+The cloud-init password in this example is for demo purposes only. Use SSH keys or a strong unique password in production.
+</td>
+</tr>
+</table>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f - &lt;&lt;EOF
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: storage-choice-vm
+  namespace: storage-selection-demo
+spec:
+  instancetype:
+    name: u1.small
+  preference:
+    name: rhel.9
+  runStrategy: Always
+  template:
+    metadata:
+      labels:
+        kubevirt.io/domain: storage-choice-vm
+    spec:
+      domain:
+        devices:
+          disks:
+            - disk:
+                bus: virtio
+              name: rootdisk
+            - disk:
+                bus: virtio
+              name: cloudinitdisk
+          interfaces:
+            - masquerade: {}
+              name: default
+      networks:
+        - name: default
+          pod: {}
+      volumes:
+        - name: rootdisk
+          dataVolume:
+            name: storage-choice-rootdisk
+        - name: cloudinitdisk
+          cloudInitNoCloud:
+            userData: |
+              #cloud-config
+              password: redhat
+              chpasswd:
+                expire: false
+  dataVolumeTemplates:
+    - apiVersion: cdi.kubevirt.io/v1beta1
+      kind: DataVolume
+      metadata:
+        name: storage-choice-rootdisk
+      spec:
+        sourceRef:
+          kind: DataSource
+          name: rhel9
+          namespace: openshift-virtualization-os-images
+        storage:
+          accessModes:
+            - ReadWriteOnce
+          volumeMode: Block
+          resources:
+            requests:
+              storage: 30Gi
+          storageClassName: lvms-vg1
+EOF</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Wait for the VM to start:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc wait --for=condition=Ready vm/storage-choice-vm -n storage-selection-demo --timeout=900s</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Confirm the disk landed with the requested properties:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get pvc storage-choice-rootdisk -n storage-selection-demo \
+  -o custom-columns='NAME:.metadata.name,MODE:.spec.volumeMode,ACCESS:.spec.accessModes,CLASS:.spec.storageClassName,STATUS:.status.phase'</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Expected output</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">NAME                      MODE    ACCESS            CLASS      STATUS
+storage-choice-rootdisk   Block   [ReadWriteOnce]   lvms-vg1   Bound</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Check the migration verdict for this configuration:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vmi storage-choice-vm -n storage-selection-demo \
+  -o jsonpath='{.status.conditions[?(@.type=="LiveMigratable")].status}{"\t"}{.status.conditions[?(@.type=="LiveMigratable")].reason}{"\n"}'</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Expected output</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">False	DisksNotLiveMigratable</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This is the end-to-end confirmation: an RWO disk, whatever the backend, produces a VM that cannot live migrate. Repeat this check whenever you add a StorageClass to the cluster.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_common_mistakes"><a class="anchor" href="#_common_mistakes"></a>Common Mistakes</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Relying on defaults across clusters.</strong> A manifest with no <code>volumeMode</code> produces different disks on different backends. Set it explicitly.</p>
+</li>
+<li>
+<p><strong>Requesting RWX on a local-storage class.</strong> The PVC stays <code>Pending</code> with <code>unsupported access mode</code>. Check the StorageProfile first.</p>
+</li>
+<li>
+<p><strong>Expecting VM snapshots without a VolumeSnapshotClass.</strong> The snapshot object is created but never becomes ready.</p>
+</li>
+<li>
+<p><strong>Sizing a filesystem disk to the exact guest requirement.</strong> CDI reserves filesystem overhead, so the usable disk is smaller than the PVC request. Add headroom or use <code>Block</code>.</p>
+</li>
+<li>
+<p><strong>Marking two StorageClasses as default.</strong> PVCs with no <code>storageClassName</code> then bind unpredictably. Keep one default, as described in <a href="../getting-started/default-storage-class.html" class="xref page">Setting a Default Storage Class</a>.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_cleanup"><a class="anchor" href="#_cleanup"></a>Cleanup</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Remove the probe namespace and everything in it:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc delete namespace storage-selection-demo</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_summary"><a class="anchor" href="#_summary"></a>Summary</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>In this guide, you learned:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>How CDI turns a StorageClass into a VM disk through the StorageProfile <code>claimPropertySets</code> defaults</p>
+</li>
+<li>
+<p>When <code>Block</code> volume mode is the right choice and when <code>Filesystem</code> is acceptable</p>
+</li>
+<li>
+<p>Why RWX is required for live migration, and how RWO, ROX, and RWOP behave for VM disks</p>
+</li>
+<li>
+<p>Which CSI capabilities matter for VMs: snapshots, clone strategy, and volume expansion</p>
+</li>
+<li>
+<p>Where the HostPath Provisioner fits, and the limitations that rule it out for production VMs</p>
+</li>
+<li>
+<p>How to read the decision matrix to map a workload to a storage configuration</p>
+</li>
+<li>
+<p>How to probe a StorageClass for volume mode, access mode, and expansion support with PVCs and consumer pods</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_see_also"><a class="anchor" href="#_see_also"></a>See Also</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p><a href="hostpath-provisioner.html" class="xref page">HostPath Provisioner</a></p>
+</li>
+<li>
+<p><a href="lvm-operator.html" class="xref page">LVM Storage Operator</a></p>
+</li>
+<li>
+<p><a href="odf-ceph-storage.html" class="xref page">OpenShift Data Foundation with Ceph</a></p>
+</li>
+<li>
+<p><a href="disk-io-tuning.html" class="xref page">VM Disk I/O Performance Tuning</a></p>
+</li>
+<li>
+<p><a href="expanding-vm-disk-size.html" class="xref page">Expanding VM Disk Size</a></p>
+</li>
+<li>
+<p><a href="../vm-lifecycle/live-migration.html" class="xref page">Live Migration of Virtual Machines</a></p>
+</li>
+<li>
+<p><a href="../vm-lifecycle/vm-snapshots.html" class="xref page">VM Snapshots</a></p>
+</li>
+<li>
+<p><a href="https://docs.redhat.com/en/documentation/openshift_container_platform/4.22/html/virtualization/storage" target="_blank" rel="noopener">OpenShift Virtualization - Storage</a></p>
+</li>
+<li>
+<p><a href="https://docs.redhat.com/en/documentation/openshift_container_platform/4.22/html/storage/using-container-storage-interface-csi" target="_blank" rel="noopener">OpenShift - Container Storage Interface</a></p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<nav class="pagination">
+  <span class="prev"><a href="creating-managing-storage-class.html">Creating and Managing Storage Classes</a></span>
+  <span class="next"><a href="multi-disk-configuration.html">Multi-Disk VMs</a></span>
+</nav>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <img src="../../../_/img/rhl-logo-red.png" height="40px" alt="Red Hat"  href="https://redhat.com" >
+</footer><script id="site-script" src="../../../_/js/site.js" data-ui-root-path="../../../_"></script>
+<script async src="../../../_/js/vendor/highlight.js"></script>
+<script src="../../../_/js/vendor/lunr.js"></script>
+<script src="../../../_/js/search-ui.js" id="search-ui-script" data-site-root-path="../../.." data-snippet-length="100" data-stylesheet="../../../_/css/search.css"></script>
+<script async src="../../../search-index.js"></script>
+  </body>
+</html>
