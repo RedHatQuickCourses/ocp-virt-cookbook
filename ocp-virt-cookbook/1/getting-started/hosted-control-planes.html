@@ -1,0 +1,1922 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Deep Dive: OpenShift Virtualization with Hosted Control Planes :: OpenShift Virtualization cookbook</title>
+    <link rel="prev" href="architecture-overview.html">
+    <link rel="next" href="install-openshift-virtualization.html">
+    <meta name="generator" content="Antora 3.1.3">
+    <link rel="stylesheet" href="../../../_/css/site.css">
+    <script>var uiRootPath = '../../../_'</script>
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://www.redhat.com" target="_blank"><img src="../../../_/img/redhat-logo.png" height="40px" alt="Red Hat"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="../../..">OpenShift Virtualization cookbook</a>
+      <div class="navbar-item search hide-for-print">
+        <div id="search-field" class="field">
+          <input id="search-input" type="text" placeholder="Search the docs">
+        </div>
+      </div>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues" target="_blank">Report Issues</a>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="ocp-virt-cookbook" data-version="1">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="../index.html">OpenShift Virtualization cookbook</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../index.html">Introduction</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="index.html">Getting Started</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="vm-quick-start.html">Quick Start</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="prerequisites.html">Prerequisites</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="architecture-overview.html">Architecture Overview</a>
+  </li>
+  <li class="nav-item is-current-page" data-depth="2">
+    <a class="nav-link" href="hosted-control-planes.html">Hosted Control Planes</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="install-openshift-virtualization.html">Install OpenShift Virtualization</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="installing-qemu-guest-agent.html">Installing QEMU Guest Agent</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="default-storage-class.html">Storage Setup</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="create-vm-web-console.html">Create VM from Web Console</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="create-vm-cli-yaml.html">Create VM from CLI</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="vm-lifecycle-states.html">VM Lifecycle States</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="virtctl-basics.html">Virtctl Basics</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="cloud-init-fundamentals.html">Cloud-init Fundamentals</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../storage/index.html">Storage Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/lvm-operator.html">LVM Operator Installation</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/lvm-troubleshooting.html">LVM Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/odf-ceph-storage.html">ODF/Ceph Storage</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/hostpath-provisioner.html">HostPath Provisioner</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/creating-managing-storage-class.html">Creating and Managing Storage Classes</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/choosing-storage-class.html">Choosing a Storage Class</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/multi-disk-configuration.html">Multi-Disk VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/expanding-vm-disk-size.html">Expanding VM Disk Size</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/cdi-operations.html">CDI Operations</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/disk-io-tuning.html">Disk I/O Tuning</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/storage-profiles.html">Storage Profiles</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../networking/index.html">Networking Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/static-ip-configuration.html">Static IP Configuration</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/cloud-init-troubleshooting.html">Cloud-init Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/udn-primary-networks.html">UDN Primary Networks</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/localnet-secondary.html">Localnet Secondary Networks with CUDN</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/localnet-vlan.html">Localnet Secondary Networks with VLAN using NAD</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/cudn-localnet-vlan.html">Localnet VLAN with CUDN</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/layer2-secondary.html">Layer 2 Secondary Networks</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/linux-bridges.html">Linux Bridges</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/sriov-secondary.html">SR-IOV Secondary Networks</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/network-policies-vms.html">Network Policies for VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/metallb-loadbalancer.html">MetalLB Load Balancer for VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/dual-stack-vms.html">Dual-Stack IPv4/IPv6 VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/vm-ingress-routes.html">VM Ingress and Routes</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/ovs-bridge-troubleshooting.html">Troubleshooting Localnet Networks</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../vm-configuration/index.html">Virtual Machine Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/internal-dns-for-vms.html">Internal DNS for VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/remote-access-linux-vms.html">Remote Access to Linux VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/remote-access-linux-troubleshooting.html">Remote Access to Linux VMs Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/remote-access-windows-vms.html">Remote Access to Windows VMs via RDP</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/ssh-access-windows-vms.html">Remote Access to Windows VMs via SSH</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/windows-vm-virtio-drivers.html">Windows VMs with VirtIO Drivers</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/legacy-windows-versions.html">Legacy Windows Versions</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/infrastructure-node-placement.html">Infrastructure Node Placement</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/node-placement-affinity.html">Node Placement and Affinity</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/hotplug-volumes-interfaces.html">Hotplug Volumes and Interfaces</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/vm-templates.html">Virtual Machine Templates</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/instancetype-preference.html">Instancetype and Preference</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/hyperconverged-configuration.html">HyperConverged Configuration</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../performance/index.html">VM Performance Tuning</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/resource-limits-qos.html">Resource Limits and QoS</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/cpu-pinning.html">Dedicated CPU Placement</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/numa-hugepages.html">NUMA and Hugepages</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/realtime-vms.html">Real-Time VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/vm-monitoring-metrics.html">VM Monitoring and Metrics</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/nested-virtualization.html">Nested Virtualization</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../vm-lifecycle/index.html">VM Lifecycle Management</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/import-qcow2-boot-volume.html">Import qcow2 Boot Volume</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/custom-golden-images.html">Custom Golden Images</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/windows-golden-images.html">Windows Golden Images</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/golden-images-troubleshooting.html">Golden Images Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/cloning-vms.html">Cloning VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/vm-snapshots.html">VM Snapshots</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/boot-order-boot-sources.html">VM Boot Order and Boot Sources</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/live-migration.html">Live Migration</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/migrate-from-vmware-mtv.html">Migrate from VMware (MTV)</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../manifests/index.html">Manifests</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../api/index.html">API Guide</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../api/api-component-overview.html">API Component Overview</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../agentic-vm-management/index.html">Agentic VM Management</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/getting-started.html">Getting Started with rh-virt</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/natural-language-vm-create.html">Natural Language VM Creation</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/ai-vm-lifecycle.html">AI VM Lifecycle Operations</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/vm-clone.html">Cloning VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/ai-vm-snapshot-management.html">VM Snapshot Management</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/ai-skill-chaining.html">Day-2 Skill Chaining</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/ai-vm-rebalance.html">VM Rebalancing and Live Migration</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../appendix/glossary.html">Glossary</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">OpenShift Virtualization cookbook</span>
+    <span class="version">1</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <a class="title" href="../index.html">OpenShift Virtualization cookbook</a>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">1</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">OpenShift Virtualization cookbook</a></li>
+    <li><a href="index.html">Getting Started</a></li>
+    <li><a href="hosted-control-planes.html">Hosted Control Planes</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">Deep Dive: OpenShift Virtualization with Hosted Control Planes</h1>
+<div class="sect1">
+<h2 id="_overview"><a class="anchor" href="#_overview"></a>Overview</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Hosted control planes (HCP) move the control plane of an OpenShift cluster off dedicated control plane nodes and into pods that run on another OpenShift cluster. The cluster that hosts those pods is the management cluster. The cluster that consumes them is the hosted cluster. A hosted cluster has worker nodes and no control plane nodes of its own.</p>
+</div>
+<div class="paragraph">
+<p>This changes the economics of running virtual machines. A standalone bare-metal cluster spends three physical machines on the control plane before a single VM runs. With hosted control planes, those three machines go back into the worker pool, and one management cluster carries the control planes of many virtualization clusters.</p>
+</div>
+<div class="paragraph">
+<p>This guide explains the architecture, documents which OpenShift Virtualization features work on a hosted cluster and which do not, and walks through deploying a hosted cluster whose worker nodes are ready to run VMs.</p>
+</div>
+<div class="paragraph">
+<p>Applies to:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">OpenShift Container Platform {ocp-min-version}+
+OpenShift Virtualization {ocp-min-version}+
+multicluster engine for Kubernetes operator 2.8+</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_what_you_will_learn"><a class="anchor" href="#_what_you_will_learn"></a>What You Will Learn</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p>How a hosted control plane is laid out across the management cluster and the hosted cluster</p>
+</li>
+<li>
+<p>The two ways HCP and OpenShift Virtualization are combined, and which one is supported for production VMs</p>
+</li>
+<li>
+<p>Which virtualization features are supported, conditionally supported, or unavailable on a hosted cluster</p>
+</li>
+<li>
+<p>How to deploy a hosted cluster with bare-metal worker nodes configured for virtualization</p>
+</li>
+<li>
+<p>How to install and verify OpenShift Virtualization on that hosted cluster</p>
+</li>
+<li>
+<p>How node tuning, networking, upgrades, and failure domains differ from a standalone cluster</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_prerequisites"><a class="anchor" href="#_prerequisites"></a>Prerequisites</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p>A management cluster running OpenShift 4.18+ with cluster admin access</p>
+</li>
+<li>
+<p>The multicluster engine for Kubernetes operator installed on the management cluster, with hosted control planes enabled</p>
+</li>
+<li>
+<p>The Infrastructure Operator (assisted service) enabled through an <code>AgentServiceConfig</code> resource for bare-metal provisioning</p>
+</li>
+<li>
+<p>A default storage class on the management cluster that can back hosted control plane etcd volumes</p>
+</li>
+<li>
+<p>MetalLB or an equivalent load balancer on the management cluster to expose the hosted cluster API and ingress</p>
+</li>
+<li>
+<p>At least three bare-metal hosts with hardware virtualization extensions (<code>vmx</code> on Intel, <code>svm</code> on AMD) available in BIOS</p>
+</li>
+<li>
+<p>DNS records for <code>api.&lt;cluster-name&gt;.&lt;base-domain&gt;</code> and <code>*.apps.&lt;cluster-name&gt;.&lt;base-domain&gt;</code></p>
+</li>
+<li>
+<p>The <code>oc</code>, <code>hcp</code>, and <code>virtctl</code> CLIs installed locally</p>
+</li>
+<li>
+<p>A pull secret and an SSH public key</p>
+</li>
+<li>
+<p>Familiarity with the <a href="architecture-overview.html" class="xref page">OpenShift Virtualization architecture</a></p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_hosted_control_planes_architecture"><a class="anchor" href="#_hosted_control_planes_architecture"></a>Hosted Control Planes Architecture</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_where_each_component_runs"><a class="anchor" href="#_where_each_component_runs"></a>Where Each Component Runs</h3>
+<div class="paragraph">
+<p>On a standalone cluster, <code>etcd</code>, <code>kube-apiserver</code>, the controller manager, the scheduler, and the OpenShift API servers run as static pods on control plane nodes inside the same cluster they serve. On a hosted cluster, those components run as ordinary Deployments in a namespace on the management cluster.</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre> MANAGEMENT CLUSTER  (standalone OpenShift, 3 control plane nodes)
+ ┌────────────────────────────────────────────────────────────────────┐
+ │  multicluster engine  +  HyperShift operator                       │
+ │                                                                    │
+ │  namespace: clusters          namespace: clusters-virt01           │
+ │  ┌──────────────────────┐     ┌─────────────────────────────────┐  │
+ │  │ HostedCluster virt01 │     │ etcd          kube-apiserver    │  │
+ │  │ NodePool  virt01-wk  │────►│ kube-controller-manager         │  │
+ │  │ Secrets (pull, ssh)  │     │ openshift-apiserver   OAuth     │  │
+ │  └──────────────────────┘     │ ignition-server  MCO  cluster   │  │
+ │                               │ version operator  konnectivity  │  │
+ │                               └───────────────┬─────────────────┘  │
+ └───────────────────────────────────────────────┼────────────────────┘
+                                                 │ kubelet, ignition,
+                                                 │ konnectivity tunnel
+ HOSTED CLUSTER  virt01                          │
+ ┌───────────────────────────────────────────────┴────────────────────┐
+ │  worker-01 (bare metal)   worker-02        worker-03               │
+ │                                                                    │
+ │  virt-handler DaemonSet       CNV operator pods (hco, virt-api,    │
+ │  virt-launcher pods (VMs)     virt-controller, cdi, ssp)           │
+ │                                                                    │
+ │  No control plane nodes. oc get nodes returns workers only.        │
+ └────────────────────────────────────────────────────────────────────┘</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Two custom resources drive the whole thing:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>HostedCluster</code> defines the control plane: release image, networking, service publishing strategy, and availability policy.</p>
+</li>
+<li>
+<p><code>NodePool</code> defines a group of worker nodes: replica count, platform, release image, node configuration, and upgrade behavior.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Both live on the management cluster in a namespace such as <code>clusters</code>. The control plane pods are created in a derived namespace named <code>clusters-&lt;hosted-cluster-name&gt;</code>.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_two_ways_to_combine_hcp_and_virtualization"><a class="anchor" href="#_two_ways_to_combine_hcp_and_virtualization"></a>Two Ways to Combine HCP and Virtualization</h3>
+<div class="paragraph">
+<p>The phrase "OpenShift Virtualization and hosted control planes" covers two different topologies. They are easy to confuse and have opposite support statements.</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre> TOPOLOGY A — VMs run on the hosted cluster (production path)
+
+   Management cluster  ──►  hosted control plane pods
+   Hosted cluster      ──►  bare-metal workers (Agent platform)
+                            OpenShift Virtualization installed here
+                            VMs run directly on bare-metal KVM
+
+ TOPOLOGY B — The hosted cluster is made of VMs (KubeVirt platform)
+
+   Management cluster  ──►  hosted control plane pods
+                       ──►  OpenShift Virtualization installed here
+                            worker nodes are VMs on the management cluster
+   Hosted cluster      ──►  workers are VMs; running VMs inside them
+                            means nested virtualization</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Topology A is what this guide deploys. The hosted cluster uses the Agent platform, its workers are physical machines, and OpenShift Virtualization runs on those machines with direct access to <code>/dev/kvm</code>.</p>
+</div>
+<div class="paragraph">
+<p>Topology B is the KubeVirt platform for hosted control planes. It is a supported way to build hosted clusters quickly on top of an existing virtualization cluster, and it is a good fit for application workloads. Installing OpenShift Virtualization inside such a hosted cluster requires nested virtualization, which is not supported for production. Use topology B for demos and CI, never for production VMs.</p>
+</div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+Do not run production virtual machines on a hosted cluster whose worker nodes are themselves virtual machines. Nested virtualization is unsupported and carries a heavy performance penalty. See <a href="../performance/nested-virtualization.html" class="xref page">Enabling Nested Virtualization for Development and Testing</a> for the constraints.
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_what_changes_for_virtualization"><a class="anchor" href="#_what_changes_for_virtualization"></a>What Changes for Virtualization</h3>
+<div class="paragraph">
+<p>The virtualization stack itself is unchanged: the same operator, the same <code>HyperConverged</code> resource, the same <code>VirtualMachine</code> API. What changes is everything around it.</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 20%;">
+<col style="width: 40%;">
+<col style="width: 40%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Area</th>
+<th class="tableblock halign-left valign-top">Standalone cluster</th>
+<th class="tableblock halign-left valign-top">Hosted cluster</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Control plane placement</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">3 control plane nodes in the cluster</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Pods in a management cluster namespace</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">CNV operator pods</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Scheduled on worker or infra nodes</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Scheduled on worker nodes only; there are no other nodes</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Node configuration</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>MachineConfig</code> plus <code>MachineConfigPool</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ConfigMaps referenced by <code>NodePool.spec.config</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Node tuning</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>PerformanceProfile</code> applied to a pool</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ConfigMap referenced by <code>NodePool.spec.tuningConfig</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Machine API</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Machine</code> and <code>MachineSet</code> in the cluster</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Not present in the hosted cluster; <code>Agent</code> and <code>BareMetalHost</code> live on the management cluster</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Upgrades</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">One <code>ClusterVersion</code> update</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>HostedCluster</code> release first, then each <code>NodePool</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">API availability</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Fails with the cluster</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Depends on the management cluster</p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>The last row deserves attention. Running VMs keep running when the hosted control plane is unavailable, because <code>virt-launcher</code> pods and their QEMU processes do not need the API server to stay alive. Lifecycle operations do not: starting, stopping, live migrating, hotplugging, and console access all go through the hosted <code>kube-apiserver</code> in the management cluster.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_resource_savings"><a class="anchor" href="#_resource_savings"></a>Resource Savings</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The saving is structural, not incremental. Every standalone OpenShift cluster needs three control plane nodes for high availability. A hosted cluster needs zero.</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 50%;">
+<col style="width: 25%;">
+<col style="width: 25%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Fleet of 10 virtualization clusters</th>
+<th class="tableblock halign-left valign-top">Standalone</th>
+<th class="tableblock halign-left valign-top">Hosted control planes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Control plane machines</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">30</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Management cluster machines</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">3 (shared by all 10)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Machines available for VMs</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Workers only</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Workers plus the 30 reclaimed machines</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Places to patch a control plane</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">10</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>Beyond machine count, three properties matter in day-to-day operation:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Control planes are provisioned in minutes, because no hardware is installed. A hosted cluster is ready as soon as its worker nodes join.</p>
+</li>
+<li>
+<p>Control plane capacity is pooled. A quiet cluster and a busy cluster share the same management nodes instead of each holding three idle machines.</p>
+</li>
+<li>
+<p>Control planes are managed centrally. Upgrades, etcd backups, and monitoring for every hosted control plane happen on one cluster.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>The trade is concentration of risk. The management cluster becomes a dependency for the API of every hosted cluster it carries. Size it for high availability, keep etcd on fast storage, and set <code>controllerAvailabilityPolicy</code> to <code>HighlyAvailable</code> for production hosted clusters.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_feature_support_matrix"><a class="anchor" href="#_feature_support_matrix"></a>Feature Support Matrix</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The matrix below covers topology A: OpenShift Virtualization 4.18+ installed on a hosted cluster with bare-metal worker nodes from an Agent node pool.</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 33.3333%;">
+<col style="width: 16.6666%;">
+<col style="width: 50.0001%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Feature</th>
+<th class="tableblock halign-left valign-top">Status</th>
+<th class="tableblock halign-left valign-top">Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">VM create, start, stop, restart</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Supported</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Identical API and behavior to a standalone cluster.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Templates, boot sources, instance types</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Supported</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The SSP operator and boot source imports work unchanged.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Containerized Data Importer (import, upload, clone)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Supported</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Requires a storage class in the hosted cluster.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Live migration</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Supported</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Requires <code>ReadWriteMany</code> storage in the hosted cluster, same as standalone.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Snapshots, clones, restore</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Supported</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Requires a CSI driver with snapshot support in the hosted cluster.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Secondary networks (Linux bridge, localnet, Layer 2)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Supported</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>NodeNetworkConfigurationPolicy</code> is applied inside the hosted cluster by the NMState operator.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">User-defined networks on OVN-Kubernetes</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Supported</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The hosted cluster must use the OVN-Kubernetes network type, which is the default.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">MetalLB services for VMs</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Supported</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Install MetalLB in the hosted cluster, separate from the management cluster instance.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Hugepages, CPU pinning, NUMA, real-time</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Supported with caveats</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Configured through <code>NodePool.spec.tuningConfig</code> instead of a <code>PerformanceProfile</code> applied to a <code>MachineConfigPool</code>.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Kernel arguments and kernel modules</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Supported with caveats</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Delivered as a <code>MachineConfig</code> inside a ConfigMap referenced by <code>NodePool.spec.config</code>. A <code>MachineConfig</code> created directly in the hosted cluster is not reconciled.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">SR-IOV and PCI passthrough</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Supported with caveats</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The operators run in the hosted cluster, but IOMMU kernel arguments come from the node pool. Validate against your hardware before committing to a design.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Node remediation and VM high availability</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Supported with caveats</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Self Node Remediation works. Remediation strategies that delete <code>Machine</code> objects do not, because the Machine API is absent. Fencing through <code>BareMetalHost</code> is driven from the management cluster.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Backup and restore of VMs with OADP</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Supported</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Install OADP in the hosted cluster. Backing up the hosted control plane itself is a separate procedure on the management cluster.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Monitoring and metrics for VMs</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Supported</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The hosted cluster runs its own monitoring stack on worker nodes. Control plane metrics are scraped on the management cluster.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Nested virtualization for production VMs</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Not supported</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Applies to topology B, where the hosted cluster workers are VMs.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Single-node hosted cluster with local storage only</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Not supported for live migration</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">A single worker node has nowhere to migrate to, and <code>ReadWriteOnce</code> local storage blocks migration.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Editing control plane components from the hosted cluster</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Not available</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>etcd</code>, <code>kube-apiserver</code>, and their tuning live on the management cluster.</p></td>
+</tr>
+</tbody>
+</table>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+Support statements change between releases. Confirm anything marked "supported with caveats" against the <a href="https://docs.redhat.com/en/documentation/openshift_container_platform/4.22/html/hosted_control_planes/index" target="_blank" rel="noopener">hosted control planes documentation</a> for the exact version you deploy.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_bare_metal_standalone_vs_hcp_by_scenario"><a class="anchor" href="#_bare_metal_standalone_vs_hcp_by_scenario"></a>Bare Metal Standalone vs HCP by Scenario</h2>
+<div class="sectionbody">
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 33.3333%;">
+<col style="width: 33.3333%;">
+<col style="width: 33.3334%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Scenario</th>
+<th class="tableblock halign-left valign-top">Bare metal standalone</th>
+<th class="tableblock halign-left valign-top">Hosted control planes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Single production virtualization cluster</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Better fit. No management cluster to build or maintain.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Adds a dependency without amortizing it.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Many small virtualization clusters (per team, per site, per tenant)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Three control plane machines per cluster becomes the dominant cost.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Better fit. Control planes collapse onto shared infrastructure.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Strong tenant isolation with separate APIs</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Full isolation, full cost.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Better fit. Each tenant gets its own API server, etcd, and RBAC, with shared hardware.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Edge site with 2 or 3 machines</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Control plane consumes the whole site.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Better fit. All local machines run VMs; the control plane lives centrally.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Edge site with an unreliable link to the data center</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Better fit. The cluster is self-contained.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Lifecycle operations stop when the link is down, although running VMs continue.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Short-lived clusters for testing or CI</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Hardware install for each cluster.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Better fit. Control planes are created and destroyed in minutes.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Deep node customization (kernel, drivers, real-time)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Direct <code>MachineConfig</code> and <code>PerformanceProfile</code> workflow.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Same capabilities, applied through node pool ConfigMaps. Extra indirection.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Regulated environment requiring physical control plane separation</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Better fit. Control plane hardware is dedicated per cluster.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Control planes of several tenants share nodes.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Fleet upgrade of 20 clusters</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">20 independent upgrades.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Better fit. Control planes upgrade centrally; node pools upgrade on their own schedule.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_1_verify_the_management_cluster"><a class="anchor" href="#_step_1_verify_the_management_cluster"></a>Step 1: Verify the Management Cluster</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Confirm that the multicluster engine operator is installed and that hosted control planes are available:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get multiclusterengine multiclusterengine -o jsonpath='{range .spec.overrides.components[?(@.name=="hypershift")]}{.name}{"="}{.enabled}{"\n"}{end}'</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Expected output</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">hypershift=true</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Confirm that the HyperShift operator is running:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get pods -n hypershift</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Check that a default storage class exists for hosted control plane etcd volumes:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get storageclass</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_2_register_bare_metal_hosts_as_agents"><a class="anchor" href="#_step_2_register_bare_metal_hosts_as_agents"></a>Step 2: Register Bare-Metal Hosts as Agents</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Hosted clusters on the Agent platform draw their worker nodes from a pool of registered hosts. Each host boots a discovery image, registers with the assisted service, and appears as an <code>Agent</code> resource.</p>
+</div>
+<div class="paragraph">
+<p>Create a namespace and an infrastructure environment for the hosts:</p>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/hosted-control-planes/namespace-hardware-inventory.yaml" class="xref attachment">Download namespace-hardware-inventory.yaml</a></p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc create namespace hardware-inventory</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Copy your pull secret into the namespace:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc create secret generic pull-secret \
+  --namespace hardware-inventory \
+  --from-file=.dockerconfigjson=$HOME/pull-secret.json \
+  --type=kubernetes.io/dockerconfigjson</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Create the <code>InfraEnv</code> resource that generates the discovery ISO:</p>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/hosted-control-planes/infraenv-hardware-inventory.yaml" class="xref attachment">Download infraenv-hardware-inventory.yaml</a></p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f - &lt;&lt;EOF
+apiVersion: agent-install.openshift.io/v1beta1
+kind: InfraEnv
+metadata:
+  name: hardware-inventory
+  namespace: hardware-inventory
+spec:
+  pullSecretRef:
+    name: pull-secret
+  sshAuthorizedKey: "$(cat $HOME/.ssh/id_rsa.pub)"
+EOF</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Retrieve the discovery ISO URL and boot each bare-metal host from it:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get infraenv hardware-inventory -n hardware-inventory -o jsonpath='{.status.isoDownloadURL}'</code></pre>
+</div>
+</div>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+If the hosts are managed through Redfish, create a <code>BareMetalHost</code> resource for each machine instead of booting the ISO manually. The Infrastructure Operator then attaches the ISO and powers the host on.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>After the hosts boot, they appear as agents:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get agents -n hardware-inventory</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Approve each agent and label the ones reserved for virtualization:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc patch agent &lt;agent-name&gt; -n hardware-inventory --type merge \
+  -p '{"spec":{"approved":true}}'</code></pre>
+</div>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc label agent &lt;agent-name&gt; -n hardware-inventory virtualization=true</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Verify that the hardware inventory reports the virtualization CPU flag before you commit a host to a virtualization node pool:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get agent &lt;agent-name&gt; -n hardware-inventory \
+  -o jsonpath='{.status.inventory.cpu.flags}' | tr ' ' '\n' | grep -E '^(vmx|svm)$'</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Expected output on an Intel host</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">vmx</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_3_create_the_hosted_cluster"><a class="anchor" href="#_step_3_create_the_hosted_cluster"></a>Step 3: Create the Hosted Cluster</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Take the release image from the management cluster so that the hosted control plane matches its version:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">export RELEASE_IMAGE=$(oc get clusterversion version -o jsonpath='{.status.desired.image}')</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Create the hosted cluster with no worker replicas. The node pool comes next, configured for virtualization:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">hcp create cluster agent \
+  --name virt01 \
+  --namespace clusters \
+  --base-domain example.com \
+  --api-server-address api.virt01.example.com \
+  --agent-namespace hardware-inventory \
+  --pull-secret $HOME/pull-secret.json \
+  --ssh-key $HOME/.ssh/id_rsa.pub \
+  --release-image $RELEASE_IMAGE \
+  --control-plane-availability-policy HighlyAvailable \
+  --etcd-storage-class ocs-storagecluster-ceph-rbd \
+  --node-pool-replicas 0</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Watch the control plane come up in its own namespace:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get pods -n clusters-virt01</code></pre>
+</div>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get hostedcluster virt01 -n clusters</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Expected output</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">NAME     VERSION   KUBECONFIG                PROGRESS    AVAILABLE   REASON
+virt01   {ocp-min-version}.x    virt01-admin-kubeconfig   Completed   True        HostedClusterAsExpected</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_4_configure_the_node_pool_for_virtualization"><a class="anchor" href="#_step_4_configure_the_node_pool_for_virtualization"></a>Step 4: Configure the Node Pool for Virtualization</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Node configuration for a hosted cluster is authored on the management cluster. You wrap a <code>MachineConfig</code> in a ConfigMap under the <code>config</code> key, wrap tuning objects under the <code>tuning</code> key, and reference both from the <code>NodePool</code>.</p>
+</div>
+<div class="paragraph">
+<p>Create the kernel argument configuration used by device passthrough and SR-IOV:</p>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/hosted-control-planes/configmap-virt-kernel-args.yaml" class="xref attachment">Download configmap-virt-kernel-args.yaml</a></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: virt-kernel-args
+  namespace: clusters
+data:
+  config: |
+    apiVersion: machineconfiguration.openshift.io/v1
+    kind: MachineConfig
+    metadata:
+      name: 99-virt-kernel-args
+      labels:
+        machineconfiguration.openshift.io/role: worker
+    spec:
+      kernelArguments:
+      - intel_iommu=on
+      - iommu=pt</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Apply it:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f - &lt;&lt;EOF
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: virt-kernel-args
+  namespace: clusters
+data:
+  config: |
+    apiVersion: machineconfiguration.openshift.io/v1
+    kind: MachineConfig
+    metadata:
+      name: 99-virt-kernel-args
+      labels:
+        machineconfiguration.openshift.io/role: worker
+    spec:
+      kernelArguments:
+      - intel_iommu=on
+      - iommu=pt
+EOF</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Create the performance profile used for hugepages and CPU isolation. Adjust the CPU ranges to your hardware:</p>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/hosted-control-planes/configmap-virt-performance-profile.yaml" class="xref attachment">Download configmap-virt-performance-profile.yaml</a></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: virt-performance-profile
+  namespace: clusters
+data:
+  tuning: |
+    apiVersion: performance.openshift.io/v2
+    kind: PerformanceProfile
+    metadata:
+      name: virt-workers
+    spec:
+      cpu:
+        isolated: "4-31"
+        reserved: "0-3"
+      hugepages:
+        defaultHugepagesSize: "1G"
+        pages:
+        - size: "1G"
+          count: 16
+      numa:
+        topologyPolicy: restricted
+      nodeSelector:
+        node-role.kubernetes.io/worker: ""</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Apply it:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f - &lt;&lt;EOF
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: virt-performance-profile
+  namespace: clusters
+data:
+  tuning: |
+    apiVersion: performance.openshift.io/v2
+    kind: PerformanceProfile
+    metadata:
+      name: virt-workers
+    spec:
+      cpu:
+        isolated: "4-31"
+        reserved: "0-3"
+      hugepages:
+        defaultHugepagesSize: "1G"
+        pages:
+        - size: "1G"
+          count: 16
+      numa:
+        topologyPolicy: restricted
+      nodeSelector:
+        node-role.kubernetes.io/worker: ""
+EOF</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Create the node pool that consumes both ConfigMaps and selects the labeled agents:</p>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/hosted-control-planes/nodepool-virt01-workers.yaml" class="xref attachment">Download nodepool-virt01-workers.yaml</a></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: hypershift.openshift.io/v1beta1
+kind: NodePool
+metadata:
+  name: virt01-workers
+  namespace: clusters
+spec:
+  clusterName: virt01
+  replicas: 3
+  management:
+    autoRepair: false
+    upgradeType: InPlace <i class="conum" data-value="1"></i><b>(1)</b>
+  platform:
+    type: Agent
+    agent:
+      agentLabelSelector:
+        matchLabels:
+          virtualization: "true" <i class="conum" data-value="2"></i><b>(2)</b>
+  config:
+  - name: virt-kernel-args <i class="conum" data-value="3"></i><b>(3)</b>
+  tuningConfig:
+  - name: virt-performance-profile <i class="conum" data-value="4"></i><b>(4)</b>
+  release:
+    image: quay.io/openshift-release-dev/ocp-release:{ocp-min-version}.20-x86_64 <i class="conum" data-value="5"></i><b>(5)</b></code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td><code>InPlace</code> updates the existing machines. <code>Replace</code> reprovisions them, which requires spare agents and forces every VM off the node. Prefer <code>InPlace</code> for virtualization node pools.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>Only agents labeled <code>virtualization=true</code> are consumed by this pool.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="3"></i><b>3</b></td>
+<td>Kernel arguments delivered as a <code>MachineConfig</code>.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="4"></i><b>4</b></td>
+<td>Node tuning delivered as a <code>PerformanceProfile</code>.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="5"></i><b>5</b></td>
+<td>Use the same release as the hosted control plane. Replace the full version tag with the version reported by <code>oc get clusterversion</code>.</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Apply the node pool and watch the agents get installed:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f - &lt;&lt;EOF
+apiVersion: hypershift.openshift.io/v1beta1
+kind: NodePool
+metadata:
+  name: virt01-workers
+  namespace: clusters
+spec:
+  clusterName: virt01
+  replicas: 3
+  management:
+    autoRepair: false
+    upgradeType: InPlace
+  platform:
+    type: Agent
+    agent:
+      agentLabelSelector:
+        matchLabels:
+          virtualization: "true"
+  config:
+  - name: virt-kernel-args
+  tuningConfig:
+  - name: virt-performance-profile
+  release:
+    image: quay.io/openshift-release-dev/ocp-release:{ocp-min-version}.20-x86_64
+EOF</code></pre>
+</div>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get nodepool virt01-workers -n clusters -w</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Expected output once the nodes join</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">NAME             CLUSTER   DESIRED NODES   CURRENT NODES   AUTOSCALING   AUTOREPAIR   VERSION   UPDATINGVERSION   UPDATINGCONFIG   MESSAGE
+virt01-workers   virt01    3               3               False         False        {ocp-min-version}.x    False             False</code></pre>
+</div>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-important" title="Important"></i>
+</td>
+<td class="content">
+Do not create <code>MachineConfig</code> or <code>PerformanceProfile</code> objects directly in the hosted cluster. They are not reconciled there. All node-level configuration flows from the node pool.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_5_access_the_hosted_cluster"><a class="anchor" href="#_step_5_access_the_hosted_cluster"></a>Step 5: Access the Hosted Cluster</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Extract the kubeconfig and point your shell at the hosted cluster:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">hcp create kubeconfig --name virt01 --namespace clusters &gt; virt01-kubeconfig</code></pre>
+</div>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">export KUBECONFIG=$PWD/virt01-kubeconfig</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>List the nodes:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get nodes</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Expected output</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">NAME        STATUS   ROLES    AGE   VERSION
+worker-01   Ready    worker   12m   v1.31.x
+worker-02   Ready    worker   12m   v1.31.x
+worker-03   Ready    worker   12m   v1.31.x</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>There are no nodes with the <code>master</code> role. Every pod in this cluster, including the virtualization operators, runs on these three machines.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_6_verify_hardware_virtualization_on_the_workers"><a class="anchor" href="#_step_6_verify_hardware_virtualization_on_the_workers"></a>Step 6: Verify Hardware Virtualization on the Workers</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Open a debug shell on a worker node:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc debug node/worker-01</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Inside the debug shell, check the CPU flags and the KVM device:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">chroot /host grep -o -m1 -E 'vmx|svm' /proc/cpuinfo</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">chroot /host ls -l /dev/kvm</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Expected output</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">crw-rw----. 1 root kvm 10, 232 Jan 14 10:02 /dev/kvm</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Leave the debug shell:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">exit</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If <code>/dev/kvm</code> is missing, the host is either a virtual machine or has virtualization disabled in BIOS. Fix that before installing the operator.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_7_provide_storage_in_the_hosted_cluster"><a class="anchor" href="#_step_7_provide_storage_in_the_hosted_cluster"></a>Step 7: Provide Storage in the Hosted Cluster</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>A hosted cluster starts with no storage class. The hosted control plane uses management cluster storage for etcd, but VM disks need a CSI driver inside the hosted cluster.</p>
+</div>
+<div class="paragraph">
+<p>Live migration requires <code>ReadWriteMany</code> block or filesystem volumes. Choose accordingly:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>OpenShift Data Foundation or external Ceph provides RWX and snapshots. Use this when live migration matters.</p>
+</li>
+<li>
+<p>LVM Storage provides fast local <code>ReadWriteOnce</code> volumes only. VMs run, but they cannot live migrate.</p>
+</li>
+<li>
+<p>An external NFS or vendor CSI driver works if it supports RWX and the snapshot API.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>After installing a storage provider, confirm the access modes your default class supports:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get storageclass</code></pre>
+</div>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get storageprofile -o custom-columns=NAME:.metadata.name,ACCESSMODES:.status.claimPropertySets[*].accessModes</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>See <a href="default-storage-class.html" class="xref page">Configuring Default Storage Class</a> for the full storage configuration walkthrough.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_8_install_openshift_virtualization_on_the_hosted_cluster"><a class="anchor" href="#_step_8_install_openshift_virtualization_on_the_hosted_cluster"></a>Step 8: Install OpenShift Virtualization on the Hosted Cluster</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The installation is the same as on a standalone cluster. Verify that <code>KUBECONFIG</code> still points at the hosted cluster, then create the namespace, operator group, and subscription:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f - &lt;&lt;EOF
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: openshift-cnv
+---
+apiVersion: operators.coreos.com/v1
+kind: OperatorGroup
+metadata:
+  name: kubevirt-hyperconverged-group
+  namespace: openshift-cnv
+spec:
+  targetNamespaces:
+  - openshift-cnv
+---
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: hco-operatorhub
+  namespace: openshift-cnv
+spec:
+  source: redhat-operators
+  sourceNamespace: openshift-marketplace
+  name: kubevirt-hyperconverged
+  channel: stable
+  installPlanApproval: Automatic
+EOF</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Wait for the operator to install:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc wait --for=jsonpath='{.status.phase}'=Succeeded csv \
+  -l operators.coreos.com/kubevirt-hyperconverged.openshift-cnv \
+  -n openshift-cnv --timeout=600s</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Create the <code>HyperConverged</code> resource:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f - &lt;&lt;EOF
+apiVersion: hco.kubevirt.io/v1beta1
+kind: HyperConverged
+metadata:
+  name: kubevirt-hyperconverged
+  namespace: openshift-cnv
+spec:
+EOF</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Wait until the deployment is available:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc wait hyperconverged kubevirt-hyperconverged -n openshift-cnv \
+  --for=condition=Available --timeout=900s</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Confirm that the nodes are schedulable for VMs:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get nodes -l kubevirt.io/schedulable=true</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Expected output</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">NAME        STATUS   ROLES    AGE   VERSION
+worker-01   Ready    worker   34m   v1.31.x
+worker-02   Ready    worker   34m   v1.31.x
+worker-03   Ready    worker   34m   v1.31.x</code></pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+The operator pods land on worker nodes because the hosted cluster has no other nodes. Reserve capacity for them when you size the pool, or add a second node pool labeled for infrastructure workloads.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_9_run_a_virtual_machine"><a class="anchor" href="#_step_9_run_a_virtual_machine"></a>Step 9: Run a Virtual Machine</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Create a namespace and a VM:</p>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/hosted-control-planes/namespace-hcp-virt-demo.yaml" class="xref attachment">Download namespace-hcp-virt-demo.yaml</a></p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc create namespace hcp-virt-demo</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/hosted-control-planes/vm-hcp-demo.yaml" class="xref attachment">Download vm-hcp-demo.yaml</a></p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f - &lt;&lt;EOF
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: hcp-demo
+  namespace: hcp-virt-demo
+spec:
+  runStrategy: Always
+  template:
+    metadata:
+      labels:
+        kubevirt.io/domain: hcp-demo
+    spec:
+      domain:
+        cpu:
+          cores: 1
+        memory:
+          guest: 2Gi
+        resources:
+          requests:
+            memory: 2Gi
+        devices:
+          disks:
+          - name: rootdisk
+            disk:
+              bus: virtio
+          - name: cloudinitdisk
+            disk:
+              bus: virtio
+          interfaces:
+          - name: default
+            masquerade: {}
+      networks:
+      - name: default
+        pod: {}
+      volumes:
+      - name: rootdisk
+        containerDisk:
+          image: quay.io/containerdisks/fedora:latest
+      - name: cloudinitdisk
+        cloudInitNoCloud:
+          userData: |
+            #cloud-config
+            user: fedora
+            password: hcpdemo
+            chpasswd:
+              expire: false
+EOF</code></pre>
+</div>
+</div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+The password above is for a throwaway demo VM. Use SSH keys for anything else.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Wait for the VM to start and check where it landed:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vmi -n hcp-virt-demo -o wide</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Log in from the serial console to confirm the guest booted:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">virtctl console hcp-demo -n hcp-virt-demo</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Inside the guest, confirm that the CPU is KVM-accelerated rather than emulated:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">lscpu | grep -i hypervisor</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Expected output</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">Hypervisor vendor:                    KVM</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Disconnect from the console with <code>Ctrl+]</code>.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_10_check_live_migration_readiness"><a class="anchor" href="#_step_10_check_live_migration_readiness"></a>Step 10: Check Live Migration Readiness</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Live migration on a hosted cluster has the same requirements as on a standalone cluster: more than one schedulable node and shared storage for every VM disk.</p>
+</div>
+<div class="paragraph">
+<p>Check the <code>LiveMigratable</code> condition:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vmi hcp-demo -n hcp-virt-demo \
+  -o jsonpath='{range .status.conditions[?(@.type=="LiveMigratable")]}{.status}{" "}{.reason}{"\n"}{end}'</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If the condition is <code>True</code>, migrate the VM:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">virtctl migrate hcp-demo -n hcp-virt-demo</code></pre>
+</div>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get virtualmachineinstancemigration -n hcp-virt-demo</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If the condition is <code>False</code> with a <code>DisksNotLiveMigratable</code> reason, the VM has a disk that is not on shared storage. Move the disk to an RWX storage class and retry.</p>
+</div>
+<div class="paragraph">
+<p>The migration itself is handled entirely by <code>virt-handler</code> on the two worker nodes. The management cluster is in the path only for the API calls that start and track it, which is why a slow or saturated link to the management cluster shows up as slow migration startup rather than slow data transfer.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_limitations_and_considerations"><a class="anchor" href="#_limitations_and_considerations"></a>Limitations and Considerations</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_networking"><a class="anchor" href="#_networking"></a>Networking</h3>
+<div class="paragraph">
+<p>The hosted cluster API endpoint is published by the management cluster, usually through a MetalLB <code>LoadBalancer</code> service or a NodePort. Worker nodes reach it over the network, and every <code>oc</code>, <code>virtctl</code>, and console request crosses that path. Latency between the worker sites and the management cluster directly affects how responsive VM operations feel.</p>
+</div>
+<div class="paragraph">
+<p>Secondary networks behave as they do on a standalone cluster. The NMState operator runs in the hosted cluster and applies <code>NodeNetworkConfigurationPolicy</code> resources to the bare-metal workers, so bridges, bonds, and VLANs work the same way. See <a href="../networking/linux-bridges.html" class="xref page">Creating a Linux Bridge Secondary Network for Virtual Machines</a> and <a href="../networking/localnet-vlan.html" class="xref page">Configuring Localnet Secondary Networks with VLAN using NetworkAttachmentDefinition in OpenShift Virtualization</a>.</p>
+</div>
+<div class="paragraph">
+<p>Two network details are specific to hosted clusters:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>The hosted cluster ingress needs its own load balancer inside the hosted cluster. The management cluster load balancer only publishes the control plane endpoints.</p>
+</li>
+<li>
+<p>Pod, service, and machine CIDRs of the hosted cluster must not collide with the management cluster ranges, because the two are joined by the konnectivity tunnel.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_upgrades"><a class="anchor" href="#_upgrades"></a>Upgrades</h3>
+<div class="paragraph">
+<p>Upgrades are two operations instead of one:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Update <code>HostedCluster.spec.release.image</code> to the new version. The control plane pods roll in the management cluster.</p>
+</li>
+<li>
+<p>Update <code>NodePool.spec.release.image</code> for each pool. The worker nodes update according to <code>upgradeType</code>.</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>Rules to follow:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Upgrade the control plane first. A node pool must never run a newer version than its control plane.</p>
+</li>
+<li>
+<p>Keep the skew small. Node pools may trail the control plane, but validate against the version skew policy for your release before letting them drift.</p>
+</li>
+<li>
+<p>Use <code>InPlace</code> for virtualization pools. <code>Replace</code> reprovisions machines from scratch, which discards local storage and requires spare agents.</p>
+</li>
+<li>
+<p>Drain behavior still applies. During an <code>InPlace</code> update, each node is cordoned and drained, so VMs live migrate off it. Without RWX storage, they are shut down instead. Plan maintenance windows accordingly.</p>
+</li>
+<li>
+<p>The management cluster must be upgraded before hosted clusters can move to a newer release than it supports.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_feature_parity_gaps"><a class="anchor" href="#_feature_parity_gaps"></a>Feature Parity Gaps</h3>
+<div class="ulist">
+<ul>
+<li>
+<p>No Machine API in the hosted cluster. Tooling that reads <code>Machine</code> or <code>MachineSet</code> objects, including some node remediation operators and capacity dashboards, finds nothing.</p>
+</li>
+<li>
+<p>No control plane node access. You cannot debug a control plane node, tune etcd from the hosted cluster, or place workloads on control plane machines.</p>
+</li>
+<li>
+<p>Node configuration indirection. Every kernel argument, kubelet setting, and tuning profile is authored on the management cluster. GitOps pipelines that target the cluster itself need to be split across two clusters.</p>
+</li>
+<li>
+<p>Operators that assume control plane nodes exist may schedule incorrectly. Check node selectors for <code>node-role.kubernetes.io/master</code> before installing third-party operators.</p>
+</li>
+<li>
+<p>Infrastructure and worker roles overlap. Monitoring, logging, ingress, and the virtualization operators all compete with VMs for the same worker capacity.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_failure_domains"><a class="anchor" href="#_failure_domains"></a>Failure Domains</h3>
+<div class="paragraph">
+<p>If the management cluster fails, hosted cluster VMs keep running, but you lose the API. No new VMs start, no migrations happen, and the console is unavailable. If a worker node fails, the hosted control plane reschedules its workloads exactly as a standalone control plane would, as long as the management cluster is reachable.</p>
+</div>
+<div class="paragraph">
+<p>Back up both layers: <code>etcd</code> of the hosted control plane on the management cluster, and VM data in the hosted cluster with OADP.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_cleanup"><a class="anchor" href="#_cleanup"></a>Cleanup</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Delete the demo namespace in the hosted cluster:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc delete namespace hcp-virt-demo</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>To remove the whole hosted cluster, switch back to the management cluster kubeconfig and destroy it:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">unset KUBECONFIG</code></pre>
+</div>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">hcp destroy cluster agent --name virt01 --namespace clusters</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Delete the node pool ConfigMaps if they are no longer referenced:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc delete configmap virt-kernel-args virt-performance-profile -n clusters</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The agents return to the pool and can be reused by another hosted cluster after they are reset.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_summary"><a class="anchor" href="#_summary"></a>Summary</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p>Hosted control planes run the control plane of a cluster as pods on a management cluster, leaving the hosted cluster with worker nodes only.</p>
+</li>
+<li>
+<p>Production VMs belong on a hosted cluster with bare-metal workers from an Agent node pool. Hosted clusters whose workers are VMs require nested virtualization and are limited to testing.</p>
+</li>
+<li>
+<p>The virtualization API and feature set are unchanged; storage, tuning, node configuration, and upgrade workflows are what differ.</p>
+</li>
+<li>
+<p>Node configuration reaches the workers through ConfigMaps referenced by <code>NodePool.spec.config</code> and <code>NodePool.spec.tuningConfig</code>, not through <code>MachineConfigPool</code>.</p>
+</li>
+<li>
+<p>The saving is three control plane machines per cluster, which matters most for fleets, tenants, and edge sites, and least for a single large cluster.</p>
+</li>
+<li>
+<p>Running VMs survive a management cluster outage; VM lifecycle operations do not.</p>
+</li>
+<li>
+<p>Upgrades are two steps: control plane first, then each node pool, preferably with <code>upgradeType: InPlace</code>.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_see_also"><a class="anchor" href="#_see_also"></a>See Also</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p><a href="architecture-overview.html" class="xref page">OpenShift Virtualization Architecture Overview</a></p>
+</li>
+<li>
+<p><a href="install-openshift-virtualization.html" class="xref page">Installing and Configuring OpenShift Virtualization Operator</a></p>
+</li>
+<li>
+<p><a href="default-storage-class.html" class="xref page">Configuring Default Storage Class</a></p>
+</li>
+<li>
+<p><a href="../performance/nested-virtualization.html" class="xref page">Enabling Nested Virtualization for Development and Testing</a></p>
+</li>
+<li>
+<p><a href="../vm-lifecycle/live-migration.html" class="xref page">Live Migration of Virtual Machines Between Nodes</a></p>
+</li>
+<li>
+<p><a href="https://docs.redhat.com/en/documentation/openshift_container_platform/4.22/html/hosted_control_planes/index" target="_blank" rel="noopener">Hosted control planes documentation</a></p>
+</li>
+<li>
+<p><a href="https://docs.redhat.com/en/documentation/openshift_container_platform/4.22/html/virtualization/index" target="_blank" rel="noopener">OpenShift Virtualization documentation</a></p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<nav class="pagination">
+  <span class="prev"><a href="architecture-overview.html">Architecture Overview</a></span>
+  <span class="next"><a href="install-openshift-virtualization.html">Install OpenShift Virtualization</a></span>
+</nav>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <img src="../../../_/img/rhl-logo-red.png" height="40px" alt="Red Hat"  href="https://redhat.com" >
+</footer><script id="site-script" src="../../../_/js/site.js" data-ui-root-path="../../../_"></script>
+<script async src="../../../_/js/vendor/highlight.js"></script>
+<script src="../../../_/js/vendor/lunr.js"></script>
+<script src="../../../_/js/search-ui.js" id="search-ui-script" data-site-root-path="../../.." data-snippet-length="100" data-stylesheet="../../../_/css/search.css"></script>
+<script async src="../../../search-index.js"></script>
+  </body>
+</html>
