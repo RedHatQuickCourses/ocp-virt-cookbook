@@ -1,0 +1,1237 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Windows VM Performance Configuration in OpenShift :: OpenShift Virtualization cookbook</title>
+    <link rel="prev" href="nested-virtualization.html">
+    <link rel="next" href="../vm-lifecycle/index.html">
+    <meta name="generator" content="Antora 3.1.3">
+    <link rel="stylesheet" href="../../../_/css/site.css">
+    <script>var uiRootPath = '../../../_'</script>
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://www.redhat.com" target="_blank"><img src="../../../_/img/redhat-logo.png" height="40px" alt="Red Hat"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="../../..">OpenShift Virtualization cookbook</a>
+      <div class="navbar-item search hide-for-print">
+        <div id="search-field" class="field">
+          <input id="search-input" type="text" placeholder="Search the docs">
+        </div>
+      </div>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues" target="_blank">Report Issues</a>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="ocp-virt-cookbook" data-version="1">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="../index.html">OpenShift Virtualization cookbook</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../index.html">Introduction</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../getting-started/index.html">Getting Started</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/vm-quick-start.html">Quick Start</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/prerequisites.html">Prerequisites</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/architecture-overview.html">Architecture Overview</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/hosted-control-planes.html">Hosted Control Planes</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/install-openshift-virtualization.html">Install OpenShift Virtualization</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/installing-qemu-guest-agent.html">Installing QEMU Guest Agent</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/default-storage-class.html">Storage Setup</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/create-vm-web-console.html">Create VM from Web Console</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/create-vm-cli-yaml.html">Create VM from CLI</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/vm-lifecycle-states.html">VM Lifecycle States</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/virtctl-basics.html">Virtctl Basics</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/cloud-init-fundamentals.html">Cloud-init Fundamentals</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../storage/index.html">Storage Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/lvm-operator.html">LVM Operator Installation</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/lvm-troubleshooting.html">LVM Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/odf-ceph-storage.html">ODF/Ceph Storage</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/hostpath-provisioner.html">HostPath Provisioner</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/creating-managing-storage-class.html">Creating and Managing Storage Classes</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/choosing-storage-class.html">Choosing a Storage Class</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/multi-disk-configuration.html">Multi-Disk VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/expanding-vm-disk-size.html">Expanding VM Disk Size</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/cdi-operations.html">CDI Operations</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/disk-io-tuning.html">Disk I/O Tuning</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/storage-profiles.html">Storage Profiles</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../networking/index.html">Networking Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/static-ip-configuration.html">Static IP Configuration</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/cloud-init-troubleshooting.html">Cloud-init Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/udn-primary-networks.html">UDN Primary Networks</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/localnet-secondary.html">Localnet Secondary Networks with CUDN</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/localnet-vlan.html">Localnet Secondary Networks with VLAN using NAD</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/cudn-localnet-vlan.html">Localnet VLAN with CUDN</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/layer2-secondary.html">Layer 2 Secondary Networks</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/linux-bridges.html">Linux Bridges</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/sriov-secondary.html">SR-IOV Secondary Networks</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/network-policies-vms.html">Network Policies for VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/metallb-loadbalancer.html">MetalLB Load Balancer for VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/dual-stack-vms.html">Dual-Stack IPv4/IPv6 VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/vm-ingress-routes.html">VM Ingress and Routes</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/ovs-bridge-troubleshooting.html">Troubleshooting Localnet Networks</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../vm-configuration/index.html">Virtual Machine Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/internal-dns-for-vms.html">Internal DNS for VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/remote-access-linux-vms.html">Remote Access to Linux VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/remote-access-linux-troubleshooting.html">Remote Access to Linux VMs Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/remote-access-windows-vms.html">Remote Access to Windows VMs via RDP</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/ssh-access-windows-vms.html">Remote Access to Windows VMs via SSH</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/windows-vm-virtio-drivers.html">Windows VMs with VirtIO Drivers</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/legacy-windows-versions.html">Legacy Windows Versions</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/infrastructure-node-placement.html">Infrastructure Node Placement</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/node-placement-affinity.html">Node Placement and Affinity</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/hotplug-volumes-interfaces.html">Hotplug Volumes and Interfaces</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/vm-templates.html">Virtual Machine Templates</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/instancetype-preference.html">Instancetype and Preference</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/hyperconverged-configuration.html">HyperConverged Configuration</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="index.html">VM Performance Tuning</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="resource-limits-qos.html">Resource Limits and QoS</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="cpu-pinning.html">Dedicated CPU Placement</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="numa-hugepages.html">NUMA and Hugepages</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="realtime-vms.html">Real-Time VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="vm-monitoring-metrics.html">VM Monitoring and Metrics</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="nested-virtualization.html">Nested Virtualization</a>
+  </li>
+  <li class="nav-item is-current-page" data-depth="2">
+    <a class="nav-link" href="windows-vm-optimization.html">Windows VM Optimization</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../vm-lifecycle/index.html">VM Lifecycle Management</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/import-qcow2-boot-volume.html">Import qcow2 Boot Volume</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/custom-golden-images.html">Custom Golden Images</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/windows-golden-images.html">Windows Golden Images</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/golden-images-troubleshooting.html">Golden Images Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/cloning-vms.html">Cloning VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/vm-snapshots.html">VM Snapshots</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/boot-order-boot-sources.html">VM Boot Order and Boot Sources</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/live-migration.html">Live Migration</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/migrate-from-vmware-mtv.html">Migrate from VMware (MTV)</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../manifests/index.html">Manifests</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../api/index.html">API Guide</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../api/api-component-overview.html">API Component Overview</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../agentic-vm-management/index.html">Agentic VM Management</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/getting-started.html">Getting Started with rh-virt</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/natural-language-vm-create.html">Natural Language VM Creation</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/ai-vm-lifecycle.html">AI VM Lifecycle Operations</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/vm-clone.html">Cloning VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/ai-vm-snapshot-management.html">VM Snapshot Management</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/ai-skill-chaining.html">Day-2 Skill Chaining</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/ai-vm-rebalance.html">VM Rebalancing and Live Migration</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../appendix/glossary.html">Glossary</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">OpenShift Virtualization cookbook</span>
+    <span class="version">1</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <a class="title" href="../index.html">OpenShift Virtualization cookbook</a>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">1</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">OpenShift Virtualization cookbook</a></li>
+    <li><a href="index.html">VM Performance Tuning</a></li>
+    <li><a href="windows-vm-optimization.html">Windows VM Optimization</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">Windows VM Performance Configuration in OpenShift</h1>
+<div class="sect1">
+<h2 id="_overview"><a class="anchor" href="#_overview"></a>Overview</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Windows VMs on OpenShift Virtualization require specific configuration to achieve optimal performance. Unlike generic KVM tuning, this tutorial focuses exclusively on OpenShift-specific settings: discovering the VirtIO driver container image, configuring Hyper-V enlightenments, enabling multi-queue virtio devices, setting Windows-appropriate grace periods, and using cluster-native troubleshooting tools.</p>
+</div>
+<div class="paragraph">
+<p>This tutorial covers the production-grade OpenShift configuration layer. For Windows VM deployment and driver installation, see <a href="../vm-configuration/windows-vm-virtio-drivers.html" class="xref page">Deploying Windows VMs with VirtIO Drivers</a>. For guest agent setup, see the general <a href="../getting-started/installing-qemu-guest-agent.html" class="xref page">Installing QEMU Guest Agent</a> tutorial.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_what_you_will_learn"><a class="anchor" href="#_what_you_will_learn"></a>What You Will Learn</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p>How to discover the cluster&#8217;s VirtIO driver container image through the <code>virtio-win</code> ConfigMap</p>
+</li>
+<li>
+<p>How to configure Hyper-V enlightenments for Windows guests and what each one does</p>
+</li>
+<li>
+<p>How to enable multi-queue for both virtio disks and network interfaces</p>
+</li>
+<li>
+<p>Why Windows VMs need a longer termination grace period and how to configure it</p>
+</li>
+<li>
+<p>How to capture guest memory dumps using <code>virtctl memory-dump</code></p>
+</li>
+<li>
+<p>How to correlate Windows issues with cluster events</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_prerequisites"><a class="anchor" href="#_prerequisites"></a>Prerequisites</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p>OpenShift 4.18+ with the OpenShift Virtualization operator installed</p>
+</li>
+<li>
+<p><code>oc</code> and <code>virtctl</code> CLIs installed and logged in to the cluster</p>
+</li>
+<li>
+<p>A namespace where you can create VMs, or permission to create one</p>
+</li>
+<li>
+<p>A Windows Server 2022 or Windows 11 boot source available as a <code>DataSource</code> in <code>openshift-virtualization-os-images</code></p>
+</li>
+<li>
+<p>A <code>StorageClass</code> that supports <code>ReadWriteMany</code> if you plan to live migrate the VM</p>
+</li>
+<li>
+<p>At least 8 GiB of memory and 4 vCPUs of spare capacity on a worker node</p>
+</li>
+</ul>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-important" title="Important"></i>
+</td>
+<td class="content">
+This tutorial assumes you already have a working Windows VM with VirtIO drivers and the QEMU guest agent installed. If you are deploying Windows for the first time, complete <a href="../vm-configuration/windows-vm-virtio-drivers.html" class="xref page">Deploying Windows VMs with VirtIO Drivers</a> first.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_understanding_windows_vm_performance_in_openshift"><a class="anchor" href="#_understanding_windows_vm_performance_in_openshift"></a>Understanding Windows VM Performance in OpenShift</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Windows guest performance on OpenShift Virtualization is determined by three configuration layers:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">  spec.domain.features / clock / devices     Layer 1: VM spec (this tutorial)
+  ├─ Hyper-V enlightenments
+  ├─ Clock and timer configuration
+  ├─ Multi-queue virtio devices
+  └─ Termination grace period
+
+  VirtIO drivers + QEMU guest agent           Layer 2: Guest image
+  └─ See: windows-vm-virtio-drivers.adoc
+
+  Windows OS settings                         Layer 3: Guest configuration
+  └─ Power plan, services, registry
+     (Out of scope for declarative OCP config)</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This tutorial covers <strong>Layer 1</strong>: the declarative OpenShift configuration that lives in Git and is applied via <code>oc apply</code>. Layers 2 and 3 belong in golden images or configuration management tools.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_1_create_the_namespace"><a class="anchor" href="#_step_1_create_the_namespace"></a>Step 1: Create the Namespace</h2>
+<div class="sectionbody">
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc new-project windows-perf</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If the project already exists, switch to it:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc project windows-perf</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_2_discover_the_virtio_driver_container_image"><a class="anchor" href="#_step_2_discover_the_virtio_driver_container_image"></a>Step 2: Discover the VirtIO Driver Container Image</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>OpenShift Virtualization ships the <code>virtio-win</code> ISO as a container image. The image reference is recorded in a <code>ConfigMap</code> maintained by the HyperConverged operator, so you never have to guess a tag or manually download the ISO.</p>
+</div>
+<div class="paragraph">
+<p>Read the current image reference:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get configmap virtio-win -n openshift-cnv -o jsonpath='{.data.virtio-win-image}{"\n"}'</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Expected output</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">registry.redhat.io/container-native-virtualization/virtio-win-rhel9@sha256:dbbba8ff...</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The same <code>ConfigMap</code> exposes a download URL for the ISO, which is useful when building golden images outside the cluster:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get configmap virtio-win -n openshift-cnv -o jsonpath='{.data.virtio-win-image-download-url}{"\n"}'</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>You can attach this container image as a CD-ROM volume during Windows installation or when updating drivers. The image version is tied to the OpenShift Virtualization operator version, so driver updates arrive automatically with cluster upgrades.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_3_understanding_hyper_v_enlightenments"><a class="anchor" href="#_step_3_understanding_hyper_v_enlightenments"></a>Step 3: Understanding Hyper-V Enlightenments</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Hyper-V enlightenments are paravirtualized interfaces that KVM exposes through the Hyper-V hypervisor ABI. Windows detects them and switches from emulated hardware paths to direct hypercalls. The effect is largest on idle CPU, interrupt handling, and timekeeping.</p>
+</div>
+<div class="paragraph">
+<p>The OpenShift Virtualization cluster preferences for Windows (<code>windows.2k22.virtio</code>, <code>windows.11.virtio</code>) already include the recommended enlightenments. Before writing your own configuration, check what the preference provides:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get virtualmachineclusterpreference windows.2k22.virtio \
+  -o jsonpath='{.spec.features.preferredHyperv}' | yq -P</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Expected output</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">relaxed:
+  enabled: true
+vapic:
+  enabled: true
+vpindex:
+  enabled: true
+runtime:
+  enabled: true
+synic:
+  enabled: true
+synictimer:
+  enabled: true
+  direct:
+    enabled: true
+reset:
+  enabled: true
+frequencies:
+  enabled: true
+reenlightenment:
+  enabled: true
+tlbflush:
+  enabled: true
+ipi:
+  enabled: true
+spinlocks:
+  enabled: true
+  spinlocks: 8191</code></pre>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_enlightenment_reference"><a class="anchor" href="#_enlightenment_reference"></a>Enlightenment Reference</h3>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 20%;">
+<col style="width: 60%;">
+<col style="width: 20%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Enlightenment</th>
+<th class="tableblock halign-left valign-top">What it does</th>
+<th class="tableblock halign-left valign-top">Requires</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>relaxed</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Tells Windows to disable its watchdog timeouts. Prevents spurious <code>CLOCK_WATCHDOG_TIMEOUT</code> bugchecks when a vCPU is descheduled by the host.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">-</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>vapic</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Paravirtualized APIC. Replaces MMIO access to the local APIC with hypercalls, cutting VM exits on every interrupt.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">-</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>vpindex</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Exposes a virtual processor index to the guest. Required by the IPI and TLB flush enlightenments.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">-</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>runtime</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Reports how much time each virtual processor actually ran, so the Windows scheduler accounts for steal time.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">-</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>synic</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Synthetic Interrupt Controller. Provides the message and event channels used by <code>synictimer</code> and <code>reset</code>.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">-</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>synictimer</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Synthetic timers. With <code>direct</code> enabled, timer expiry is delivered as a direct interrupt instead of a synthetic message, which lowers idle CPU noticeably.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>synic</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>reset</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Lets Windows reset and reboot itself through a hypercall rather than the emulated reset line.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>synic</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>frequencies</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Exposes TSC and APIC frequency MSRs so Windows trusts the TSC as a clock source instead of falling back to slower timers.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">-</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>reenlightenment</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Notifies the guest when the TSC frequency changes, which happens when a VM migrates to a node with a different clock. Required for reliable timekeeping across live migration.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>frequencies</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>tlbflush</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Remote TLB shootdowns become a single hypercall instead of an IPI storm. The gain grows with vCPU count and host overcommit.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>vpindex</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>ipi</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Bulk inter-processor interrupts through one hypercall. Same rationale as <code>tlbflush</code>.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>vpindex</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>spinlocks</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Tells Windows how many times to spin before yielding to the hypervisor. 8191 is the value the Red Hat Windows preferences use.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">-</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect2">
+<h3 id="_enlightenments_to_avoid"><a class="anchor" href="#_enlightenments_to_avoid"></a>Enlightenments to Avoid</h3>
+<div class="paragraph">
+<p>Do not enable <code>evmcs</code> (Enlightened VMCS) or <code>hypervPassthrough</code> unless you have a specific reason:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>evmcs</code> speeds up nested VM exits but disables other virtualization features and blocks live migration. Only use it if you are running Hyper-V inside the Windows guest and have accepted that the VM cannot migrate.</p>
+</li>
+<li>
+<p><code>hypervPassthrough</code> enables every supported flag automatically but makes the VM non-migratable and forbids setting individual flags. It is useful for maximum performance on a pinned VM that will never migrate, but not for general workloads.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>For production Windows VMs that need live migration, use the explicit list shown above or rely on the cluster preference.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_4_configure_clock_and_timers_for_windows"><a class="anchor" href="#_step_4_configure_clock_and_timers_for_windows"></a>Step 4: Configure Clock and Timers for Windows</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Windows reads the emulated RTC at boot and then maintains time from a monotonic counter. Both halves need configuration.</p>
+</div>
+<div class="paragraph">
+<p>The cluster preferences set appropriate clock and timer defaults for Windows:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get virtualmachineclusterpreference windows.2k22.virtio \
+  -o jsonpath='{.spec.clock}' | yq -P</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Expected output</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">preferredClockOffset:
+  utc:
+preferredTimer:
+  hpet:
+    present: false
+  hyperv:
+  pit:
+    tickPolicy: delay
+  rtc:
+    tickPolicy: catchup</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Key settings:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>hpet: present: false</code> disables the High Precision Event Timer because the emulated version is expensive and Windows does not need it when the Hyper-V reference time source is present.</p>
+</li>
+<li>
+<p><code>pit: tickPolicy: delay</code> delivers missed ticks late rather than in a burst.</p>
+</li>
+<li>
+<p><code>rtc: tickPolicy: catchup</code> gradually re-injects missed RTC ticks so the guest catches up without a jump.</p>
+</li>
+<li>
+<p><code>hyperv: {}</code> exposes the Hyper-V reference TSC page, which is the clock source Windows prefers.</p>
+</li>
+<li>
+<p><code>utc: {}</code> means QEMU presents UTC in the RTC.</p>
+</li>
+</ul>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+Windows assumes the RTC holds local time. When using <code>utc</code>, you must set the <code>RealTimeIsUniversal</code> registry value inside the guest so Windows interprets the RTC correctly. This is a one-time in-guest configuration that belongs in your golden image. See the Red Hat Windows guest documentation for details.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_5_enable_multi_queue_virtio_devices"><a class="anchor" href="#_step_5_enable_multi_queue_virtio_devices"></a>Step 5: Enable Multi-Queue Virtio Devices</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>By default a virtio device has a single request queue, so all I/O funnels through one vCPU. Multi-queue gives each vCPU its own queue, which improves performance for VMs with multiple vCPUs.</p>
+</div>
+<div class="paragraph">
+<p>OpenShift Virtualization supports multi-queue for both block devices and network interfaces:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">spec:
+  template:
+    spec:
+      domain:
+        devices:
+          blockMultiQueue: true
+          networkInterfaceMultiqueue: true</code></pre>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_block_multi_queue"><a class="anchor" href="#_block_multi_queue"></a>Block Multi-Queue</h3>
+<div class="paragraph">
+<p><code>blockMultiQueue</code> applies to virtio disks. It requires <code>spec.domain.resources.requests.memory</code> to be set on the VM. KubeVirt caps the queue count at the vCPU count.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+Each additional queue pair costs host memory for its virtio rings. KubeVirt adds this to the <code>virt-launcher</code> pod&#8217;s computed overhead. Watch actual pod memory usage on high vCPU guests.
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_network_multi_queue"><a class="anchor" href="#_network_multi_queue"></a>Network Multi-Queue</h3>
+<div class="paragraph">
+<p><code>networkInterfaceMultiqueue</code> applies to virtio NICs. To take advantage of multiple queues, the NetKVM driver inside the guest must have Receive Side Scaling (RSS) enabled.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+Modern VirtIO drivers for Windows ship with RSS enabled by default. If you are using a recent <code>virtio-win</code> package from Red Hat or Fedora, no additional guest configuration is required. If throughput does not improve after enabling <code>networkInterfaceMultiqueue</code>, verify RSS is active using <code>Get-NetAdapterRss</code> inside the guest and consult the Red Hat Windows guest documentation.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_6_set_windows_termination_grace_period"><a class="anchor" href="#_step_6_set_windows_termination_grace_period"></a>Step 6: Set Windows Termination Grace Period</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Windows VMs need a longer termination grace period than Linux VMs because Windows update processes can take several minutes to complete. If OpenShift kills the VM pod before Windows finishes shutting down, you risk filesystem corruption or incomplete updates.</p>
+</div>
+<div class="paragraph">
+<p>The Windows cluster preferences set <code>terminationGracePeriodSeconds: 3600</code>:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get virtualmachineclusterpreference windows.2k22.virtio \
+  -o jsonpath='{.spec.devices.preferredTerminationGracePeriodSeconds}{"\n"}'</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Expected output</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">3600</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This gives Windows one hour to complete its shutdown sequence. Without the QEMU guest agent, OpenShift cannot coordinate the shutdown and the grace period simply delays the pod kill. With the agent installed, <code>virtctl stop</code> becomes a graceful, coordinated shutdown that Windows can acknowledge, and the grace period acts as a safety timeout rather than a fixed delay.</p>
+</div>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+The grace period is why installing the QEMU guest agent is critical for Windows VMs. See <a href="../getting-started/installing-qemu-guest-agent.html" class="xref page">Installing QEMU Guest Agent</a> for installation steps.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_7_deploy_an_optimized_windows_vm"><a class="anchor" href="#_step_7_deploy_an_optimized_windows_vm"></a>Step 7: Deploy an Optimized Windows VM</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Apply a complete Windows VM manifest with all performance settings. This example uses the <code>windows.2k22.virtio</code> preference, which already includes the enlightenments, clock, and timer configuration, and adds explicit multi-queue and memory requests.</p>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/windows-vm-optimization/win2k22-optimized.yaml" class="xref attachment">Download win2k22-optimized.yaml</a></p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f - &lt;&lt;EOF
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: win2k22-optimized
+  namespace: windows-perf
+  labels:
+    app: win2k22-optimized
+spec:
+  runStrategy: Always
+  preference:
+    kind: VirtualMachineClusterPreference
+    name: windows.2k22.virtio
+  dataVolumeTemplates:
+    - metadata:
+        name: win2k22-optimized-rootdisk
+      spec:
+        sourceRef:
+          kind: DataSource
+          name: win2k22
+          namespace: openshift-virtualization-os-images
+        storage:
+          accessModes:
+            - ReadWriteMany
+          resources:
+            requests:
+              storage: 80Gi
+  template:
+    metadata:
+      labels:
+        kubevirt.io/domain: win2k22-optimized
+    spec:
+      domain:
+        cpu:
+          sockets: 2
+          cores: 2
+          threads: 1
+        memory:
+          guest: 8Gi
+        resources:
+          requests:
+            memory: 8Gi
+            cpu: "4"
+        devices:
+          blockMultiQueue: true
+          networkInterfaceMultiqueue: true
+          disks:
+            - name: rootdisk
+              bootOrder: 1
+              disk:
+                bus: virtio
+          interfaces:
+            - name: default
+              model: virtio
+              masquerade: {}
+      networks:
+        - name: default
+          pod: {}
+      volumes:
+        - name: rootdisk
+          dataVolume:
+            name: win2k22-optimized-rootdisk
+EOF</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Wait for the VM to report <code>Running</code> and <code>Ready</code>:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc wait vm win2k22-optimized -n windows-perf --for=condition=Ready --timeout=20m</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_8_verify_the_configuration"><a class="anchor" href="#_step_8_verify_the_configuration"></a>Step 8: Verify the Configuration</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_verify_the_domain_definition"><a class="anchor" href="#_verify_the_domain_definition"></a>Verify the Domain Definition</h3>
+<div class="paragraph">
+<p>The <code>VirtualMachineInstance</code> shows the running VM&#8217;s configuration as rendered by the preference and instance spec. Find the <code>virt-launcher</code> pod and dump the libvirt domain XML to verify the enlightenments were applied:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">LAUNCHER=$(oc get pod -n windows-perf -l kubevirt.io/domain=win2k22-optimized \
+  -o jsonpath='{.items[0].metadata.name}')
+
+oc exec -n windows-perf "$LAUNCHER" -c compute -- \
+  virsh dumpxml windows-perf_win2k22-optimized | sed -n '/&lt;hyperv/,/&lt;\/hyperv&gt;/p'</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Expected output</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-xml hljs" data-lang="xml">&lt;hyperv mode='custom'&gt;
+  &lt;relaxed state='on'/&gt;
+  &lt;vapic state='on'/&gt;
+  &lt;spinlocks state='on' retries='8191'/&gt;
+  &lt;vpindex state='on'/&gt;
+  &lt;runtime state='on'/&gt;
+  &lt;synic state='on'/&gt;
+  &lt;stimer state='on'&gt;
+    &lt;direct state='on'/&gt;
+  &lt;/stimer&gt;
+  &lt;reset state='on'/&gt;
+  &lt;frequencies state='on'/&gt;
+  &lt;reenlightenment state='on'/&gt;
+  &lt;tlbflush state='on'/&gt;
+  &lt;ipi state='on'/&gt;
+&lt;/hyperv&gt;</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_verify_multi_queue_settings"><a class="anchor" href="#_verify_multi_queue_settings"></a>Verify Multi-Queue Settings</h3>
+<div class="paragraph">
+<p>Check the queue counts on the disk and NIC:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc exec -n windows-perf "$LAUNCHER" -c compute -- \
+  virsh dumpxml windows-perf_win2k22-optimized | grep -E 'queues=|driver name'</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Expected output</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-xml hljs" data-lang="xml">    &lt;driver name='qemu' type='raw' cache='none' queues='4'/&gt;
+    &lt;driver name='vhost' queues='4'/&gt;</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The <code>queues</code> values should match the vCPU count (4 in this example).</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_verify_guest_agent_connection"><a class="anchor" href="#_verify_guest_agent_connection"></a>Verify Guest Agent Connection</h3>
+<div class="paragraph">
+<p>Confirm the QEMU guest agent is reporting to the cluster:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vmi win2k22-optimized -n windows-perf \
+  -o jsonpath='{range .status.conditions[*]}{.type}={.status}{"\n"}{end}' | grep AgentConnected</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Expected output</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">AgentConnected=True</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If <code>AgentConnected</code> is <code>False</code> or missing, the guest agent is not installed or not running. See <a href="../getting-started/installing-qemu-guest-agent.html" class="xref page">Installing QEMU Guest Agent</a>.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_9_troubleshoot_windows_issues_with_openshift_tools"><a class="anchor" href="#_step_9_troubleshoot_windows_issues_with_openshift_tools"></a>Step 9: Troubleshoot Windows Issues with OpenShift Tools</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_capture_guest_memory_dumps"><a class="anchor" href="#_capture_guest_memory_dumps"></a>Capture Guest Memory Dumps</h3>
+<div class="paragraph">
+<p>When a Windows VM is unresponsive or experiencing issues, you can capture its memory state from the cluster side without logging into the guest. KubeVirt writes the full guest RAM to a PVC while the VM keeps running.</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">virtctl memory-dump get win2k22-optimized -n windows-perf \
+  --claim-name=win2k22-optimized-memdump --create-claim</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Watch for completion:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vm win2k22-optimized -n windows-perf -o jsonpath='{.status.memoryDumpRequest}{"\n"}'</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Once the status shows completion, download the memory dump:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">virtctl memory-dump download win2k22-optimized -n windows-perf \
+  --output=win2k22-optimized-memory.dump.gz</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Release the PVC association so a later dump can use a different claim:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">virtctl memory-dump remove win2k22-optimized -n windows-perf</code></pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+The result is a raw guest memory image, not a Windows crash dump. Analyze it with a memory forensics tool such as Volatility, or convert it before loading into WinDbg. This is particularly useful when the guest is too broken to produce its own crash dump.
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_correlate_with_cluster_events"><a class="anchor" href="#_correlate_with_cluster_events"></a>Correlate with Cluster Events</h3>
+<div class="paragraph">
+<p>Before assuming a Windows issue is a guest problem, check whether the cluster or node was the cause. Repeated watchdog timeouts or DPC violations on a busy node often point at CPU overcommit rather than a driver bug.</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get events -n windows-perf --sort-by=.lastTimestamp | tail -20</code></pre>
+</div>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc describe vmi win2k22-optimized -n windows-perf | grep -A 10 'Events:'</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Common cluster-side signals that surface as Windows issues:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>FailedScheduling</code> events: The node does not have enough resources to meet the VM&#8217;s requests.</p>
+</li>
+<li>
+<p><code>MemoryPressure</code> or <code>DiskPressure</code> node conditions: The worker node is resource-constrained.</p>
+</li>
+<li>
+<p><code>virt-launcher</code> pod OOMKilled: The pod&#8217;s memory request was too low for the VM&#8217;s actual usage, especially with multi-queue enabled.</p>
+</li>
+<li>
+<p>Repeated restarts or migrations during the timeframe when the guest had issues: The VM was disrupted by cluster operations.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>For Windows VMs experiencing <code>CLOCK_WATCHDOG_TIMEOUT</code> or <code>DPC_WATCHDOG_VIOLATION</code> bugchecks, check node CPU usage and vCPU overcommit. See <a href="cpu-pinning.html" class="xref page">Dedicated CPU Placement</a> for removing CPU contention and <a href="resource-limits-qos.html" class="xref page">Resource Limits and QoS</a> for sizing requests so the guest gets a Guaranteed QoS class.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_cleanup"><a class="anchor" href="#_cleanup"></a>Cleanup</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Delete the namespace and everything in it:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc delete namespace windows-perf</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If you captured a memory dump during troubleshooting, delete the PVC:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc delete pvc win2k22-optimized-memdump -n windows-perf --ignore-not-found</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_summary"><a class="anchor" href="#_summary"></a>Summary</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>In this tutorial you learned how to:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Discover the cluster&#8217;s <code>virtio-win</code> container image through the <code>virtio-win</code> <code>ConfigMap</code></p>
+</li>
+<li>
+<p>Understand what Hyper-V enlightenments do and which ones Windows VMs need for optimal performance and live migration support</p>
+</li>
+<li>
+<p>Configure clock and timer settings for Windows guests using cluster preferences</p>
+</li>
+<li>
+<p>Enable <code>blockMultiQueue</code> and <code>networkInterfaceMultiqueue</code> for improved I/O performance on multi-vCPU VMs</p>
+</li>
+<li>
+<p>Set an appropriate termination grace period for Windows VMs to complete shutdown safely</p>
+</li>
+<li>
+<p>Verify that enlightenments and multi-queue settings are applied correctly by inspecting the libvirt domain XML</p>
+</li>
+<li>
+<p>Capture guest memory dumps using <code>virtctl memory-dump</code> when a Windows VM is unresponsive</p>
+</li>
+<li>
+<p>Correlate Windows issues with cluster events to distinguish guest problems from cluster resource contention</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_see_also"><a class="anchor" href="#_see_also"></a>See Also</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p><a href="../vm-configuration/windows-vm-virtio-drivers.html" class="xref page">Deploying Windows VMs with VirtIO Drivers</a>&#8201;&#8212;&#8201;first-time Windows installation and driver setup</p>
+</li>
+<li>
+<p><a href="../getting-started/installing-qemu-guest-agent.html" class="xref page">Installing QEMU Guest Agent</a>&#8201;&#8212;&#8201;guest agent installation for graceful shutdown and cluster integration</p>
+</li>
+<li>
+<p><a href="../vm-configuration/instancetype-preference.html" class="xref page">Instancetype and Preference</a>&#8201;&#8212;&#8201;understanding cluster preferences and creating custom ones</p>
+</li>
+<li>
+<p><a href="cpu-pinning.html" class="xref page">Dedicated CPU Placement</a>&#8201;&#8212;&#8201;removing CPU contention for latency-sensitive guests</p>
+</li>
+<li>
+<p><a href="resource-limits-qos.html" class="xref page">Resource Limits and QoS</a>&#8201;&#8212;&#8201;sizing requests and limits</p>
+</li>
+<li>
+<p><a href="../storage/disk-io-tuning.html" class="xref page">Disk I/O Tuning</a>&#8201;&#8212;&#8201;storage-side tuning that applies to Windows guests</p>
+</li>
+<li>
+<p><a href="https://docs.redhat.com/en/documentation/openshift_container_platform/4.22/html/virtualization/virtual-machines#virt-installing-virtio-drivers-on-new-windows-vm" target="_blank" rel="noopener">Installing VirtIO drivers on a Windows VM</a></p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<nav class="pagination">
+  <span class="prev"><a href="nested-virtualization.html">Nested Virtualization</a></span>
+  <span class="next"><a href="../vm-lifecycle/index.html">VM Lifecycle Management</a></span>
+</nav>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <img src="../../../_/img/rhl-logo-red.png" height="40px" alt="Red Hat"  href="https://redhat.com" >
+</footer><script id="site-script" src="../../../_/js/site.js" data-ui-root-path="../../../_"></script>
+<script async src="../../../_/js/vendor/highlight.js"></script>
+<script src="../../../_/js/vendor/lunr.js"></script>
+<script src="../../../_/js/search-ui.js" id="search-ui-script" data-site-root-path="../../.." data-snippet-length="100" data-stylesheet="../../../_/css/search.css"></script>
+<script async src="../../../search-index.js"></script>
+  </body>
+</html>
