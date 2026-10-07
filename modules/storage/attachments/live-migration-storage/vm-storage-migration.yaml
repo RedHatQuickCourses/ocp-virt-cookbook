@@ -1,0 +1,57 @@
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: rwo-storage-vm
+  namespace: migration-storage
+spec:
+  runStrategy: Always
+  updateVolumesStrategy: Migration
+  dataVolumeTemplates:
+    - apiVersion: cdi.kubevirt.io/v1beta1
+      kind: DataVolume
+      metadata:
+        name: rwo-storage-vm-disk-rwx
+      spec:
+        source:
+          blank:
+            {}
+        storage:
+          accessModes:
+            - ReadWriteMany
+          volumeMode: Block
+          storageClassName: ocs-storagecluster-ceph-rbd-virtualization
+          resources:
+            requests:
+              storage: 30Gi
+  template:
+    metadata:
+      labels:
+        kubevirt.io/domain: rwo-storage-vm
+    spec:
+      evictionStrategy: LiveMigrate
+      domain:
+        cpu:
+          cores: 1
+        memory:
+          guest: 2Gi
+        devices:
+          disks:
+            - name: rootdisk
+              disk:
+                bus: virtio
+            - name: cloudinitdisk
+              disk:
+                bus: virtio
+      volumes:
+        - name: rootdisk
+          dataVolume:
+            name: rwo-storage-vm-disk-rwx
+        - name: cloudinitdisk
+          cloudInitNoCloud:
+            userData: |-
+              #cloud-config
+              user: fedora
+              password: fedora123
+              chpasswd:
+                expire: false
+              ssh_pwauth: true
