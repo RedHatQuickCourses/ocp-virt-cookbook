@@ -3,14 +3,16 @@
 
 == Overview
 
-This is a tutorial on StorageClasses for OpenShift Container Platform (OCP). This guide focuses on OCP 4.x (often abbreviated as OCPv4), where the Container Storage Interface (CSI) is the standard for storage provisioning. These concepts also apply directly to OpenShift Virtualization (CNV), where storage classes determine how Virtual Machine disks are provisioned. For more on storage classes, please check out the official OpenShift documentation for https://docs.redhat.com/en/documentation/openshift_container_platform/{ocp-docs-version}/html/storage_apis/storageclass-storage-k8s-io-v1[storage class api] and the https://docs.redhat.com/en/documentation/openshift_container_platform/{ocp-docs-version}/html/storage/using-container-storage-interface-csi[Container Storage Interface].
+This is a tutorial on StorageClasses for OpenShift Container Platform (OCP). This guide focuses on OCP 4.x (often abbreviated as OCPv4), where the Container Storage Interface (CSI) is the standard for storage provisioning. These concepts also apply directly to OpenShift Virtualization (CNV), where storage classes determine how Virtual Machine disks are provisioned. For more on storage classes, please check out the official OpenShift documentation for the https://docs.redhat.com/en/documentation/openshift_container_platform/{ocp-docs-version}/html/storage_apis/storageclass-storage-k8s-io-v1[StorageClass API,window=_blank] and the https://docs.redhat.com/en/documentation/openshift_container_platform/{ocp-docs-version}/html/storage/using-container-storage-interface-csi[Container Storage Interface,window=_blank].
 
 == Storage Class Fundamentals
+
 In OpenShift, a StorageClass (SC) describes a "class" of storage available to the cluster. It allows administrators to define different tiers of storage (e.g., "fast-ssd", "cheap-hdd") without users needing to know the underlying infrastructure details.
 
 When a user creates a PersistentVolumeClaim (PVC), they specify a StorageClass. A dynamic provisioner then automatically creates the backing PersistentVolume (PV).
 
 == Key Parameters in a StorageClass Object
+
 * *Provisioner:* The plugin that creates the volume (e.g., `ebs.csi.aws.com` for AWS, `nfs.csi.k8s.io` for NFS).
 * *Parameters:* Key-value pairs passed to the specific provisioner (e.g., `type: gp3, encrypted: "true"`).
 * *ReclaimPolicy:* What happens to the underlying storage when the PVC is deleted.
@@ -18,6 +20,7 @@ When a user creates a PersistentVolumeClaim (PVC), they specify a StorageClass. 
 * *AllowVolumeExpansion:* If true, users can resize PVCs by editing the object.
 
 == Volume Binding Modes
+
 This setting is critical for performance and scheduling, especially in multi-zone clusters or when using Local Storage (LVM/HostPath).
 
 A. Immediate
@@ -31,6 +34,7 @@ B. WaitForFirstConsumer (Recommended)
 *  Required For: Local Storage (LVM), HostPath, and Multi-AZ cloud environments.
 
 == Reclaim Policies
+
 This determines the fate of the data when a user deletes their PersistentVolumeClaim (PVC).
 
 A. Delete (Default)
@@ -43,6 +47,7 @@ B. Retain
 *  Use Case: Databases, critical production data where accidental deletion must be prevented.
 
 == Setting a Default Storage Class
+
 You can mark a specific StorageClass as the default. If a user creates a PVC without specifying a storageClassName, this class is used.
 Command:
 [source,bash,role=execute]
@@ -59,8 +64,9 @@ For more details, see link:../getting-started/default-storage-class.html[Default
 
 == Storage Class Examples
 
-Scenario A: AWS EBS (High Performance) 
-This uses the CSI driver to provision a gp3 volume.
+=== AWS EBS (High Performance)
+
+This uses the CSI driver to provision persistent volumes backed by gp3 volumes in AWS EBS. For more information, refer to https://docs.redhat.com/en/documentation/openshift_container_platform/{ocp-docs-version}/html/storage/using-container-storage-interface-csi#persistent-storage-csi-ebs[the official OpenShift documentation about provisioning persistent volumes on top of AWS EBS,window=_blank].
 
 [source,yaml]
 ----
@@ -77,11 +83,10 @@ parameters:
   iops: "3000"
   throughput: "125"
   encrypted: "true"
+----
 
-----  
-OpenShift Documentation: https://docs.redhat.com/en/documentation/openshift_container_platform/{ocp-docs-version}/html/storage/using-container-storage-interface-csi#persistent-storage-csi-ebs
+=== Local Storage / LVM (For Databases/Performance)
 
-Scenario B: Local Storage / LVM (For Databases/Performance)
 Requires the Local Storage Operator or LVM Storage Operator installed.
 
 [source,yaml]
@@ -97,10 +102,11 @@ parameters:
   "csi.storage.k8s.io/fstype": "xfs"
 
 ----
-NOTE: this is an example storage class for reference purposes, as LVMS operator will auto-generate one.
+NOTE: This is an example storage class for reference purposes, as LVMS operator will auto-generate one.
 
-Scenario C: NFS (Shared Storage / RWX)
-Requires the NFS CSI Driver operator or an external NFS provisioner.
+=== NFS (Shared Storage / RWX)
+
+Requires the NFS CSI Driver operator or an external NFS provisioner. For more information, refer to https://docs.redhat.com/en/documentation/openshift_container_platform/{ocp-docs-version}/html/storage/persistent-storage-using-local-storage[the official OpenShift documentation about provisioning persistent volumes on top of local storage,window=_blank].
 
 [source,yaml]
 ----
@@ -118,10 +124,9 @@ mountOptions:
   - nfsvers=4.1
 ----
 
-OpenShift Documentation: https://docs.redhat.com/en/documentation/openshift_container_platform/{ocp-docs-version}/html/storage/persistent-storage-using-local-storage
+== Verification and Troubleshooting Commands
 
-== Verification and Troubleshooting Verification Commands
-List Storage Classes:
+List available storage classes:
 
 [source,bash,role=execute]
 ----
@@ -129,14 +134,14 @@ oc get sc
 # Look for the (default) marker next to the name
 ----
 
-Describe a Class:
+Describe a storage class:
 
 [source,bash,role=execute]
 ----
 oc describe sc <name>
 ----
 
-Test Provisioning: Create a test PVC:
+Test provisioning by creating a test PVC:
 
 [source,yaml]
 ----
@@ -145,14 +150,15 @@ apiVersion: v1
 metadata:
   name: test-pvc
 spec:
-  accessModes: [ "ReadWriteOnce" ]
+  accessModes:
+  - ReadWriteOnce
   resources:
     requests:
       storage: 1Gi
   storageClassName: gp3-fast
 ----
 
-OpenShift documentation: https://docs.redhat.com/en/documentation/openshift_container_platform/{ocp-docs-version}/html/storage/configuring-persistent-storage
+For more information and troubleshooting steps, refer to https://docs.redhat.com/en/documentation/openshift_container_platform/{ocp-docs-version}/html/storage/configuring-persistent-storage[the official OpenShift documentation about configuring persistent storage,window=_blank].
 
 == Common Troubleshooting Scenarios
 
@@ -167,7 +173,7 @@ OpenShift documentation: https://docs.redhat.com/en/documentation/openshift_cont
   ** Cause: You used volumeBindingMode: Immediate on a multi-zone cluster. The volume was created in Zone A, but the Pod was scheduled in Zone B.
   ** Fix: Delete the PVC and recreate it using a StorageClass with WaitForFirstConsumer.
 
-* **Issue 3:** "Provisioner not found" 
+* **Issue 3:** "Provisioner not found"
   ** Cause: The CSI driver specified in provisioner: is not installed or crashing.
   ** Fix: Check the storage operator pods in the relevant namespace (e.g. `openshift-cluster-csi-drivers`).
 
