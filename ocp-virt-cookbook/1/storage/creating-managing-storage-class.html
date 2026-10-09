@@ -409,7 +409,7 @@
 <h2 id="_overview"><a class="anchor" href="#_overview"></a>Overview</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>This is a tutorial on StorageClasses for OpenShift Container Platform (OCP). This guide focuses on OCP 4.x (often abbreviated as OCPv4), where the Container Storage Interface (CSI) is the standard for storage provisioning. These concepts also apply directly to OpenShift Virtualization (CNV), where storage classes determine how Virtual Machine disks are provisioned. For more on storage classes, please check out the official OpenShift documentation for <a href="https://docs.redhat.com/en/documentation/openshift_container_platform/4.22/html/storage_apis/storageclass-storage-k8s-io-v1">storage class api</a> and the <a href="https://docs.redhat.com/en/documentation/openshift_container_platform/4.22/html/storage/using-container-storage-interface-csi">Container Storage Interface</a>.</p>
+<p>This is a tutorial on StorageClasses for OpenShift Container Platform (OCP). This guide focuses on OCP 4.x (often abbreviated as OCPv4), where the Container Storage Interface (CSI) is the standard for storage provisioning. These concepts also apply directly to OpenShift Virtualization (CNV), where storage classes determine how Virtual Machine disks are provisioned. For more on storage classes, please check out the official OpenShift documentation for the <a href="https://docs.redhat.com/en/documentation/openshift_container_platform/4.22/html/storage_apis/storageclass-storage-k8s-io-v1" target="_blank" rel="noopener">StorageClass API</a> and the <a href="https://docs.redhat.com/en/documentation/openshift_container_platform/4.22/html/storage/using-container-storage-interface-csi" target="_blank" rel="noopener">Container Storage Interface</a>.</p>
 </div>
 </div>
 </div>
@@ -562,9 +562,10 @@ For more details, see <a href="../getting-started/default-storage-class.html">De
 <div class="sect1">
 <h2 id="_storage_class_examples"><a class="anchor" href="#_storage_class_examples"></a>Storage Class Examples</h2>
 <div class="sectionbody">
+<div class="sect2">
+<h3 id="_aws_ebs_high_performance"><a class="anchor" href="#_aws_ebs_high_performance"></a>AWS EBS (High Performance)</h3>
 <div class="paragraph">
-<p>Scenario A: AWS EBS (High Performance)
-This uses the CSI driver to provision a gp3 volume.</p>
+<p>This uses the CSI driver to provision persistent volumes backed by gp3 volumes in AWS EBS. For more information, refer to <a href="https://docs.redhat.com/en/documentation/openshift_container_platform/4.22/html/storage/using-container-storage-interface-csi#persistent-storage-csi-ebs" target="_blank" rel="noopener">the official OpenShift documentation about provisioning persistent volumes on top of AWS EBS</a>.</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -583,12 +584,11 @@ parameters:
   encrypted: "true"</code></pre>
 </div>
 </div>
-<div class="paragraph">
-<p>OpenShift Documentation: <a href="https://docs.redhat.com/en/documentation/openshift_container_platform/4.22/html/storage/using-container-storage-interface-csi#persistent-storage-csi-ebs" class="bare">https://docs.redhat.com/en/documentation/openshift_container_platform/4.22/html/storage/using-container-storage-interface-csi#persistent-storage-csi-ebs</a></p>
 </div>
+<div class="sect2">
+<h3 id="_local_storage_lvm_for_databasesperformance"><a class="anchor" href="#_local_storage_lvm_for_databasesperformance"></a>Local Storage / LVM (For Databases/Performance)</h3>
 <div class="paragraph">
-<p>Scenario B: Local Storage / LVM (For Databases/Performance)
-Requires the Local Storage Operator or LVM Storage Operator installed.</p>
+<p>Requires the Local Storage Operator or LVM Storage Operator installed.</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -610,14 +610,16 @@ parameters:
 <i class="fa icon-note" title="Note"></i>
 </td>
 <td class="content">
-this is an example storage class for reference purposes, as LVMS operator will auto-generate one.
+This is an example storage class for reference purposes, as LVMS operator will auto-generate one.
 </td>
 </tr>
 </table>
 </div>
+</div>
+<div class="sect2">
+<h3 id="_nfs_shared_storage_rwx"><a class="anchor" href="#_nfs_shared_storage_rwx"></a>NFS (Shared Storage / RWX)</h3>
 <div class="paragraph">
-<p>Scenario C: NFS (Shared Storage / RWX)
-Requires the NFS CSI Driver operator or an external NFS provisioner.</p>
+<p>Requires the NFS CSI Driver operator or an external NFS provisioner. For more information, refer to <a href="https://docs.redhat.com/en/documentation/openshift_container_platform/4.22/html/storage/persistent-storage-using-local-storage" target="_blank" rel="noopener">the official OpenShift documentation about provisioning persistent volumes on top of local storage</a>.</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -635,16 +637,14 @@ mountOptions:
   - nfsvers=4.1</code></pre>
 </div>
 </div>
-<div class="paragraph">
-<p>OpenShift Documentation: <a href="https://docs.redhat.com/en/documentation/openshift_container_platform/4.22/html/storage/persistent-storage-using-local-storage" class="bare">https://docs.redhat.com/en/documentation/openshift_container_platform/4.22/html/storage/persistent-storage-using-local-storage</a></p>
 </div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="_verification_and_troubleshooting_verification_commands"><a class="anchor" href="#_verification_and_troubleshooting_verification_commands"></a>Verification and Troubleshooting Verification Commands</h2>
+<h2 id="_verification_and_troubleshooting_commands"><a class="anchor" href="#_verification_and_troubleshooting_commands"></a>Verification and Troubleshooting Commands</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>List Storage Classes:</p>
+<p>List available storage classes:</p>
 </div>
 <div class="listingblock execute">
 <div class="content">
@@ -653,7 +653,7 @@ mountOptions:
 </div>
 </div>
 <div class="paragraph">
-<p>Describe a Class:</p>
+<p>Describe a storage class:</p>
 </div>
 <div class="listingblock execute">
 <div class="content">
@@ -661,7 +661,7 @@ mountOptions:
 </div>
 </div>
 <div class="paragraph">
-<p>Test Provisioning: Create a test PVC:</p>
+<p>Test provisioning by creating a test PVC:</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -670,7 +670,8 @@ apiVersion: v1
 metadata:
   name: test-pvc
 spec:
-  accessModes: [ "ReadWriteOnce" ]
+  accessModes:
+  - ReadWriteOnce
   resources:
     requests:
       storage: 1Gi
@@ -678,7 +679,7 @@ spec:
 </div>
 </div>
 <div class="paragraph">
-<p>OpenShift documentation: <a href="https://docs.redhat.com/en/documentation/openshift_container_platform/4.22/html/storage/configuring-persistent-storage" class="bare">https://docs.redhat.com/en/documentation/openshift_container_platform/4.22/html/storage/configuring-persistent-storage</a></p>
+<p>For more information and troubleshooting steps, refer to <a href="https://docs.redhat.com/en/documentation/openshift_container_platform/4.22/html/storage/configuring-persistent-storage" target="_blank" rel="noopener">the official OpenShift documentation about configuring persistent storage</a>.</p>
 </div>
 </div>
 </div>
