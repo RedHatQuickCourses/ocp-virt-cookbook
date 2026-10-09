@@ -1,0 +1,1767 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Storage Requirements and Configuration for VM Live Migration :: OpenShift Virtualization cookbook</title>
+    <link rel="prev" href="storage-profiles.html">
+    <link rel="next" href="../networking/index.html">
+    <meta name="generator" content="Antora 3.1.3">
+    <link rel="stylesheet" href="../../../_/css/site.css">
+    <script>var uiRootPath = '../../../_'</script>
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://www.redhat.com" target="_blank"><img src="../../../_/img/redhat-logo.png" height="40px" alt="Red Hat"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="../../..">OpenShift Virtualization cookbook</a>
+      <div class="navbar-item search hide-for-print">
+        <div id="search-field" class="field">
+          <input id="search-input" type="text" placeholder="Search the docs">
+        </div>
+      </div>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues" target="_blank">Report Issues</a>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="ocp-virt-cookbook" data-version="1">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="../index.html">OpenShift Virtualization cookbook</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../index.html">Introduction</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../getting-started/index.html">Getting Started</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/vm-quick-start.html">Quick Start</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/prerequisites.html">Prerequisites</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/architecture-overview.html">Architecture Overview</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/hosted-control-planes.html">Hosted Control Planes</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/install-openshift-virtualization.html">Install OpenShift Virtualization</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/installing-qemu-guest-agent.html">Installing QEMU Guest Agent</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/default-storage-class.html">Storage Setup</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/create-vm-web-console.html">Create VM from Web Console</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/create-vm-cli-yaml.html">Create VM from CLI</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/vm-lifecycle-states.html">VM Lifecycle States</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/virtctl-basics.html">Virtctl Basics</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/cloud-init-fundamentals.html">Cloud-init Fundamentals</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="index.html">Storage Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="lvm-operator.html">LVM Operator Installation</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="lvm-troubleshooting.html">LVM Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="odf-ceph-storage.html">ODF/Ceph Storage</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="hostpath-provisioner.html">HostPath Provisioner</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="creating-managing-storage-class.html">Creating and Managing Storage Classes</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="choosing-storage-class.html">Choosing a Storage Class</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="multi-disk-configuration.html">Multi-Disk VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="expanding-vm-disk-size.html">Expanding VM Disk Size</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="cdi-operations.html">CDI Operations</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="disk-io-tuning.html">Disk I/O Tuning</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="storage-profiles.html">Storage Profiles</a>
+  </li>
+  <li class="nav-item is-current-page" data-depth="2">
+    <a class="nav-link" href="live-migration-storage.html">Live Migration Storage</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../networking/index.html">Networking Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/static-ip-configuration.html">Static IP Configuration</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/cloud-init-troubleshooting.html">Cloud-init Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/udn-primary-networks.html">UDN Primary Networks</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/localnet-secondary.html">Localnet Secondary Networks with CUDN</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/localnet-vlan.html">Localnet Secondary Networks with VLAN using NAD</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/cudn-localnet-vlan.html">Localnet VLAN with CUDN</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/layer2-secondary.html">Layer 2 Secondary Networks</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/linux-bridges.html">Linux Bridges</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/sriov-secondary.html">SR-IOV Secondary Networks</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/network-policies-vms.html">Network Policies for VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/metallb-loadbalancer.html">MetalLB Load Balancer for VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/dual-stack-vms.html">Dual-Stack IPv4/IPv6 VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/vm-ingress-routes.html">VM Ingress and Routes</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/ovs-bridge-troubleshooting.html">Troubleshooting Localnet Networks</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../vm-configuration/index.html">Virtual Machine Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/internal-dns-for-vms.html">Internal DNS for VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/remote-access-linux-vms.html">Remote Access to Linux VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/remote-access-linux-troubleshooting.html">Remote Access to Linux VMs Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/remote-access-windows-vms.html">Remote Access to Windows VMs via RDP</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/ssh-access-windows-vms.html">Remote Access to Windows VMs via SSH</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/windows-vm-virtio-drivers.html">Windows VMs with VirtIO Drivers</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/legacy-windows-versions.html">Legacy Windows Versions</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/infrastructure-node-placement.html">Infrastructure Node Placement</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/node-placement-affinity.html">Node Placement and Affinity</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/hotplug-volumes-interfaces.html">Hotplug Volumes and Interfaces</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/vm-templates.html">Virtual Machine Templates</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/instancetype-preference.html">Instancetype and Preference</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/hyperconverged-configuration.html">HyperConverged Configuration</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../performance/index.html">VM Performance Tuning</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/resource-limits-qos.html">Resource Limits and QoS</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/cpu-pinning.html">Dedicated CPU Placement</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/numa-hugepages.html">NUMA and Hugepages</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/realtime-vms.html">Real-Time VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/vm-monitoring-metrics.html">VM Monitoring and Metrics</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/nested-virtualization.html">Nested Virtualization</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/windows-vm-optimization.html">Windows VM Optimization</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../vm-lifecycle/index.html">VM Lifecycle Management</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/import-qcow2-boot-volume.html">Import qcow2 Boot Volume</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/custom-golden-images.html">Custom Golden Images</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/windows-golden-images.html">Windows Golden Images</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/golden-images-troubleshooting.html">Golden Images Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/cloning-vms.html">Cloning VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/vm-snapshots.html">VM Snapshots</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/boot-order-boot-sources.html">VM Boot Order and Boot Sources</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/live-migration.html">Live Migration</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/migrate-from-vmware-mtv.html">Migrate from VMware (MTV)</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../manifests/index.html">Manifests</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../api/index.html">API Guide</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../api/api-component-overview.html">API Component Overview</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../agentic-vm-management/index.html">Agentic VM Management</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/getting-started.html">Getting Started with rh-virt</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/natural-language-vm-create.html">Natural Language VM Creation</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/ai-vm-lifecycle.html">AI VM Lifecycle Operations</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/vm-clone.html">Cloning VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/ai-vm-snapshot-management.html">VM Snapshot Management</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/ai-skill-chaining.html">Day-2 Skill Chaining</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/ai-vm-rebalance.html">VM Rebalancing and Live Migration</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../appendix/glossary.html">Glossary</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">OpenShift Virtualization cookbook</span>
+    <span class="version">1</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <a class="title" href="../index.html">OpenShift Virtualization cookbook</a>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">1</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">OpenShift Virtualization cookbook</a></li>
+    <li><a href="index.html">Storage Configuration</a></li>
+    <li><a href="live-migration-storage.html">Live Migration Storage</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">Storage Requirements and Configuration for VM Live Migration</h1>
+<div class="sect1">
+<h2 id="_overview"><a class="anchor" href="#_overview"></a>Overview</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Live migration moves a running virtual machine from one node to another without shutting the guest down. The feature depends on storage: during the switchover, the source node and the target node both have the VM disk attached at the same time. A disk that only one node can mount blocks the migration before it starts.</p>
+</div>
+<div class="paragraph">
+<p>This tutorial covers the storage side of live migration. You will read the access modes that OpenShift exposes, find out which backends in your cluster can provide <code>ReadWriteMany</code> (RWX) volumes, confirm whether a running VM is migratable, configure a StorageClass and StorageProfile so new VM disks are provisioned RWX, and move an existing <code>ReadWriteOnce</code> (RWO) VM onto shared storage.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_what_you_will_learn"><a class="anchor" href="#_what_you_will_learn"></a>What You Will Learn</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p>Why live migration requires RWX volumes</p>
+</li>
+<li>
+<p>The difference between RWO, ROX, RWX, and RWOP access modes</p>
+</li>
+<li>
+<p>Which storage backends can provide RWX and which cannot</p>
+</li>
+<li>
+<p>How to probe a StorageClass for RWX support before you build on it</p>
+</li>
+<li>
+<p>How to read the <code>LiveMigratable</code> condition on a VM</p>
+</li>
+<li>
+<p>How to configure a StorageClass and StorageProfile for RWX VM disks</p>
+</li>
+<li>
+<p>How to move an existing RWO VM disk to RWX storage</p>
+</li>
+<li>
+<p>How shared storage affects migration time and cluster network load</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_prerequisites"><a class="anchor" href="#_prerequisites"></a>Prerequisites</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p><strong>OpenShift 4.18+</strong> with the OpenShift Virtualization operator installed</p>
+</li>
+<li>
+<p><strong>Cluster admin access</strong> to read StorageClasses and edit StorageProfiles</p>
+</li>
+<li>
+<p><strong><code>oc</code> CLI</strong> and <strong><code>virtctl</code> CLI</strong> installed and logged in</p>
+</li>
+<li>
+<p><strong>Two or more schedulable nodes</strong> for the migration steps</p>
+</li>
+<li>
+<p>A storage backend that can provide RWX volumes (ODF, NFS, or a vendor CSI driver) for Step 4 onward</p>
+</li>
+<li>
+<p>Familiarity with VM creation, covered in <a href="../getting-started/create-vm-cli-yaml.html" class="xref page">Creating a VM from YAML</a></p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_why_live_migration_needs_shared_storage"><a class="anchor" href="#_why_live_migration_needs_shared_storage"></a>Why Live Migration Needs Shared Storage</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>A live migration runs both copies of the VM at once for a short period. The source <code>virt-launcher</code> pod keeps the guest running while memory pages are copied to a second <code>virt-launcher</code> pod on the target node. Only after the final state transfer does the source pod stop.</p>
+</div>
+<div class="paragraph">
+<p>Both pods mount the same PersistentVolumeClaim, on two different nodes:</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>          +--------------- migration window ---------------+
+          |                                                |
+  node-1  |  virt-launcher (source)                        |
+          |      |                                         |
+          |      |  memory pages over the pod network      |
+          |      +--------------------------------------&gt;  |
+          |                                                |
+  node-2  |                       virt-launcher (target)   |
+          |                              |                 |
+          +------------------------------|-----------------+
+                 |                        |
+                 v                        v
+            +------------------------------------+
+            |   PVC with ReadWriteMany access     |
+            |   attached to node-1 and node-2     |
+            +------------------------------------+</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>With an RWO volume, the target pod cannot attach the disk while the source node still holds it. The scheduler leaves the target pod <code>Pending</code> with a multi-attach error, or KubeVirt refuses the migration outright. KubeVirt reports the problem ahead of time on the VirtualMachineInstance as a <code>LiveMigratable</code> condition with status <code>False</code> and reason <code>DisksNotLiveMigratable</code>.</p>
+</div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+An RWO disk combined with <code>evictionStrategy: LiveMigrate</code> blocks node drains. The eviction cannot complete because the VM cannot move, and <code>oc adm drain</code> hangs until the VM is deleted or the strategy is changed.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_access_modes_explained"><a class="anchor" href="#_access_modes_explained"></a>Access Modes Explained</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The access mode on a PersistentVolumeClaim declares how many nodes may mount the volume and in which mode. The storage driver decides which modes it can honor.</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 16.6666%;">
+<col style="width: 16.6666%;">
+<col style="width: 50%;">
+<col style="width: 16.6668%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Access Mode</th>
+<th class="tableblock halign-left valign-top">Short</th>
+<th class="tableblock halign-left valign-top">Meaning</th>
+<th class="tableblock halign-left valign-top">Live Migration</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>ReadWriteOnce</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">RWO</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Mounted read-write by a single node. Several pods on that one node may share it.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">No</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>ReadOnlyMany</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ROX</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Mounted read-only by many nodes. A VM root disk needs write access, so this mode is only useful for shared read-only data disks.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Not for writable disks</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>ReadWriteMany</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">RWX</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Mounted read-write by many nodes at the same time. This is the mode live migration needs.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Yes</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>ReadWriteOncePod</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">RWOP</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Mounted read-write by exactly one pod in the whole cluster. Stricter than RWO.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">No</p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>RWOP is worth calling out because it looks like a safer version of RWO and is sometimes applied by policy. It is enforced by the CSI driver and the scheduler, so the second <code>virt-launcher</code> pod is rejected even on the same node. A VM on an RWOP disk cannot live-migrate and cannot use volume hotplug sharing. Use RWOP only for VMs that are allowed to stop for maintenance.</p>
+</div>
+<div class="sect2">
+<h3 id="_access_mode_and_volume_mode_together"><a class="anchor" href="#_access_mode_and_volume_mode_together"></a>Access Mode and Volume Mode Together</h3>
+<div class="paragraph">
+<p>Access mode and volume mode are separate fields, and the combination decides whether a backend works well for VM disks.</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 20%;">
+<col style="width: 20%;">
+<col style="width: 60%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Access Mode</th>
+<th class="tableblock halign-left valign-top">Volume Mode</th>
+<th class="tableblock halign-left valign-top">Behavior for VM disks</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">RWX</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Block</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The raw block device is attached to several nodes. The preferred combination for VM disks. QEMU writes directly to the device with no filesystem in the path.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">RWX</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Filesystem</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">A shared filesystem (CephFS, NFS) holds the disk image as a file. Works for live migration, but adds filesystem and network overhead on every I/O.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">RWO</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Block</code> or <code>Filesystem</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Single node only. Fine for VMs that never need to move.</p></td>
+</tr>
+</tbody>
+</table>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+RWX with <code>Block</code> volume mode does not mean two guests write to the disk at once. Only the migrating VM uses the device, and QEMU hands off write access during the switchover. The shared attachment exists so the handoff is possible.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_storage_backends_and_rwx_support"><a class="anchor" href="#_storage_backends_and_rwx_support"></a>Storage Backends and RWX Support</h2>
+<div class="sectionbody">
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 28.5714%;">
+<col style="width: 14.2857%;">
+<col style="width: 28.5714%;">
+<col style="width: 28.5715%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Backend</th>
+<th class="tableblock halign-left valign-top">RWX</th>
+<th class="tableblock halign-left valign-top">Volume mode for RWX</th>
+<th class="tableblock halign-left valign-top">Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ODF / Ceph RBD</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Yes</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Block</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The <code>ocs-storagecluster-ceph-rbd-virtualization</code> StorageClass is tuned for VM disks. Best performing RWX option for OpenShift Virtualization.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ODF / CephFS</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Yes</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Filesystem</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Shared filesystem. Use it for shared data disks rather than high-I/O VM root disks.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">NFS</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Yes</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Filesystem</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Works with the NFS CSI driver or a vendor NFS array. Performance depends on the server and the network.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Vendor CSI (NetApp Trident NAS, Portworx, Dell, Pure Storage, IBM Storage Scale)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Usually</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Varies</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Check the driver&#8217;s reported capabilities before you plan around it.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Cloud file services (AWS EFS, Azure Files, Google Filestore)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Yes</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Filesystem</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Higher latency than block storage. Test with your workload before production use.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">LVM Storage (TopoLVM)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">No</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Not applicable</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Local volume group on one node. Single-node and local-disk clusters only.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">HostPath Provisioner</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">No</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Not applicable</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Directory on one node. Development and test clusters.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Local Storage Operator</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">No</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Not applicable</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Disks physically attached to one node.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Cloud block disks (AWS EBS, Azure Disk, Google PD)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">No</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Not applicable</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Attach to one instance at a time. Use the matching file service for RWX.</p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>This table is the reason dev clusters behave differently from production clusters. A single-node cluster on LVM Storage or HostPath works for everything except migration, and the gap only appears when the same manifests are deployed on a multi-node cluster where node drains are expected to keep VMs running.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_1_inspect_storage_classes_and_storage_profiles"><a class="anchor" href="#_step_1_inspect_storage_classes_and_storage_profiles"></a>Step 1: Inspect Storage Classes and Storage Profiles</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Create a namespace for the tutorial:</p>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/live-migration-storage/namespace-migration-storage.yaml" class="xref attachment">Download namespace-migration-storage.yaml</a></p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc create namespace migration-storage</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>List the StorageClasses in the cluster:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get storageclass</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Expected output</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">NAME                 PROVISIONER   RECLAIMPOLICY   VOLUMEBINDINGMODE      ALLOWVOLUMEEXPANSION   AGE
+lvms-vg1 (default)   topolvm.io    Delete          WaitForFirstConsumer   true                   104d</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>A StorageClass does not state its access modes. The Containerized Data Importer (CDI) creates a StorageProfile for each StorageClass and records the modes it knows the provisioner supports in <code>status.claimPropertySets</code>:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get storageprofile -o custom-columns='NAME:.metadata.name,PROVISIONER:.status.provisioner,ACCESS_MODES:.status.claimPropertySets[*].accessModes,VOLUME_MODE:.status.claimPropertySets[*].volumeMode'</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Expected output</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">NAME       PROVISIONER   ACCESS_MODES                      VOLUME_MODE
+lvms-vg1   topolvm.io    [ReadWriteOnce],[ReadWriteOnce]   Block,Filesystem</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Read the output as an ordered list of preferences. The first entry is what CDI picks when a DataVolume asks for storage without naming an access mode. In this cluster the only option is RWO, so every VM disk provisioned here is pinned to one node.</p>
+</div>
+<div class="paragraph">
+<p>On a cluster with ODF installed, the same command lists an RWX entry for the Ceph RBD profile:</p>
+</div>
+<div class="listingblock">
+<div class="title">Expected output on a cluster with ODF</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">NAME                                           PROVISIONER                             ACCESS_MODES                      VOLUME_MODE
+ocs-storagecluster-ceph-rbd                    openshift-storage.rbd.csi.ceph.com      [ReadWriteMany],[ReadWriteOnce]   Block,Block
+ocs-storagecluster-ceph-rbd-virtualization     openshift-storage.rbd.csi.ceph.com      [ReadWriteMany],[ReadWriteOnce]   Block,Block
+ocs-storagecluster-cephfs                      openshift-storage.cephfs.csi.ceph.com   [ReadWriteMany],[ReadWriteOnce]   Filesystem,Filesystem</code></pre>
+</div>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-important" title="Important"></i>
+</td>
+<td class="content">
+A StorageProfile with an empty <code>status.claimPropertySets</code> means CDI does not recognize the provisioner. DataVolumes against that StorageClass stay pending until you fill in <code>spec.claimPropertySets</code> yourself. Step 5 shows how.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_2_probe_a_storage_class_for_rwx_support"><a class="anchor" href="#_step_2_probe_a_storage_class_for_rwx_support"></a>Step 2: Probe a Storage Class for RWX Support</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The StorageProfile reflects what CDI knows, not what the driver does. Confirm the driver&#8217;s answer by asking it for an RWX volume.</p>
+</div>
+<div class="paragraph">
+<p>Create a small RWX claim:</p>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/live-migration-storage/pvc-rwx-probe.yaml" class="xref attachment">Download pvc-rwx-probe.yaml</a></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: rwx-probe
+  namespace: migration-storage
+spec:
+  accessModes:
+    - ReadWriteMany
+  volumeMode: Block
+  resources:
+    requests:
+      storage: 1Gi
+  storageClassName: lvms-vg1</code></pre>
+</div>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f pvc-rwx-probe.yaml</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Check the claim:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get pvc rwx-probe -n migration-storage</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If the StorageClass uses <code>volumeBindingMode: WaitForFirstConsumer</code>, the claim stays <code>Pending</code> with the message <code>waiting for first consumer to be created before binding</code>. Nothing has been provisioned yet, so the driver has not been asked anything. Create a consumer pod to force provisioning:</p>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/live-migration-storage/pod-rwx-probe.yaml" class="xref attachment">Download pod-rwx-probe.yaml</a></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: v1
+kind: Pod
+metadata:
+  name: rwx-probe
+  namespace: migration-storage
+spec:
+  containers:
+    - name: probe
+      image: registry.access.redhat.com/ubi9/ubi-minimal:latest
+      command:
+        - sleep
+        - "600"
+      volumeDevices:
+        - name: probe-disk
+          devicePath: /dev/xvda
+  volumes:
+    - name: probe-disk
+      persistentVolumeClaim:
+        claimName: rwx-probe</code></pre>
+</div>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f pod-rwx-probe.yaml</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Read the events on the claim:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get events -n migration-storage --field-selector involvedObject.name=rwx-probe --sort-by=.lastTimestamp</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Expected output on a backend without RWX support</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">LAST SEEN   TYPE      REASON               OBJECT                          MESSAGE
+13s         Normal    Provisioning         persistentvolumeclaim/rwx-probe   External provisioner is provisioning volume for claim "migration-storage/rwx-probe"
+13s         Warning   ProvisioningFailed   persistentvolumeclaim/rwx-probe   failed to provision volume with StorageClass "lvms-vg1": rpc error: code = InvalidArgument desc = unsupported access mode: MULTI_NODE_MULTI_WRITER</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><code>MULTI_NODE_MULTI_WRITER</code> is the CSI name for RWX. A driver that rejects it cannot support live migration, whatever the StorageClass is named.</p>
+</div>
+<div class="paragraph">
+<p>On an RWX-capable backend the claim reaches <code>Bound</code> and the pod starts. Delete the probe resources once you have the answer:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc delete pod rwx-probe -n migration-storage --ignore-not-found
+oc delete pvc rwx-probe -n migration-storage --ignore-not-found</code></pre>
+</div>
+</div>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+You can also read the driver&#8217;s declared capabilities from <code>CSIDriver</code> and <code>CSIStorageCapacity</code> objects, but the provisioning probe is the answer that counts.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_3_check_whether_a_running_vm_can_migrate"><a class="anchor" href="#_step_3_check_whether_a_running_vm_can_migrate"></a>Step 3: Check Whether a Running VM Can Migrate</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Deploy a VM whose disk uses the default StorageClass and RWO access mode:</p>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/live-migration-storage/vm-rwo-disk.yaml" class="xref attachment">Download vm-rwo-disk.yaml</a></p>
+</div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+The cloud-init password below is for demonstration only. Use SSH keys in any real environment.
+</td>
+</tr>
+</table>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: rwo-storage-vm
+  namespace: migration-storage
+spec:
+  runStrategy: Always
+  dataVolumeTemplates:
+    - apiVersion: cdi.kubevirt.io/v1beta1
+      kind: DataVolume
+      metadata:
+        name: rwo-storage-vm-disk
+      spec:
+        sourceRef:
+          kind: DataSource
+          name: fedora
+          namespace: openshift-virtualization-os-images
+        storage:
+          accessModes:
+            - ReadWriteOnce
+          resources:
+            requests:
+              storage: 30Gi
+  template:
+    metadata:
+      labels:
+        kubevirt.io/domain: rwo-storage-vm
+    spec:
+      domain:
+        cpu:
+          cores: 1
+        memory:
+          guest: 2Gi
+        devices:
+          disks:
+            - name: rootdisk
+              disk:
+                bus: virtio
+            - name: cloudinitdisk
+              disk:
+                bus: virtio
+      volumes:
+        - name: rootdisk
+          dataVolume:
+            name: rwo-storage-vm-disk
+        - name: cloudinitdisk
+          cloudInitNoCloud:
+            userData: |-
+              #cloud-config
+              user: fedora
+              password: fedora123
+              chpasswd:
+                expire: false
+              ssh_pwauth: true</code></pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+The manifest defines no network. OpenShift Virtualization attaches the default pod network with masquerade binding when no interface is declared.
+</td>
+</tr>
+</table>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f vm-rwo-disk.yaml</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Wait for the VM to start:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc wait vm rwo-storage-vm -n migration-storage --for=condition=Ready --timeout=10m</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Read the conditions on the VirtualMachineInstance:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vmi rwo-storage-vm -n migration-storage \
+  -o jsonpath='{range .status.conditions[*]}{.type}{"\t"}{.status}{"\t"}{.reason}{"\n"}{end}'</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Expected output</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">Ready	True
+LiveMigratable	False	DisksNotLiveMigratable</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The full message names the volume that is holding the VM back:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vmi rwo-storage-vm -n migration-storage \
+  -o jsonpath='{.status.conditions[?(@.type=="LiveMigratable")].message}{"\n"}'</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Expected output</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">cannot migrate VMI: PVC rwo-storage-vm-disk is not shared, live migration requires that all PVCs must be shared (using ReadWriteMany access mode)</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Confirm the access mode of the underlying claim:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get pvc rwo-storage-vm-disk -n migration-storage \
+  -o jsonpath='{.spec.accessModes}{"\t"}{.spec.volumeMode}{"\n"}'</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Make this check part of your VM review process. <code>LiveMigratable=False</code> on a VM that is supposed to survive node maintenance is a configuration bug, and it is visible the moment the VM starts rather than months later during an upgrade.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_4_configure_a_storageclass_for_rwx"><a class="anchor" href="#_step_4_configure_a_storageclass_for_rwx"></a>Step 4: Configure a StorageClass for RWX</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>How you get RWX depends on the backend. Two common paths follow.</p>
+</div>
+<div class="sect2">
+<h3 id="_odf_with_ceph_rbd"><a class="anchor" href="#_odf_with_ceph_rbd"></a>ODF with Ceph RBD</h3>
+<div class="paragraph">
+<p>ODF creates its StorageClasses when the <code>StorageCluster</code> is deployed, so there is nothing to author by hand. Use <code>ocs-storagecluster-ceph-rbd-virtualization</code> for VM disks and request RWX with <code>Block</code> volume mode in the DataVolume. Installation is covered in <a href="odf-ceph-storage.html" class="xref page">Deploying OpenShift Data Foundation with Ceph Storage</a>.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_nfs_with_the_csi_driver"><a class="anchor" href="#_nfs_with_the_csi_driver"></a>NFS with the CSI Driver</h3>
+<div class="paragraph">
+<p>With an existing NFS server, the NFS CSI driver provides RWX volumes without a distributed storage layer. Install the driver first, then create a StorageClass that points at the export:</p>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/live-migration-storage/storageclass-nfs-rwx.yaml" class="xref attachment">Download storageclass-nfs-rwx.yaml</a></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: nfs-rwx
+provisioner: nfs.csi.k8s.io
+parameters:
+  server: nfs.example.com
+  share: /exports/vm-disks
+reclaimPolicy: Delete
+volumeBindingMode: Immediate
+allowVolumeExpansion: true
+mountOptions:
+  - nfsvers=4.1
+  - hard
+  - noatime</code></pre>
+</div>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f storageclass-nfs-rwx.yaml</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Replace <code>server</code> and <code>share</code> with your own values. The <code>hard</code> mount option matters for VM disks: with <code>soft</code>, an NFS timeout returns an I/O error to the guest and can corrupt the filesystem inside the VM.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+NFS volumes are always <code>Filesystem</code> volume mode. The disk image is a file on the share, so guest I/O carries both the NFS protocol and the host filesystem overhead. It is a reasonable choice for general purpose VMs and a poor one for databases.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_5_make_rwx_the_default_in_the_storageprofile"><a class="anchor" href="#_step_5_make_rwx_the_default_in_the_storageprofile"></a>Step 5: Make RWX the Default in the StorageProfile</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>A DataVolume that lists <code>accessModes</code> explicitly gets what it asks for. A DataVolume that only requests size inherits the first entry in the StorageProfile&#8217;s claim property set. Templates, the web console wizard, and golden image imports all take that path, so setting the profile correctly is what makes RWX the cluster default rather than a per-VM decision.</p>
+</div>
+<div class="paragraph">
+<p>Inspect the current profile:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get storageprofile nfs-rwx -o jsonpath='{.status.claimPropertySets}{"\n"}'</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If the output is empty, CDI does not recognize the provisioner and you must declare the property sets. Order the entries so RWX comes first:</p>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/live-migration-storage/storageprofile-rwx.yaml" class="xref attachment">Download storageprofile-rwx.yaml</a></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: cdi.kubevirt.io/v1beta1
+kind: StorageProfile
+metadata:
+  name: nfs-rwx
+spec:
+  claimPropertySets:
+    - accessModes:
+        - ReadWriteMany
+      volumeMode: Filesystem
+    - accessModes:
+        - ReadWriteOnce
+      volumeMode: Filesystem
+  cloneStrategy: copy</code></pre>
+</div>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f storageprofile-rwx.yaml</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>For a recognized provisioner such as Ceph RBD, patch the existing profile instead of replacing it:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc patch storageprofile ocs-storagecluster-ceph-rbd-virtualization --type merge \
+  -p '{"spec":{"claimPropertySets":[{"accessModes":["ReadWriteMany"],"volumeMode":"Block"}]}}'</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Verify that the spec now overrides the detected defaults:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get storageprofile ocs-storagecluster-ceph-rbd-virtualization \
+  -o jsonpath='{.status.claimPropertySets}{"\n"}'</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Values in <code>spec.claimPropertySets</code> take precedence over the values CDI detects. To go back to the detected defaults, remove the spec field:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc patch storageprofile ocs-storagecluster-ceph-rbd-virtualization --type json \
+  -p '[{"op": "remove", "path": "/spec/claimPropertySets"}]'</code></pre>
+</div>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-important" title="Important"></i>
+</td>
+<td class="content">
+Do not declare RWX in a StorageProfile for a driver that cannot provide it. CDI will create claims that never bind, and every VM built from a template will fail to provision.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_6_deploy_a_vm_on_rwx_storage_and_migrate_it"><a class="anchor" href="#_step_6_deploy_a_vm_on_rwx_storage_and_migrate_it"></a>Step 6: Deploy a VM on RWX Storage and Migrate It</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>With an RWX StorageClass available, deploy a VM that asks for it explicitly:</p>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/live-migration-storage/vm-rwx-disk.yaml" class="xref attachment">Download vm-rwx-disk.yaml</a></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: rwx-storage-vm
+  namespace: migration-storage
+spec:
+  runStrategy: Always
+  dataVolumeTemplates:
+    - apiVersion: cdi.kubevirt.io/v1beta1
+      kind: DataVolume
+      metadata:
+        name: rwx-storage-vm-disk
+      spec:
+        sourceRef:
+          kind: DataSource
+          name: fedora
+          namespace: openshift-virtualization-os-images
+        storage:
+          accessModes:
+            - ReadWriteMany
+          volumeMode: Block
+          storageClassName: ocs-storagecluster-ceph-rbd-virtualization
+          resources:
+            requests:
+              storage: 30Gi
+  template:
+    metadata:
+      labels:
+        kubevirt.io/domain: rwx-storage-vm
+    spec:
+      evictionStrategy: LiveMigrate
+      domain:
+        cpu:
+          cores: 1
+        memory:
+          guest: 2Gi
+        devices:
+          disks:
+            - name: rootdisk
+              disk:
+                bus: virtio
+            - name: cloudinitdisk
+              disk:
+                bus: virtio
+      volumes:
+        - name: rootdisk
+          dataVolume:
+            name: rwx-storage-vm-disk
+        - name: cloudinitdisk
+          cloudInitNoCloud:
+            userData: |-
+              #cloud-config
+              user: fedora
+              password: fedora123
+              chpasswd:
+                expire: false
+              ssh_pwauth: true</code></pre>
+</div>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f vm-rwx-disk.yaml
+oc wait vm rwx-storage-vm -n migration-storage --for=condition=Ready --timeout=10m</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Check the condition that blocked the previous VM:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vmi rwx-storage-vm -n migration-storage \
+  -o jsonpath='{.status.conditions[?(@.type=="LiveMigratable")].status}{"\n"}'</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Expected output</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">True</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Note the current node, then start the migration:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vmi rwx-storage-vm -n migration-storage -o wide
+virtctl migrate rwx-storage-vm -n migration-storage</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>While the migration runs, both <code>virt-launcher</code> pods exist and both have the same claim mounted:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get pods -n migration-storage -o wide -l kubevirt.io=virt-launcher</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Expected output during migration</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">NAME                                 READY   STATUS    RESTARTS   AGE   NODE
+virt-launcher-rwx-storage-vm-7xk2p   1/1     Running   0          4m    worker-1
+virt-launcher-rwx-storage-vm-q4jvb   0/1     Running   0          12s   worker-2</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This is the shared attachment the access mode exists for. Confirm it from the claim&#8217;s side:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc describe pvc rwx-storage-vm-disk -n migration-storage | grep -A3 "Used By"</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Watch the migration object to completion:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vmim -n migration-storage -w</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Expected output</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">NAME                      PHASE       VMI
+kubevirt-migrate-vm-xxxxx   Succeeded   rwx-storage-vm</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Confirm the VM is on a different node and the disk was not copied:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vmi rwx-storage-vm -n migration-storage -o wide
+oc get vmi rwx-storage-vm -n migration-storage \
+  -o jsonpath='{.status.migrationState.mode}{"\n"}'</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>An empty or <code>PreCopy</code> mode with no block migration means only memory crossed the network. The disk stayed where it was.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_7_move_an_existing_rwo_vm_to_rwx_storage"><a class="anchor" href="#_step_7_move_an_existing_rwo_vm_to_rwx_storage"></a>Step 7: Move an Existing RWO VM to RWX Storage</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Existing VMs on RWO disks can be moved to RWX storage in two ways.</p>
+</div>
+<div class="sect2">
+<h3 id="_online_storage_migration"><a class="anchor" href="#_online_storage_migration"></a>Online Storage Migration</h3>
+<div class="paragraph">
+<p>OpenShift Virtualization copies a running VM&#8217;s disk to a new volume and performs a live migration at the end. The VM keeps running throughout. The feature needs <code>vmRolloutStrategy: LiveUpdate</code>, which is the default:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get kubevirt kubevirt-kubevirt-hyperconverged -n openshift-cnv \
+  -o jsonpath='{.spec.configuration.vmRolloutStrategy}{"\n"}'</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Expected output</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">LiveUpdate</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Edit the VM so that it points at a new, blank destination volume on the RWX StorageClass, and set <code>updateVolumesStrategy: Migration</code>:</p>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/live-migration-storage/vm-storage-migration.yaml" class="xref attachment">Download vm-storage-migration.yaml</a></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: rwo-storage-vm
+  namespace: migration-storage
+spec:
+  runStrategy: Always
+  updateVolumesStrategy: Migration
+  dataVolumeTemplates:
+    - apiVersion: cdi.kubevirt.io/v1beta1
+      kind: DataVolume
+      metadata:
+        name: rwo-storage-vm-disk-rwx
+      spec:
+        source:
+          blank:
+            {}
+        storage:
+          accessModes:
+            - ReadWriteMany
+          volumeMode: Block
+          storageClassName: ocs-storagecluster-ceph-rbd-virtualization
+          resources:
+            requests:
+              storage: 30Gi
+  template:
+    metadata:
+      labels:
+        kubevirt.io/domain: rwo-storage-vm
+    spec:
+      evictionStrategy: LiveMigrate
+      domain:
+        cpu:
+          cores: 1
+        memory:
+          guest: 2Gi
+        devices:
+          disks:
+            - name: rootdisk
+              disk:
+                bus: virtio
+            - name: cloudinitdisk
+              disk:
+                bus: virtio
+      volumes:
+        - name: rootdisk
+          dataVolume:
+            name: rwo-storage-vm-disk-rwx
+        - name: cloudinitdisk
+          cloudInitNoCloud:
+            userData: |-
+              #cloud-config
+              user: fedora
+              password: fedora123
+              chpasswd:
+                expire: false
+              ssh_pwauth: true</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The destination uses a blank source because KubeVirt, not CDI, copies the data. The destination must be at least as large as the source.</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f vm-storage-migration.yaml</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Track the copy through the migration object that KubeVirt creates:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vmim -n migration-storage -l kubevirt.io/volume-update-in-progress=rwo-storage-vm -w</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>When the phase reaches <code>Succeeded</code>, the VM runs on the new volume. Check the claim it uses now:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vmi rwo-storage-vm -n migration-storage \
+  -o jsonpath='{.status.volumeStatus[*].persistentVolumeClaimInfo.claimName}{"\n"}'</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Storage migration has limits worth knowing before you plan a fleet-wide move:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>The target node must be a different node, so the cluster needs spare capacity.</p>
+</li>
+<li>
+<p>Shareable disks, <code>virtiofs</code> filesystems, and LUN disks cannot be migrated.</p>
+</li>
+<li>
+<p>Hotplugged volumes are not migrated with the VM.</p>
+</li>
+<li>
+<p>If the VMI disappears mid-copy, the VM gets a <code>ManualRecoveryRequired</code> condition and will not restart until you resolve which volume set is current.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_offline_copy"><a class="anchor" href="#_offline_copy"></a>Offline Copy</h3>
+<div class="paragraph">
+<p>When storage migration is unavailable or the VM can tolerate downtime, copy the disk while the VM is stopped. This path works on any cluster and has no node count requirement.</p>
+</div>
+<div class="paragraph">
+<p>Stop the VM:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">virtctl stop rwo-storage-vm -n migration-storage</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Clone the existing claim into a new RWX DataVolume:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f - &lt;&lt;'EOF'
+apiVersion: cdi.kubevirt.io/v1beta1
+kind: DataVolume
+metadata:
+  name: rwo-storage-vm-disk-rwx
+  namespace: migration-storage
+spec:
+  source:
+    pvc:
+      name: rwo-storage-vm-disk
+      namespace: migration-storage
+  storage:
+    accessModes:
+      - ReadWriteMany
+    volumeMode: Block
+    storageClassName: ocs-storagecluster-ceph-rbd-virtualization
+    resources:
+      requests:
+        storage: 30Gi
+EOF</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Wait for the clone:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc wait dv rwo-storage-vm-disk-rwx -n migration-storage --for=condition=Ready --timeout=30m</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Point the VM at the new volume and start it:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc patch vm rwo-storage-vm -n migration-storage --type json -p \
+  '[{"op": "replace", "path": "/spec/template/spec/volumes/0/dataVolume/name", "value": "rwo-storage-vm-disk-rwx"}]'
+virtctl start rwo-storage-vm -n migration-storage</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Remove the <code>dataVolumeTemplates</code> entry for the old disk afterwards, or the VM controller recreates it.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_performance_impact_of_shared_storage"><a class="anchor" href="#_performance_impact_of_shared_storage"></a>Performance Impact of Shared Storage</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Shared storage changes both the steady-state I/O path and the migration itself.</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 40%;">
+<col style="width: 60%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Effect</th>
+<th class="tableblock halign-left valign-top">What to expect</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Steady-state guest I/O</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">RWX block storage over the network (Ceph RBD) costs latency compared with a local disk. RWX filesystem storage (NFS, CephFS) costs more. Budget for it when sizing database VMs.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Migration network load</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">With RWX, only guest memory crosses the network. A 16 GiB VM transfers roughly its memory size plus whatever the guest dirties during the copy.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Migration without RWX</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">KubeVirt falls back to copying the disk alongside memory where it can. A 100 GiB disk takes far longer than 16 GiB of memory and competes with the storage network.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Storage migration</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Copies the whole disk once. Treat it as a bulk data operation and schedule it outside peak hours.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Write-heavy guests</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Pages dirtied faster than they are copied stall the migration. <code>allowAutoConverge</code> throttles guest vCPUs so the copy can finish.</p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>Cluster-wide migration bandwidth and parallelism are set in the <code>HyperConverged</code> resource under <code>spec.virtualization.liveMigrationConfig</code>. The fields and their defaults are described in <a href="../vm-lifecycle/live-migration.html" class="xref page">Live Migration of Virtual Machines Between Nodes</a>.</p>
+</div>
+<div class="paragraph">
+<p>On a converged cluster where ODF and VM workloads share the same network, cap <code>bandwidthPerMigration</code> so a batch of migrations during a node drain does not starve the storage replication traffic.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_troubleshooting"><a class="anchor" href="#_troubleshooting"></a>Troubleshooting</h2>
+<div class="sectionbody">
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 28.5714%;">
+<col style="width: 28.5714%;">
+<col style="width: 42.8572%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Symptom</th>
+<th class="tableblock halign-left valign-top">Cause</th>
+<th class="tableblock halign-left valign-top">Fix</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>LiveMigratable=False</code>, reason <code>DisksNotLiveMigratable</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">One or more VM disks are on RWO claims</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Move the disks to an RWX StorageClass as shown in Step 7</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">PVC stuck <code>Pending</code> with <code>unsupported access mode: MULTI_NODE_MULTI_WRITER</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The CSI driver cannot provide RWX</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Use an RWX-capable backend, or accept that these VMs cannot migrate</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Target <code>virt-launcher</code> pod <code>Pending</code> with <code>Multi-Attach error for volume</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The claim is RWO and already attached to the source node</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Same as above. The migration will not proceed until the volume is RWX</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">DataVolume provisioned RWO on an RWX-capable StorageClass</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The StorageProfile lists RWO first in <code>claimPropertySets</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Patch the StorageProfile as shown in Step 5, or set <code>accessModes</code> in the DataVolume</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>oc adm drain</code> hangs on a node running VMs</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">VMs have <code>evictionStrategy: LiveMigrate</code> but non-migratable disks</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Fix the storage, or stop the affected VMs before draining</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Migration starts but never completes</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The guest dirties memory faster than the copy rate</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Raise <code>bandwidthPerMigration</code> or enable <code>allowAutoConverge</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">VM has condition <code>ManualRecoveryRequired</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Storage migration was interrupted</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Check whether the copy finished, then keep either the source or the destination volume set before starting the VM</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_cleanup"><a class="anchor" href="#_cleanup"></a>Cleanup</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Remove the resources created in this tutorial:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc delete namespace migration-storage</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If you changed a StorageProfile and want the detected defaults back:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc patch storageprofile ocs-storagecluster-ceph-rbd-virtualization --type json \
+  -p '[{"op": "remove", "path": "/spec/claimPropertySets"}]'</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Delete the NFS StorageClass if you created it only for this tutorial:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc delete storageclass nfs-rwx --ignore-not-found</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_summary"><a class="anchor" href="#_summary"></a>Summary</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>In this tutorial you learned how to:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Explain why live migration needs RWX volumes and what happens without them</p>
+</li>
+<li>
+<p>Tell RWO, ROX, RWX, and RWOP apart and pick the right one for a VM disk</p>
+</li>
+<li>
+<p>Identify which storage backends can provide RWX and which cannot</p>
+</li>
+<li>
+<p>Read <code>status.claimPropertySets</code> on a StorageProfile to see a cluster&#8217;s real options</p>
+</li>
+<li>
+<p>Probe a StorageClass for RWX support with a throwaway claim and consumer pod</p>
+</li>
+<li>
+<p>Read the <code>LiveMigratable</code> condition to catch non-migratable VMs early</p>
+</li>
+<li>
+<p>Configure a StorageClass and StorageProfile so VM disks are provisioned RWX by default</p>
+</li>
+<li>
+<p>Move an existing RWO VM disk to RWX storage online or offline</p>
+</li>
+<li>
+<p>Account for the network and latency cost of shared storage</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_see_also"><a class="anchor" href="#_see_also"></a>See Also</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p><a href="../vm-lifecycle/live-migration.html" class="xref page">Live Migration of Virtual Machines Between Nodes</a></p>
+</li>
+<li>
+<p><a href="odf-ceph-storage.html" class="xref page">Deploying OpenShift Data Foundation with Ceph Storage</a></p>
+</li>
+<li>
+<p><a href="creating-managing-storage-class.html" class="xref page">Creating and Managing Storage Classes</a></p>
+</li>
+<li>
+<p><a href="disk-io-tuning.html" class="xref page">VM Disk I/O Performance Tuning</a></p>
+</li>
+<li>
+<p><a href="https://kubevirt.io/user-guide/storage/volume_migration/" target="_blank" rel="noopener">KubeVirt Volume Migration</a></p>
+</li>
+<li>
+<p><a href="https://kubernetes.io/docs/concepts/storage/persistent-volumes/#access-modes" target="_blank" rel="noopener">Kubernetes Persistent Volume Access Modes</a></p>
+</li>
+<li>
+<p><a href="https://docs.redhat.com/en/documentation/openshift_container_platform/4.22/html/virtualization/storage" target="_blank" rel="noopener">OpenShift Virtualization Storage Documentation</a></p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<nav class="pagination">
+  <span class="prev"><a href="storage-profiles.html">Storage Profiles</a></span>
+  <span class="next"><a href="../networking/index.html">Networking Configuration</a></span>
+</nav>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <img src="../../../_/img/rhl-logo-red.png" height="40px" alt="Red Hat"  href="https://redhat.com" >
+</footer><script id="site-script" src="../../../_/js/site.js" data-ui-root-path="../../../_"></script>
+<script async src="../../../_/js/vendor/highlight.js"></script>
+<script src="../../../_/js/vendor/lunr.js"></script>
+<script src="../../../_/js/search-ui.js" id="search-ui-script" data-site-root-path="../../.." data-snippet-length="100" data-stylesheet="../../../_/css/search.css"></script>
+<script async src="../../../search-index.js"></script>
+  </body>
+</html>
