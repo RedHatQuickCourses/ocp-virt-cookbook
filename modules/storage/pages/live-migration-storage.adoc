@@ -1,0 +1,961 @@
+= Storage Requirements and Configuration for VM Live Migration
+:navtitle: Live Migration Storage
+
+== Overview
+
+Live migration moves a running virtual machine from one node to another without shutting the guest down. The feature depends on storage: during the switchover, the source node and the target node both have the VM disk attached at the same time. A disk that only one node can mount blocks the migration before it starts.
+
+This tutorial covers the storage side of live migration. You will read the access modes that OpenShift exposes, find out which backends in your cluster can provide `ReadWriteMany` (RWX) volumes, confirm whether a running VM is migratable, configure a StorageClass and StorageProfile so new VM disks are provisioned RWX, and move an existing `ReadWriteOnce` (RWO) VM onto shared storage.
+
+== What You Will Learn
+
+* Why live migration requires RWX volumes
+* The difference between RWO, ROX, RWX, and RWOP access modes
+* Which storage backends can provide RWX and which cannot
+* How to probe a StorageClass for RWX support before you build on it
+* How to read the `LiveMigratable` condition on a VM
+* How to configure a StorageClass and StorageProfile for RWX VM disks
+* How to move an existing RWO VM disk to RWX storage
+* How shared storage affects migration time and cluster network load
+
+== Prerequisites
+
+* **OpenShift {ocp-min-version}+** with the OpenShift Virtualization operator installed
+* **Cluster admin access** to read StorageClasses and edit StorageProfiles
+* **`oc` CLI** and **`virtctl` CLI** installed and logged in
+* **Two or more schedulable nodes** for the migration steps
+* A storage backend that can provide RWX volumes (ODF, NFS, or a vendor CSI driver) for Step 4 onward
+* Familiarity with VM creation, covered in xref:getting-started:create-vm-cli-yaml.adoc[Creating a VM from YAML]
+
+== Why Live Migration Needs Shared Storage
+
+A live migration runs both copies of the VM at once for a short period. The source `virt-launcher` pod keeps the guest running while memory pages are copied to a second `virt-launcher` pod on the target node. Only after the final state transfer does the source pod stop.
+
+Both pods mount the same PersistentVolumeClaim, on two different nodes:
+
+....
+          +--------------- migration window ---------------+
+          |                                                |
+  node-1  |  virt-launcher (source)                        |
+          |      |                                         |
+          |      |  memory pages over the pod network      |
+          |      +-------------------------------------->  |
+          |                                                |
+  node-2  |                       virt-launcher (target)   |
+          |                              |                 |
+          +------------------------------|-----------------+
+                 |                        |
+                 v                        v
+            +------------------------------------+
+            |   PVC with ReadWriteMany access     |
+            |   attached to node-1 and node-2     |
+            +------------------------------------+
+....
+
+With an RWO volume, the target pod cannot attach the disk while the source node still holds it. The scheduler leaves the target pod `Pending` with a multi-attach error, or KubeVirt refuses the migration outright. KubeVirt reports the problem ahead of time on the VirtualMachineInstance as a `LiveMigratable` condition with status `False` and reason `DisksNotLiveMigratable`.
+
+WARNING: An RWO disk combined with `evictionStrategy: LiveMigrate` blocks node drains. The eviction cannot complete because the VM cannot move, and `oc adm drain` hangs until the VM is deleted or the strategy is changed.
+
+== Access Modes Explained
+
+The access mode on a PersistentVolumeClaim declares how many nodes may mount the volume and in which mode. The storage driver decides which modes it can honor.
+
+[cols="1,1,3,1",options="header"]
+|===
+|Access Mode |Short |Meaning |Live Migration
+
+|`ReadWriteOnce`
+|RWO
+|Mounted read-write by a single node. Several pods on that one node may share it.
+|No
+
+|`ReadOnlyMany`
+|ROX
+|Mounted read-only by many nodes. A VM root disk needs write access, so this mode is only useful for shared read-only data disks.
+|Not for writable disks
+
+|`ReadWriteMany`
+|RWX
+|Mounted read-write by many nodes at the same time. This is the mode live migration needs.
+|Yes
+
+|`ReadWriteOncePod`
+|RWOP
+|Mounted read-write by exactly one pod in the whole cluster. Stricter than RWO.
+|No
+|===
+
+RWOP is worth calling out because it looks like a safer version of RWO and is sometimes applied by policy. It is enforced by the CSI driver and the scheduler, so the second `virt-launcher` pod is rejected even on the same node. A VM on an RWOP disk cannot live-migrate and cannot use volume hotplug sharing. Use RWOP only for VMs that are allowed to stop for maintenance.
+
+=== Access Mode and Volume Mode Together
+
+Access mode and volume mode are separate fields, and the combination decides whether a backend works well for VM disks.
+
+[cols="1,1,3",options="header"]
+|===
+|Access Mode |Volume Mode |Behavior for VM disks
+
+|RWX
+|`Block`
+|The raw block device is attached to several nodes. The preferred combination for VM disks. QEMU writes directly to the device with no filesystem in the path.
+
+|RWX
+|`Filesystem`
+|A shared filesystem (CephFS, NFS) holds the disk image as a file. Works for live migration, but adds filesystem and network overhead on every I/O.
+
+|RWO
+|`Block` or `Filesystem`
+|Single node only. Fine for VMs that never need to move.
+|===
+
+NOTE: RWX with `Block` volume mode does not mean two guests write to the disk at once. Only the migrating VM uses the device, and QEMU hands off write access during the switchover. The shared attachment exists so the handoff is possible.
+
+== Storage Backends and RWX Support
+
+[cols="2,1,2,2",options="header"]
+|===
+|Backend |RWX |Volume mode for RWX |Notes
+
+|ODF / Ceph RBD
+|Yes
+|`Block`
+|The `ocs-storagecluster-ceph-rbd-virtualization` StorageClass is tuned for VM disks. Best performing RWX option for OpenShift Virtualization.
+
+|ODF / CephFS
+|Yes
+|`Filesystem`
+|Shared filesystem. Use it for shared data disks rather than high-I/O VM root disks.
+
+|NFS
+|Yes
+|`Filesystem`
+|Works with the NFS CSI driver or a vendor NFS array. Performance depends on the server and the network.
+
+|Vendor CSI (NetApp Trident NAS, Portworx, Dell, Pure Storage, IBM Storage Scale)
+|Usually
+|Varies
+|Check the driver's reported capabilities before you plan around it.
+
+|Cloud file services (AWS EFS, Azure Files, Google Filestore)
+|Yes
+|`Filesystem`
+|Higher latency than block storage. Test with your workload before production use.
+
+|LVM Storage (TopoLVM)
+|No
+|Not applicable
+|Local volume group on one node. Single-node and local-disk clusters only.
+
+|HostPath Provisioner
+|No
+|Not applicable
+|Directory on one node. Development and test clusters.
+
+|Local Storage Operator
+|No
+|Not applicable
+|Disks physically attached to one node.
+
+|Cloud block disks (AWS EBS, Azure Disk, Google PD)
+|No
+|Not applicable
+|Attach to one instance at a time. Use the matching file service for RWX.
+|===
+
+This table is the reason dev clusters behave differently from production clusters. A single-node cluster on LVM Storage or HostPath works for everything except migration, and the gap only appears when the same manifests are deployed on a multi-node cluster where node drains are expected to keep VMs running.
+
+== Step 1: Inspect Storage Classes and Storage Profiles
+
+Create a namespace for the tutorial:
+
+xref:attachment$live-migration-storage/namespace-migration-storage.yaml[Download namespace-migration-storage.yaml]
+
+[source,bash,role=execute]
+----
+oc create namespace migration-storage
+----
+
+List the StorageClasses in the cluster:
+
+[source,bash,role=execute]
+----
+oc get storageclass
+----
+
+.Expected output
+[source,text]
+----
+NAME                 PROVISIONER   RECLAIMPOLICY   VOLUMEBINDINGMODE      ALLOWVOLUMEEXPANSION   AGE
+lvms-vg1 (default)   topolvm.io    Delete          WaitForFirstConsumer   true                   104d
+----
+
+A StorageClass does not state its access modes. The Containerized Data Importer (CDI) creates a StorageProfile for each StorageClass and records the modes it knows the provisioner supports in `status.claimPropertySets`:
+
+[source,bash,role=execute]
+----
+oc get storageprofile -o custom-columns='NAME:.metadata.name,PROVISIONER:.status.provisioner,ACCESS_MODES:.status.claimPropertySets[*].accessModes,VOLUME_MODE:.status.claimPropertySets[*].volumeMode'
+----
+
+.Expected output
+[source,text]
+----
+NAME       PROVISIONER   ACCESS_MODES                      VOLUME_MODE
+lvms-vg1   topolvm.io    [ReadWriteOnce],[ReadWriteOnce]   Block,Filesystem
+----
+
+Read the output as an ordered list of preferences. The first entry is what CDI picks when a DataVolume asks for storage without naming an access mode. In this cluster the only option is RWO, so every VM disk provisioned here is pinned to one node.
+
+On a cluster with ODF installed, the same command lists an RWX entry for the Ceph RBD profile:
+
+.Expected output on a cluster with ODF
+[source,text]
+----
+NAME                                           PROVISIONER                             ACCESS_MODES                      VOLUME_MODE
+ocs-storagecluster-ceph-rbd                    openshift-storage.rbd.csi.ceph.com      [ReadWriteMany],[ReadWriteOnce]   Block,Block
+ocs-storagecluster-ceph-rbd-virtualization     openshift-storage.rbd.csi.ceph.com      [ReadWriteMany],[ReadWriteOnce]   Block,Block
+ocs-storagecluster-cephfs                      openshift-storage.cephfs.csi.ceph.com   [ReadWriteMany],[ReadWriteOnce]   Filesystem,Filesystem
+----
+
+IMPORTANT: A StorageProfile with an empty `status.claimPropertySets` means CDI does not recognize the provisioner. DataVolumes against that StorageClass stay pending until you fill in `spec.claimPropertySets` yourself. Step 5 shows how.
+
+== Step 2: Probe a Storage Class for RWX Support
+
+The StorageProfile reflects what CDI knows, not what the driver does. Confirm the driver's answer by asking it for an RWX volume.
+
+Create a small RWX claim:
+
+xref:attachment$live-migration-storage/pvc-rwx-probe.yaml[Download pvc-rwx-probe.yaml]
+
+[source,yaml]
+----
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: rwx-probe
+  namespace: migration-storage
+spec:
+  accessModes:
+    - ReadWriteMany
+  volumeMode: Block
+  resources:
+    requests:
+      storage: 1Gi
+  storageClassName: lvms-vg1
+----
+
+[source,bash,role=execute]
+----
+oc apply -f pvc-rwx-probe.yaml
+----
+
+Check the claim:
+
+[source,bash,role=execute]
+----
+oc get pvc rwx-probe -n migration-storage
+----
+
+If the StorageClass uses `volumeBindingMode: WaitForFirstConsumer`, the claim stays `Pending` with the message `waiting for first consumer to be created before binding`. Nothing has been provisioned yet, so the driver has not been asked anything. Create a consumer pod to force provisioning:
+
+xref:attachment$live-migration-storage/pod-rwx-probe.yaml[Download pod-rwx-probe.yaml]
+
+[source,yaml]
+----
+apiVersion: v1
+kind: Pod
+metadata:
+  name: rwx-probe
+  namespace: migration-storage
+spec:
+  containers:
+    - name: probe
+      image: registry.access.redhat.com/ubi9/ubi-minimal:latest
+      command:
+        - sleep
+        - "600"
+      volumeDevices:
+        - name: probe-disk
+          devicePath: /dev/xvda
+  volumes:
+    - name: probe-disk
+      persistentVolumeClaim:
+        claimName: rwx-probe
+----
+
+[source,bash,role=execute]
+----
+oc apply -f pod-rwx-probe.yaml
+----
+
+Read the events on the claim:
+
+[source,bash,role=execute]
+----
+oc get events -n migration-storage --field-selector involvedObject.name=rwx-probe --sort-by=.lastTimestamp
+----
+
+.Expected output on a backend without RWX support
+[source,text]
+----
+LAST SEEN   TYPE      REASON               OBJECT                          MESSAGE
+13s         Normal    Provisioning         persistentvolumeclaim/rwx-probe   External provisioner is provisioning volume for claim "migration-storage/rwx-probe"
+13s         Warning   ProvisioningFailed   persistentvolumeclaim/rwx-probe   failed to provision volume with StorageClass "lvms-vg1": rpc error: code = InvalidArgument desc = unsupported access mode: MULTI_NODE_MULTI_WRITER
+----
+
+`MULTI_NODE_MULTI_WRITER` is the CSI name for RWX. A driver that rejects it cannot support live migration, whatever the StorageClass is named.
+
+On an RWX-capable backend the claim reaches `Bound` and the pod starts. Delete the probe resources once you have the answer:
+
+[source,bash,role=execute]
+----
+oc delete pod rwx-probe -n migration-storage --ignore-not-found
+oc delete pvc rwx-probe -n migration-storage --ignore-not-found
+----
+
+TIP: You can also read the driver's declared capabilities from `CSIDriver` and `CSIStorageCapacity` objects, but the provisioning probe is the answer that counts.
+
+== Step 3: Check Whether a Running VM Can Migrate
+
+Deploy a VM whose disk uses the default StorageClass and RWO access mode:
+
+xref:attachment$live-migration-storage/vm-rwo-disk.yaml[Download vm-rwo-disk.yaml]
+
+WARNING: The cloud-init password below is for demonstration only. Use SSH keys in any real environment.
+
+[source,yaml]
+----
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: rwo-storage-vm
+  namespace: migration-storage
+spec:
+  runStrategy: Always
+  dataVolumeTemplates:
+    - apiVersion: cdi.kubevirt.io/v1beta1
+      kind: DataVolume
+      metadata:
+        name: rwo-storage-vm-disk
+      spec:
+        sourceRef:
+          kind: DataSource
+          name: fedora
+          namespace: openshift-virtualization-os-images
+        storage:
+          accessModes:
+            - ReadWriteOnce
+          resources:
+            requests:
+              storage: 30Gi
+  template:
+    metadata:
+      labels:
+        kubevirt.io/domain: rwo-storage-vm
+    spec:
+      domain:
+        cpu:
+          cores: 1
+        memory:
+          guest: 2Gi
+        devices:
+          disks:
+            - name: rootdisk
+              disk:
+                bus: virtio
+            - name: cloudinitdisk
+              disk:
+                bus: virtio
+      volumes:
+        - name: rootdisk
+          dataVolume:
+            name: rwo-storage-vm-disk
+        - name: cloudinitdisk
+          cloudInitNoCloud:
+            userData: |-
+              #cloud-config
+              user: fedora
+              password: fedora123
+              chpasswd:
+                expire: false
+              ssh_pwauth: true
+----
+
+NOTE: The manifest defines no network. OpenShift Virtualization attaches the default pod network with masquerade binding when no interface is declared.
+
+[source,bash,role=execute]
+----
+oc apply -f vm-rwo-disk.yaml
+----
+
+Wait for the VM to start:
+
+[source,bash,role=execute]
+----
+oc wait vm rwo-storage-vm -n migration-storage --for=condition=Ready --timeout=10m
+----
+
+Read the conditions on the VirtualMachineInstance:
+
+[source,bash,role=execute]
+----
+oc get vmi rwo-storage-vm -n migration-storage \
+  -o jsonpath='{range .status.conditions[*]}{.type}{"\t"}{.status}{"\t"}{.reason}{"\n"}{end}'
+----
+
+.Expected output
+[source,text]
+----
+Ready	True
+LiveMigratable	False	DisksNotLiveMigratable
+----
+
+The full message names the volume that is holding the VM back:
+
+[source,bash,role=execute]
+----
+oc get vmi rwo-storage-vm -n migration-storage \
+  -o jsonpath='{.status.conditions[?(@.type=="LiveMigratable")].message}{"\n"}'
+----
+
+.Expected output
+[source,text]
+----
+cannot migrate VMI: PVC rwo-storage-vm-disk is not shared, live migration requires that all PVCs must be shared (using ReadWriteMany access mode)
+----
+
+Confirm the access mode of the underlying claim:
+
+[source,bash,role=execute]
+----
+oc get pvc rwo-storage-vm-disk -n migration-storage \
+  -o jsonpath='{.spec.accessModes}{"\t"}{.spec.volumeMode}{"\n"}'
+----
+
+Make this check part of your VM review process. `LiveMigratable=False` on a VM that is supposed to survive node maintenance is a configuration bug, and it is visible the moment the VM starts rather than months later during an upgrade.
+
+== Step 4: Configure a StorageClass for RWX
+
+How you get RWX depends on the backend. Two common paths follow.
+
+=== ODF with Ceph RBD
+
+ODF creates its StorageClasses when the `StorageCluster` is deployed, so there is nothing to author by hand. Use `ocs-storagecluster-ceph-rbd-virtualization` for VM disks and request RWX with `Block` volume mode in the DataVolume. Installation is covered in xref:odf-ceph-storage.adoc[Deploying OpenShift Data Foundation with Ceph Storage].
+
+=== NFS with the CSI Driver
+
+With an existing NFS server, the NFS CSI driver provides RWX volumes without a distributed storage layer. Install the driver first, then create a StorageClass that points at the export:
+
+xref:attachment$live-migration-storage/storageclass-nfs-rwx.yaml[Download storageclass-nfs-rwx.yaml]
+
+[source,yaml]
+----
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: nfs-rwx
+provisioner: nfs.csi.k8s.io
+parameters:
+  server: nfs.example.com
+  share: /exports/vm-disks
+reclaimPolicy: Delete
+volumeBindingMode: Immediate
+allowVolumeExpansion: true
+mountOptions:
+  - nfsvers=4.1
+  - hard
+  - noatime
+----
+
+[source,bash,role=execute]
+----
+oc apply -f storageclass-nfs-rwx.yaml
+----
+
+Replace `server` and `share` with your own values. The `hard` mount option matters for VM disks: with `soft`, an NFS timeout returns an I/O error to the guest and can corrupt the filesystem inside the VM.
+
+NOTE: NFS volumes are always `Filesystem` volume mode. The disk image is a file on the share, so guest I/O carries both the NFS protocol and the host filesystem overhead. It is a reasonable choice for general purpose VMs and a poor one for databases.
+
+== Step 5: Make RWX the Default in the StorageProfile
+
+A DataVolume that lists `accessModes` explicitly gets what it asks for. A DataVolume that only requests size inherits the first entry in the StorageProfile's claim property set. Templates, the web console wizard, and golden image imports all take that path, so setting the profile correctly is what makes RWX the cluster default rather than a per-VM decision.
+
+Inspect the current profile:
+
+[source,bash,role=execute]
+----
+oc get storageprofile nfs-rwx -o jsonpath='{.status.claimPropertySets}{"\n"}'
+----
+
+If the output is empty, CDI does not recognize the provisioner and you must declare the property sets. Order the entries so RWX comes first:
+
+xref:attachment$live-migration-storage/storageprofile-rwx.yaml[Download storageprofile-rwx.yaml]
+
+[source,yaml]
+----
+apiVersion: cdi.kubevirt.io/v1beta1
+kind: StorageProfile
+metadata:
+  name: nfs-rwx
+spec:
+  claimPropertySets:
+    - accessModes:
+        - ReadWriteMany
+      volumeMode: Filesystem
+    - accessModes:
+        - ReadWriteOnce
+      volumeMode: Filesystem
+  cloneStrategy: copy
+----
+
+[source,bash,role=execute]
+----
+oc apply -f storageprofile-rwx.yaml
+----
+
+For a recognized provisioner such as Ceph RBD, patch the existing profile instead of replacing it:
+
+[source,bash,role=execute]
+----
+oc patch storageprofile ocs-storagecluster-ceph-rbd-virtualization --type merge \
+  -p '{"spec":{"claimPropertySets":[{"accessModes":["ReadWriteMany"],"volumeMode":"Block"}]}}'
+----
+
+Verify that the spec now overrides the detected defaults:
+
+[source,bash,role=execute]
+----
+oc get storageprofile ocs-storagecluster-ceph-rbd-virtualization \
+  -o jsonpath='{.status.claimPropertySets}{"\n"}'
+----
+
+Values in `spec.claimPropertySets` take precedence over the values CDI detects. To go back to the detected defaults, remove the spec field:
+
+[source,bash,role=execute]
+----
+oc patch storageprofile ocs-storagecluster-ceph-rbd-virtualization --type json \
+  -p '[{"op": "remove", "path": "/spec/claimPropertySets"}]'
+----
+
+IMPORTANT: Do not declare RWX in a StorageProfile for a driver that cannot provide it. CDI will create claims that never bind, and every VM built from a template will fail to provision.
+
+== Step 6: Deploy a VM on RWX Storage and Migrate It
+
+With an RWX StorageClass available, deploy a VM that asks for it explicitly:
+
+xref:attachment$live-migration-storage/vm-rwx-disk.yaml[Download vm-rwx-disk.yaml]
+
+[source,yaml]
+----
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: rwx-storage-vm
+  namespace: migration-storage
+spec:
+  runStrategy: Always
+  dataVolumeTemplates:
+    - apiVersion: cdi.kubevirt.io/v1beta1
+      kind: DataVolume
+      metadata:
+        name: rwx-storage-vm-disk
+      spec:
+        sourceRef:
+          kind: DataSource
+          name: fedora
+          namespace: openshift-virtualization-os-images
+        storage:
+          accessModes:
+            - ReadWriteMany
+          volumeMode: Block
+          storageClassName: ocs-storagecluster-ceph-rbd-virtualization
+          resources:
+            requests:
+              storage: 30Gi
+  template:
+    metadata:
+      labels:
+        kubevirt.io/domain: rwx-storage-vm
+    spec:
+      evictionStrategy: LiveMigrate
+      domain:
+        cpu:
+          cores: 1
+        memory:
+          guest: 2Gi
+        devices:
+          disks:
+            - name: rootdisk
+              disk:
+                bus: virtio
+            - name: cloudinitdisk
+              disk:
+                bus: virtio
+      volumes:
+        - name: rootdisk
+          dataVolume:
+            name: rwx-storage-vm-disk
+        - name: cloudinitdisk
+          cloudInitNoCloud:
+            userData: |-
+              #cloud-config
+              user: fedora
+              password: fedora123
+              chpasswd:
+                expire: false
+              ssh_pwauth: true
+----
+
+[source,bash,role=execute]
+----
+oc apply -f vm-rwx-disk.yaml
+oc wait vm rwx-storage-vm -n migration-storage --for=condition=Ready --timeout=10m
+----
+
+Check the condition that blocked the previous VM:
+
+[source,bash,role=execute]
+----
+oc get vmi rwx-storage-vm -n migration-storage \
+  -o jsonpath='{.status.conditions[?(@.type=="LiveMigratable")].status}{"\n"}'
+----
+
+.Expected output
+[source,text]
+----
+True
+----
+
+Note the current node, then start the migration:
+
+[source,bash,role=execute]
+----
+oc get vmi rwx-storage-vm -n migration-storage -o wide
+virtctl migrate rwx-storage-vm -n migration-storage
+----
+
+While the migration runs, both `virt-launcher` pods exist and both have the same claim mounted:
+
+[source,bash,role=execute]
+----
+oc get pods -n migration-storage -o wide -l kubevirt.io=virt-launcher
+----
+
+.Expected output during migration
+[source,text]
+----
+NAME                                 READY   STATUS    RESTARTS   AGE   NODE
+virt-launcher-rwx-storage-vm-7xk2p   1/1     Running   0          4m    worker-1
+virt-launcher-rwx-storage-vm-q4jvb   0/1     Running   0          12s   worker-2
+----
+
+This is the shared attachment the access mode exists for. Confirm it from the claim's side:
+
+[source,bash,role=execute]
+----
+oc describe pvc rwx-storage-vm-disk -n migration-storage | grep -A3 "Used By"
+----
+
+Watch the migration object to completion:
+
+[source,bash,role=execute]
+----
+oc get vmim -n migration-storage -w
+----
+
+.Expected output
+[source,text]
+----
+NAME                      PHASE       VMI
+kubevirt-migrate-vm-xxxxx   Succeeded   rwx-storage-vm
+----
+
+Confirm the VM is on a different node and the disk was not copied:
+
+[source,bash,role=execute]
+----
+oc get vmi rwx-storage-vm -n migration-storage -o wide
+oc get vmi rwx-storage-vm -n migration-storage \
+  -o jsonpath='{.status.migrationState.mode}{"\n"}'
+----
+
+An empty or `PreCopy` mode with no block migration means only memory crossed the network. The disk stayed where it was.
+
+== Step 7: Move an Existing RWO VM to RWX Storage
+
+Existing VMs on RWO disks can be moved to RWX storage in two ways.
+
+=== Online Storage Migration
+
+OpenShift Virtualization copies a running VM's disk to a new volume and performs a live migration at the end. The VM keeps running throughout. The feature needs `vmRolloutStrategy: LiveUpdate`, which is the default:
+
+[source,bash,role=execute]
+----
+oc get kubevirt kubevirt-kubevirt-hyperconverged -n openshift-cnv \
+  -o jsonpath='{.spec.configuration.vmRolloutStrategy}{"\n"}'
+----
+
+.Expected output
+[source,text]
+----
+LiveUpdate
+----
+
+Edit the VM so that it points at a new, blank destination volume on the RWX StorageClass, and set `updateVolumesStrategy: Migration`:
+
+xref:attachment$live-migration-storage/vm-storage-migration.yaml[Download vm-storage-migration.yaml]
+
+[source,yaml]
+----
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: rwo-storage-vm
+  namespace: migration-storage
+spec:
+  runStrategy: Always
+  updateVolumesStrategy: Migration
+  dataVolumeTemplates:
+    - apiVersion: cdi.kubevirt.io/v1beta1
+      kind: DataVolume
+      metadata:
+        name: rwo-storage-vm-disk-rwx
+      spec:
+        source:
+          blank:
+            {}
+        storage:
+          accessModes:
+            - ReadWriteMany
+          volumeMode: Block
+          storageClassName: ocs-storagecluster-ceph-rbd-virtualization
+          resources:
+            requests:
+              storage: 30Gi
+  template:
+    metadata:
+      labels:
+        kubevirt.io/domain: rwo-storage-vm
+    spec:
+      evictionStrategy: LiveMigrate
+      domain:
+        cpu:
+          cores: 1
+        memory:
+          guest: 2Gi
+        devices:
+          disks:
+            - name: rootdisk
+              disk:
+                bus: virtio
+            - name: cloudinitdisk
+              disk:
+                bus: virtio
+      volumes:
+        - name: rootdisk
+          dataVolume:
+            name: rwo-storage-vm-disk-rwx
+        - name: cloudinitdisk
+          cloudInitNoCloud:
+            userData: |-
+              #cloud-config
+              user: fedora
+              password: fedora123
+              chpasswd:
+                expire: false
+              ssh_pwauth: true
+----
+
+The destination uses a blank source because KubeVirt, not CDI, copies the data. The destination must be at least as large as the source.
+
+[source,bash,role=execute]
+----
+oc apply -f vm-storage-migration.yaml
+----
+
+Track the copy through the migration object that KubeVirt creates:
+
+[source,bash,role=execute]
+----
+oc get vmim -n migration-storage -l kubevirt.io/volume-update-in-progress=rwo-storage-vm -w
+----
+
+When the phase reaches `Succeeded`, the VM runs on the new volume. Check the claim it uses now:
+
+[source,bash,role=execute]
+----
+oc get vmi rwo-storage-vm -n migration-storage \
+  -o jsonpath='{.status.volumeStatus[*].persistentVolumeClaimInfo.claimName}{"\n"}'
+----
+
+Storage migration has limits worth knowing before you plan a fleet-wide move:
+
+* The target node must be a different node, so the cluster needs spare capacity.
+* Shareable disks, `virtiofs` filesystems, and LUN disks cannot be migrated.
+* Hotplugged volumes are not migrated with the VM.
+* If the VMI disappears mid-copy, the VM gets a `ManualRecoveryRequired` condition and will not restart until you resolve which volume set is current.
+
+=== Offline Copy
+
+When storage migration is unavailable or the VM can tolerate downtime, copy the disk while the VM is stopped. This path works on any cluster and has no node count requirement.
+
+Stop the VM:
+
+[source,bash,role=execute]
+----
+virtctl stop rwo-storage-vm -n migration-storage
+----
+
+Clone the existing claim into a new RWX DataVolume:
+
+[source,bash,role=execute]
+----
+oc apply -f - <<'EOF'
+apiVersion: cdi.kubevirt.io/v1beta1
+kind: DataVolume
+metadata:
+  name: rwo-storage-vm-disk-rwx
+  namespace: migration-storage
+spec:
+  source:
+    pvc:
+      name: rwo-storage-vm-disk
+      namespace: migration-storage
+  storage:
+    accessModes:
+      - ReadWriteMany
+    volumeMode: Block
+    storageClassName: ocs-storagecluster-ceph-rbd-virtualization
+    resources:
+      requests:
+        storage: 30Gi
+EOF
+----
+
+Wait for the clone:
+
+[source,bash,role=execute]
+----
+oc wait dv rwo-storage-vm-disk-rwx -n migration-storage --for=condition=Ready --timeout=30m
+----
+
+Point the VM at the new volume and start it:
+
+[source,bash,role=execute]
+----
+oc patch vm rwo-storage-vm -n migration-storage --type json -p \
+  '[{"op": "replace", "path": "/spec/template/spec/volumes/0/dataVolume/name", "value": "rwo-storage-vm-disk-rwx"}]'
+virtctl start rwo-storage-vm -n migration-storage
+----
+
+Remove the `dataVolumeTemplates` entry for the old disk afterwards, or the VM controller recreates it.
+
+== Performance Impact of Shared Storage
+
+Shared storage changes both the steady-state I/O path and the migration itself.
+
+[cols="2,3",options="header"]
+|===
+|Effect |What to expect
+
+|Steady-state guest I/O
+|RWX block storage over the network (Ceph RBD) costs latency compared with a local disk. RWX filesystem storage (NFS, CephFS) costs more. Budget for it when sizing database VMs.
+
+|Migration network load
+|With RWX, only guest memory crosses the network. A 16 GiB VM transfers roughly its memory size plus whatever the guest dirties during the copy.
+
+|Migration without RWX
+|KubeVirt falls back to copying the disk alongside memory where it can. A 100 GiB disk takes far longer than 16 GiB of memory and competes with the storage network.
+
+|Storage migration
+|Copies the whole disk once. Treat it as a bulk data operation and schedule it outside peak hours.
+
+|Write-heavy guests
+|Pages dirtied faster than they are copied stall the migration. `allowAutoConverge` throttles guest vCPUs so the copy can finish.
+|===
+
+Cluster-wide migration bandwidth and parallelism are set in the `HyperConverged` resource under `spec.virtualization.liveMigrationConfig`. The fields and their defaults are described in xref:vm-lifecycle:live-migration.adoc[Live Migration of Virtual Machines Between Nodes].
+
+On a converged cluster where ODF and VM workloads share the same network, cap `bandwidthPerMigration` so a batch of migrations during a node drain does not starve the storage replication traffic.
+
+== Troubleshooting
+
+[cols="2,2,3",options="header"]
+|===
+|Symptom |Cause |Fix
+
+|`LiveMigratable=False`, reason `DisksNotLiveMigratable`
+|One or more VM disks are on RWO claims
+|Move the disks to an RWX StorageClass as shown in Step 7
+
+|PVC stuck `Pending` with `unsupported access mode: MULTI_NODE_MULTI_WRITER`
+|The CSI driver cannot provide RWX
+|Use an RWX-capable backend, or accept that these VMs cannot migrate
+
+|Target `virt-launcher` pod `Pending` with `Multi-Attach error for volume`
+|The claim is RWO and already attached to the source node
+|Same as above. The migration will not proceed until the volume is RWX
+
+|DataVolume provisioned RWO on an RWX-capable StorageClass
+|The StorageProfile lists RWO first in `claimPropertySets`
+|Patch the StorageProfile as shown in Step 5, or set `accessModes` in the DataVolume
+
+|`oc adm drain` hangs on a node running VMs
+|VMs have `evictionStrategy: LiveMigrate` but non-migratable disks
+|Fix the storage, or stop the affected VMs before draining
+
+|Migration starts but never completes
+|The guest dirties memory faster than the copy rate
+|Raise `bandwidthPerMigration` or enable `allowAutoConverge`
+
+|VM has condition `ManualRecoveryRequired`
+|Storage migration was interrupted
+|Check whether the copy finished, then keep either the source or the destination volume set before starting the VM
+|===
+
+== Cleanup
+
+Remove the resources created in this tutorial:
+
+[source,bash,role=execute]
+----
+oc delete namespace migration-storage
+----
+
+If you changed a StorageProfile and want the detected defaults back:
+
+[source,bash,role=execute]
+----
+oc patch storageprofile ocs-storagecluster-ceph-rbd-virtualization --type json \
+  -p '[{"op": "remove", "path": "/spec/claimPropertySets"}]'
+----
+
+Delete the NFS StorageClass if you created it only for this tutorial:
+
+[source,bash,role=execute]
+----
+oc delete storageclass nfs-rwx --ignore-not-found
+----
+
+== Summary
+
+In this tutorial you learned how to:
+
+* Explain why live migration needs RWX volumes and what happens without them
+* Tell RWO, ROX, RWX, and RWOP apart and pick the right one for a VM disk
+* Identify which storage backends can provide RWX and which cannot
+* Read `status.claimPropertySets` on a StorageProfile to see a cluster's real options
+* Probe a StorageClass for RWX support with a throwaway claim and consumer pod
+* Read the `LiveMigratable` condition to catch non-migratable VMs early
+* Configure a StorageClass and StorageProfile so VM disks are provisioned RWX by default
+* Move an existing RWO VM disk to RWX storage online or offline
+* Account for the network and latency cost of shared storage
+
+== See Also
+
+* xref:vm-lifecycle:live-migration.adoc[Live Migration of Virtual Machines Between Nodes]
+* xref:odf-ceph-storage.adoc[Deploying OpenShift Data Foundation with Ceph Storage]
+* xref:creating-managing-storage-class.adoc[Creating and Managing Storage Classes]
+* xref:disk-io-tuning.adoc[VM Disk I/O Performance Tuning]
+* link:https://kubevirt.io/user-guide/storage/volume_migration/[KubeVirt Volume Migration,window=_blank]
+* link:https://kubernetes.io/docs/concepts/storage/persistent-volumes/#access-modes[Kubernetes Persistent Volume Access Modes,window=_blank]
+* link:https://docs.redhat.com/en/documentation/openshift_container_platform/{ocp-docs-version}/html/virtualization/storage[OpenShift Virtualization Storage Documentation,window=_blank]

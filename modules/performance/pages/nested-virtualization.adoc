@@ -1,0 +1,530 @@
+= Enabling Nested Virtualization for Development and Testing
+:navtitle: Nested Virtualization
+
+== Overview
+
+Nested virtualization lets a virtual machine run its own hypervisor, which in turn runs guest VMs. On OpenShift Virtualization, this requires the host node kernel to expose the hardware virtualization extension (`vmx` on Intel or `svm` on AMD) to the VM's vCPUs.
+
+Use nested virtualization when you need:
+
+* A VM that runs Kubernetes-in-VM or OpenShift-in-VM (dev/test cluster-in-a-VM workflows)
+* A lab environment that provisions its own VMs inside the lab VM
+* Software under test that requires `/dev/kvm` to be present
+* Training environments where each participant gets a self-contained VM that can itself run VMs
+
+WARNING: Nested virtualization is not supported for production workloads. The additional hypervisor layer adds CPU overhead, disables some host-level performance features, and is not covered by Red Hat support SLAs. Use it only for development and testing.
+
+== What You Will Learn
+
+* How to check whether cluster nodes already support nested virtualization
+* How to enable nested virtualization cluster-wide via a `MachineConfig` resource
+* How to label nodes for scheduling nested virtualization workloads
+* How to configure a VM to expose the virtualization extension to its guest OS
+* How to verify that the VM can use KVM
+* Performance characteristics and limitations of nested virtualization
+
+== Prerequisites
+
+* OpenShift {ocp-min-version}+ with OpenShift Virtualization operator installed
+* Cluster admin access (`system:admin` or equivalent)
+* `oc` and `virtctl` CLIs installed
+* Worker nodes running RHCOS (standard for OpenShift clusters)
+* The host nodes must have hardware virtualization extensions (`vmx` or `svm`) available — verify this in `cpuinfo` before proceeding
+
+== Understanding Nested Virtualization
+
+When a KVM guest runs with nested virtualization disabled, the host kernel intercepts all guest privileged instructions. The guest OS cannot run a nested hypervisor because it cannot access the VMX/SVM extensions.
+
+With nested virtualization enabled at the host kernel level, KVM exposes a virtualized version of the hardware extensions to the guest. The guest hypervisor then uses those extensions to run its own VMs through hardware acceleration rather than pure software emulation.
+
+Two changes are required:
+
+. *Host kernel*: enable the `nested` parameter for the `kvm_intel` or `kvm_amd` kernel module so the host KVM passes the extension through to VMs.
+. *VM spec*: expose the `vmx` or `svm` CPU feature flag to the guest vCPUs.
+
+== Step 1: Check Current Nested Virtualization Status on Nodes
+
+Before making changes, check whether the nodes already have nested virtualization active.
+
+Open a debug shell on a worker node:
+
+[source,bash,role=execute]
+----
+oc debug node/<node-name>
+----
+
+Inside the debug shell, read the `kvm_intel` parameter (replace with `kvm_amd` on AMD nodes):
+
+[source,bash,role=execute]
+----
+chroot /host cat /sys/module/kvm_intel/parameters/nested
+----
+
+.Expected output when nested virtualization is disabled
+[source,text]
+----
+N
+----
+
+.Expected output when nested virtualization is already enabled
+[source,text]
+----
+Y
+----
+
+Exit the debug shell:
+
+[source,bash,role=execute]
+----
+exit
+----
+
+To check whether the node's CPU is Intel or AMD, read `/proc/cpuinfo` and look for the vendor ID:
+
+[source,bash,role=execute]
+----
+oc debug node/<node-name> -- chroot /host grep -m1 'vendor_id' /proc/cpuinfo
+----
+
+.Expected output on Intel nodes
+[source,text]
+----
+vendor_id	: GenuineIntel
+----
+
+.Expected output on AMD nodes
+[source,text]
+----
+vendor_id	: AuthenticAMD
+----
+
+== Step 2: Enable Nested Virtualization via MachineConfig
+
+OpenShift cluster nodes run RHCOS and are configured through the Machine Config Operator. Apply a `MachineConfig` that writes a `modprobe.d` drop-in file setting the `nested` parameter for both `kvm_intel` and `kvm_amd`. Including both lines is safe — the kernel ignores a module option for a module that is not loaded.
+
+xref:attachment$nested-virtualization/machineconfig-kvm-nested.yaml[Download machineconfig-kvm-nested.yaml]
+
+[source,bash,role=execute]
+----
+oc apply -f - <<EOF
+apiVersion: machineconfiguration.openshift.io/v1
+kind: MachineConfig
+metadata:
+  labels:
+    machineconfiguration.openshift.io/role: worker
+  name: 99-worker-kvm-nested
+spec:
+  config:
+    ignition:
+      version: 3.4.0
+    storage:
+      files:
+      - path: /etc/modprobe.d/kvm.conf
+        mode: 0644
+        overwrite: true
+        contents:
+          source: data:text/plain;charset=utf-8;base64,b3B0aW9ucyBrdm1faW50ZWwgbmVzdGVkPTEKb3B0aW9ucyBrdm1fYW1kIG5lc3RlZD0xCg==
+EOF
+----
+
+The base64 value decodes to:
+
+[source,text]
+----
+options kvm_intel nested=1
+options kvm_amd nested=1
+----
+
+The Machine Config Operator applies the new file to every worker node and reboots each node sequentially. Monitor the rollout:
+
+[source,bash,role=execute]
+----
+oc get mcp worker -w
+----
+
+Wait until `UPDATED` is `True` and `UPDATING` is `False`:
+
+[source,text]
+----
+NAME     CONFIG                                             UPDATED   UPDATING   DEGRADED
+worker   rendered-worker-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx   True      False      False
+----
+
+NOTE: Each node reboots once during this rollout. On a cluster with multiple worker nodes, the Machine Config Operator drains and reboots one node at a time. Allow several minutes per node.
+
+== Step 3: Verify Nested Virtualization is Active
+
+After the `MachineConfigPool` reports `UPDATED: True`, confirm that the kernel module parameter took effect:
+
+[source,bash,role=execute]
+----
+oc debug node/<node-name> -- chroot /host cat /sys/module/kvm_intel/parameters/nested
+----
+
+.Expected output
+[source,text]
+----
+Y
+----
+
+On AMD nodes:
+
+[source,bash,role=execute]
+----
+oc debug node/<node-name> -- chroot /host cat /sys/module/kvm_amd/parameters/nested
+----
+
+.Expected output
+[source,text]
+----
+1
+----
+
+NOTE: Intel nodes report `Y`; AMD nodes report `1`. Both indicate the nested parameter is active.
+
+== Step 4: Label Nodes for Nested Virtualization Workloads
+
+Label the nodes that have nested virtualization enabled so that VMs requiring nested support can be scheduled there. This is important when only a subset of worker nodes runs on hardware that supports nested virtualization, such as in a mixed bare-metal/virtual infrastructure.
+
+[source,bash,role=execute]
+----
+oc label node <node-name> nested-virt=true
+----
+
+Verify the label:
+
+[source,bash,role=execute]
+----
+oc get nodes -L nested-virt
+----
+
+.Expected output
+[source,text]
+----
+NAME         STATUS   ROLES    AGE   VERSION   NESTED-VIRT
+worker-01    Ready    worker   10d   v1.34.5   true
+worker-02    Ready    worker   10d   v1.34.5
+----
+
+== Step 5: Deploy a VM with Nested Virtualization Enabled
+
+Nested virtualization requires the VM's vCPUs to expose the `vmx` (Intel) or `svm` (AMD) CPU feature to the guest OS. There are two ways to achieve this.
+
+=== Option A: Expose Specific CPU Feature Flags (Recommended)
+
+Use `cpu.features` to request the specific hardware extension. This is portable across Intel and AMD if you include both features with the `optional` policy, or `require` if you know the node type.
+
+xref:attachment$nested-virtualization/vm-nested-virt.yaml[Download vm-nested-virt.yaml]
+
+[source,bash,role=execute]
+----
+oc create namespace nested-virt-demo
+----
+
+[source,bash,role=execute]
+----
+oc apply -f - <<EOF
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: vm-nested
+  namespace: nested-virt-demo
+spec:
+  runStrategy: Always
+  template:
+    spec:
+      nodeSelector:
+        nested-virt: "true"
+      domain:
+        cpu:
+          sockets: 2
+          cores: 1
+          threads: 1
+          features:
+          - name: vmx
+            policy: optional
+          - name: svm
+            policy: optional
+        memory:
+          guest: 2Gi
+        resources:
+          requests:
+            memory: 2Gi
+        devices:
+          disks:
+          - name: rootdisk
+            disk:
+              bus: virtio
+          - name: cloudinitdisk
+            disk:
+              bus: virtio
+          interfaces:
+          - name: default
+            masquerade: {}
+      networks:
+      - name: default
+        pod: {}
+      volumes:
+      - name: rootdisk
+        containerDisk:
+          image: quay.io/containerdisks/fedora:latest
+      - name: cloudinitdisk
+        cloudInitNoCloud:
+          userData: |
+            #cloud-config
+            password: redhat
+            chpasswd:
+              expire: false
+            packages:
+            - qemu-kvm
+EOF
+----
+
+WARNING: The password above is for demonstration purposes only. Use SSH key authentication or a strong unique password in production environments.
+
+The `optional` policy schedules the VM even if the feature is not available on the node, but enables it when it is. Use `require` to reject scheduling on nodes without the feature.
+
+=== Option B: CPU Host-Passthrough
+
+The `host-passthrough` CPU model exposes all host CPU features, including `vmx` and `svm`, to the guest. This is the simplest approach but makes the VM less portable across nodes with different CPU generations.
+
+[source,yaml]
+----
+domain:
+  cpu:
+    model: host-passthrough
+    sockets: 2
+    cores: 1
+    threads: 1
+----
+
+NOTE: `host-passthrough` can prevent live migration if the destination node has a different CPU model. Use explicit feature flags (Option A) when live migration is required.
+
+Wait for the VM to reach `Running` status:
+
+[source,bash,role=execute]
+----
+oc get vm vm-nested -n nested-virt-demo -w
+----
+
+.Expected output
+[source,text]
+----
+NAME        AGE   STATUS    READY
+vm-nested   30s   Running   True
+----
+
+== Step 6: Verify Nested Virtualization Inside the VM
+
+Connect to the VM console:
+
+[source,bash,role=execute]
+----
+virtctl console vm-nested -n nested-virt-demo
+----
+
+Log in as `fedora` with password `redhat`. Verify that `/dev/kvm` is present inside the VM:
+
+[source,bash,role=execute]
+----
+ls -la /dev/kvm
+----
+
+.Expected output
+[source,text]
+----
+crw-rw-rw-. 1 root kvm 10, 232 Jan 15 12:00 /dev/kvm
+----
+
+If `/dev/kvm` is absent, the CPU feature was not passed through. Check the troubleshooting section.
+
+Confirm the virtualization extension is visible in the guest CPU flags:
+
+[source,bash,role=execute]
+----
+grep -m1 -o 'vmx\|svm' /proc/cpuinfo
+----
+
+.Expected output on Intel
+[source,text]
+----
+vmx
+----
+
+.Expected output on AMD
+[source,text]
+----
+svm
+----
+
+Verify that the KVM kernel module loaded:
+
+[source,bash,role=execute]
+----
+lsmod | grep kvm
+----
+
+.Expected output on Intel
+[source,text]
+----
+kvm_intel             442368  0
+kvm                  1327104  1 kvm_intel
+----
+
+Disconnect from the console by pressing `Ctrl+]`.
+
+== Performance Considerations
+
+Nested virtualization adds a hypervisor layer between the guest OS and the physical hardware. Expect the following compared to a non-nested VM:
+
+[cols="2,3",options="header"]
+|===
+|Area |Impact
+
+|CPU-intensive workloads
+|Roughly 5–15% additional CPU overhead for nested hypervisor operations. VM exit/entry latency increases.
+
+|Memory
+|The nested hypervisor's shadow page tables consume extra RAM. Allocate at least 512 MiB more than the nested VMs need.
+
+|I/O throughput
+|Disk and network I/O pass through two virtio layers. Throughput is adequate for development, not for benchmarking.
+
+|Live migration
+|When using `host-passthrough`, live migration is blocked. When using explicit feature flags, migration is possible but requires the destination node to also expose the same features.
+
+|CPU pinning
+|CPU pinning and dedicated CPU placement work normally on the outer VM. The inner nested hypervisor benefits from dedicated vCPUs on the outer VM.
+|===
+
+TIP: For CI pipelines that need to provision clusters inside VMs, allocate at least 4 vCPUs and 8 GiB of memory per nested-virt VM to give the inner cluster enough headroom.
+
+== Troubleshooting
+
+=== `/dev/kvm` is absent inside the VM
+
+*Cause*: The `vmx`/`svm` CPU feature was not passed through, or the host kernel module parameter is not enabled.
+
+Check the VM's VMI for the CPU features that were actually assigned:
+
+[source,bash,role=execute]
+----
+oc get vmi vm-nested -n nested-virt-demo -o jsonpath='{.spec.domain.cpu.features}' | python3 -m json.tool
+----
+
+Verify the host node's nested parameter again:
+
+[source,bash,role=execute]
+----
+oc get vmi vm-nested -n nested-virt-demo -o jsonpath='{.status.nodeName}'
+----
+
+[source,bash,role=execute]
+----
+oc debug node/<node-name> -- chroot /host cat /sys/module/kvm_intel/parameters/nested
+----
+
+If the parameter still shows `N`, the MachineConfig may not have been applied. Check the MachineConfigPool:
+
+[source,bash,role=execute]
+----
+oc get mcp worker
+----
+
+If `DEGRADED` is `True`, inspect the MCO operator logs:
+
+[source,bash,role=execute]
+----
+oc logs -n openshift-machine-config-operator -l k8s-app=machine-config-operator --tail=50
+----
+
+=== VM stuck in Pending state with `FailedScheduling`
+
+The `nodeSelector: nested-virt: "true"` prevents scheduling on unlabeled nodes. Confirm nodes have the label:
+
+[source,bash,role=execute]
+----
+oc get nodes -L nested-virt
+----
+
+Apply the label to at least one node if missing:
+
+[source,bash,role=execute]
+----
+oc label node <node-name> nested-virt=true
+----
+
+=== `vmx` or `svm` not visible in `/proc/cpuinfo` inside the VM
+
+If the host CPU supports the extension but the guest does not see it, the VM spec may be using `policy: require` while the node does not expose the feature. Switch to `policy: optional` and check whether the feature appears:
+
+[source,bash,role=execute]
+----
+oc edit vm vm-nested -n nested-virt-demo
+----
+
+Change `policy: require` to `policy: optional` for the `vmx` and `svm` entries, save, and restart the VM:
+
+[source,bash,role=execute]
+----
+virtctl restart vm-nested -n nested-virt-demo
+----
+
+=== MachineConfig rollout degraded
+
+If the MCO reports a degraded state after applying the `MachineConfig`, check whether the `ignition` version in the manifest matches what the RHCOS version on the node expects:
+
+[source,bash,role=execute]
+----
+oc get machineconfig 99-worker-kvm-nested -o jsonpath='{.spec.config.ignition.version}'
+----
+
+For OpenShift {ocp-min-version}+ running RHCOS 9.x, `3.4.0` is the correct version. If the nodes run an older RHCOS, change it to `3.2.0`.
+
+== Cleanup
+
+Delete the namespace and all its resources:
+
+[source,bash,role=execute]
+----
+oc delete namespace nested-virt-demo
+----
+
+Remove the node label:
+
+[source,bash,role=execute]
+----
+oc label node <node-name> nested-virt-
+----
+
+To revert nested virtualization on the nodes, delete the `MachineConfig`. This triggers another MCO rollout that removes the modprobe file and reboots each node:
+
+[source,bash,role=execute]
+----
+oc delete machineconfig 99-worker-kvm-nested
+----
+
+WARNING: Deleting the `MachineConfig` reboots each worker node sequentially. Any running VMs on affected nodes are evacuated or interrupted depending on their `evictionStrategy`. Plan maintenance accordingly.
+
+Monitor the revert rollout:
+
+[source,bash,role=execute]
+----
+oc get mcp worker -w
+----
+
+== Summary
+
+In this tutorial you learned how to:
+
+* Check whether worker nodes expose the KVM nested virtualization parameter
+* Enable nested virtualization cluster-wide using a `MachineConfig` that writes a `modprobe.d` configuration file
+* Label nodes to identify them as nested virtualization capable
+* Configure a VM with the `vmx`/`svm` CPU feature flags to pass through virtualization extensions to the guest OS
+* Verify that the guest OS can access `/dev/kvm` and use nested KVM
+* Understand the performance overhead of nested virtualization and when to choose `host-passthrough` vs explicit feature flags
+
+== See Also
+
+* xref:cpu-pinning.adoc[Dedicated CPU Placement] — assigning physical CPUs to VMs for predictable performance
+* xref:realtime-vms.adoc[Real-Time VMs] — reducing latency for latency-sensitive workloads

@@ -1,0 +1,155 @@
+# HyperConverged CR — annotated reference example
+# Apply individual sections using:
+#   oc patch hco kubevirt-hyperconverged -n openshift-cnv --type=merge --patch-file=<patch>.yaml
+#
+# Do NOT apply this file directly; it is a reference showing available fields.
+# Setting a field to null in a merge patch removes it and restores the operator default.
+apiVersion: hco.kubevirt.io/v1beta1
+kind: HyperConverged
+metadata:
+  name: kubevirt-hyperconverged
+  namespace: openshift-cnv
+spec:
+  # --- Feature Gates ---
+  # Enable or disable optional OpenShift Virtualization capabilities.
+  # Omitting a field means the operator uses its compiled-in default.
+  featureGates:
+    # Expose host CPU/memory metrics to VMs via a virtio serial device.
+    downwardMetrics: false
+    # Align emulator threads to dedicated CPU cores to reduce vCPU contention.
+    alignCPUs: false
+    # Enable volume hotplug through the VM spec (declarative API).
+    declarativeHotplugVolumes: true
+    # Enable live migration that does not require a central migration controller.
+    decentralizedLiveMigration: true
+    # Deploy KubeSecondaryDNS for secondary VM network DNS resolution.
+    deployKubeSecondaryDNS: false
+    # Enable changed-block tracking (CBT) for incremental VM backup.
+    incrementalBackup: false
+
+  # --- Live Migration ---
+  # Cluster-wide defaults for VM live migration behavior.
+  liveMigrationConfig:
+    # Maximum simultaneous migrations across the entire cluster.
+    parallelMigrationsPerCluster: 5
+    # Maximum outbound migrations from a single node at one time.
+    parallelOutboundMigrationsPerNode: 1
+    # Per-migration bandwidth limit. Omit or set to "" for no cap.
+    # Example: "2048Mi" for 2 GiB/s cap.
+    # bandwidthPerMigration: "2048Mi"
+    # Seconds allowed per GiB of VM memory before migration is considered failed.
+    completionTimeoutPerGiB: 800
+    # Seconds allowed without measurable progress before migration is cancelled.
+    progressTimeout: 150
+    # Allow the hypervisor to throttle the VM to guarantee migration completion.
+    allowAutoConverge: false
+    # Switch to post-copy mode when pre-copy cannot complete within the timeout.
+    # WARNING: If the destination node fails during post-copy, the VM is lost.
+    allowPostCopy: false
+    # Multus NetworkAttachmentDefinition name for a dedicated migration network.
+    # network: migration-net
+
+  # --- CDI / Storage Settings ---
+  # Override the storage class used for CDI scratch PVCs.
+  # scratchSpaceStorageClass: ocs-storagecluster-ceph-rbd
+
+  # Filesystem overhead reserved when importing images to filesystem-backed PVCs.
+  filesystemOverhead:
+    # Global default overhead fraction (5.5%).
+    global: "0.055"
+    # Per-storage-class overrides.
+    storageClass:
+      # Block-mode storage: no filesystem overhead needed.
+      # local-storage: "0"
+      # Dense RBD volumes may need slightly more headroom.
+      # ocs-storagecluster-ceph-rbd: "0.1"
+
+  # Registries trusted for container image imports without TLS verification.
+  storageImport:
+    insecureRegistries: []
+
+  # Resource limits/requests for CDI workload pods (importer, cloner, uploader).
+  resourceRequirements:
+    storageWorkloads:
+      requests:
+        memory: "64Mi"
+      limits:
+        memory: "128Mi"
+
+  # --- SSP / Common Boot Images ---
+  # Enable automatic import and update of predefined OS golden images.
+  enableCommonBootImageImport: true
+  # Namespace where SSP deploys common VM templates.
+  commonTemplatesNamespace: openshift
+
+  # Custom DataImportCron entries to maintain additional golden images.
+  # dataImportCronTemplates:
+  #   - metadata:
+  #       name: custom-rhel9-latest
+  #     spec:
+  #       schedule: "0 */12 * * *"
+  #       managedDataSource: rhel9-custom
+  #       template:
+  #         spec:
+  #           source:
+  #             registry:
+  #               url: "docker://registry.example.com/rhel9-minimal:latest"
+  #           storage:
+  #             resources:
+  #               requests:
+  #                 storage: 30Gi
+
+  # --- Mediated Devices (vGPU) ---
+  # Configure automatic mdev instance creation on nodes with supported hardware.
+  # mediatedDevicesConfiguration:
+  #   # Default mdev type applied to all eligible GPU nodes.
+  #   mediatedDeviceTypes:
+  #     - nvidia-222
+  #   # Per-node overrides for nodes with different GPU models.
+  #   nodeMediatedDeviceTypes:
+  #     - nodeSelector:
+  #         kubernetes.io/hostname: worker-gpu-02
+  #       mediatedDeviceTypes:
+  #         - nvidia-233
+
+  # Register mdev types as Kubernetes device resources for VM scheduling.
+  # permittedHostDevices:
+  #   mediatedDevices:
+  #     - mdevNameSelector: "GRID V100-4Q"
+  #       resourceName: "nvidia.com/GRID_V100-4Q"
+  #   pciHostDevices:
+  #     - pciDeviceSelector: "10DE:1DB6"
+  #       resourceName: "nvidia.com/TU102GL_Tesla_V100"
+
+  # --- Certificate Rotation ---
+  # server.duration must be less than ca.duration.
+  # Both duration and renewBefore must be >= 10 minutes.
+  certConfig:
+    ca:
+      duration: "48h0m0s"
+      renewBefore: "24h0m0s"
+    server:
+      duration: "24h0m0s"
+      renewBefore: "12h0m0s"
+
+  # --- TLS Security Profile ---
+  # Type options: Old (TLS 1.0+), Intermediate (TLS 1.2+), Modern (TLS 1.3+), Custom
+  tlsSecurityProfile:
+    type: Intermediate
+
+  # --- VM Eviction Strategy ---
+  # Cluster-wide default. Can be overridden per VM.
+  # Options: None, LiveMigrate, LiveMigrateIfPossible, External
+  evictionStrategy: LiveMigrate
+
+  # --- VM Options ---
+  virtualMachineOptions:
+    # Disable balloon driver free-page reporting to the host.
+    disableFreePageReporting: false
+    # Stop streaming VM serial console output to cluster logs.
+    disableSerialConsoleLog: false
+
+  # --- Higher Workload Density ---
+  # Memory overcommit ratio. 100 = no overcommit; 150 = 1.5x overcommit.
+  higherWorkloadDensity:
+    memoryOvercommitPercentage: 100
