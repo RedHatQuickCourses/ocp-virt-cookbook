@@ -2,7 +2,7 @@ apiVersion: kubevirt.io/v1
 kind: VirtualMachine
 metadata:
   name: dual-attached
-  namespace: tenant-a
+  namespace: udn-primary-vm-guests
   labels:
     app: dual-attached
 spec:
@@ -50,7 +50,7 @@ spec:
         pod: {}
       - name: vlan100
         multus:
-          networkName: tenant-a/vlan100-net
+          networkName: udn-primary-vm-guests/vlan100-net
       volumes:
       - name: rootdisk
         dataVolume:
@@ -62,7 +62,7 @@ spec:
             ethernets:
               eth1:
                 addresses:
-                - 192.168.100.51/24
+                - 192.168.200.51/24
           userData: |
             #cloud-config
             user: fedora

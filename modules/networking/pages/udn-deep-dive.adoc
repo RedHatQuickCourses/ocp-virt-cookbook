@@ -9,11 +9,13 @@ This deep dive explains how a UDN is built inside OVN-Kubernetes, how the topolo
 
 For a short, single-scenario walkthrough, start with xref:udn-primary-networks.adoc[Configuring Layer 2 Primary Networks with UDNs] and come back here when you need the details.
 
+This page has a core walkthrough and optional deep dives. Steps 1–4 create and verify a primary UDN VM. Steps 5–8 cover localnet, network policy, shared CUDNs, and dual-stack networking. The architecture, operations, and decision sections are reference material; skip any optional scenario you do not need.
+
 == What You Will Learn
 
 * How OVN-Kubernetes turns a `UserDefinedNetwork` resource into OVN logical switches, routers, and ports
 * When Layer 2 beats Layer 3 for VM workloads, and what each topology costs you
-* How the three IPAM modes behave, and how an `IPAMClaim` keeps a VM address stable across restart and live migration
+* How the two IPAM modes and the persistent lifecycle behave, and how an `IPAMClaim` keeps a VM address stable across restart and live migration
 * How to combine a primary UDN with a localnet secondary interface on the same VM
 * How network policy and the `k8s.ovn.org/open-default-ports` annotation work on a primary UDN
 * How to share one network across namespaces with `ClusterUserDefinedNetwork`
@@ -23,10 +25,10 @@ For a short, single-scenario walkthrough, start with xref:udn-primary-networks.a
 == Prerequisites
 
 * OpenShift {ocp-min-version}+ cluster with the OpenShift Virtualization operator installed
+* A `StorageClass` that supports `ReadWriteMany` if you want to run the live migration section. Both VM examples request it; if your class only supports `ReadWriteOnce`, change each DataVolumeTemplate access mode and skip live migration.
 * OVN-Kubernetes as the cluster network plugin
 * Cluster admin access, required for `ClusterUserDefinedNetwork` and for inspecting the OVN databases
 * CLI tools installed and logged in: `oc`, `virtctl`
-* A `StorageClass` that supports `ReadWriteMany` if you want to run the live migration section
 * A Fedora boot source available as a `DataSource` in the `openshift-virtualization-os-images` namespace
 * Familiarity with the basics in xref:udn-primary-networks.adoc[Configuring Layer 2 Primary Networks with UDNs]
 
@@ -40,8 +42,8 @@ oc api-resources | grep -E 'userdefinednetworks|clusteruserdefinednetworks|ipamc
 .Expected output
 [source,text]
 ----
-userdefinednetworks                 udn          k8s.ovn.org/v1                true    UserDefinedNetwork
-clusteruserdefinednetworks          cudn         k8s.ovn.org/v1                false   ClusterUserDefinedNetwork
+userdefinednetworks                              k8s.ovn.org/v1                true    UserDefinedNetwork
+clusteruserdefinednetworks                       k8s.ovn.org/v1                false   ClusterUserDefinedNetwork
 ipamclaims                                       k8s.cni.cncf.io/v1alpha1      true    IPAMClaim
 ----
 
@@ -57,33 +59,33 @@ The result for a Layer 2 primary UDN looks like this:
 
 [source,text]
 ----
-  Namespace: tenant-a   (label k8s.ovn.org/primary-user-defined-network: "")
-  UserDefinedNetwork: tenant-net   topology: Layer2   role: Primary
+  Namespace: udn-primary-vm-guests   (label k8s.ovn.org/primary-user-defined-network: "")
+  UserDefinedNetwork: udn-primary   topology: Layer2   role: Primary
 
           node-1                                    node-2
   +----------------------------+            +----------------------------+
-  | virt-launcher pod          |            | virt-launcher pod          |
+  |     virt-launcher pod      |            |     virt-launcher pod      |
   |   eth0      default net    |            |   eth0      default net    |
-  |   ovn-udn1  tenant-net     |            |   ovn-udn1  tenant-net     |
+  |   ovn-udn1  udn-primary    |            |   ovn-udn1  udn-primary    |
   +------+---------------+-----+            +-----+---------------+------+
          |               |                        |               |
-     br-int (OVS)        |                    br-int (OVS)        |
+     br-int (OVS)        |                        |          br-int (OVS)
          |               |                        |               |
          |       +-------+------------------------+-------+       |
-         |       |  tenant-net logical switch             |       |
+         |       |  udn-primary logical switch             |       |
          |       |  one switch shared by every node       |       |
          |       +-------------------+--------------------+       |
          |                           |                            |
-         |              tenant-net cluster router                 |
+         |              udn-primary cluster router                 |
          |                           |                            |
          |         +-----------------+-----------------+          |
          |         |                                   |          |
-         |   gateway router node-1            gateway router node-2
+         |   gateway router node-1          gateway router node-2 |
          |         |                                   |          |
-         |     node-1 VRF + br-ex                node-2 VRF + br-ex
+         |     node-1 VRF + br-ex             node-2 VRF + br-ex  |
          |                                                        |
-  default cluster network (eth0) stays attached for kubelet probes,
-  health checks, and access to the Kubernetes API
+      default cluster network (eth0) stays attached for kubelet probes,
+      health checks, and access to the Kubernetes API
 ----
 
 Three points in that picture drive most UDN behavior with VMs.
@@ -96,13 +98,13 @@ Egress leaves through a per-node gateway router. North-south traffic for a UDN d
 
 === Inspecting the Generated NetworkAttachmentDefinition
 
-NOTE: The commands in this section and the next one inspect the `tenant-a` namespace and the `tenant-net` network that you build in Step 1. Run them after that step, or substitute names from a UDN you already have.
+NOTE: The commands in this section and the next one inspect the `udn-primary-vm-guests` namespace and the `udn-primary` network that you build in Step 1. Run them after that step, or substitute names from a UDN you already have.
 
 After you create a UDN, read the NAD it produced. The `netAttachDefName` and `name` fields inside the CNI configuration are the network identity that every other component references:
 
 [source,bash,role=execute]
 ----
-oc get net-attach-def -n tenant-a -o jsonpath='{.items[0].spec.config}' | python3 -m json.tool
+oc get net-attach-def -n udn-primary-vm-guests -o jsonpath='{.items[0].spec.config}' | python3 -m json.tool
 ----
 
 .Expected output
@@ -111,13 +113,12 @@ oc get net-attach-def -n tenant-a -o jsonpath='{.items[0].spec.config}' | python
 {
     "cniVersion": "1.0.0",
     "type": "ovn-k8s-cni-overlay",
-    "name": "tenant-a.tenant-net",
-    "netAttachDefName": "tenant-a/tenant-net",
+    "name": "udn-primary-vm-guests.udn-primary",
+    "netAttachDefName": "udn-primary-vm-guests/udn-primary",
     "topology": "layer2",
     "role": "primary",
-    "subnets": "10.210.0.0/16",
-    "allowPersistentIPs": true,
-    "mtu": 1400
+    "subnets": "192.168.100.0/24",
+    "allowPersistentIPs": true
 }
 ----
 
@@ -129,16 +130,30 @@ OpenShift runs OVN in interconnect mode, so each node holds its own northbound d
 
 [source,bash,role=execute]
 ----
-NODE=$(oc get pods -n tenant-a -l kubevirt.io=virt-launcher -o jsonpath='{.items[0].spec.nodeName}')
+NODE=$(oc get pods -n udn-primary-vm-guests -l kubevirt.io=virt-launcher -o jsonpath='{.items[0].spec.nodeName}')
 OVNPOD=$(oc get pods -n openshift-ovn-kubernetes -l app=ovnkube-node \
   --field-selector "spec.nodeName=$NODE" -o jsonpath='{.items[0].metadata.name}')
+printf 'Node: %s\nOVN pod: %s\n' "$NODE" "$OVNPOD"
+----
+
+.Example output
+[source,text]
+----
+Node: worker-1
+OVN pod: ovnkube-node-rpqns
+----
+
+Keep using the same terminal for the `oc exec` commands below so `$OVNPOD` stays defined:
+
+[source,bash,role=execute]
+----
 oc exec -n openshift-ovn-kubernetes "$OVNPOD" -c nbdb -- ovn-nbctl ls-list
 ----
 
 .Expected output
 [source,text]
 ----
-8c0a4a20-...    (tenant-a.tenant-net_ovn_layer2_switch)
+8c0a4a20-...    (udn-primary-vm-guests.udn-primary_ovn_layer2_switch)
 3f9e1b77-...    (ext_node-1)
 a1d2c3e4-...    (node-1)
 ----
@@ -148,7 +163,7 @@ The switch holding the VM port is the one named after the network. List its port
 [source,bash,role=execute]
 ----
 oc exec -n openshift-ovn-kubernetes "$OVNPOD" -c nbdb -- \
-  ovn-nbctl --columns=name,addresses,external_ids list Logical_Switch_Port | grep -A2 tenant-a
+  ovn-nbctl --columns=name,addresses,external_ids list Logical_Switch_Port | grep -A2 udn-primary-vm-guests
 ----
 
 Logical switch ports for VMs carry the `k8s.ovn.org/vm` and `k8s.ovn.org/namespace` external IDs. OVN-Kubernetes uses those IDs to find and reprogram a VM's network state during live migration, which is why a VM port is tracked differently from a plain pod port.
@@ -172,16 +187,16 @@ Layer 3 creates one segment per node, each with its own subnet carved out of the
 |Parent CIDR split into per-node `hostSubnet` blocks
 
 |Address on reschedule
-|Same address on any node
-|New address when the workload moves to another node
+|The subnet is available on every node; retaining an address requires persistent IPAM
+|The address can change when the workload moves to another node
 
 |Persistent IPAM
 |Supported through `ipam.lifecycle: Persistent`
 |Not available; `spec.layer3` has no `ipam` field
 
 |Live migration
-|Address and MAC follow the VM
-|Address changes unless the guest reconfigures
+|Address remains stable with persistent IPAM
+|Address can change; persistent IPAM is unavailable
 
 |East-west path
 |Switched inside the logical switch
@@ -196,7 +211,7 @@ Layer 3 creates one segment per node, each with its own subnet carved out of the
 |Horizontally scaled pod workloads that treat addresses as disposable
 |===
 
-For VM workloads, Layer 2 is the default choice. A VM that live migrates to another node keeps its address only if the address is valid everywhere, and only a Layer 2 topology makes that true. Choose Layer 3 for a UDN when the namespace runs pod workloads that scale across many nodes and you want per-node subnet aggregation.
+For VMs whose address is part of their identity, use Layer 2 with persistent IPAM. Layer 2 makes the address valid on every node; the persistent lifecycle preserves the assignment across restart and migration. Choose Layer 3 when workloads can tolerate node-specific addresses and benefit from per-node subnet aggregation.
 
 == IPAM Modes
 
@@ -206,13 +221,14 @@ The `ipam` section exists only in `spec.layer2` (and in the localnet configurati
 
 `mode: Disabled` turns off address allocation. OVN assigns a MAC and provides Layer 2 connectivity; you configure addresses inside the guest. It is only valid for `role: Secondary`, and `subnets` must be omitted. Features that depend on knowing a workload's address stop working on that network: no Services, no network policy, and no IP port security. Use it when an external DHCP server or a static addressing plan owns the address space.
 
-`lifecycle: Persistent` is an addition to `mode: Enabled`, not an alternative. When set, the allocated addresses are recorded in an `IPAMClaim` object that outlives the pod. A new pod for the same VM reuses the claim instead of asking for a fresh address.
+`lifecycle: Persistent` is an addition to `mode: Enabled`, not an alternative. When set, the allocated addresses are recorded in an `IPAMClaim` object that outlives the pod. A new pod for the same VM reuses the claim instead of asking for a fresh address. The Layer 2 configuration looks like this:
 
 [source,yaml]
 ----
-ipam:
-  mode: Enabled
-  lifecycle: Persistent
+layer2:
+  ipam:
+    mode: Enabled
+    lifecycle: Persistent
 ----
 
 The claim lifecycle for a VM runs like this:
@@ -253,7 +269,7 @@ layer2:
     lifecycle: Persistent
 ----
 
-`infrastructureSubnets` confines the addresses OVN-Kubernetes consumes for gateways and per-node management ports. `reservedSubnets` excludes ranges from automatic allocation while still allowing explicit requests. `defaultGatewayIPs` pins the gateway address instead of letting the platform pick one. Without these fields, OVN-Kubernetes takes infrastructure addresses from the front of the subnet and you have no stable guarantee about which ones.
+`infrastructureSubnets` identifies CIDRs for OVN-Kubernetes infrastructure, such as gateways and per-node management ports. If those CIDRs do not provide enough addresses, OVN-Kubernetes can fall back to the configured `subnets`, so size the infrastructure ranges for the network. `reservedSubnets` excludes ranges from automatic allocation while still allowing explicit requests. `defaultGatewayIPs` pins the gateway address instead of letting the platform choose one. Without these fields, OVN-Kubernetes chooses infrastructure addresses from the configured subnets, and their exact assignment is managed by the platform.
 
 NOTE: These fields are immutable in practice because the subnet layout is immutable. Set them when you create the network.
 
@@ -294,7 +310,9 @@ A common production layout uses both: a primary UDN for cluster-managed traffic 
 
 Create the namespace with the primary UDN label. A `ValidatingAdmissionPolicy` rejects adding or removing this label later, so a namespace that already exists without it cannot be converted.
 
-xref:attachment$udn-deep-dive/namespace-tenant-a.yaml[Download namespace-tenant-a.yaml]
+NOTE: This namespace and UDN use the same names and subnet as xref:udn-primary-networks.adoc[Configuring Layer 2 Primary Networks with UDNs]. If you completed that tutorial, keep the existing resources only if `oc get userdefinednetwork udn-primary -n udn-primary-vm-guests -o jsonpath='{.spec.layer2.ipam.lifecycle}'` returns `Persistent`. UDN configuration is immutable; if the field is missing, use a new namespace and UDN for the persistence steps.
+
+xref:attachment$udn-deep-dive/udn-primary-namespace.yaml[Download udn-primary-namespace.yaml]
 
 [source,bash,role=execute]
 ----
@@ -302,15 +320,15 @@ oc apply -f - <<EOF
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: tenant-a
+  name: udn-primary-vm-guests
   labels:
     k8s.ovn.org/primary-user-defined-network: ""
 EOF
 ----
 
-Create the network. This example sets the MTU explicitly and uses persistent IPAM so VM addresses survive restarts.
+Create the network. Persistent IPAM keeps VM addresses stable across restarts and live migration.
 
-xref:attachment$udn-deep-dive/udn-tenant-net.yaml[Download udn-tenant-net.yaml]
+xref:attachment$udn-deep-dive/udn-primary.yaml[Download udn-primary.yaml]
 
 [source,bash,role=execute]
 ----
@@ -318,28 +336,28 @@ oc apply -f - <<EOF
 apiVersion: k8s.ovn.org/v1
 kind: UserDefinedNetwork
 metadata:
-  name: tenant-net
-  namespace: tenant-a
+  name: udn-primary
+  namespace: udn-primary-vm-guests
 spec:
   topology: Layer2
   layer2:
     role: Primary
-    mtu: 1400
     subnets:
-    - "10.210.0.0/16"
+    - "192.168.100.0/24"
     ipam:
-      mode: Enabled
       lifecycle: Persistent
 EOF
 ----
 
-Wait for the network to report success:
+Wait for the NAD to be created and network allocation to succeed on synced nodes:
 
 [source,bash,role=execute]
 ----
-oc wait userdefinednetwork/tenant-net -n tenant-a \
+oc wait userdefinednetwork/udn-primary -n udn-primary-vm-guests \
   --for=condition=NetworkCreated=True --timeout=60s
-oc get userdefinednetwork tenant-net -n tenant-a -o jsonpath='{.status.conditions}' | python3 -m json.tool
+oc wait userdefinednetwork/udn-primary -n udn-primary-vm-guests \
+  --for=condition=NetworkAllocationSucceeded=True --timeout=60s
+oc get userdefinednetwork udn-primary -n udn-primary-vm-guests -o jsonpath='{.status.conditions}' | python3 -m json.tool
 ----
 
 .Expected output
@@ -351,11 +369,17 @@ oc get userdefinednetwork tenant-net -n tenant-a -o jsonpath='{.status.condition
         "reason": "NetworkAttachmentDefinitionCreated",
         "status": "True",
         "type": "NetworkCreated"
+    },
+    {
+        "message": "Network allocation succeeded for all synced nodes.",
+        "reason": "NetworkAllocationSucceeded",
+        "status": "True",
+        "type": "NetworkAllocationSucceeded"
     }
 ]
 ----
 
-A `False` condition tells you exactly what the controller rejected. The most frequent causes are a subnet that overlaps the cluster network or the service network, a second primary network in the same namespace, and a namespace missing the primary UDN label.
+A `False` condition includes a reason and message to help narrow the failure. Common `NetworkCreated` failures include a subnet that overlaps the cluster or service network, a second primary network in the namespace, or a missing primary UDN label. An allocation failure identifies the affected node in its message.
 
 IMPORTANT: Check your cluster and service CIDRs before choosing a subnet. Run `oc get network.config cluster -o jsonpath='{.spec}'` and pick a range that does not overlap either.
 
@@ -382,7 +406,7 @@ apiVersion: kubevirt.io/v1
 kind: VirtualMachine
 metadata:
   name: tenant-app
-  namespace: tenant-a
+  namespace: udn-primary-vm-guests
   labels:
     app: tenant-app
 spec:
@@ -454,11 +478,11 @@ Wait for the VM and read its address:
 
 [source,bash,role=execute]
 ----
-oc wait vmi/tenant-app -n tenant-a --for=condition=Ready --timeout=600s
-oc get vmi tenant-app -n tenant-a -o wide
+oc wait vmi/tenant-app -n udn-primary-vm-guests --for=condition=Ready --timeout=600s
+oc get vmi tenant-app -n udn-primary-vm-guests -o wide
 ----
 
-The address comes from `10.210.0.0/16`, not from the cluster network range.
+The address comes from `192.168.100.0/24`, not from the cluster network range.
 
 == Step 3: Inspect the IPAMClaim and Pod Annotations
 
@@ -466,7 +490,7 @@ Persistent IPAM produced a claim when the VM started:
 
 [source,bash,role=execute]
 ----
-oc get ipamclaims -n tenant-a
+oc get ipamclaims -n udn-primary-vm-guests
 ----
 
 .Expected output
@@ -480,7 +504,7 @@ The claim name combines the VM name and the network name from the VM spec. Read 
 
 [source,bash,role=execute]
 ----
-oc get ipamclaim tenant-app.default -n tenant-a -o yaml
+oc get ipamclaim tenant-app.default -n udn-primary-vm-guests -o yaml
 ----
 
 .Expected output
@@ -490,17 +514,17 @@ apiVersion: k8s.cni.cncf.io/v1alpha1
 kind: IPAMClaim
 metadata:
   name: tenant-app.default
-  namespace: tenant-a
+  namespace: udn-primary-vm-guests
   ownerReferences:
   - apiVersion: kubevirt.io/v1
     kind: VirtualMachine
     name: tenant-app
 spec:
   interface: 6c5b7c0a1f2
-  network: tenant-a.tenant-net
+  network: udn-primary-vm-guests.udn-primary
 status:
   ips:
-  - 10.210.0.5/16
+  - 192.168.100.5/24
   ownerPod:
     name: virt-launcher-tenant-app-8xq2n
 ----
@@ -511,8 +535,8 @@ The virt-launcher pod carries the matching OVN annotation:
 
 [source,bash,role=execute]
 ----
-POD=$(oc get pods -n tenant-a -l kubevirt.io=virt-launcher -o jsonpath='{.items[0].metadata.name}')
-oc get pod "$POD" -n tenant-a \
+POD=$(oc get pods -n udn-primary-vm-guests -l kubevirt.io=virt-launcher -o jsonpath='{.items[0].metadata.name}')
+oc get pod "$POD" -n udn-primary-vm-guests \
   -o jsonpath='{.metadata.annotations.k8s\.ovn\.org/pod-networks}' | python3 -m json.tool
 ----
 
@@ -524,28 +548,37 @@ Record the current address, restart the VM, and compare:
 
 [source,bash,role=execute]
 ----
-oc get vmi tenant-app -n tenant-a -o jsonpath='{.status.interfaces[0].ipAddress}{"\n"}'
-virtctl restart tenant-app -n tenant-a
-oc wait vmi/tenant-app -n tenant-a --for=condition=Ready --timeout=600s
-oc get vmi tenant-app -n tenant-a -o jsonpath='{.status.interfaces[0].ipAddress}{"\n"}'
+oc get vmi tenant-app -n udn-primary-vm-guests -o jsonpath='{.status.interfaces[0].ipAddress}{"\n"}'
+virtctl restart tenant-app -n udn-primary-vm-guests
+oc wait vmi/tenant-app -n udn-primary-vm-guests --for=condition=Ready --timeout=600s
+oc get vmi tenant-app -n udn-primary-vm-guests -o jsonpath='{.status.interfaces[0].ipAddress}{"\n"}'
 ----
 
-The address is identical. Without `lifecycle: Persistent` the restart would produce a new address from the pool.
+The address is identical. Without `lifecycle: Persistent`, a replacement pod gets an address from the pool and might receive a different address.
 
-Now migrate the VM. This requires `ReadWriteMany` storage and at least two schedulable nodes.
+Now migrate the VM. The `tenant-app` example requests `ReadWriteMany` storage, and migration also requires at least two schedulable nodes. If you changed the volume to `ReadWriteOnce`, skip the migration test and continue to Step 5.
+
+Check if the VM can be migrated:
 
 [source,bash,role=execute]
 ----
-virtctl migrate tenant-app -n tenant-a
-oc get virtualmachineinstancemigration -n tenant-a -w
+oc get vmi tenant-app -n udn-primary-vm-guests -o jsonpath='{.status.conditions[?(@.type=="LiveMigratable")].status}{"\n"}'
+----
+
+If the output is `True`, proceed with migration:
+
+[source,bash,role=execute]
+----
+virtctl migrate tenant-app -n udn-primary-vm-guests
+oc get virtualmachineinstancemigration -n udn-primary-vm-guests -w
 ----
 
 Once the migration reports `Succeeded`, check the address and the claim owner:
 
 [source,bash,role=execute]
 ----
-oc get vmi tenant-app -n tenant-a -o wide
-oc get ipamclaim tenant-app.default -n tenant-a -o jsonpath='{.status.ownerPod.name}{"\n"}'
+oc get vmi tenant-app -n udn-primary-vm-guests -o wide
+oc get ipamclaim tenant-app.default -n udn-primary-vm-guests -o jsonpath='{.status.ownerPod.name}{"\n"}'
 ----
 
 The address and MAC are unchanged, and `ownerPod` now names the target pod. On a Layer 2 topology nothing has to be re-routed, because the logical switch spans every node; OVN-Kubernetes moves the logical switch port binding to the new chassis and the guest never sees a link event.
@@ -557,6 +590,10 @@ Layer 3 topologies behave differently. OVN-Kubernetes keeps a migrated VM reacha
 A primary UDN carries cluster traffic. When the same VM must also sit on a physical VLAN, add a localnet secondary network. The combination is common for VMs migrated from a traditional hypervisor: Services and cluster traffic on the UDN, existing clients on the VLAN.
 
 This step needs an OVS bridge mapping on the worker nodes. If you have not configured one, follow xref:cudn-localnet-vlan.adoc[Localnet VLAN with CUDN] first and return here.
+
+NOTE: Localnet topology with `ClusterUserDefinedNetwork` is generally available starting in OpenShift 4.19. On OpenShift 4.18, verify the feature's support status for your cluster before using this step.
+
+NOTE: The companion VLAN tutorial uses `192.168.100.0/24`, which overlaps the primary UDN subnet in this tutorial. Configure the physical VLAN with a subnet that does not overlap the primary UDN or cluster/service CIDRs, then use an address from that subnet below. The sample uses `192.168.200.51/24`; adjust it for your VLAN. Skip this step if you are using the companion tutorial's VLAN example unchanged.
 
 Create a localnet CUDN that selects the UDN namespace. Localnet is only valid as a secondary role, and only on a `ClusterUserDefinedNetwork`.
 
@@ -577,7 +614,7 @@ spec:
     topology: Localnet
     localnet:
       role: Secondary
-      physicalNetworkName: physnet
+      physicalNetworkName: localnet-vlan
       vlan:
         mode: Access
         access:
@@ -591,15 +628,15 @@ Label the namespace so the selector matches:
 
 [source,bash,role=execute]
 ----
-oc label namespace tenant-a vlan100-access=true
+oc label namespace udn-primary-vm-guests vlan100-access=true
 oc get clusteruserdefinednetwork vlan100-net \
-  -o jsonpath='{.status.conditions[0].message}{"\n"}'
+  -o jsonpath='{.status.conditions[?(@.type=="NetworkCreated")].message}{"\n"}'
 ----
 
 .Expected output
 [source,text]
 ----
-NetworkAttachmentDefinition has been created in following namespaces: [tenant-a]
+NetworkAttachmentDefinition has been created in following namespaces: [udn-primary-vm-guests]
 ----
 
 Attach the VM to both networks. The primary UDN stays on the `default` network entry; the localnet interface is added as a Multus attachment with a bridge binding.
@@ -613,7 +650,7 @@ apiVersion: kubevirt.io/v1
 kind: VirtualMachine
 metadata:
   name: dual-attached
-  namespace: tenant-a
+  namespace: udn-primary-vm-guests
   labels:
     app: dual-attached
 spec:
@@ -661,7 +698,7 @@ spec:
         pod: {}
       - name: vlan100
         multus:
-          networkName: tenant-a/vlan100-net
+          networkName: udn-primary-vm-guests/vlan100-net
       volumes:
       - name: rootdisk
         dataVolume:
@@ -673,7 +710,7 @@ spec:
             ethernets:
               eth1:
                 addresses:
-                - 192.168.100.51/24
+                - 192.168.200.51/24
           userData: |
             #cloud-config
             user: fedora
@@ -687,7 +724,7 @@ Because the localnet network uses `ipam.mode: Disabled`, the guest owns the addr
 
 [source,bash,role=execute]
 ----
-oc get vmi dual-attached -n tenant-a -o jsonpath='{range .status.interfaces[*]}{.name}{"\t"}{.ipAddress}{"\n"}{end}'
+oc get vmi dual-attached -n udn-primary-vm-guests -o jsonpath='{range .status.interfaces[*]}{.name}{"\t"}{.ipAddress}{"\n"}{end}'
 ----
 
 The default route still points at the UDN gateway. If the VLAN should carry the default route instead, set it in the guest with cloud-init `networkData` routes; see xref:static-ip-configuration.adoc[Static IP Configuration] for the patterns.
@@ -698,7 +735,7 @@ IMPORTANT: Interface ordering inside the guest follows PCI enumeration, not the 
 
 Network policy on a primary UDN is evaluated on the UDN itself. The familiar objects work, with two differences worth knowing.
 
-First, namespace selectors cannot reach across networks. A policy in `tenant-a` that allows traffic from namespace `tenant-b` has no effect unless both namespaces share the same network, for example through a CUDN.
+First, namespace selectors cannot reach across networks. A policy in `udn-primary-vm-guests` that allows traffic from namespace `tenant-b` has no effect unless both namespaces share the same network, for example through a CUDN.
 
 Second, the pod's default-network interface is isolated by default. Health checks and probes from the kubelet work without configuration, but anything else that must reach the pod over the default network needs the `k8s.ovn.org/open-default-ports` annotation, which the VM in Step 2 already carries:
 
@@ -721,7 +758,7 @@ apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
   name: default-deny-ingress
-  namespace: tenant-a
+  namespace: udn-primary-vm-guests
 spec:
   podSelector: {}
   policyTypes:
@@ -738,7 +775,7 @@ apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
   name: allow-http-from-tenant
-  namespace: tenant-a
+  namespace: udn-primary-vm-guests
 spec:
   podSelector:
     matchLabels:
@@ -760,14 +797,14 @@ Test from the second VM:
 
 [source,bash,role=execute]
 ----
-virtctl console dual-attached -n tenant-a
+virtctl console dual-attached -n udn-primary-vm-guests
 ----
 
 Inside the guest, replace the address with the one reported for `tenant-app`:
 
 [source,bash]
 ----
-curl --max-time 5 http://10.210.0.5:8080
+curl --max-time 5 http://192.168.100.5:8080
 ----
 
 Policies attached to a secondary network require `AdminNetworkPolicy` or the OVN-Kubernetes multi-network policy API instead; xref:network-policies-vms.adoc[Network Policies for VMs] covers those.
@@ -873,7 +910,7 @@ apiVersion: k8s.ovn.org/v1
 kind: UserDefinedNetwork
 metadata:
   name: dualstack-net
-  namespace: tenant-a
+  namespace: udn-primary-vm-guests
 spec:
   topology: Layer2
   layer2:
@@ -927,7 +964,7 @@ Claims are owned by the `VirtualMachine`, so normal deletion cleans them up. An 
 
 [source,bash,role=execute]
 ----
-oc get ipamclaims -n tenant-a -o custom-columns=\
+oc get ipamclaims -n udn-primary-vm-guests -o custom-columns=\
 NAME:.metadata.name,IPS:.status.ips,POD:.status.ownerPod.name,OWNER:.metadata.ownerReferences[0].name
 ----
 
@@ -939,14 +976,14 @@ When the claim looks correct but traffic does not flow, work down the stack: the
 
 Three checks catch most problems before users report them.
 
-Network readiness across all UDNs and CUDNs:
+For UDNs, `NetworkCreated` confirms that the NAD exists and `NetworkAllocationSucceeded` confirms allocation on synced nodes. For CUDNs, the command shows the `NetworkCreated` condition for the generated NADs:
 
 [source,bash,role=execute]
 ----
 oc get userdefinednetworks -A \
-  -o custom-columns=NS:.metadata.namespace,NAME:.metadata.name,READY:.status.conditions[0].status
+  -o 'custom-columns=NS:.metadata.namespace,NAME:.metadata.name,NETWORK:.status.conditions[?(@.type=="NetworkCreated")].status,ALLOCATED:.status.conditions[?(@.type=="NetworkAllocationSucceeded")].status'
 oc get clusteruserdefinednetworks \
-  -o custom-columns=NAME:.metadata.name,READY:.status.conditions[0].status
+  -o 'custom-columns=NAME:.metadata.name,NAD:.status.conditions[?(@.type=="NetworkCreated")].status'
 ----
 
 Controller errors mentioning a specific network:
@@ -954,7 +991,7 @@ Controller errors mentioning a specific network:
 [source,bash,role=execute]
 ----
 oc logs -n openshift-ovn-kubernetes -l app=ovnkube-node -c ovnkube-controller \
-  --tail=200 --since=15m | grep -i -E 'tenant-net|error' | head -20
+  --tail=200 --since=15m | grep -i -E 'udn-primary|error' | head -20
 ----
 
 Allocation pressure, measured by comparing live claims against subnet capacity:
@@ -1076,23 +1113,27 @@ If the VMs carry addresses that must not change and those addresses come from a 
 
 == Cleanup
 
-Delete workloads before networks. A UDN with attached workloads will not delete cleanly.
+Delete workloads before the secondary networks. The `udn-primary-vm-guests` namespace and `udn-primary` UDN are shared with the preceding tutorial, so keep them and any workloads created there.
 
 [source,bash,role=execute]
 ----
-oc delete vm tenant-app dual-attached -n tenant-a --ignore-not-found
-oc wait --for=delete vmi/tenant-app -n tenant-a --timeout=120s || true
-oc delete userdefinednetwork tenant-net dualstack-net -n tenant-a --ignore-not-found
+oc delete vm tenant-app dual-attached -n udn-primary-vm-guests --ignore-not-found
+oc wait --for=delete vmi/tenant-app -n udn-primary-vm-guests --timeout=120s || true
+oc delete networkpolicy default-deny-ingress allow-http-from-tenant -n udn-primary-vm-guests --ignore-not-found
+oc label namespace udn-primary-vm-guests vlan100-access-
+oc delete userdefinednetwork dualstack-net -n udn-primary-vm-guests --ignore-not-found
 oc delete clusteruserdefinednetwork vlan100-net shared-net --ignore-not-found
-oc delete namespace tenant-a shared-a shared-b --ignore-not-found
+oc delete namespace shared-a shared-b --ignore-not-found
 ----
 
-Confirm nothing is left behind:
+Confirm the deep-dive resources are gone. The primary UDN and any VM from the first tutorial remain:
 
 [source,bash,role=execute]
 ----
-oc get ipamclaims -A
-oc get net-attach-def -A | grep -E 'tenant-net|shared-net|vlan100-net' || echo "all removed"
+oc get vm -n udn-primary-vm-guests
+oc get ipamclaims -n udn-primary-vm-guests
+oc get userdefinednetwork -n udn-primary-vm-guests
+oc get net-attach-def -A | grep -E 'dualstack-net|shared-net|vlan100-net' || echo "deep-dive networks removed"
 ----
 
 == Summary
@@ -1100,7 +1141,7 @@ oc get net-attach-def -A | grep -E 'tenant-net|shared-net|vlan100-net' || echo "
 In this deep dive, you learned:
 
 * How OVN-Kubernetes renders a `UserDefinedNetwork` into a `NetworkAttachmentDefinition` and then into OVN logical switches, routers, and ports, and how to inspect each layer
-* Why Layer 2 is the right topology for VMs, and what Layer 3 gives up in exchange for per-node subnet aggregation
+* When Layer 2 with persistent IPAM fits VM workloads, and what Layer 3 gives up in exchange for per-node subnet aggregation
 * How `ipam.mode` and `ipam.lifecycle` differ, and how an `IPAMClaim` holds a VM address across restart and live migration
 * How to combine a primary UDN with a localnet secondary interface on one VM
 * How network policy and `k8s.ovn.org/open-default-ports` behave on a primary UDN

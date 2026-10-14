@@ -1,15 +1,13 @@
 apiVersion: k8s.ovn.org/v1
 kind: UserDefinedNetwork
 metadata:
-  name: tenant-net
-  namespace: tenant-a
+  name: udn-primary
+  namespace: udn-primary-vm-guests
 spec:
   topology: Layer2
   layer2:
     role: Primary
-    mtu: 1400
     subnets:
-    - "10.210.0.0/16"
+    - "192.168.100.0/24"
     ipam:
-      mode: Enabled
       lifecycle: Persistent
