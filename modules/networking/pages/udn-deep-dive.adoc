@@ -397,7 +397,7 @@ spec:
     spec:
       storage:
         accessModes:
-        - ReadWriteMany
+        - ReadWriteOnce
         resources:
           requests:
             storage: 33Gi
@@ -532,7 +532,16 @@ oc get vmi tenant-app -n tenant-a -o jsonpath='{.status.interfaces[0].ipAddress}
 
 The address is identical. Without `lifecycle: Persistent` the restart would produce a new address from the pool.
 
-Now migrate the VM. This requires `ReadWriteMany` storage and at least two schedulable nodes.
+Now migrate the VM. This requires `ReadWriteMany` storage and at least two schedulable nodes. If your cluster only has `ReadWriteOnce` storage, skip the migration test and continue to Step 5.
+
+Check if the VM can be migrated:
+
+[source,bash,role=execute]
+----
+oc get vmi tenant-app -n tenant-a -o jsonpath='{.status.conditions[?(@.type=="LiveMigratable")].status}{"\n"}'
+----
+
+If the output is `True`, proceed with migration:
 
 [source,bash,role=execute]
 ----
@@ -628,7 +637,7 @@ spec:
     spec:
       storage:
         accessModes:
-        - ReadWriteMany
+        - ReadWriteOnce
         resources:
           requests:
             storage: 33Gi
