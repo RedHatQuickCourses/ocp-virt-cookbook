@@ -4,7 +4,12 @@
 ## Overview
 This tutorial introduces scheduling with tolerations and taints in OpenShift Virtualization. Tolerations and taints are used to control which nodes can run specific workloads, such as virtual machines (VMs). By applying tolerations to VMs and taints to nodes, you can influence the scheduling decisions made by the Kubernetes scheduler.
 
-## Understanding Taints and Tolerations
+== Prerequisites
+
+* OpenShift v4.21 or later
+* OpenShift CLI installed
+* OpenShift Virtualization operator
+* cluster admin access## Understanding Taints and Tolerations
 
 ### Taints
 Taints are applied to nodes and allow a node to repel a set of pods. A taint consists of three components: a key, a value, and an effect. The effect can be one of the following:
@@ -20,8 +25,10 @@ The available operator values are:
 
 * Equal: The toleration matches a taint with the same key and value.
 * Exists: The toleration matches any taint with the same key.
+* lt: The toleration matches any taint with the same key and an integer value less than the specified value.
+* gt: The toleration matches any taint with the same key and an integer value greater than the specified value.
 
-NOTE: in the case of the Exists operator, no value is required, and the toleration will match any taint with the same key, regardless of its value.
+NOTE: in the case of the Exists operator, no value is required, and the toleration will match any taint with the same key, regardless of its value. Lt and gt operators are used for numeric comparisons and require the value to be an integer.
 
 The available effect values are:
 
@@ -80,7 +87,7 @@ Add a taint to a node to dedicate it for VMs:
 [source,bash,role="execute"]
 
 ----
-oc taint nodes <node-name> VM-dedicated=value:NoExecute
+oc taint nodes <node-name> <key>=<value>:NoSchedule
 ----
 
 Add a toleration to VMs to allow them to be scheduled on the dedicated node:
@@ -96,15 +103,58 @@ spec:
   template:
     spec:
       tolerations:
-      - key: "VM-dedicated"
+      - key: "<key>"
         operator: "Exists"
-        effect: "NoExecute"
+        effect: "NoSchedule"
 
 ----
 
-## Mixed Workload Strategies
+## Eviction Policies 
 
-## Eviction Policies
+* `LiveMigrate`: The VM will be live-migrated to another node if the node is tainted with a NoExecute taint that the VM does not tolerate. This is the default eviction policy for VMs in OpenShift Virtualization, and will not evict the VM if live migration is not possible.
+* `LiveMigrateIfPossible`: The VM will be live-migrated to another node if the node is tainted with a NoExecute taint that the VM does not tolerate. If live migration is not possible, the VM will be evicted.
+* `None`: The VM will be evicted if the node is tainted with a NoExecute taint that the VM does not tolerate. This is the default on single-node OpenShift.
+
+NOTE: `LiveMigrate` will block node upgrades if the VM cannot be migrated but will keep the VM running on the node. `LiveMigrateIfPossible` will allow node upgrades to proceed if the VM cannot be migrated, but will evict the VM from the node.
 
 ## Practical Use Cases
 
+### Dedicated Node Pools for VMs
+
+A common use case for taints and tolerations is to create dedicated node pools for VMs. By applying a taint to a set of nodes and adding the corresponding toleration to the VMs, you can ensure that only those VMs are scheduled on the dedicated nodes by adding a NoSchedule taint to the nodes, and a correspoding toleration to your VMs.
+
+### Workload Isolation
+
+You can also use a taint to isolate a specific workload by using a unique key, and adding a corresponding toleration to the workload you want to isolate. This ensures that only the workloads with the matching toleration can be scheduled on the tainted nodes.
+
+### Resource Management
+
+OpenShift includes some built-in taints that can be used to manage resources.
+
+* `node.kubernetes.io/not-ready`: The node is not ready. This corresponds to the node condition `Ready=False`.
+* `node.kubernetes.io/unreachable`: The node is unreachable from the node controller. This corresponds to the node condition `Ready=Unknown`.
+* `node.kubernetes.io/memory-pressure`: The node has memory pressure issues. This corresponds to the node condition `MemoryPressure=True`.
+* `node.kubernetes.io/disk-pressure`: The node has disk pressure issues. This corresponds to the node condition `DiskPressure=True`.
+* `node.kubernetes.io/network-unavailable`: The node network is unavailable.
+* `node.kubernetes.io/unschedulable`: The node is unschedulable.
+* `node.cloudprovider.kubernetes.io/uninitialized`: When the node controller is started with an external cloud provider, this taint is set on a node to mark it as unusable. After a controller from the cloud-controller-manager initializes this node, the kubelet removes this taint.
+* `node.kubernetes.io/pid-pressure`: The node has pid pressure. This corresponds to the node condition `PIDPressure=True`.
+
+## Cleanup
+
+To remove taints from nodes, use the following command:
+
+[source,bash,role="execute"]
+
+----
+oc taint nodes <node-name> <key>=<value>:<effect>-
+----
+
+## Summary
+
+Taints can be applied to nodes to prevent workloads that do not have a corresponding toleration from being scheduled on those nodes. Tolerations can be applied to workloads to allow them to be scheduled on nodes with matching taints. By using taints and tolerations, you can create dedicated node pools for VMs, isolate specific workloads, and manage resources effectively.
+
+## See Also
+link:https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/[Kubernetes Taints and Tolerations]
+
+link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.21/html/virtualization/nodes#virt-eviction-strategies[OpenShift Virtualization: Eviction Strategies]
