@@ -9,15 +9,67 @@ This tutorial guides you through configuring external Remote Desktop Protocol (R
 
 Users who need to access Windows VMs hosted on Red Hat OpenShift Virtualization via Microsoft Remote Desktop.
 
+== Use Cases
+
+[cols="1,2"]
+|===
+|Use Case |Description
+
+|Developer desktops
+|Windows VMs as cloud-hosted development environments for Visual Studio or .NET workloads, accessible from any location
+
+|CI/CD Windows agents
+|Windows build agents for .NET applications, accessible via RDP for debugging failed pipeline runs
+
+|Legacy application hosting
+|Windows GUI applications such as SAP GUI or internal tools hosted on OpenShift and accessed remotely by end users
+
+|Training and labs
+|Windows VMs provisioned per student for training sessions, each exposed on a unique RDP endpoint
+|===
+
 == Network Topology
 
-=== Understanding Network Architecture
+The following diagram shows how an RDP client reaches a Windows VM running in OpenShift Virtualization. Two service exposure options are supported:
 
-The IP address discrepancy you observe is expected behavior:
+----
+┌─────────────────────────────────────────────────────────────────┐
+│ RDP Client (Windows Workstation)                                │
+│   Remote Desktop Connection on port 3389                        │
+└────────────────────────┬────────────────────────────────────────┘
+                         │
+             ┌───────────┴───────────┐
+             │                       │
+             ▼                       ▼
+┌─────────────────────┐   ┌──────────────────────────────────────┐
+│ Option A:           │   │ Option B:                            │
+│ MetalLB LoadBalancer│   │ NodePort Service                     │
+│ Dedicated VIP       │   │ Worker Node IP + port (30000-32767)  │
+│ port 3389           │   │ mapped to port 3389                  │
+└──────────┬──────────┘   └───────────────┬──────────────────────┘
+           │                              │
+           └──────────────┬───────────────┘
+                          │
+                          ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ Kubernetes Service (port 3389)                                  │
+│   selector: vm.kubevirt.io/name: <your-vm-name>                 │
+└────────────────────────┬────────────────────────────────────────┘
+                         │
+                         ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ virt-launcher Pod (OpenShift Virtualization runtime)            │
+└────────────────────────┬────────────────────────────────────────┘
+                         │
+                         ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ Windows 11 VM                                                   │
+│   RDP Server on port 3389                                       │
+│   Internal IPs: 10.0.2.2 (guest NIC) / 10.128.x.x (pod)         │
+└─────────────────────────────────────────────────────────────────┘
+----
 
-* **10.0.2.2**: VM's internal network interface IP within the Windows OS
-* **10.128.1.132**: Internal pod IP within the OpenShift cluster
-* **Neither is externally routable** - requires service exposure
+NOTE: The VM's internal IPs (10.0.2.2 and 10.128.x.x) are not externally routable. The Kubernetes Service handles the mapping from the external endpoint to the VM.
 
 == Prerequisites
 
@@ -178,7 +230,70 @@ Enter your Windows 11 VM credentials when prompted
 
 == Security Considerations
 
-NOTE: Exposing RDP to the internet creates security risks. Consider using VPN or bastion hosts for production environments. Enable Network Level Authentication in Windows if possible. Use strong passwords and consider certificate-based authentication. Monitor access logs regularly.
+Exposing RDP directly to the internet creates significant security risks. 
+These access controls limit the exposure of your RDP service by controlling who can reach it and how. 
+
+
+*Choose one for access control:*
+
+* *NetworkPolicy* — applies when you have an external service exposed; restricts which source IPs can reach port 3389.
+* *RDP over SSH Tunnel* — applies when you want to avoid external exposure entirely.
+
+*In addition, apply the following to secure the connection itself:*
+
+* *Certificate-Based RDP Authentication* — secures the connection itself by replacing the default self-signed certificate.
+* *Network Level Authentication* — a Windows-side setting that hardens the RDP service by requiring authentication before a session is established.
+
+=== Restrict Access with NetworkPolicy
+
+Create a NetworkPolicy to limit RDP ingress to specific source IP ranges:
+
+xref:attachment$remote-access-windows-vms/restrict-rdp-networkpolicy.yaml[Download restrict-rdp-networkpolicy.yaml]
+
+[source,yaml]
+----
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: restrict-rdp-access
+  namespace: <your-namespace>
+spec:
+  podSelector:
+    matchLabels:
+      vm.kubevirt.io/name: <your-vm-name>
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - ipBlock:
+        cidr: 203.0.113.0/24
+    ports:
+    - protocol: TCP
+      port: 3389
+----
+
+Replace `203.0.113.0/24` with your organization's allowed IP range.
+
+=== RDP over SSH Tunnel
+
+As an alternative to exposing port 3389 directly, tunnel RDP traffic through an SSH connection. The SSH tunnel encrypts the session and avoids creating an externally accessible service. The exact steps depend on your network topology and how your cluster is accessible. Refer to your SSH client documentation for port forwarding instructions.
+
+=== Certificate-Based RDP Authentication
+
+By default, Windows generates a self-signed certificate for the RDP service, which causes clients to show an untrusted certificate warning. In production environments, replace it with a certificate signed by your organization's CA to prevent man-in-the-middle attacks.
+
+For step-by-step instructions, refer to the link:https://learn.microsoft.com/en-us/troubleshoot/windows-server/remote/remote-desktop-listener-certificate-configurations[Microsoft documentation on Remote Desktop listener certificate configurations,window=_blank].
+
+=== Enable Network Level Authentication
+
+Network Level Authentication (NLA) requires users to authenticate before a full RDP session is established. This reduces the attack surface by rejecting unauthenticated connection attempts before any desktop is rendered.
+
+In the Windows 11 VM:
+
+. Open **System Settings** and navigate to **Remote Desktop**.
+. Enable **Require devices to use Network Level Authentication to connect**.
+
+NOTE: Regardless of which controls you apply, use strong passwords and monitor RDP access logs regularly.
 
 == Verification & Troubleshooting
 
