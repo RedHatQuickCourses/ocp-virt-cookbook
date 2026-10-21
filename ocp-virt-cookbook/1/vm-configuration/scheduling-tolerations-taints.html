@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Scheduling with Tolerations and Taints :: OpenShift Virtualization cookbook</title>
+    <link rel="prev" href="hyperconverged-configuration.html">
+    <link rel="next" href="../performance/index.html">
+    <meta name="generator" content="Antora 3.1.3">
+    <link rel="stylesheet" href="../../../_/css/site.css">
+    <script>var uiRootPath = '../../../_'</script>
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://www.redhat.com" target="_blank"><img src="../../../_/img/redhat-logo.png" height="40px" alt="Red Hat"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="../../..">OpenShift Virtualization cookbook</a>
+      <div class="navbar-item search hide-for-print">
+        <div id="search-field" class="field">
+          <input id="search-input" type="text" placeholder="Search the docs">
+        </div>
+      </div>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues" target="_blank">Report Issues</a>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="ocp-virt-cookbook" data-version="1">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="../index.html">OpenShift Virtualization cookbook</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../index.html">Introduction</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../getting-started/index.html">Getting Started</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/vm-quick-start.html">Quick Start</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/prerequisites.html">Prerequisites</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/architecture-overview.html">Architecture Overview</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/hosted-control-planes.html">Hosted Control Planes</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/install-openshift-virtualization.html">Install OpenShift Virtualization</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/installing-qemu-guest-agent.html">Installing QEMU Guest Agent</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/default-storage-class.html">Storage Setup</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/create-vm-web-console.html">Create VM from Web Console</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/create-vm-cli-yaml.html">Create VM from CLI</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/vm-lifecycle-states.html">VM Lifecycle States</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/virtctl-basics.html">Virtctl Basics</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/cloud-init-fundamentals.html">Cloud-init Fundamentals</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../storage/index.html">Storage Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/lvm-operator.html">LVM Operator Installation</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/lvm-troubleshooting.html">LVM Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/odf-ceph-storage.html">ODF/Ceph Storage</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/hostpath-provisioner.html">HostPath Provisioner</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/creating-managing-storage-class.html">Creating and Managing Storage Classes</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/choosing-storage-class.html">Choosing a Storage Class</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/multi-disk-configuration.html">Multi-Disk VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/expanding-vm-disk-size.html">Expanding VM Disk Size</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/cdi-operations.html">CDI Operations</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/disk-io-tuning.html">Disk I/O Tuning</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/storage-profiles.html">Storage Profiles</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/live-migration-storage.html">Live Migration Storage</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../networking/index.html">Networking Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/static-ip-configuration.html">Static IP Configuration</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/cloud-init-troubleshooting.html">Cloud-init Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/udn-primary-networks.html">UDN Primary Networks</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/localnet-secondary.html">Localnet Secondary Networks with CUDN</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/localnet-vlan.html">Localnet Secondary Networks with VLAN using NAD</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/cudn-localnet-vlan.html">Localnet VLAN with CUDN</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/layer2-secondary.html">Layer 2 Secondary Networks</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/linux-bridges.html">Linux Bridges</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/sriov-secondary.html">SR-IOV Secondary Networks</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/network-policies-vms.html">Network Policies for VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/metallb-loadbalancer.html">MetalLB Load Balancer for VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/dual-stack-vms.html">Dual-Stack IPv4/IPv6 VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/vm-ingress-routes.html">VM Ingress and Routes</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/ovs-bridge-troubleshooting.html">Troubleshooting Localnet Networks</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="index.html">Virtual Machine Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="internal-dns-for-vms.html">Internal DNS for VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="remote-access-linux-vms.html">Remote Access to Linux VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="remote-access-linux-troubleshooting.html">Remote Access to Linux VMs Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="remote-access-windows-vms.html">Remote Access to Windows VMs via RDP</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="ssh-access-windows-vms.html">Remote Access to Windows VMs via SSH</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="windows-vm-virtio-drivers.html">Windows VMs with VirtIO Drivers</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="legacy-windows-versions.html">Legacy Windows Versions</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="infrastructure-node-placement.html">Infrastructure Node Placement</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="node-placement-affinity.html">Node Placement and Affinity</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="hotplug-volumes-interfaces.html">Hotplug Volumes and Interfaces</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="vm-templates.html">Virtual Machine Templates</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="instancetype-preference.html">Instancetype and Preference</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="hyperconverged-configuration.html">HyperConverged Configuration</a>
+  </li>
+  <li class="nav-item is-current-page" data-depth="2">
+    <a class="nav-link" href="scheduling-tolerations-taints.html">Scheduling with Tolerations and Taints</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../performance/index.html">VM Performance Tuning</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/resource-limits-qos.html">Resource Limits and QoS</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/cpu-pinning.html">Dedicated CPU Placement</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/numa-hugepages.html">NUMA and Hugepages</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/realtime-vms.html">Real-Time VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/vm-monitoring-metrics.html">VM Monitoring and Metrics</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/nested-virtualization.html">Nested Virtualization</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/windows-vm-optimization.html">Windows VM Optimization</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../vm-lifecycle/index.html">VM Lifecycle Management</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/import-qcow2-boot-volume.html">Import qcow2 Boot Volume</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/custom-golden-images.html">Custom Golden Images</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/windows-golden-images.html">Windows Golden Images</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/golden-images-troubleshooting.html">Golden Images Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/cloning-vms.html">Cloning VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/vm-snapshots.html">VM Snapshots</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/boot-order-boot-sources.html">VM Boot Order and Boot Sources</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/live-migration.html">Live Migration</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/migrate-from-vmware-mtv.html">Migrate from VMware (MTV)</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../manifests/index.html">Manifests</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../api/index.html">API Guide</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../api/api-component-overview.html">API Component Overview</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../agentic-vm-management/index.html">Agentic VM Management</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/getting-started.html">Getting Started with rh-virt</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/natural-language-vm-create.html">Natural Language VM Creation</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/ai-vm-lifecycle.html">AI VM Lifecycle Operations</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/vm-clone.html">Cloning VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/ai-vm-snapshot-management.html">VM Snapshot Management</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/ai-skill-chaining.html">Day-2 Skill Chaining</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/ai-vm-rebalance.html">VM Rebalancing and Live Migration</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../appendix/glossary.html">Glossary</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">OpenShift Virtualization cookbook</span>
+    <span class="version">1</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <a class="title" href="../index.html">OpenShift Virtualization cookbook</a>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">1</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">OpenShift Virtualization cookbook</a></li>
+    <li><a href="index.html">Virtual Machine Configuration</a></li>
+    <li><a href="scheduling-tolerations-taints.html">Scheduling with Tolerations and Taints</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">Scheduling with Tolerations and Taints</h1>
+<div class="sect1">
+<h2 id="_overview"><a class="anchor" href="#_overview"></a>Overview</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>This tutorial introduces scheduling with tolerations and taints in OpenShift Virtualization. Tolerations and taints are used to control which nodes can run specific workloads, such as virtual machines (VMs). By applying tolerations to VMs and taints to nodes, you can influence the scheduling decisions made by the Kubernetes scheduler.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_prerequisites"><a class="anchor" href="#_prerequisites"></a>Prerequisites</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p>OpenShift v4.21 or later</p>
+</li>
+<li>
+<p>OpenShift CLI installed</p>
+</li>
+<li>
+<p>OpenShift Virtualization operator</p>
+</li>
+<li>
+<p>cluster admin access</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_understanding_taints_and_tolerations"><a class="anchor" href="#_understanding_taints_and_tolerations"></a>Understanding Taints and Tolerations</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_taints"><a class="anchor" href="#_taints"></a>Taints</h3>
+<div class="paragraph">
+<p>Taints are applied to nodes and allow a node to repel a set of pods. A taint consists of three components: a key, a value, and an effect. The effect can be one of the following:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>NoSchedule: Pods that do not tolerate the taint will not be scheduled on the node</p>
+</li>
+<li>
+<p>PreferNoSchedule: The scheduler will try to avoid placing pods that do not tolerate the taint on the node, but it is not guaranteed</p>
+</li>
+<li>
+<p>NoExecute: Pods that do not tolerate the taint will be evicted from the node if they are already running there</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_tolerations"><a class="anchor" href="#_tolerations"></a>Tolerations</h3>
+<div class="paragraph">
+<p>Tolerations are applied to pods (or VMs in the case of OpenShift Virtualization) and allow them to be scheduled on nodes with matching taints. A toleration consists of a key, value, operator, and effect.</p>
+</div>
+<div class="paragraph">
+<p>The available operator values are:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Equal: The toleration matches a taint with the same key and value.</p>
+</li>
+<li>
+<p>Exists: The toleration matches any taint with the same key.</p>
+</li>
+<li>
+<p>Lt: The toleration matches any taint with the same key and an integer value less than the specified value.</p>
+</li>
+<li>
+<p>Gt: The toleration matches any taint with the same key and an integer value greater than the specified value.</p>
+</li>
+</ul>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+Lt and Gt were introduced in OpenShift 4.22, and are disabled by default. To enable them, you must set the <code>TaintTolerationOperator</code> feature gate to <code>true</code> in the <code>kube-apiserver</code> configuration.
+</td>
+</tr>
+</table>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+in the case of the Exists operator, no value is required, and the toleration will match any taint with the same key, regardless of its value. Lt and gt operators are used for numeric comparisons and require the value to be an integer.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>The effect values for tolerations are the same as those for taints, and they match the taints on the node. For example, a toleration with the effect <code>NoSchedule</code> will allow a pod to be scheduled on a node with a taint that has the same key and value, and an effect of <code>NoSchedule</code>.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_applying_taints_to_nodes"><a class="anchor" href="#_applying_taints_to_nodes"></a>Applying Taints to Nodes</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Taints are easily applied to nodes by adding them with the <code>taint</code> command.</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc taint nodes &lt;node-name&gt; &lt;key&gt;=&lt;value&gt;:&lt;effect&gt;</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>They can be removed from a node by appending a <code>-</code> to the end of the command.</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc taint nodes &lt;node-name&gt; &lt;key&gt;=&lt;value&gt;:&lt;effect&gt;-</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_applying_tolerations_to_vms"><a class="anchor" href="#_applying_tolerations_to_vms"></a>Applying Tolerations to VMs</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Tolerations can be applied to VMs by adding them to the VM&#8217;s spec. This can be done either through the OpenShift Virtualization web console or by editing the VM&#8217;s YAML definition.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: my-vm
+spec:
+  template:
+    spec:
+      tolerations:
+      - key: &lt;key&gt;
+        value: &lt;value&gt;
+        operator: &lt;Equal|Exists&gt;
+        effect: &lt;NoSchedule|PreferNoSchedule|NoExecute&gt;</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_dedicated_node_pools_for_vms"><a class="anchor" href="#_dedicated_node_pools_for_vms"></a>Dedicated Node Pools for VMs</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Taints and tolerations can be used to create dedicated node pools for VMs. By applying a taint to a set of nodes and adding the corresponding toleration to the VMs, you can ensure that only those VMs are scheduled on the dedicated nodes.</p>
+</div>
+<div class="paragraph">
+<p>For example:</p>
+</div>
+<div class="paragraph">
+<p>Add a taint to a node to dedicate it for VMs:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc taint nodes &lt;node-name&gt; &lt;key&gt;=&lt;value&gt;:NoSchedule</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Add a toleration to VMs to allow them to be scheduled on the dedicated node:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: my-vm
+spec:
+  template:
+    spec:
+      tolerations:
+      - key: "&lt;key&gt;"
+        operator: "Exists"
+        effect: "NoSchedule"</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_eviction_policies"><a class="anchor" href="#_eviction_policies"></a>Eviction Policies</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p><code>LiveMigrate</code>: The VM will be live-migrated to another node if the node is tainted with a NoExecute taint that the VM does not tolerate. This is the default eviction policy for VMs in OpenShift Virtualization, and will not evict the VM if live migration is not possible.</p>
+</li>
+<li>
+<p><code>LiveMigrateIfPossible</code>: The VM will be live-migrated to another node if the node is tainted with a NoExecute taint that the VM does not tolerate. If live migration is not possible, the VM will be evicted.</p>
+</li>
+<li>
+<p><code>None</code>: The VM will be evicted if the node is tainted with a NoExecute taint that the VM does not tolerate. This is the default on single-node OpenShift.</p>
+</li>
+</ul>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<code>LiveMigrate</code> will block node upgrades if the VM cannot be migrated but will keep the VM running on the node. <code>LiveMigrateIfPossible</code> will allow node upgrades to proceed if the VM cannot be migrated, but will evict the VM from the node.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_practical_use_cases"><a class="anchor" href="#_practical_use_cases"></a>Practical Use Cases</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_dedicated_node_pools_for_vms_2"><a class="anchor" href="#_dedicated_node_pools_for_vms_2"></a>Dedicated Node Pools for VMs</h3>
+<div class="paragraph">
+<p>A common use case for taints and tolerations is to create dedicated node pools for VMs. By applying a taint to a set of nodes and adding the corresponding toleration to the VMs, you can ensure that only those VMs are scheduled on the dedicated nodes by adding a NoSchedule taint to the nodes, and a corresponding toleration to your VMs.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_workload_isolation"><a class="anchor" href="#_workload_isolation"></a>Workload Isolation</h3>
+<div class="paragraph">
+<p>You can also use a taint to isolate a specific workload by using a unique key, and adding a corresponding toleration to the workload you want to isolate. This ensures that only the workloads with the matching toleration can be scheduled on the tainted nodes.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_resource_management"><a class="anchor" href="#_resource_management"></a>Resource Management</h3>
+<div class="paragraph">
+<p>OpenShift includes some built-in taints that can be used to manage resources.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>node.kubernetes.io/not-ready</code>: The node is not ready. This corresponds to the node condition <code>Ready=False</code>.</p>
+</li>
+<li>
+<p><code>node.kubernetes.io/unreachable</code>: The node is unreachable from the node controller. This corresponds to the node condition <code>Ready=Unknown</code>.</p>
+</li>
+<li>
+<p><code>node.kubernetes.io/memory-pressure</code>: The node has memory pressure issues. This corresponds to the node condition <code>MemoryPressure=True</code>.</p>
+</li>
+<li>
+<p><code>node.kubernetes.io/disk-pressure</code>: The node has disk pressure issues. This corresponds to the node condition <code>DiskPressure=True</code>.</p>
+</li>
+<li>
+<p><code>node.kubernetes.io/network-unavailable</code>: The node network is unavailable.</p>
+</li>
+<li>
+<p><code>node.kubernetes.io/unschedulable</code>: The node is unschedulable.</p>
+</li>
+<li>
+<p><code>node.cloudprovider.kubernetes.io/uninitialized</code>: When the node controller is started with an external cloud provider, this taint is set on a node to mark it as unusable. After a controller from the cloud-controller-manager initializes this node, the kubelet removes this taint.</p>
+</li>
+<li>
+<p><code>node.kubernetes.io/pid-pressure</code>: The node has pid pressure. This corresponds to the node condition <code>PIDPressure=True</code>.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_cleanup"><a class="anchor" href="#_cleanup"></a>Cleanup</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>To remove taints from nodes, use the following command:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc taint nodes &lt;node-name&gt; &lt;key&gt;=&lt;value&gt;:&lt;effect&gt;-</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_summary"><a class="anchor" href="#_summary"></a>Summary</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Taints can be applied to nodes to prevent workloads that do not have a corresponding toleration from being scheduled on those nodes. Tolerations can be applied to workloads to allow them to be scheduled on nodes with matching taints. By using taints and tolerations, you can create dedicated node pools for VMs, isolate specific workloads, and manage resources effectively.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_see_also"><a class="anchor" href="#_see_also"></a>See Also</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p><a href="https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/">Kubernetes Taints and Tolerations</a></p>
+</div>
+<div class="paragraph">
+<p><a href="https://docs.redhat.com/en/documentation/openshift_container_platform/4.21/html/virtualization/nodes#virt-eviction-strategies">OpenShift Virtualization: Eviction Strategies</a></p>
+</div>
+</div>
+</div>
+<nav class="pagination">
+  <span class="prev"><a href="hyperconverged-configuration.html">HyperConverged Configuration</a></span>
+  <span class="next"><a href="../performance/index.html">VM Performance Tuning</a></span>
+</nav>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <img src="../../../_/img/rhl-logo-red.png" height="40px" alt="Red Hat"  href="https://redhat.com" >
+</footer><script id="site-script" src="../../../_/js/site.js" data-ui-root-path="../../../_"></script>
+<script async src="../../../_/js/vendor/highlight.js"></script>
+<script src="../../../_/js/vendor/lunr.js"></script>
+<script src="../../../_/js/search-ui.js" id="search-ui-script" data-site-root-path="../../.." data-snippet-length="100" data-stylesheet="../../../_/css/search.css"></script>
+<script async src="../../../search-index.js"></script>
+  </body>
+</html>
