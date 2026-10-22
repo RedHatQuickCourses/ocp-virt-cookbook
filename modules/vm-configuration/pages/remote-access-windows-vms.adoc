@@ -158,9 +158,9 @@ Note the assigned port if using NodePort
 
 ===== Option B: Command Line Interface
 
-. **Create Service Definition**
+. **Download Service Definition**
 +
-Create `rdp-service.yaml`:
+xref:attachment$remote-access-windows-vms/rdp-service.yaml[Download rdp-service.yaml]
 +
 [source,yaml]
 ----
@@ -176,7 +176,6 @@ spec:
       port: 3389
       targetPort: 3389
   type: LoadBalancer  # or NodePort
-  externalTrafficPolicy: Local
 ----
 . **Apply Configuration**
 +
@@ -281,7 +280,7 @@ client source IP for supported `NodePort` and `LoadBalancer` configurations.
 For details, see
 link:https://kubernetes.io/docs/tutorials/services/source-ip/[Using Source IP,window=_blank].
 
-The Service definition in this tutorial sets this field. If you created the Service by using the web console or `virtctl`, set it with:
+Set this field on the RDP Service with:
 
 [source,bash,role=execute]
 ----
