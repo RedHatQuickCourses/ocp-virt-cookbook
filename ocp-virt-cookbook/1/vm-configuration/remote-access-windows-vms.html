@@ -428,26 +428,95 @@
 </div>
 </div>
 <div class="sect1">
+<h2 id="_use_cases"><a class="anchor" href="#_use_cases"></a>Use Cases</h2>
+<div class="sectionbody">
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 33.3333%;">
+<col style="width: 66.6667%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Use Case</th>
+<th class="tableblock halign-left valign-top">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Developer desktops</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Windows VMs as cloud-hosted development environments for Visual Studio or .NET workloads, accessible from any location</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">CI/CD Windows agents</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Windows build agents for .NET applications, accessible via RDP for debugging failed pipeline runs</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Legacy application hosting</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Windows GUI applications such as SAP GUI or internal tools hosted on OpenShift and accessed remotely by end users</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Training and labs</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Windows VMs provisioned per student for training sessions, each exposed on a unique RDP endpoint</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="sect1">
 <h2 id="_network_topology"><a class="anchor" href="#_network_topology"></a>Network Topology</h2>
 <div class="sectionbody">
-<div class="sect2">
-<h3 id="_understanding_network_architecture"><a class="anchor" href="#_understanding_network_architecture"></a>Understanding Network Architecture</h3>
 <div class="paragraph">
-<p>The IP address discrepancy you observe is expected behavior:</p>
+<p>The following diagram shows how an RDP client reaches a Windows VM running in OpenShift Virtualization. Two service exposure options are supported:</p>
 </div>
-<div class="ulist">
-<ul>
-<li>
-<p><strong>10.0.2.2</strong>: VM&#8217;s internal network interface IP within the Windows OS</p>
-</li>
-<li>
-<p><strong>10.128.1.132</strong>: Internal pod IP within the OpenShift cluster</p>
-</li>
-<li>
-<p><strong>Neither is externally routable</strong> - requires service exposure</p>
-</li>
-</ul>
+<div class="listingblock">
+<div class="content">
+<pre>┌─────────────────────────────────────────────────────────────────┐
+│ RDP Client (Windows Workstation)                                │
+│   Remote Desktop Connection on port 3389                        │
+└────────────────────────┬────────────────────────────────────────┘
+                         │
+             ┌───────────┴───────────┐
+             │                       │
+             ▼                       ▼
+┌─────────────────────┐   ┌──────────────────────────────────────┐
+│ Option A:           │   │ Option B:                            │
+│ MetalLB LoadBalancer│   │ NodePort Service                     │
+│ Dedicated VIP       │   │ Worker Node IP + port (30000-32767)  │
+│ port 3389           │   │ mapped to port 3389                  │
+└──────────┬──────────┘   └───────────────┬──────────────────────┘
+           │                              │
+           └──────────────┬───────────────┘
+                          │
+                          ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ Kubernetes Service (port 3389)                                  │
+│   selector: vm.kubevirt.io/name: &lt;your-vm-name&gt;                 │
+└────────────────────────┬────────────────────────────────────────┘
+                         │
+                         ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ virt-launcher Pod (OpenShift Virtualization runtime)            │
+└────────────────────────┬────────────────────────────────────────┘
+                         │
+                         ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ Windows 11 VM                                                   │
+│   RDP Server on port 3389                                       │
+│   Internal IPs: 10.0.2.2 (guest NIC) / 10.128.x.x (pod)         │
+└─────────────────────────────────────────────────────────────────┘</pre>
 </div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+The VM&#8217;s internal IPs (10.0.2.2 and 10.128.x.x) are not externally routable. The Kubernetes Service handles the mapping from the external endpoint to the VM.
+</td>
+</tr>
+</table>
 </div>
 </div>
 </div>
@@ -618,9 +687,9 @@ If LoadBalancer is unavailable, use <code>NodePort</code> (assigns port 30000-32
 <div class="olist arabic">
 <ol class="arabic">
 <li>
-<p><strong>Create Service Definition</strong></p>
+<p><strong>Download Service Definition</strong></p>
 <div class="paragraph">
-<p>Create <code>rdp-service.yaml</code>:</p>
+<p><a href="_attachments/remote-access-windows-vms/rdp-service.yaml" class="xref attachment">Download rdp-service.yaml</a></p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -759,6 +828,93 @@ spec:
 <div class="sect1">
 <h2 id="_security_considerations"><a class="anchor" href="#_security_considerations"></a>Security Considerations</h2>
 <div class="sectionbody">
+<div class="paragraph">
+<p>Exposing RDP directly to the internet creates significant security risks.
+These access controls limit the exposure of your RDP service by controlling who can reach it and how.</p>
+</div>
+<div class="paragraph">
+<p><strong>Choose one for access control:</strong></p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>NetworkPolicy</strong> — applies when you have an external service exposed; restricts which source IPs can reach port 3389.</p>
+</li>
+<li>
+<p><strong>RDP over SSH Tunnel</strong> — applies when you want to avoid external exposure entirely.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p><strong>In addition, apply the following to secure the connection itself:</strong></p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Trusted RDP Listener Certificate</strong> — secures the connection itself by configuring a certificate that clients can use to verify the VM&#8217;s identity.</p>
+</li>
+<li>
+<p><strong>Network Level Authentication</strong> — a Windows-side setting that hardens the RDP service by requiring authentication before a session is established.</p>
+</li>
+</ul>
+</div>
+<div class="sect2">
+<h3 id="_restrict_access_with_networkpolicy"><a class="anchor" href="#_restrict_access_with_networkpolicy"></a>Restrict Access with NetworkPolicy</h3>
+<div class="paragraph">
+<p>Create a NetworkPolicy to limit RDP ingress to specific source IP ranges:</p>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/remote-access-windows-vms/restrict-rdp-networkpolicy.yaml" class="xref attachment">Download restrict-rdp-networkpolicy.yaml</a></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: restrict-rdp-access
+  namespace: &lt;your-namespace&gt;
+spec:
+  podSelector:
+    matchLabels:
+      vm.kubevirt.io/name: &lt;your-vm-name&gt;
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - ipBlock:
+        cidr: 203.0.113.0/24
+    ports:
+    - protocol: TCP
+      port: 3389</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Replace <code>203.0.113.0/24</code> with your organization&#8217;s allowed IP range.</p>
+</div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+If you use this policy to allowlist RDP client IPs, set
+<code>spec.externalTrafficPolicy: Local</code> on the RDP Service. This preserves the
+client source IP for supported <code>NodePort</code> and <code>LoadBalancer</code> configurations.
+For details, see
+<a href="https://kubernetes.io/docs/tutorials/services/source-ip/" target="_blank" rel="noopener">Using Source IP</a>.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Set this field on the RDP Service with:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc patch service &lt;your-rdp-service-name&gt; --type merge -p '{"spec":{"externalTrafficPolicy":"Local"}}'</code></pre>
+</div>
+</div>
 <div class="admonitionblock note">
 <table>
 <tr>
@@ -766,10 +922,58 @@ spec:
 <i class="fa icon-note" title="Note"></i>
 </td>
 <td class="content">
-Exposing RDP to the internet creates security risks. Consider using VPN or bastion hosts for production environments. Enable Network Level Authentication in Windows if possible. Use strong passwords and consider certificate-based authentication. Monitor access logs regularly.
+This policy allows TCP port 3389 from the specified source range and blocks other ingress to the selected VM pod. If the VM must receive traffic on additional ports, add those ports to this policy. NetworkPolicies are additive: if another policy selecting the same VM pod allows broader ingress, that traffic remains allowed. Check for overlapping policies before relying on this allowlist. For details, see
+<a href="https://kubernetes.io/docs/concepts/services-networking/network-policies/" target="_blank" rel="noopener">Kubernetes NetworkPolicies</a>.
 </td>
 </tr>
 </table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_rdp_over_ssh_tunnel"><a class="anchor" href="#_rdp_over_ssh_tunnel"></a>RDP over SSH Tunnel</h3>
+<div class="paragraph">
+<p>As an alternative to exposing port 3389 directly, tunnel RDP traffic through an SSH connection. The SSH tunnel encrypts the session and avoids creating an externally accessible service. The exact steps depend on your network topology and how your cluster is accessible. Refer to your SSH client documentation for port forwarding instructions.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_configure_a_trusted_rdp_listener_certificate"><a class="anchor" href="#_configure_a_trusted_rdp_listener_certificate"></a>Configure a Trusted RDP Listener Certificate</h3>
+<div class="paragraph">
+<p>By default, Windows generates a self-signed certificate for the RDP listener, which causes clients to show an untrusted certificate warning. In production environments, replace it with a certificate signed by a CA that your RDP clients trust. The listener certificate verifies the server&#8217;s identity; it does not authenticate the user. Clients must trust the issuing CA and validate the server identity used for the connection to prevent man-in-the-middle attacks.</p>
+</div>
+<div class="paragraph">
+<p>For step-by-step instructions, refer to the <a href="https://learn.microsoft.com/en-us/troubleshoot/windows-server/remote/remote-desktop-listener-certificate-configurations" target="_blank" rel="noopener">Microsoft documentation on Remote Desktop listener certificate configurations</a>.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_enable_network_level_authentication"><a class="anchor" href="#_enable_network_level_authentication"></a>Enable Network Level Authentication</h3>
+<div class="paragraph">
+<p>Network Level Authentication (NLA) requires users to authenticate before a full RDP session is established. This reduces the attack surface by rejecting unauthenticated connection attempts before any desktop is rendered.</p>
+</div>
+<div class="paragraph">
+<p>In the Windows 11 VM:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Open <strong>System Settings</strong> and navigate to <strong>Remote Desktop</strong>.</p>
+</li>
+<li>
+<p>Enable <strong>Require devices to use Network Level Authentication to connect</strong>.</p>
+</li>
+</ol>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+Regardless of which controls you apply, use strong passwords and monitor RDP access logs regularly.
+</td>
+</tr>
+</table>
+</div>
 </div>
 </div>
 </div>
