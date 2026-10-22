@@ -274,6 +274,12 @@ spec:
 
 Replace `203.0.113.0/24` with your organization's allowed IP range.
 
+WARNING: If you use this policy to allowlist RDP client IPs, set
+`spec.externalTrafficPolicy: Local` on the RDP Service. This preserves the
+client source IP for supported `NodePort` and `LoadBalancer` configurations.
+For details, see
+link:https://kubernetes.io/docs/tutorials/services/source-ip/[Using Source IP,window=_blank].
+
 === RDP over SSH Tunnel
 
 As an alternative to exposing port 3389 directly, tunnel RDP traffic through an SSH connection. The SSH tunnel encrypts the session and avoids creating an externally accessible service. The exact steps depend on your network topology and how your cluster is accessible. Refer to your SSH client documentation for port forwarding instructions.
