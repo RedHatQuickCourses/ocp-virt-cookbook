@@ -1,0 +1,17 @@
+apiVersion: cdi.kubevirt.io/v1beta1
+kind: DataImportCron
+metadata:
+  name: app-server-image
+  namespace: vm-import-demo
+spec:
+  schedule: "0 2 * * *"
+  managedDataSource: app-server-image
+  template:
+    spec:
+      source:
+        registry:
+          url: "docker://quay.io/<quay-username>/vm-images:app-server"
+      storage:
+        resources:
+          requests:
+            storage: 10Gi
