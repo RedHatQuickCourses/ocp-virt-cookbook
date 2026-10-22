@@ -1,0 +1,1117 @@
+= Exporting and Importing VMs for Cross-Cluster Mobility
+:navtitle: VM Export and Import
+
+== Overview
+
+This tutorial demonstrates how to export virtual machines out of an OpenShift Virtualization cluster and import them into another cluster or back into the same cluster. VM export produces portable disk images and VM manifests that can be moved through a container registry, object storage, or a direct connection between clusters.
+
+Cloning and snapshots operate inside a single cluster. Export and import are the tools you use when the destination is a different cluster, a backup system, or another team.
+
+== Use Cases
+
+* **Cross-cluster promotion**: Move a validated VM from development to staging to production clusters without rebuilding it from scratch
+* **Offline backup**: Export VM disks to S3-compatible storage for long-term retention outside the cluster
+* **Disaster recovery**: Keep exported copies of critical VMs that can be imported into a recovery cluster
+* **VM sharing**: Publish a VM image as a container image so other teams or clusters can consume it
+* **Migration between environments**: Move VMs between on-premises, hosted, and edge clusters
+
+== How VM Export Works
+
+A VM export is driven by the `VirtualMachineExport` custom resource. When you create one, the export controller starts an export pod that serves the VM's disks and manifest over authenticated HTTP endpoints.
+
+....
+Source cluster
+│
+└─ VirtualMachineExport  ──  references a VirtualMachine, VirtualMachineSnapshot, or PVC
+   │
+   ├─ token secret  ──  bearer token required on every download request
+   │
+   ├─ export pod + service  ──  serves disks at /volumes/<name>/disk.img
+   │
+   └─ OpenShift Route  ──  exposes the endpoints outside the cluster over HTTPS
+....
+
+The `status` block of the VirtualMachineExport contains the download URLs. Two URL families are provided:
+
+* **Internal URLs**: Reachable only from inside the cluster
+* **External URLs**: Reachable through an OpenShift Route, used for cross-cluster and workstation downloads
+
+Every download request must carry the token in the `x-kubevirt-export-token` HTTP header. The `virtctl vmexport` command family creates the resource, reads the token, and performs the download for you.
+
+Supported source types:
+
+[cols="1,1,1"]
+|===
+|Source type |Disk data |VM manifest
+
+|VirtualMachine
+|All PVC and DataVolume disks attached to the VM
+|Included
+
+|VirtualMachineSnapshot
+|All disks captured in the snapshot
+|Included
+
+|PersistentVolumeClaim
+|The single PVC
+|Not included
+
+|===
+
+For KubeVirt disks, the export server offers two formats:
+
+* **raw** (`disk.img`): The disk image as stored
+* **gzip** (`disk.img.gz`): The disk image compressed for transfer, the default for `virtctl vmexport download`
+
+=== VirtualMachineExport Lifespan
+
+A VirtualMachineExport is a short-lived resource. It is automatically deleted when its time-to-live expires, two hours by default. If you need the export to survive longer, set a longer TTL when creating it, and recreate the export when it expires.
+
+== Prerequisites
+
+* OpenShift {ocp-min-version}+ with the OpenShift Virtualization operator installed on the source cluster
+* Worker nodes with hardware virtualization available: bare-metal hosts or AWS `.metal` instances. Regular cloud VMs without nested virtualization do not expose `/dev/kvm`, and the VMs in this tutorial cannot schedule on them
+* For cross-cluster workflows, a second OpenShift cluster with OpenShift Virtualization installed
+* CLI tools installed: `oc`, `virtctl`
+* `podman` or `docker` installed, for the container registry sections
+* A quay.io account or access to an internal container registry, for the container registry sections
+* Optional: `aws` CLI and an S3-compatible object store, for the offline backup section
+* Recommended prior tutorials: xref:import-qcow2-boot-volume.adoc[Import qcow2 Boot Volumes], xref:cloning-vms.adoc[Cloning VMs], xref:vm-snapshots.adoc[VM Snapshots]
+
+TIP: You can follow this entire tutorial on a single cluster. Treat the `vm-export-demo` namespace as the source environment and `vm-import-demo` as the target environment. When you move to real cross-cluster workflows, run the source-side commands against one cluster and the target-side commands against the other by switching your `oc` context or `KUBECONFIG`.
+
+== Preparing the Demo Environment
+
+Create the two namespaces used in this tutorial. On two clusters, create `vm-export-demo` on the source cluster and `vm-import-demo` on the target cluster.
+
+xref:attachment$vm-export-import/namespace-vm-export-demo.yaml[Download namespace-vm-export-demo.yaml]
+
+[source,yaml]
+----
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: vm-export-demo
+----
+
+xref:attachment$vm-export-import/namespace-vm-import-demo.yaml[Download namespace-vm-import-demo.yaml]
+
+[source,yaml]
+----
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: vm-import-demo
+----
+
+Apply both namespaces:
+
+[source,bash,role=execute]
+----
+oc apply -f namespace-vm-export-demo.yaml
+oc apply -f namespace-vm-import-demo.yaml
+----
+
+Create the demo VM in the source namespace. The VM boots Fedora from a container image imported into a DataVolume, giving it a real PVC-backed disk to export:
+
+xref:attachment$vm-export-import/vm-app-server.yaml[Download vm-app-server.yaml]
+
+[source,yaml]
+----
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: app-server
+  namespace: vm-export-demo
+  labels:
+    app: app-server
+spec:
+  runStrategy: Always
+  template:
+    metadata:
+      labels:
+        kubevirt.io/vm: app-server
+    spec:
+      domain:
+        cpu:
+          cores: 1
+        devices:
+          disks:
+            - name: rootdisk
+              disk:
+                bus: virtio
+            - name: cloudinitdisk
+              disk:
+                bus: virtio
+          interfaces:
+            - name: default
+              masquerade: {}
+          rng: {}
+        memory:
+          guest: 2Gi
+      networks:
+        - name: default
+          pod: {}
+      volumes:
+        - name: rootdisk
+          dataVolume:
+            name: app-server-root
+        - name: cloudinitdisk
+          cloudInitNoCloud:
+            userData: |-
+              #cloud-config
+              user: fedora
+              password: fedora123
+              chpasswd:
+                expire: false
+              ssh_pwauth: true
+  dataVolumeTemplates:
+    - metadata:
+        name: app-server-root
+      spec:
+        source:
+          registry:
+            url: "docker://quay.io/containerdisks/fedora:latest"
+        storage:
+          resources:
+            requests:
+              storage: 10Gi
+----
+
+Apply the VM:
+
+[source,bash,role=execute]
+----
+oc apply -f vm-app-server.yaml
+----
+
+Wait for the DataVolume import to finish and the VM to start:
+
+[source,bash,role=execute]
+----
+oc get dv app-server-root -n vm-export-demo -w
+----
+
+Expected output:
+
+----
+NAME              PHASE        PROGRESS   RESTARTS   AGE
+app-server-root   Succeeded    100.0%     0          2m
+----
+
+Press Ctrl+C to stop watching once the phase is `Succeeded`. Confirm the VM is running:
+
+[source,bash,role=execute]
+----
+oc get vm app-server -n vm-export-demo
+----
+
+Expected output:
+
+----
+NAME         AGE   STATUS    READY
+app-server   3m    Running   True
+----
+
+Verify the VirtualMachineInstance is active and scheduled to a node:
+
+[source,bash,role=execute]
+----
+oc get vmi app-server -n vm-export-demo
+----
+
+Expected output:
+
+----
+NAME         AGE   PHASE     IP           NODENAME   READY
+app-server   3m    Running   10.244.1.5   worker-1   True
+----
+
+[[exporting-a-vm-from-the-source-cluster]]
+== Exporting a VM from the Source Cluster
+
+This section covers creating the export, reading the download links, and retrieving the disk image and VM manifest.
+
+=== Preparing the VM for a Consistent Export
+
+Stop the VM before exporting it. A stopped VM guarantees a consistent, clean copy of the disk, in the same way a powered-off server images cleanly. If the VM must keep running, export a VirtualMachineSnapshot instead, as described in xref:vm-snapshots.adoc[VM Snapshots], and accept a crash-consistent copy.
+
+[source,bash,role=execute]
+----
+virtctl stop app-server -n vm-export-demo
+----
+
+Confirm the VM has stopped:
+
+[source,bash,role=execute]
+----
+oc get vm app-server -n vm-export-demo
+----
+
+Expected output:
+
+----
+NAME         AGE   STATUS    READY
+app-server   5m    Stopped   False
+----
+
+=== Creating the VirtualMachineExport
+
+The quickest path is `virtctl vmexport create`, which creates the VirtualMachineExport and generates the token secret for you:
+
+[source,bash,role=execute]
+----
+virtctl vmexport create app-server-export --vm=app-server -n vm-export-demo
+----
+
+The first argument is the name of the VirtualMachineExport object, and `--vm` names the source VM. You can also export a snapshot with `--snapshot=<snapshot-name>` or a single PVC with `--pvc=<pvc-name>`.
+
+To keep the export available for longer than the default two hours, set an explicit TTL:
+
+[source,bash,role=execute]
+----
+virtctl vmexport create app-server-export --vm=app-server --ttl=24h -n vm-export-demo
+----
+
+For GitOps-managed environments, create the same resources from manifests. First generate a token value:
+
+[source,bash,role=execute]
+----
+openssl rand -hex 32
+----
+
+Store the generated value in a secret:
+
+xref:attachment$vm-export-import/export-token-secret.yaml[Download export-token-secret.yaml]
+
+[source,yaml]
+----
+apiVersion: v1
+kind: Secret
+metadata:
+  name: app-server-export-token
+  namespace: vm-export-demo
+stringData:
+  token: <generated-token>
+----
+
+Then reference the secret from the export object:
+
+xref:attachment$vm-export-import/virtualmachineexport-app-server.yaml[Download virtualmachineexport-app-server.yaml]
+
+[source,yaml]
+----
+apiVersion: export.kubevirt.io/v1beta1
+kind: VirtualMachineExport
+metadata:
+  name: app-server-export
+  namespace: vm-export-demo
+spec:
+  tokenSecretRef: app-server-export-token
+  source:
+    apiGroup: kubevirt.io
+    kind: VirtualMachine
+    name: app-server
+----
+
+Apply both manifests:
+
+[source,bash,role=execute]
+----
+oc apply -f export-token-secret.yaml
+oc apply -f virtualmachineexport-app-server.yaml
+----
+
+=== Waiting for the Export to Become Ready
+
+The export controller starts an export pod and exposes it through a Route. Wait for the export to report that the disks are ready to serve:
+
+[source,bash,role=execute]
+----
+oc wait vmexport app-server-export --for=condition=Ready --timeout=5m -n vm-export-demo
+----
+
+Expected output:
+
+----
+virtualmachineexport.export.kubevirt.io/app-server-export condition met
+----
+
+[[reading-the-download-links]]
+=== Reading the Download Links
+
+The download URLs live in the `status` block:
+
+[source,bash,role=execute]
+----
+oc get vmexport app-server-export -n vm-export-demo -o yaml
+----
+
+The interesting part of the output is the `status.links` section. Download URLs are listed separately for external (Route) and internal (in-cluster) access, under `status.links.external.volumes` and `status.links.internal.volumes`:
+
+[source,yaml]
+----
+status:
+  links:
+    external:
+      volumes:
+        - name: app-server-root
+          formats:
+            - format: raw
+              url: https://virt-exportproxy-openshift-cnv.apps.example.com/api/export.kubevirt.io/v1beta1/namespaces/vm-export-demo/virtualmachineexports/app-server-export/volumes/app-server-root/disk.img
+            - format: gzip
+              url: https://virt-exportproxy-openshift-cnv.apps.example.com/api/export.kubevirt.io/v1beta1/namespaces/vm-export-demo/virtualmachineexports/app-server-export/volumes/app-server-root/disk.img.gz
+----
+
+Each volume entry lists its formats and URLs. The volume is named after the DataVolume that backs it (`app-server-root`), not the disk device name used inside the VM template (`rootdisk`). External URLs go through the OpenShift Route; internal URLs, under `status.links.internal`, resolve only inside the cluster.
+
+To extract the volume names and URLs directly:
+
+[source,bash,role=execute]
+----
+oc get vmexport app-server-export -n vm-export-demo -o jsonpath='{.status.links.external.volumes[*].name}'
+----
+
+[source,bash,role=execute]
+----
+oc get vmexport app-server-export -n vm-export-demo -o jsonpath='{.status.links.external.volumes[*].formats[*].url}'
+----
+
+=== Downloading the Exported Disk
+
+Download the root disk with `virtctl vmexport download`. The gzip format is the default and is decompressed transparently while downloading:
+
+[source,bash,role=execute]
+----
+virtctl vmexport download app-server-export --volume=app-server-root --output=app-server-root.img --insecure -n vm-export-demo
+----
+
+The `--insecure` flag skips route certificate verification, which is necessary in labs with self-signed certificates. See <<verifying-data-integrity>> for the production guidance on TLS verification.
+
+Verify the downloaded file is a valid raw disk image. KubeVirt exports PVC content as a raw image regardless of how the disk was originally sourced, so the file is raw even though the source VM was built from a container-registry image:
+
+[source,bash,role=execute]
+----
+qemu-img info app-server-root.img
+----
+
+Expected output:
+
+----
+image: app-server-root.img
+file format: raw
+virtual size: 5.5 GiB (5962612224 bytes)
+disk size: 5.5 GiB
+----
+
+=== Accessing the Export with Token-Authenticated URLs
+
+The `virtctl` wrapper hides the underlying mechanism, but every export download is an HTTP GET that carries the token in a header. Understanding this lets you integrate exports with any HTTP client or pipeline.
+
+Retrieve the token:
+
+[source,bash,role=execute]
+----
+virtctl vmexport get-token app-server-export -n vm-export-demo
+----
+
+Download the gzip-formatted disk directly with `curl`, using the token and the full external URL read from the export status in <<reading-the-download-links>>:
+
+[source,bash,role=execute]
+----
+curl --insecure -H "x-kubevirt-export-token: <export-token>" -o app-server-root.img.gz "<external-gzip-url>"
+----
+
+Decompress the archive:
+
+[source,bash,role=execute]
+----
+gunzip app-server-root.img.gz
+----
+
+TIP: If your workstation cannot reach the cluster Routes, add `--port-forward` to the `virtctl vmexport download` command. It tunnels the download through a local port forwarded to the export service, which is useful in clusters without external ingress.
+
+[[downloading-the-vm-manifest]]
+=== Downloading the VM Manifest
+
+A VirtualMachine export also exposes the VM manifest, which you can reapply on the target cluster instead of rewriting the VM specification by hand:
+
+[source,bash,role=execute]
+----
+virtctl vmexport download app-server-export --manifest --output=app-server-manifest.yaml --insecure -n vm-export-demo
+----
+
+The manifest is not directly applyable on another cluster: it references the source PVC, contains cluster-specific metadata, and includes the DataVolume template that created the source disk. <<recreating-the-vm>> shows the required edits, and provides a ready-to-use target manifest.
+
+== Packaging a VM Disk as a Container Image
+
+Container registries are a convenient transport for VM disks: they provide authentication, versioning, and replication, and every cluster already knows how to pull from them. A VM disk packaged this way is called a *containerDisk*.
+
+Create a `Containerfile` next to the downloaded disk. The disk image must be placed in the `/disk/` directory of the container image:
+
+[source,dockerfile]
+----
+FROM scratch
+COPY app-server-root.img /disk/
+----
+
+Build the image, targeting the architecture of your cluster's worker nodes explicitly. `FROM scratch` has no base image to infer a platform from, so without `--platform` the build silently tags the image with the architecture of the machine running `podman build` -- a problem if you are building on Apple Silicon or another arm64 workstation and your cluster runs on amd64:
+
+[source,bash,role=execute]
+----
+podman build --platform linux/amd64 -t quay.io/<quay-username>/vm-images:app-server .
+----
+
+Confirm the architecture before pushing:
+
+[source,bash,role=execute]
+----
+podman image inspect quay.io/<quay-username>/vm-images:app-server --format '{{.Architecture}}'
+----
+
+Log in to the registry:
+
+[source,bash,role=execute]
+----
+podman login quay.io
+----
+
+Push the image:
+
+[source,bash,role=execute]
+----
+podman push quay.io/<quay-username>/vm-images:app-server
+----
+
+The repository on quay.io must be public, or the target cluster must authenticate as described in <<importing-from-a-container-registry>>.
+
+NOTE: Container images have a layer size limit of 20 GiB on most registries. For larger disks, use the object storage path described in <<offline-backup-to-s3-compatible-storage>> instead.
+
+[[importing-a-vm-into-the-target-cluster]]
+== Importing a VM into the Target Cluster
+
+The target cluster needs two things: the disk, imported into a DataVolume, and the VM definition. This section shows three import paths. Pick one; they all produce the same result.
+
+All commands in this section run against the target cluster. Switch your `oc` context or `KUBECONFIG` before continuing if you are using two clusters.
+
+=== Uploading a Local Disk with virtctl image-upload
+
+If the exported disk file is on your workstation, upload it directly. This is the same mechanism covered in xref:import-qcow2-boot-volume.adoc[Import qcow2 Boot Volumes]:
+
+[source,bash,role=execute]
+----
+virtctl image-upload dv app-server-root \
+  --image-path=app-server-root.img \
+  --size=10Gi \
+  --insecure \
+  -n vm-import-demo
+----
+
+Watch the import progress:
+
+[source,bash,role=execute]
+----
+oc get dv app-server-root -n vm-import-demo -w
+----
+
+Expected output:
+
+----
+NAME              PHASE        PROGRESS   RESTARTS   AGE
+app-server-root   Succeeded    100.0%     0          3m
+----
+
+[[importing-from-a-container-registry]]
+=== Importing from a Container Registry
+
+If you pushed the disk to a registry in the previous section, import it as a DataVolume. CDI pulls the image, extracts the disk from `/disk/`, and writes it to a new PVC:
+
+xref:attachment$vm-export-import/dv-registry-import.yaml[Download dv-registry-import.yaml]
+
+[source,yaml]
+----
+apiVersion: cdi.kubevirt.io/v1beta1
+kind: DataVolume
+metadata:
+  name: app-server-root
+  namespace: vm-import-demo
+  annotations:
+    cdi.kubevirt.io/storage.bind.immediate.requested: "true"
+spec:
+  source:
+    registry:
+      url: "docker://quay.io/<quay-username>/vm-images:app-server"
+  storage:
+    resources:
+      requests:
+        storage: 10Gi
+----
+
+Apply the DataVolume:
+
+[source,bash,role=execute]
+----
+oc apply -f dv-registry-import.yaml
+----
+
+For a private repository, first create a registry credential secret on the target cluster:
+
+[source,bash,role=execute]
+----
+oc create secret docker-registry quay-credentials --docker-server=quay.io --docker-username=<quay-username> --docker-password=<registry-token> -n vm-import-demo
+----
+
+Then reference it from the DataVolume with `spec.source.registry.secretRef: quay-credentials`.
+
+Watch the import:
+
+[source,bash,role=execute]
+----
+oc get dv app-server-root -n vm-import-demo -w
+----
+
+[[importing-over-http]]
+=== Importing over HTTP
+
+If the exported disk is hosted on a web server or object storage, import it over HTTP. This is the path used for restores from S3-compatible storage, where the URL is a presigned object URL:
+
+xref:attachment$vm-export-import/dv-http-import.yaml[Download dv-http-import.yaml]
+
+[source,yaml]
+----
+apiVersion: cdi.kubevirt.io/v1beta1
+kind: DataVolume
+metadata:
+  name: app-server-root
+  namespace: vm-import-demo
+  annotations:
+    cdi.kubevirt.io/storage.bind.immediate.requested: "true"
+spec:
+  source:
+    http:
+      url: "<http-url-to-disk>"
+  storage:
+    resources:
+      requests:
+        storage: 10Gi
+----
+
+NOTE: If the URL is served over HTTPS with a certificate that is not publicly trusted, which is common with self-hosted S3-compatible stores, the import fails certificate verification. Create a ConfigMap holding the server's CA certificate:
+
+[source,bash,role=execute]
+----
+oc create configmap s3-backup-ca --from-file=ca.pem=<ca-certificate-file> -n vm-import-demo
+----
+
+Then add `certConfigMap: s3-backup-ca` next to `url` in the manifest above. Imports from AWS S3 and other publicly trusted endpoints need no such setting.
+
+Apply the DataVolume:
+
+[source,bash,role=execute]
+----
+oc apply -f dv-http-import.yaml
+----
+
+Watch the import:
+
+[source,bash,role=execute]
+----
+oc get dv app-server-root -n vm-import-demo -w
+----
+
+=== Recreating the VM
+
+[[recreating-the-vm]]
+Start from the manifest downloaded in <<downloading-the-vm-manifest>> and make these edits:
+
+. Remove `status: {}`, and the leftover annotations under `metadata`: `kubectl.kubernetes.io/last-applied-configuration`, `kubemacpool.io/transaction-timestamp`, `kubevirt.io/latest-observed-api-version`, and `kubevirt.io/storage-observed-api-version`. None of them apply on the target cluster; it generates its own.
+. Change the namespace to `vm-import-demo`
+. Remove the `dataVolumeTemplates` section. virtctl rewrites its `source` to pull from the export server's own internal Kubernetes Service URL, authenticated with a `certConfigMap` and a `secretExtraHeaders` secret that is not included in this download. It is not usable here; the disk already exists as an imported DataVolume.
+. Point the volume at the imported DataVolume, so the `volumes` entry reads `name: rootdisk` with `dataVolume.name: app-server-root`
+
+The result looks like this:
+
+xref:attachment$vm-export-import/vm-app-server-imported.yaml[Download vm-app-server-imported.yaml]
+
+[source,yaml]
+----
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: app-server
+  namespace: vm-import-demo
+  labels:
+    app: app-server
+spec:
+  runStrategy: Halted
+  template:
+    metadata:
+      labels:
+        kubevirt.io/vm: app-server
+    spec:
+      domain:
+        cpu:
+          cores: 1
+        devices:
+          disks:
+            - name: rootdisk
+              disk:
+                bus: virtio
+            - name: cloudinitdisk
+              disk:
+                bus: virtio
+          interfaces:
+            - name: default
+              masquerade: {}
+          rng: {}
+        memory:
+          guest: 2Gi
+      networks:
+        - name: default
+          pod: {}
+      volumes:
+        - name: rootdisk
+          dataVolume:
+            name: app-server-root
+        - name: cloudinitdisk
+          cloudInitNoCloud:
+            userData: |-
+              #cloud-config
+              user: fedora
+              password: fedora123
+              chpasswd:
+                expire: false
+              ssh_pwauth: true
+----
+
+Apply the VM:
+
+[source,bash,role=execute]
+----
+oc apply -f vm-app-server-imported.yaml
+----
+
+=== Verifying the Imported VM
+
+Start the VM:
+
+[source,bash,role=execute]
+----
+virtctl start app-server -n vm-import-demo
+----
+
+Confirm it reaches `Running`:
+
+[source,bash,role=execute]
+----
+oc get vm app-server -n vm-import-demo
+----
+
+Expected output:
+
+----
+NAME         AGE   STATUS    READY
+app-server   1m    Running   True
+----
+
+Verify the VirtualMachineInstance is active:
+
+[source,bash,role=execute]
+----
+oc get vmi app-server -n vm-import-demo
+----
+
+A VM that boots, reports guest agents, and serves traffic has survived the move. Log in through the console to confirm the operating system itself is healthy:
+
+[source,bash,role=execute]
+----
+virtctl console app-server -n vm-import-demo
+----
+
+Log in with user `fedora` and password `fedora123`. Type `exit` to disconnect. For a stronger check, see <<verifying-data-integrity>>.
+
+[[cross-cluster-migration-workflow]]
+== Cross-Cluster Migration Workflow
+
+The full workflow chains the previous sections into a repeatable procedure, using a container registry or object storage as the transport between clusters. Both clusters only need access to the shared registry or bucket, not to each other directly -- this is the pattern for dev-to-prod promotion, sharing, and backups.
+
+....
+Source cluster                 Transport                    Target cluster
+──────────────                 ─────────                    ──────────────
+Stop the VM            ┌─────────────────────────┐   Create DataVolume
+       │               │  Container registry     │   (registry or HTTP import)
+       ▼               │  or object storage      │          │
+VirtualMachineExport ─►│                         │◄─────────┘
+       │               └─────────────────────────┘          ▼
+Download disk                                             Apply VM manifest
+and manifest                                                    │
+                                                                ▼
+                                                          Start and verify
+....
+
+NOTE: `virtctl vmexport download --manifest --include-secret` can bundle a VM manifest together with an authentication secret for a direct, storage-less transfer between the export pod and a target DataVolume. In practice this only works within the same cluster: the bundled manifest's disk source is always the export service's internal Kubernetes Service DNS name, which no other cluster can resolve, and the manifest's own `namespace` field is the source namespace, which conflicts with applying it into a different target namespace. Use the registry or object-storage path below for an actual cross-cluster move.
+
+[[offline-backup-to-s3-compatible-storage]]
+== Offline Backup to S3-Compatible Storage
+
+Object storage is the right transport for backups: it is cheap, durable, and independent of any cluster. Any S3-compatible store works, including AWS S3, MinIO, and Red Hat OpenShift Data Foundation with object storage.
+
+Export and download the disk as shown in <<exporting-a-vm-from-the-source-cluster>>, compute its checksum, and upload it next to the checksum file:
+
+[source,bash,role=execute]
+----
+sha256sum app-server-root.img > app-server-root.sha256
+----
+
+NOTE: On macOS, use `shasum -a 256 app-server-root.img > app-server-root.sha256` instead.
+
+Upload both files to your backup bucket:
+
+[source,bash,role=execute]
+----
+aws s3 cp app-server-root.img s3://<backup-bucket>/vm-backups/app-server/app-server-root.img
+----
+
+[source,bash,role=execute]
+----
+aws s3 cp app-server-root.sha256 s3://<backup-bucket>/vm-backups/app-server/app-server-root.sha256
+----
+
+For MinIO and other S3-compatible stores, the `mc cp` command is an equivalent alternative to `aws s3 cp`.
+
+Store the VM manifest alongside the disk so restores are self-describing:
+
+[source,bash,role=execute]
+----
+aws s3 cp app-server-manifest.yaml s3://<backup-bucket>/vm-backups/app-server/app-server-manifest.yaml
+----
+
+=== Restoring from Backup
+
+Restoring is an HTTP import with a presigned URL. Generate a URL that is valid long enough for the import:
+
+[source,bash,role=execute]
+----
+aws s3 presign s3://<backup-bucket>/vm-backups/app-server/app-server-root.img --expires-in 43200
+----
+
+Create the DataVolume using the presigned URL, exactly as in <<importing-over-http>>, apply the stored VM manifest with the edits from <<recreating-the-vm>>, and start the VM.
+
+Apply retention at the storage layer, not in the cluster: configure the bucket's lifecycle rules to expire old backup prefixes, and rely on object storage versioning for accidental-delete protection. Nothing inside the cluster needs to run between backups, which is what makes this an offline backup strategy.
+
+== Publishing VM Images for Sharing
+
+Once a disk lives in a container registry, sharing it is a consumption problem: other teams need a stable, named reference to clone from, without copying images around by hand. CDI provides this with `DataImportCron`, which periodically imports a registry image into a namespace and keeps an updated `DataSource` pointing at the result.
+
+Create a DataImportCron in the consuming namespace:
+
+xref:attachment$vm-export-import/dataimportcron-shared-image.yaml[Download dataimportcron-shared-image.yaml]
+
+[source,yaml]
+----
+apiVersion: cdi.kubevirt.io/v1beta1
+kind: DataImportCron
+metadata:
+  name: app-server-image
+  namespace: vm-import-demo
+spec:
+  schedule: "0 2 * * *"
+  managedDataSource: app-server-image
+  template:
+    spec:
+      source:
+        registry:
+          url: "docker://quay.io/<quay-username>/vm-images:app-server"
+      storage:
+        resources:
+          requests:
+            storage: 10Gi
+----
+
+Apply it:
+
+[source,bash,role=execute]
+----
+oc apply -f dataimportcron-shared-image.yaml
+----
+
+Confirm the managed DataSource becomes ready:
+
+[source,bash,role=execute]
+----
+oc wait datasource app-server-image --for=condition=Ready --timeout=10m -n vm-import-demo
+----
+
+Expected output:
+
+----
+datasource.cdi.kubevirt.io/app-server-image condition met
+----
+
+VMs in that namespace now clone from the DataSource by reference, receiving a fresh copy of the disk on creation:
+
+[source,yaml]
+----
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: app-server-clone
+  namespace: vm-import-demo
+spec:
+  runStrategy: Halted
+  template:
+    metadata:
+      labels:
+        kubevirt.io/vm: app-server-clone
+    spec:
+      domain:
+        cpu:
+          cores: 1
+        devices:
+          disks:
+            - name: rootdisk
+              disk:
+                bus: virtio
+          rng: {}
+        memory:
+          guest: 2Gi
+  dataVolumeTemplates:
+    - metadata:
+        name: app-server-clone-root
+      spec:
+        sourceRef:
+          kind: DataSource
+          name: app-server-image
+          namespace: vm-import-demo
+        storage:
+          resources:
+            requests:
+              storage: 10Gi
+  volumes:
+    - name: rootdisk
+      dataVolume:
+        name: app-server-clone-root
+----
+
+Each consuming namespace needs its own DataImportCron, or an RBAC rule granting access to a shared DataSource in a central namespace. This is the same pattern used by the golden image tutorials, xref:custom-golden-images.adoc[Custom Golden Images].
+
+[[verifying-data-integrity]]
+== Verifying Data Integrity
+
+Every hop in the export-import chain is a file transfer, and every transfer can corrupt data silently. Verification is what turns a working demo into a trustworthy procedure.
+
+=== Checksums
+
+Compute a checksum on the source side, immediately after download:
+
+[source,bash,role=execute]
+----
+sha256sum app-server-root.img
+----
+
+Compute it again at each downstream resting point: after uploading to a registry, after downloading from a registry on the target side, after retrieving from backup storage. The values must match exactly. Store the checksum next to the artifact, as the backup section does, so verification does not depend on remembering the value.
+
+=== Image Validation
+
+`qemu-img check` validates internal consistency structures found in formats like qcow2. It does not support raw images -- the format KubeVirt always exports -- so it cannot be used here.
+
+For raw images, `qemu-img info` is the available validation: it confirms the file parses as a disk image and reports its actual size, catching a truncated download, a zero-length file, or anything that is not actually a disk image:
+
+[source,bash,role=execute]
+----
+qemu-img info app-server-root.img
+----
+
+A file that fails to parse, or reports a size that does not match what the export produced, was corrupted in transit -- re-download it rather than importing it. This check cannot detect subtle bit-level corruption inside an otherwise well-formed file; the checksum comparison above is what proves byte-for-byte integrity across every hop.
+
+=== Post-Import Validation
+
+After the DataVolume reports `Succeeded`, confirm the size and format CDI wrote:
+
+[source,bash,role=execute]
+----
+oc get dv app-server-root -n vm-import-demo -o jsonpath='{.status.phase}{"\n"}{.status.progress}'
+----
+
+The decisive test is functional: a VM that boots, reports `Running` with `Ready True`, and responds on its console. A disk with silent corruption often still imports; it fails at boot. For critical VMs, run an application-level check after import, such as a database consistency check, before cutting over.
+
+=== Encryption in Transit
+
+* The export Route serves over HTTPS, so downloads between clusters and workstations are encrypted by default. The `--insecure` flag disables certificate verification only, not encryption. It is acceptable in labs with self-signed certificates; in production, trust the cluster CA on the downloading side instead, or use `--port-forward` to tunnel through the API server.
+* Registry pushes and pulls are encrypted over HTTPS and authenticated with registry credentials or pull secrets.
+* Object storage transfers use HTTPS endpoints, and presigned URLs add scoped, time-limited authorization.
+* The internal export URLs are plain HTTP. They never leave the cluster network, but use the external URLs or `--port-forward` rather than routing internal traffic through untrusted paths.
+
+== Automating Export and Import Workflows
+
+The manual procedure above is a sequence of six steps: stop the VM, create the export, wait for readiness, download the disk and manifest, transfer to the transport of choice, and import on the target. Each step is a single CLI command, which makes the whole workflow straightforward to script.
+
+`virtctl vmexport` includes flags designed for unattended runs:
+
+* `--ttl` bounds how long the export exists, so a failed pipeline cleans up after itself
+* `--readiness-timeout` fails the command instead of hanging when the export never becomes ready
+* `--retry` retries transient download errors
+* `--delete-vme` removes the export object after a successful download
+
+For example, an unattended download becomes:
+
+[source,bash,role=execute]
+----
+virtctl vmexport download app-server-export --volume=app-server-root --output=app-server-root.img --insecure --retry=3 --readiness-timeout=10m --delete-vme -n vm-export-demo
+----
+
+The target side of an automated run is the import sequence from <<importing-a-vm-into-the-target-cluster>>, gated on the DataVolume reaching readiness before the VM is started:
+
+xref:attachment$vm-export-import/dv-registry-import.yaml[Download dv-registry-import.yaml]
+
+[source,bash,role=execute]
+----
+oc apply -f dv-registry-import.yaml
+----
+
+[source,bash,role=execute]
+----
+oc wait dv app-server-root --for=condition=Ready --timeout=10m -n vm-import-demo
+----
+
+xref:attachment$vm-export-import/vm-app-server-imported.yaml[Download vm-app-server-imported.yaml]
+
+[source,bash,role=execute]
+----
+oc apply -f vm-app-server-imported.yaml
+----
+
+[source,bash,role=execute]
+----
+virtctl start app-server -n vm-import-demo
+----
+
+The `oc wait` command blocks until the import finishes, so the steps chain directly in a script: an import that fails or stalls past the timeout returns a non-zero exit code and stops the pipeline before a VM is started against an incomplete disk.
+
+Wrap the command sequence in whatever scheduler your platform already provides. Common patterns:
+
+* **CI pipelines**: Run the export-download-push sequence in a Jenkins or GitLab CI job, gated on the checksum verification step, so a corrupted transfer never reaches the registry
+* **Scheduled backup**: An OpenShift CronJob or external scheduler running a container with `oc` and `virtctl` that performs the export-to-S3 procedure nightly for selected VMs
+* **Disaster recovery replication**: The same scheduled job pointed at a second cluster, importing with the registry or HTTP DataVolume, so the DR cluster always holds a recent copy
+
+Whichever scheduler you choose, keep the checksum comparison inside the automated flow. A backup pipeline that does not verify its transfers will silently back up corrupted disks.
+
+Two safety rules for automated exports: schedule them for VMs that are stopped or snapshot-backed, so the copy is always consistent, and use short TTLs so a crashed pipeline does not leave authenticated export endpoints exposed longer than necessary.
+
+== Troubleshooting
+
+=== The VirtualMachineExport never becomes Ready
+
+Check the conditions and events:
+
+[source,bash,role=execute]
+----
+oc describe vmexport app-server-export -n vm-export-demo
+----
+
+Common causes: the source VM is still running with its disks in use, the token secret referenced by `tokenSecretRef` does not exist, or the export pod failed to start. Check the export pod directly:
+
+[source,bash,role=execute]
+----
+oc get pods -n vm-export-demo
+----
+
+=== Certificate errors during download
+
+An error such as `x509: certificate signed by unknown authority` means the route certificate is not trusted on your workstation. In labs, use `--insecure`. In production, install the cluster CA certificate on the downloading system, or use `--port-forward`.
+
+=== 401 Unauthorized on download
+
+The token is missing, wrong, or belongs to a different export. Retrieve the current token and confirm the secret name matches `spec.tokenSecretRef`:
+
+[source,bash,role=execute]
+----
+virtctl vmexport get-token app-server-export -n vm-export-demo
+----
+
+=== The VirtualMachineExport disappeared
+
+Exports are deleted when their TTL expires, two hours by default. Recreate the export and use `--ttl` to extend the window for long transfers.
+
+=== The import DataVolume is stuck in ImportInProgress
+
+The importer pod does the actual transfer. Inspect it for the real error:
+
+[source,bash,role=execute]
+----
+oc get pods -n vm-import-demo
+----
+
+[source,bash,role=execute]
+----
+oc logs <importer-pod-name> -n vm-import-demo
+----
+
+Common causes: the registry repository is private and no `secretRef` is configured, the target cluster cannot resolve or reach the registry or HTTP URL, or the URL is a presigned URL that has expired.
+
+=== The imported VM fails to boot
+
+A VM that imports but fails to start usually has a corrupted disk. Run `qemu-img info` on the source file to confirm it still parses and reports the expected size, compare checksums across the transfer, and re-import. If the image is intact, compare the imported VM's volume mode and access mode with the source PVC.
+
+== Cleanup
+
+On the source cluster, remove the export, the VM, and the namespace:
+
+[source,bash,role=execute]
+----
+virtctl vmexport delete app-server-export -n vm-export-demo
+----
+
+[source,bash,role=execute]
+----
+oc delete vm app-server -n vm-export-demo
+oc delete namespace vm-export-demo
+----
+
+On the target cluster, remove the VM, the imported disk, the sharing resources, and the namespace:
+
+[source,bash,role=execute]
+----
+oc delete vm app-server app-server-clone -n vm-import-demo
+oc delete dataimportcron app-server-image -n vm-import-demo
+oc delete dv --all -n vm-import-demo
+oc delete secret quay-credentials -n vm-import-demo
+oc delete namespace vm-import-demo
+----
+
+Remove the workstation artifacts:
+
+[source,bash,role=execute]
+----
+rm -f app-server-root.img app-server-root.sha256 app-server-manifest.yaml Containerfile
+----
+
+The container image in quay.io and any objects uploaded to S3 are outside the cluster; delete them through the registry and storage consoles if you no longer need them.
+
+== Summary
+
+In this tutorial, you learned:
+
+* What the VirtualMachineExport resource is and how its token-authenticated download endpoints work
+* How to create an export with `virtctl vmexport create` or from manifests, and how to retrieve disks with `virtctl vmexport download` or plain `curl`
+* How to package a VM disk as a containerDisk image and push it to a container registry
+* Three ways to import a disk into the target cluster: `virtctl image-upload`, registry DataVolume, and HTTP DataVolume
+* How to adapt and reapply the exported VM manifest on the target cluster
+* How to chain these steps into a repeatable cross-cluster migration using a registry or object storage as the transport
+* How to export VM disks to S3-compatible storage for offline backup, and how to restore them with presigned URLs
+* How to publish VM images for sharing with DataImportCron and DataSource resources
+* How to verify integrity with checksums, `qemu-img info`, and post-import validation, and how transfers are encrypted
+* How to automate the workflow with scripting-oriented vmexport flags, schedulers, and CI pipelines
+
+Export and import complete the VM lifecycle toolbox: cloning and snapshots move VMs inside a cluster, while export and import move them between clusters, into backups, and out to other teams.
+
+== See Also
+
+* xref:import-qcow2-boot-volume.adoc[Import qcow2 Boot Volumes] - uploading disk images into the cluster
+* xref:cloning-vms.adoc[Cloning VMs] - same-cluster alternatives to export and import
+* xref:vm-snapshots.adoc[VM Snapshots] - point-in-time copies that can also be exported
+* xref:custom-golden-images.adoc[Custom Golden Images] - the DataSource sharing pattern in depth
+* xref:storage:cdi-operations.adoc[CDI Operations] - how CDI imports, clones, and uploads work
+* link:https://docs.redhat.com/en/documentation/openshift_container_platform/{ocp-docs-version}/html/virtualization/managing-vms-virt#exporting-vms[Exporting virtual machines,window=_blank]
+* link:https://kubevirt.io/user-guide/storage/exports/[KubeVirt VM export documentation,window=_blank]
+* link:https://kubevirt.io/user-guide/compute/container-disks/[KubeVirt containerDisks,window=_blank]
