@@ -1,0 +1,1259 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Transferring Files to and from a Virtual Machine :: OpenShift Virtualization cookbook</title>
+    <link rel="prev" href="scheduling-tolerations-taints.html">
+    <link rel="next" href="../performance/index.html">
+    <meta name="generator" content="Antora 3.1.3">
+    <link rel="stylesheet" href="../../../_/css/site.css">
+    <script>var uiRootPath = '../../../_'</script>
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://www.redhat.com" target="_blank"><img src="../../../_/img/redhat-logo.png" height="40px" alt="Red Hat"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="../../..">OpenShift Virtualization cookbook</a>
+      <div class="navbar-item search hide-for-print">
+        <div id="search-field" class="field">
+          <input id="search-input" type="text" placeholder="Search the docs">
+        </div>
+      </div>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues" target="_blank">Report Issues</a>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="ocp-virt-cookbook" data-version="1">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="../index.html">OpenShift Virtualization cookbook</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../index.html">Introduction</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../getting-started/index.html">Getting Started</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/vm-quick-start.html">Quick Start</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/prerequisites.html">Prerequisites</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/architecture-overview.html">Architecture Overview</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/hosted-control-planes.html">Hosted Control Planes</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/install-openshift-virtualization.html">Install OpenShift Virtualization</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/installing-qemu-guest-agent.html">Installing QEMU Guest Agent</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/default-storage-class.html">Storage Setup</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/create-vm-web-console.html">Create VM from Web Console</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/create-vm-cli-yaml.html">Create VM from CLI</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/vm-lifecycle-states.html">VM Lifecycle States</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/virtctl-basics.html">Virtctl Basics</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/cloud-init-fundamentals.html">Cloud-init Fundamentals</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../storage/index.html">Storage Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/lvm-operator.html">LVM Operator Installation</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/lvm-troubleshooting.html">LVM Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/odf-ceph-storage.html">ODF/Ceph Storage</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/hostpath-provisioner.html">HostPath Provisioner</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/creating-managing-storage-class.html">Creating and Managing Storage Classes</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/choosing-storage-class.html">Choosing a Storage Class</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/multi-disk-configuration.html">Multi-Disk VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/expanding-vm-disk-size.html">Expanding VM Disk Size</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/cdi-operations.html">CDI Operations</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/disk-io-tuning.html">Disk I/O Tuning</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/storage-profiles.html">Storage Profiles</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/live-migration-storage.html">Live Migration Storage</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../networking/index.html">Networking Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/static-ip-configuration.html">Static IP Configuration</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/cloud-init-troubleshooting.html">Cloud-init Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/udn-primary-networks.html">UDN Primary Networks</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/localnet-secondary.html">Localnet Secondary Networks with CUDN</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/localnet-vlan.html">Localnet Secondary Networks with VLAN using NAD</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/cudn-localnet-vlan.html">Localnet VLAN with CUDN</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/layer2-secondary.html">Layer 2 Secondary Networks</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/linux-bridges.html">Linux Bridges</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/sriov-secondary.html">SR-IOV Secondary Networks</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/network-policies-vms.html">Network Policies for VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/metallb-loadbalancer.html">MetalLB Load Balancer for VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/dual-stack-vms.html">Dual-Stack IPv4/IPv6 VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/vm-ingress-routes.html">VM Ingress and Routes</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/ovs-bridge-troubleshooting.html">Troubleshooting Localnet Networks</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="index.html">Virtual Machine Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="internal-dns-for-vms.html">Internal DNS for VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="remote-access-linux-vms.html">Remote Access to Linux VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="remote-access-linux-troubleshooting.html">Remote Access to Linux VMs Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="remote-access-windows-vms.html">Remote Access to Windows VMs via RDP</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="ssh-access-windows-vms.html">Remote Access to Windows VMs via SSH</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="windows-vm-virtio-drivers.html">Windows VMs with VirtIO Drivers</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="legacy-windows-versions.html">Legacy Windows Versions</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="infrastructure-node-placement.html">Infrastructure Node Placement</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="node-placement-affinity.html">Node Placement and Affinity</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="hotplug-volumes-interfaces.html">Hotplug Volumes and Interfaces</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="vm-templates.html">Virtual Machine Templates</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="instancetype-preference.html">Instancetype and Preference</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="hyperconverged-configuration.html">HyperConverged Configuration</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="scheduling-tolerations-taints.html">Scheduling with Tolerations and Taints</a>
+  </li>
+  <li class="nav-item is-current-page" data-depth="2">
+    <a class="nav-link" href="vm-file-transfer.html">VM File Transfer</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../performance/index.html">VM Performance Tuning</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/resource-limits-qos.html">Resource Limits and QoS</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/cpu-pinning.html">Dedicated CPU Placement</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/numa-hugepages.html">NUMA and Hugepages</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/realtime-vms.html">Real-Time VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/vm-monitoring-metrics.html">VM Monitoring and Metrics</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/nested-virtualization.html">Nested Virtualization</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/windows-vm-optimization.html">Windows VM Optimization</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../vm-lifecycle/index.html">VM Lifecycle Management</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/import-qcow2-boot-volume.html">Import qcow2 Boot Volume</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/custom-golden-images.html">Custom Golden Images</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/windows-golden-images.html">Windows Golden Images</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/golden-images-troubleshooting.html">Golden Images Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/cloning-vms.html">Cloning VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/vm-snapshots.html">VM Snapshots</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/boot-order-boot-sources.html">VM Boot Order and Boot Sources</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/live-migration.html">Live Migration</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/migrate-from-vmware-mtv.html">Migrate from VMware (MTV)</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../manifests/index.html">Manifests</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../api/index.html">API Guide</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../api/api-component-overview.html">API Component Overview</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../agentic-vm-management/index.html">Agentic VM Management</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/getting-started.html">Getting Started with rh-virt</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/natural-language-vm-create.html">Natural Language VM Creation</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/ai-vm-lifecycle.html">AI VM Lifecycle Operations</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/vm-clone.html">Cloning VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/ai-vm-snapshot-management.html">VM Snapshot Management</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/ai-skill-chaining.html">Day-2 Skill Chaining</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/ai-vm-rebalance.html">VM Rebalancing and Live Migration</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../appendix/glossary.html">Glossary</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">OpenShift Virtualization cookbook</span>
+    <span class="version">1</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <a class="title" href="../index.html">OpenShift Virtualization cookbook</a>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">1</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">OpenShift Virtualization cookbook</a></li>
+    <li><a href="index.html">Virtual Machine Configuration</a></li>
+    <li><a href="vm-file-transfer.html">VM File Transfer</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">Transferring Files to and from a Virtual Machine</h1>
+<div class="sect1">
+<h2 id="_overview"><a class="anchor" href="#_overview"></a>Overview</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>This guide covers how to upload files to virtual machines using the command-line interface.
+The same procedure will work for both Linux and Windows VMs, provided that OpenSSH is installed and running on the target VM.</p>
+</div>
+<div class="paragraph">
+<p>Thus, an OpenSSH server (on the VM side) and the <code>ssh</code> protocol are required to transfer files to and from VMs using this tutorial.</p>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-important" title="Important"></i>
+</td>
+<td class="content">
+This tutorial uses <code>&lt;placeholders&gt;</code> which must be replaced with the actual username, VM name (or hostname or IP address) and file path.
+The example commands cannot be copied and pasted to run without modification.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_what_you_will_learn"><a class="anchor" href="#_what_you_will_learn"></a>What You Will Learn</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>In this guide, you will learn how to:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><a href="#prepare_local_env">Prepare the Local Environment.</a></p>
+</li>
+<li>
+<p><a href="#ssh_connection_string">Use SSH Connection Strings.</a></p>
+</li>
+<li>
+<p><a href="#transfer_files_virtctl">Transfer Files using virtctl.</a></p>
+<div class="ulist">
+<ul>
+<li>
+<p><a href="#upload_files_virtctl">Upload Files to a Virtual Machine using virtctl.</a></p>
+<div class="ulist">
+<ul>
+<li>
+<p><a href="#upload_rhel_virtctl">Upload Files to a RHEL VM using virtctl.</a></p>
+</li>
+<li>
+<p><a href="#upload_windows_virtctl">Upload Files to a Windows VM using virtctl.</a></p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p><a href="#download_files_virtctl">Download Files from a Virtual Machine using virtctl.</a></p>
+<div class="ulist">
+<ul>
+<li>
+<p><a href="#download_rhel_virtctl">Download Files from a RHEL VM using virtctl.</a></p>
+</li>
+<li>
+<p><a href="#download_windows_virtctl">Download Files from a Windows VM using virtctl.</a></p>
+</li>
+</ul>
+</div>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p><a href="#transfer_files_native">Transfer Files using Native Tools.</a></p>
+</li>
+<li>
+<p><a href="#cleanup_disable_ssh">Optionally Disable OpenSSH</a> after file transfer is complete.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_business_use_cases"><a class="anchor" href="#_business_use_cases"></a>Business Use Cases</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>In this guide, we showcase how to use two primary methods of transferring files to and from VMs:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>using <code>virtctl</code></p>
+</li>
+<li>
+<p>using native file transfer tools</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>While using <code>virtctl</code> for transferring files to VMs does have drawbacks (see the opening warning in <a href="#transfer_files_virtctl">the <code>virtctl</code> section</a>),
+there are legitimate cases when transferring files using <code>virtctl</code> may be preferred.</p>
+</div>
+<div class="paragraph">
+<p>You may want to use <code>virtctl</code> when:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>your VMs do not have direct internet access and you need a simple means to upload files to (or download from) a VM.</p>
+</li>
+<li>
+<p>you do not want VMs exposed to the <code>ssh</code> protocol over the cluster-internal network using a Kubernetes <code>Service</code>, or over the public internet using a <code>LoadBalancer Service</code>.</p>
+</li>
+<li>
+<p>temporary exposure using the <code>ssh</code> protocol is preferred over persistent access (note that you can still use native tools in such a case).</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Use the native file transfer tools if:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>you&#8217;re in a production environment and need to transfer large files, or you need a number of concurrent connections.</p>
+</li>
+<li>
+<p>you need <code>ssh</code> access to your VMs directly from the internet or through the cluster-internal network.</p>
+</li>
+<li>
+<p>you need stable access to the <code>ssh</code> protocol for future file transfers and remote management, either manually or using Ansible (note that you can still configure <code>ssh</code> access temporarily).</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_prerequisites"><a class="anchor" href="#_prerequisites"></a>Prerequisites</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>This guide assumes that you have the following tools or infrastructure installed or available (respectively):</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>An OpenShift 4.18 or later cluster</p>
+</li>
+<li>
+<p>The OpenShift Virtualization add-on</p>
+</li>
+<li>
+<p>The <code>virtctl</code> binary</p>
+</li>
+<li>
+<p>A compatible client-side shell environment; <code>bash</code> is mostly used here, but some PowerShell examples are given for Windows guests.</p>
+</li>
+<li>
+<p>One or more VMs that can be used to host file transfers. Below are guides to create VMs with different operating systems:</p>
+<div class="ulist">
+<ul>
+<li>
+<p><a href="../getting-started/vm-quick-start.html" class="xref page" target="_blank" rel="noopener">VM Quick Start (quickly create a Fedora VM)</a></p>
+</li>
+<li>
+<p><a href="../getting-started/create-vm-cli-yaml.html" class="xref page" target="_blank" rel="noopener">Create a RHEL VM (refer to Step 1)</a></p>
+</li>
+<li>
+<p><a href="windows-vm-virtio-drivers.html" class="xref page" target="_blank" rel="noopener">Create a Windows VM with VirtIO drivers enabled</a></p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>The <code>git</code> binary, which is used to seed file and directory transfers.</p>
+</li>
+<li>
+<p>OpenSSH server configured and running on your applicable VM guest operating system:</p>
+<div class="ulist">
+<ul>
+<li>
+<p><a href="remote-access-linux-vms.html" class="xref page" target="_blank" rel="noopener">Configure SSH access for RHEL and Fedora VMs</a></p>
+</li>
+<li>
+<p><a href="ssh-access-windows-vms.html" class="xref page" target="_blank" rel="noopener">Configure SSH access for Windows VMs</a></p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>For the section on native file transfer tools, the following additional requirements:</p>
+<div class="ulist">
+<ul>
+<li>
+<p>A Kubernetes <code>Service</code> exposing the VM(s) (refer to either the RHEL or Windows-specific tutorials above).</p>
+</li>
+<li>
+<p>The <code>rsync</code> tool (<code>scp</code> is also required, but typically installed alongside the <code>ssh</code> client tools).</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>All VMs must be preconfigured with a password-protected user account, with either password or public key login enabled for OpenSSH.</p>
+</li>
+</ul>
+</div>
+<div class="sect2">
+<h3 id="prepare_local_env"><a class="anchor" href="#prepare_local_env"></a>Prepare the Local Environment</h3>
+<div class="paragraph">
+<p>In this section, you will obtain a data source to use in the remainder of the tutorial.
+To keep things simple (and consistent), the Git repository for this documentation will be used in all examples.</p>
+</div>
+<div class="paragraph">
+<p>With the <code>ssh</code> and <code>scp</code> nuances explained, go ahead and use the <code>git</code> command to clone the docs repo:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre>git clone https://github.com/RedHatQuickCourses/ocp-virt-cookbook</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Change directory to the repo that was just downloaded:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre>cd ocp-virt-cookbook</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Now that a local source of content is available, you can continue on or <a href="#transfer_files_virtctl">skip ahead</a> if you already know how to use <code>ssh</code> connection strings.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="ssh_connection_string"><a class="anchor" href="#ssh_connection_string"></a>Using SSH Connection Strings</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Regardless of whether you choose <code>virtctl</code> or native tools such as <code>scp</code> or <code>rsync</code>, you will use an <code>ssh</code> connection string as either the source or destination for the file transfer.</p>
+</div>
+<div class="paragraph">
+<p>A breakdown of the <code>ssh</code> connection string is provided below:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre>&lt;username&gt;@&lt;vm-name&gt;:&lt;filepath&gt;</pre>
+</div>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>&lt;username&gt;</strong> - The name of a user account on the remote machine.</p>
+</li>
+<li>
+<p><strong>&lt;vm-name&gt;</strong> - The Kubernetes resource name of the <code>VirtualMachine</code> or <code>VirtualMachineInstance</code> with either the <code>vm/</code> or <code>vmi/</code> prefix, respectively.</p>
+</li>
+<li>
+<p><strong>&lt;filepath&gt;</strong> - Either a path relative to the user&#8217;s home directory or an absolute path to a file or directory on the remote machine.</p>
+</li>
+</ul>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="title">On ssh and scp options</div>
+<div class="paragraph">
+<p>The following options are supported in <code>virtctl scp</code> as they are in the actual <code>scp</code> command, where options are passed before the <code>&lt;src&gt;</code> or <code>&lt;dest&gt;</code> parameters:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>-i &lt;ssh-keypath&gt;</strong> - Provide this option to pass a (non-default) private key that can be used in lieu of a password when connecting. A matching public key must be in the user&#8217;s <code>.ssh/authorized_keys</code> file on the remote host.</p>
+</li>
+<li>
+<p><strong>-r</strong> --------------- Copy recursively. Use this as with the <code>cp</code> command to allow copying the entire contents (files and subdirectories) of a source directory, whether local or remote.</p>
+</li>
+</ul>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Now that the basics of using <code>ssh</code> connection strings have been explained, continue on with using <code>virtctl</code> to transfer files.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="transfer_files_virtctl"><a class="anchor" href="#transfer_files_virtctl"></a>Transfer Files Using virtctl</h2>
+<div class="sectionbody">
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Using <code>virtctl</code> for especially large file transfers (in size, duration, or concurrent connections)
+can put a heavy strain on the API server, as it relies on port-forwarding through the control-plane.</p>
+</div>
+<div class="paragraph">
+<p>It is therefore best to use a Kubernetes <code>Service</code> resource to expose the <code>ssh</code> port on the VM,
+and then use native tools such as <code>scp</code> or <code>rsync</code> to transfer files.</p>
+</div>
+<div class="paragraph">
+<p>See the section on <a href="#transfer_files_native">Using Native File Transfer Tools</a> if it better fits your use case.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Despite the above warning, using <code>virtctl</code> for file transfers is the quickest, easiest method for transferring files to and from a VM.</p>
+</div>
+<div class="paragraph">
+<p>The process is essentially the same for all platforms, with the main difference being that Windows systems have lettered disk volumes (and therefore absolute file paths).
+This section is therefore broken into subsections covering Linux and Windows-based file transfer commands separately.</p>
+</div>
+<div class="paragraph">
+<p>The basic syntax is (as with <code>cp</code> and <code>scp</code>) <code>virtctl scp &lt;src&gt; &lt;dest&gt;</code>, where one argument is a local file path and the other is an <code>ssh</code> connection string.</p>
+</div>
+<div class="sect2">
+<h3 id="upload_files_virtctl"><a class="anchor" href="#upload_files_virtctl"></a>Upload Files using virtctl</h3>
+<div class="paragraph">
+<p>Using files located in our locally downloaded Git repository,
+the following command examples show a few different upload operations performed on both RHEL (or Fedora) and Windows systems.</p>
+</div>
+<div class="paragraph">
+<p>When uploading, the <code>ssh</code> host connection string will be the last parameter or the destination portion of the <code>virtctl scp</code> command.
+Be mindful of the <code>&lt;placeholders&gt;</code> used in the commands below.
+They will each need to be replaced with the applicable value for your use case.</p>
+</div>
+<div class="sect3">
+<h4 id="upload_rhel_virtctl"><a class="anchor" href="#upload_rhel_virtctl"></a>Upload to RHEL, Fedora and Other Linux VMs using virtctl</h4>
+<div class="paragraph">
+<p>Upload the <code>README.md</code> file to the <code>/var/tmp</code> directory on the VM, replacing <code>&lt;username&gt;</code> and <code>&lt;vm-name&gt;</code> with the values for <em>your</em> VM:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre>virtctl scp README.md &lt;username&gt;@vm/&lt;vm-name&gt;:/var/tmp/</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Upload the <code>images</code> directory to the user&#8217;s home directory by passing the <code>-r</code> flag (meaning to copy recursively):</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre>virtctl scp -r images/ &lt;username&gt;@vm/&lt;vm-name&gt;:</pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+An empty path (specifically, the part after the <code>:</code> in the <code>ssh</code> connection string) will default to the user&#8217;s home directory.
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect3">
+<h4 id="upload_windows_virtctl"><a class="anchor" href="#upload_windows_virtctl"></a>Upload to Windows VMs using virtctl</h4>
+<div class="paragraph">
+<p>Upload the <code>README.md</code> file to the user&#8217;s home directory on the Windows VM, replacing <code>&lt;username&gt;</code> and <code>&lt;vm-name&gt;</code> with the applicable values:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre>virtctl scp README.md &lt;username&gt;@vm/&lt;vm-name&gt;:</pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+As with RHEL, Fedora and other Linux systems, an empty path (defined after the <code>:</code> symbol) still defaults to the user&#8217;s home directory on Windows systems.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Upload the <code>images/</code> directory from the root of the Git repository (which should still be the current working directory on our client machine) to the Public Pictures directory.
+Replace the <code>&lt;username&gt;</code> and <code>&lt;vm-name&gt;</code> as in the previous step:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre>virtctl scp -r images/ &lt;username&gt;@vm/&lt;vm-name&gt;:C:/Users/Public/Pictures/</pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+The only difference in syntax between uploading to a Linux or Windows host is the file path,
+since Windows uses lettered drives (<code>C:</code>) and Linux systems use a single root filesystem (<code>/</code>).
+However, when using <code>scp</code> on a Windows target VM, destination paths will use a forward-slash (<code>/</code>) separator instead of the usual backslash (<code>\</code>) that Windows would typically use.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="download_files_virtctl"><a class="anchor" href="#download_files_virtctl"></a>Download Files using virtctl</h3>
+<div class="paragraph">
+<p>Downloading is (syntactically speaking) the inverse operation of uploading.
+The <code>virtctl scp</code> source parameter is now the <code>ssh</code> connection string, while the destination parameter is a local path or filename.</p>
+</div>
+<div class="paragraph">
+<p>Using the files and directories uploaded previously, we will make backup copies of the same files and directories locally.
+This will show how to change the name of files being downloaded (or uploaded) instead of simply inheriting the existing file or directory name, as before.</p>
+</div>
+<div class="paragraph">
+<p>Remember that <code>&lt;placeholders&gt;</code> still need replacing with values that match your environment.</p>
+</div>
+<div class="sect3">
+<h4 id="download_rhel_virtctl"><a class="anchor" href="#download_rhel_virtctl"></a>Download from RHEL, Fedora and other Linux VMs using virtctl</h4>
+<div class="paragraph">
+<p>Download the <code>README.md</code> file from <code>/var/tmp</code> on the RHEL VM to the current directory and name it <code>README.bak</code>:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre>virtctl scp &lt;username&gt;@vm/&lt;vm-name&gt;:/var/tmp/README.md ./README.bak</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Download the <code>images</code> folder from the user&#8217;s home directory on the RHEL VM (using the <code>-r</code> flag to copy recursively),
+name it <code>images.d</code>, and place it in the current directory:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre>virtctl scp -r &lt;username&gt;@vm/&lt;vm-name&gt;:images ./images.d</pre>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="download_windows_virtctl"><a class="anchor" href="#download_windows_virtctl"></a>Download from Windows VMs using virtctl</h4>
+<div class="paragraph">
+<p>Download the <code>README.md</code> file from the user&#8217;s home directory and save it locally as <code>README.bkp</code>. Replace <code>&lt;username&gt;</code> and <code>&lt;vm-name&gt;</code> as required:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre>virtctl scp &lt;username&gt;@vm/&lt;vm-name&gt;:README.md ./README.bkp</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Download the <code>images</code> folder from the Public Pictures directory and save it locally as <code>images.bak.d</code>. Replace <code>&lt;username&gt;</code> and <code>&lt;vm-name&gt;</code> as before:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre>virtctl scp -r &lt;username&gt;@vm/&lt;vm-name&gt;:C:/Users/Public/Pictures/images ./images.bak.d</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If you are done and wish to clean up after the exercise, then skip ahead to <a href="#cleanup_disable_ssh">Cleanup and Disable OpenSSH</a>.
+Otherwise, continue on with using native tools for file transfer.</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="transfer_files_native"><a class="anchor" href="#transfer_files_native"></a>Transfer Files using Native Tools</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>This section covers the use of historically Linux-native tools to transfer files to and from a VM.
+Both <code>scp</code> and <code>rsync</code> will be covered, but unlike the <code>virtctl</code> section, Windows-specific examples will not be covered.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+These same tools can be used to transfer files to and from Windows VMs, but remember to account for the drive letter in the path portion of the <a href="#ssh_connection_string">SSH Connection String</a>.
+</td>
+</tr>
+</table>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-important" title="Important"></i>
+</td>
+<td class="content">
+As noted in the Prerequisites section, you will need your VM exposed to the <code>ssh</code> protocol using a Kubernetes <code>Service</code> in order to continue.
+</td>
+</tr>
+</table>
+</div>
+<div class="sect2">
+<h3 id="transfer_files_scp"><a class="anchor" href="#transfer_files_scp"></a>Transfer Files using SCP</h3>
+<div class="paragraph">
+<p>The <code>scp</code> tool (shorthand for secure copy) is a popular tool in the RHEL ecosystem for transferring files between RHEL hosts.</p>
+</div>
+<div class="paragraph">
+<p>As covered in the <code>virtctl</code> section, the <code>virtctl scp</code> command essentially mimics the <code>scp</code> tool,
+only it automatically forwards a connection from the client to the VM through the OpenShift control plane.
+This can create overhead at the API server level, and can even have connection stability issues when transferring larger files or during numerous concurrent transfers.</p>
+</div>
+<div class="paragraph">
+<p>Thus, the traditional <code>scp</code> utility is a more robust solution in a production environment, or one where either large or numerous file transfers are necessary.</p>
+</div>
+<div class="paragraph">
+<p>Uploading using <code>scp</code> is almost exactly the same as when using <code>virtctl</code>, minus the <code>virtctl</code> command.
+The main difference is that, instead of using the name of either the <code>VirtualMachine</code> or <code>VirtualMachineInstance</code>,
+you will use either the domain name or the IP address (whether public or private) of the <code>Service</code> exposing the VM:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre>scp README.md &lt;user&gt;@&lt;hostname-or-ip-address&gt;:/run/tmpfiles.d/</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>To upload a directory, simply use the path of a local directory as the source parameter, and add the <code>-r</code> flag:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre>scp -r images &lt;user&gt;@&lt;hostname-or-ip-address&gt;:/run/tmpfiles.d/</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If you successfully replaced the <code>&lt;user&gt;</code> and <code>&lt;hostname-or-ip-address&gt;</code> in the above commands, then you should have both a <code>README.md</code> and an <code>images</code> folder in the <code>/run/tmpfiles.d/</code> directory on the VM.</p>
+</div>
+<div class="paragraph">
+<p>With <code>scp</code> and <code>virtctl scp</code> being so similar in use, proceed to using <code>rsync</code> if you need additional features such as incremental data transfers or directory synchronization.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+Unlike when previously copying files remotely into <code>/var/tmp</code> on Linux hosts, the <code>/run/tmpfiles.d</code> directory gets wiped upon reboot,
+so cleaning up leftover files is optional.
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="transfer_files_rsync"><a class="anchor" href="#transfer_files_rsync"></a>Transfer Files using rsync</h3>
+<div class="paragraph">
+<p>While <code>scp</code> is a tool intended exclusively for file transfers over a network using the <code>ssh</code> protocol, <code>rsync</code> is as useful locally
+for syncing data to a secondary disk volume as it is for syncing remotely over <code>ssh</code> (with the latter case arguably being its true power).</p>
+</div>
+<div class="paragraph">
+<p>Suppose you have a local data repository that gets updated frequently, and you need to keep a secondary copy of that directory up to date
+(in addition to keeping a proper backup). In such a case, you will find <code>rsync</code> to be quite useful.</p>
+</div>
+<div class="paragraph">
+<p>When using <code>rsync</code>, you may want to closely consider preserving file and directory metadata such as modification times,
+user/group ownership, permissions, and special cases like symlinks, device nodes, and other special files.</p>
+</div>
+<div class="paragraph">
+<p>All of the above-mentioned metadata and special files are preserved when passing the <code>-a</code> option to the <code>rsync</code> command.
+There are additional cases that are <em>not</em> handled by default, and these are (with their respective option flags parenthesized):</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>creation and access times (<code>-N</code> and <code>-U</code>)</p>
+</li>
+<li>
+<p>POSIX ACLs and extended attributes (<code>-A</code> and <code>-X</code>)</p>
+</li>
+<li>
+<p>hard links (<code>-H</code>)</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>You may or may not need the above options (aside from <code>-a</code>), but there are a couple of other user-friendly options for <code>rsync</code> that help track progress:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>-v</code> - verbose mode, which lists the files and directories currently being transferred</p>
+</li>
+<li>
+<p><code>-P</code> - shows the current progress</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>We&#8217;ve chosen the flags <code>-avP</code> for all <code>rsync</code> command examples in this guide.</p>
+</div>
+<div class="paragraph">
+<p>A simple sync of the Git repository that was cloned at the beginning of this guide could be done easily (assuming the <code>ocp-virt-cookbook/</code> repository is the current working directory):</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre>rsync -avP ./ &lt;user&gt;@&lt;hostname-or-ip-address&gt;:ocp-virt-cookbook/</pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<code>rsync</code> will create the directory named <code>ocp-virt-cookbook</code> in the user&#8217;s home directory on the VM, with the contents of the local Git repository.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>The <code>rsync</code> command also supports passing file and directory exclusions using a text file similar to <code>.gitignore</code> in a Git repository.</p>
+</div>
+<div class="paragraph">
+<p>Create an <code>rsync</code> exclusions file with the following list of undesired files and directories:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>build/
+scripts/
+tests/
+*.sh</pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+Data exclusions for <code>rsync</code> are based on relative file names and paths,
+so any file or directory excluded by name will also be excluded from any subdirectories within the source data directory.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Take the example file contents above and paste them into a file named <code>rsync-file-exclusions.lst</code> in the root of the Git repository (which should be the current working directory).
+Once saved, you can run the <code>rsync</code> command, this time passing in the list of excluded files and directories:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre>rsync -avP --exclude-from=rsync-file-exclusions.lst ./ &lt;user&gt;@&lt;hostname-or-ip-address&gt;:ocp-virt-cookbook2</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>To check this, you can <code>ssh</code> into the destination machine:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre>ssh &lt;user&gt;@&lt;hostname-or-ip-address&gt;</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Once logged in, perform a quick <code>diff</code> on the two Git repositories.
+Notice that the excluded files only exist in <code>ocp-virt-cookbook/</code>,
+with the <code>rsync-file-exclusions.lst</code> file only in the second repo:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre>diff -u ocp-virt-cookbook{,2}</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Go ahead and clean up both Git repositories ahead of the next section:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre>rm -rf ocp-virt-cookbook{,2}/</pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="cleanup_disable_ssh"><a class="anchor" href="#cleanup_disable_ssh"></a>Cleanup and Disable OpenSSH</h2>
+<div class="sectionbody">
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-important" title="Important"></i>
+</td>
+<td class="content">
+As with the initial setup, you will need to connect to the VM console using <code>virtctl console</code> (RHEL/Fedora), <code>virtctl vnc</code> (Windows),
+or by simply using the console viewer provided with OpenShift Virtualization to run the cleanup steps.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>To clean up the local files, simply back out of the Git repository directory and then remove it:</p>
+</div>
+<div class="listingblock execute">
+<div class="title">Change to the parent directory</div>
+<div class="content">
+<pre>cd ../</pre>
+</div>
+</div>
+<div class="listingblock execute">
+<div class="title">Remove the Git repository</div>
+<div class="content">
+<pre>rm -rf ocp-virt-cookbook/</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>To clean up leftover files from the VMs, run the following commands as desired.</p>
+</div>
+<div class="paragraph">
+<p>For the RHEL/Fedora VM, simply run the following <code>rm</code> command on the VM itself:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre>rm -rf /var/tmp/README.md ~/images</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>To remove leftover files from Windows, open a PowerShell window (<code>WIN+R</code>, then type <code>powershell</code>, and press <code>ENTER</code>) and run the following command:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre>Remove-Item -Path "$HOME/README.md", "C:\Users\Public\Pictures\images" -Recurse</pre>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_optional_disable_openssh_server"><a class="anchor" href="#_optional_disable_openssh_server"></a>Optional: Disable OpenSSH server</h3>
+<div class="paragraph">
+<p>Once you&#8217;ve finished transferring files and want to reduce the attack surface of your VM,
+or if you have no use for <code>ssh</code> or <code>scp</code> access for remote management or future file transfers,
+then proceed to disable OpenSSH server.</p>
+</div>
+<div class="paragraph">
+<p>To stop the OpenSSH server process:</p>
+</div>
+<div class="listingblock execute">
+<div class="title">On RHEL and Fedora</div>
+<div class="content">
+<pre>sudo systemctl stop sshd</pre>
+</div>
+</div>
+<div class="listingblock execute">
+<div class="title">On Debian and Ubuntu</div>
+<div class="content">
+<pre>sudo systemctl stop ssh</pre>
+</div>
+</div>
+<div class="listingblock execute">
+<div class="title">On Windows (in a privileged PowerShell window)</div>
+<div class="content">
+<pre>Stop-Service sshd</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>To disable OpenSSH from running at startup:</p>
+</div>
+<div class="listingblock execute">
+<div class="title">On RHEL and Fedora</div>
+<div class="content">
+<pre>sudo systemctl disable sshd</pre>
+</div>
+</div>
+<div class="listingblock execute">
+<div class="title">On Debian and Ubuntu</div>
+<div class="content">
+<pre>sudo systemctl disable ssh</pre>
+</div>
+</div>
+<div class="listingblock execute">
+<div class="title">On Windows (in a privileged PowerShell window)</div>
+<div class="content">
+<pre>Set-Service -Name sshd -StartupType 'Manual'</pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_summary"><a class="anchor" href="#_summary"></a>Summary</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>In this guide, you&#8217;ve learned the following topics:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>How to upload files and directories from your client machine to a VM using <code>virtctl</code></p>
+</li>
+<li>
+<p>How to download files and directories from a VM to your client machine using <code>virtctl</code></p>
+</li>
+<li>
+<p>Optionally, how to disable OpenSSH server on a VM once file transfers are complete</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_see_also"><a class="anchor" href="#_see_also"></a>See Also</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p><a href="https://docs.redhat.com/en/documentation/openshift_container_platform/4.22/html/virtualization/getting-started#vm-connection-commands_virt-using-the-cli-tools" target="_blank" rel="noopener">OpenShift Virtualization - Getting Started - VM Connection Commands</a></p>
+</li>
+<li>
+<p><a href="https://www.redhat.com/en/blog/sync-rsync" target="_blank" rel="noopener">Keeping Linux files and directories in sync with rsync</a></p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<nav class="pagination">
+  <span class="prev"><a href="scheduling-tolerations-taints.html">Scheduling with Tolerations and Taints</a></span>
+  <span class="next"><a href="../performance/index.html">VM Performance Tuning</a></span>
+</nav>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <img src="../../../_/img/rhl-logo-red.png" height="40px" alt="Red Hat"  href="https://redhat.com" >
+</footer><script id="site-script" src="../../../_/js/site.js" data-ui-root-path="../../../_"></script>
+<script async src="../../../_/js/vendor/highlight.js"></script>
+<script src="../../../_/js/vendor/lunr.js"></script>
+<script src="../../../_/js/search-ui.js" id="search-ui-script" data-site-root-path="../../.." data-snippet-length="100" data-stylesheet="../../../_/css/search.css"></script>
+<script async src="../../../search-index.js"></script>
+  </body>
+</html>
