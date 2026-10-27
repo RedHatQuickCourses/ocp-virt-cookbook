@@ -1,0 +1,19 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-http-from-tenant
+  namespace: udn-primary-vm-guests
+spec:
+  podSelector:
+    matchLabels:
+      app: tenant-app
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          app: dual-attached
+    ports:
+    - protocol: TCP
+      port: 8080

@@ -1,0 +1,19 @@
+apiVersion: k8s.ovn.org/v1
+kind: ClusterUserDefinedNetwork
+metadata:
+  name: vlan100-net
+spec:
+  namespaceSelector:
+    matchLabels:
+      vlan100-access: "true"
+  network:
+    topology: Localnet
+    localnet:
+      role: Secondary
+      physicalNetworkName: localnet-vlan
+      vlan:
+        mode: Access
+        access:
+          id: 100
+      ipam:
+        mode: Disabled

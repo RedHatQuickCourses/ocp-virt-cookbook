@@ -1,0 +1,2088 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>User Defined Networks Deep Dive for OpenShift Virtualization :: OpenShift Virtualization cookbook</title>
+    <link rel="prev" href="udn-primary-networks.html">
+    <link rel="next" href="localnet-secondary.html">
+    <meta name="generator" content="Antora 3.1.3">
+    <link rel="stylesheet" href="../../../_/css/site.css">
+    <script>var uiRootPath = '../../../_'</script>
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://www.redhat.com" target="_blank"><img src="../../../_/img/redhat-logo.png" height="40px" alt="Red Hat"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="../../..">OpenShift Virtualization cookbook</a>
+      <div class="navbar-item search hide-for-print">
+        <div id="search-field" class="field">
+          <input id="search-input" type="text" placeholder="Search the docs">
+        </div>
+      </div>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues" target="_blank">Report Issues</a>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="ocp-virt-cookbook" data-version="1">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="../index.html">OpenShift Virtualization cookbook</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../index.html">Introduction</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../getting-started/index.html">Getting Started</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/vm-quick-start.html">Quick Start</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/prerequisites.html">Prerequisites</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/architecture-overview.html">Architecture Overview</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/hosted-control-planes.html">Hosted Control Planes</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/install-openshift-virtualization.html">Install OpenShift Virtualization</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/installing-qemu-guest-agent.html">Installing QEMU Guest Agent</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/default-storage-class.html">Storage Setup</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/create-vm-web-console.html">Create VM from Web Console</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/create-vm-cli-yaml.html">Create VM from CLI</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/vm-lifecycle-states.html">VM Lifecycle States</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/virtctl-basics.html">Virtctl Basics</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/cloud-init-fundamentals.html">Cloud-init Fundamentals</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../storage/index.html">Storage Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/lvm-operator.html">LVM Operator Installation</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/lvm-troubleshooting.html">LVM Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/odf-ceph-storage.html">ODF/Ceph Storage</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/hostpath-provisioner.html">HostPath Provisioner</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/creating-managing-storage-class.html">Creating and Managing Storage Classes</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/choosing-storage-class.html">Choosing a Storage Class</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/multi-disk-configuration.html">Multi-Disk VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/expanding-vm-disk-size.html">Expanding VM Disk Size</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/cdi-operations.html">CDI Operations</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/disk-io-tuning.html">Disk I/O Tuning</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/storage-profiles.html">Storage Profiles</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/live-migration-storage.html">Live Migration Storage</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="index.html">Networking Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="static-ip-configuration.html">Static IP Configuration</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="cloud-init-troubleshooting.html">Cloud-init Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="udn-primary-networks.html">UDN Primary Networks</a>
+  </li>
+  <li class="nav-item is-current-page" data-depth="2">
+    <a class="nav-link" href="udn-deep-dive.html">UDN Deep Dive</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="localnet-secondary.html">Localnet Secondary Networks with CUDN</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="localnet-vlan.html">Localnet Secondary Networks with VLAN using NAD</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="cudn-localnet-vlan.html">Localnet VLAN with CUDN</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="layer2-secondary.html">Layer 2 Secondary Networks</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="linux-bridges.html">Linux Bridges</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="sriov-secondary.html">SR-IOV Secondary Networks</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="network-policies-vms.html">Network Policies for VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="metallb-loadbalancer.html">MetalLB Load Balancer for VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="dual-stack-vms.html">Dual-Stack IPv4/IPv6 VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="vm-ingress-routes.html">VM Ingress and Routes</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="ovs-bridge-troubleshooting.html">Troubleshooting Localnet Networks</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../vm-configuration/index.html">Virtual Machine Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/internal-dns-for-vms.html">Internal DNS for VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/remote-access-linux-vms.html">Remote Access to Linux VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/remote-access-linux-troubleshooting.html">Remote Access to Linux VMs Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/remote-access-windows-vms.html">Remote Access to Windows VMs via RDP</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/ssh-access-windows-vms.html">Remote Access to Windows VMs via SSH</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/windows-vm-virtio-drivers.html">Windows VMs with VirtIO Drivers</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/legacy-windows-versions.html">Legacy Windows Versions</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/infrastructure-node-placement.html">Infrastructure Node Placement</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/node-placement-affinity.html">Node Placement and Affinity</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/hotplug-volumes-interfaces.html">Hotplug Volumes and Interfaces</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/vm-templates.html">Virtual Machine Templates</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/instancetype-preference.html">Instancetype and Preference</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/hyperconverged-configuration.html">HyperConverged Configuration</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/scheduling-tolerations-taints.html">Scheduling with Tolerations and Taints</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/vm-file-transfer.html">VM File Transfer</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../performance/index.html">VM Performance Tuning</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/resource-limits-qos.html">Resource Limits and QoS</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/cpu-pinning.html">Dedicated CPU Placement</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/numa-hugepages.html">NUMA and Hugepages</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/realtime-vms.html">Real-Time VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/vm-monitoring-metrics.html">VM Monitoring and Metrics</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/nested-virtualization.html">Nested Virtualization</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/windows-vm-optimization.html">Windows VM Optimization</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../vm-lifecycle/index.html">VM Lifecycle Management</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/import-qcow2-boot-volume.html">Import qcow2 Boot Volume</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/custom-golden-images.html">Custom Golden Images</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/windows-golden-images.html">Windows Golden Images</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/golden-images-troubleshooting.html">Golden Images Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/cloning-vms.html">Cloning VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/vm-snapshots.html">VM Snapshots</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/boot-order-boot-sources.html">VM Boot Order and Boot Sources</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/live-migration.html">Live Migration</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/migrate-from-vmware-mtv.html">Migrate from VMware (MTV)</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../manifests/index.html">Manifests</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../api/index.html">API Guide</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../api/api-component-overview.html">API Component Overview</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../agentic-vm-management/index.html">Agentic VM Management</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/getting-started.html">Getting Started with rh-virt</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/natural-language-vm-create.html">Natural Language VM Creation</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/ai-vm-lifecycle.html">AI VM Lifecycle Operations</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/vm-clone.html">Cloning VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/ai-vm-snapshot-management.html">VM Snapshot Management</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/ai-skill-chaining.html">Day-2 Skill Chaining</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/ai-vm-rebalance.html">VM Rebalancing and Live Migration</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../appendix/glossary.html">Glossary</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">OpenShift Virtualization cookbook</span>
+    <span class="version">1</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <a class="title" href="../index.html">OpenShift Virtualization cookbook</a>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">1</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">OpenShift Virtualization cookbook</a></li>
+    <li><a href="index.html">Networking Configuration</a></li>
+    <li><a href="udn-deep-dive.html">UDN Deep Dive</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">User Defined Networks Deep Dive for OpenShift Virtualization</h1>
+<div class="sect1">
+<h2 id="_overview"><a class="anchor" href="#_overview"></a>Overview</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>User Defined Networks (UDN) let you replace or extend the cluster default pod network with a network you describe declaratively. OVN-Kubernetes implements each UDN as a separate logical network inside OVN, with its own logical switch, router, IP address management, and isolation boundary. For virtual machines this matters more than for pods: VMs expect stable addresses, they live migrate between nodes, and they often need to reach networks that the cluster default network never touches.</p>
+</div>
+<div class="paragraph">
+<p>This deep dive explains how a UDN is built inside OVN-Kubernetes, how the topology and IPAM choices change VM behavior, and how to operate UDNs once VMs depend on them. It covers dual-stack subnets, combining a primary UDN with a localnet secondary interface, network policy on a primary UDN, and <code>ClusterUserDefinedNetwork</code> for sharing one network across namespaces.</p>
+</div>
+<div class="paragraph">
+<p>For a short, single-scenario walkthrough, start with <a href="udn-primary-networks.html" class="xref page">Configuring Layer 2 Primary Networks with UDNs</a> and come back here when you need the details.</p>
+</div>
+<div class="paragraph">
+<p>This page has a core walkthrough and optional deep dives. Steps 1–4 create and verify a primary UDN VM. Steps 5–8 cover localnet, network policy, shared CUDNs, and dual-stack networking. The architecture, operations, and decision sections are reference material; skip any optional scenario you do not need.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_what_you_will_learn"><a class="anchor" href="#_what_you_will_learn"></a>What You Will Learn</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p>How OVN-Kubernetes turns a <code>UserDefinedNetwork</code> resource into OVN logical switches, routers, and ports</p>
+</li>
+<li>
+<p>When Layer 2 beats Layer 3 for VM workloads, and what each topology costs you</p>
+</li>
+<li>
+<p>How the two IPAM modes and the persistent lifecycle behave, and how an <code>IPAMClaim</code> keeps a VM address stable across restart and live migration</p>
+</li>
+<li>
+<p>How to combine a primary UDN with a localnet secondary interface on the same VM</p>
+</li>
+<li>
+<p>How network policy and the <code>k8s.ovn.org/open-default-ports</code> annotation work on a primary UDN</p>
+</li>
+<li>
+<p>How to share one network across namespaces with <code>ClusterUserDefinedNetwork</code></p>
+</li>
+<li>
+<p>How to troubleshoot IPAM claims, monitor UDN health, and size subnets before you run out of addresses</p>
+</li>
+<li>
+<p>How UDN compares to localnet and Linux bridge networks, and how to migrate from <code>NetworkAttachmentDefinition</code>-based networks</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_prerequisites"><a class="anchor" href="#_prerequisites"></a>Prerequisites</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p>OpenShift 4.18+ cluster with the OpenShift Virtualization operator installed</p>
+</li>
+<li>
+<p>A <code>StorageClass</code> that supports <code>ReadWriteMany</code> if you want to run the live migration section. Both VM examples request it; if your class only supports <code>ReadWriteOnce</code>, change each DataVolumeTemplate access mode and skip live migration.</p>
+</li>
+<li>
+<p>OVN-Kubernetes as the cluster network plugin</p>
+</li>
+<li>
+<p>Cluster admin access, required for <code>ClusterUserDefinedNetwork</code> and for inspecting the OVN databases</p>
+</li>
+<li>
+<p>CLI tools installed and logged in: <code>oc</code>, <code>virtctl</code></p>
+</li>
+<li>
+<p>A Fedora boot source available as a <code>DataSource</code> in the <code>openshift-virtualization-os-images</code> namespace</p>
+</li>
+<li>
+<p>Familiarity with the basics in <a href="udn-primary-networks.html" class="xref page">Configuring Layer 2 Primary Networks with UDNs</a></p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Confirm the UDN APIs are served by the cluster:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc api-resources | grep -E 'userdefinednetworks|clusteruserdefinednetworks|ipamclaims'</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Expected output</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">userdefinednetworks                              k8s.ovn.org/v1                true    UserDefinedNetwork
+clusteruserdefinednetworks                       k8s.ovn.org/v1                false   ClusterUserDefinedNetwork
+ipamclaims                                       k8s.cni.cncf.io/v1alpha1      true    IPAMClaim</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_udn_architecture_inside_ovn_kubernetes"><a class="anchor" href="#_udn_architecture_inside_ovn_kubernetes"></a>UDN Architecture Inside OVN-Kubernetes</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>A <code>UserDefinedNetwork</code> is a request, not an implementation. Two controllers act on it.</p>
+</div>
+<div class="paragraph">
+<p>The UDN controller in <code>ovnkube-control-plane</code> validates the resource and renders a <code>NetworkAttachmentDefinition</code> with the same name in the same namespace. That NAD carries an <code>ovn-k8s-cni-overlay</code> CNI configuration describing the topology, subnets, role, and MTU. The NAD is owned by the UDN, so deleting the UDN deletes it.</p>
+</div>
+<div class="paragraph">
+<p>The network controller in each <code>ovnkube-node</code> pod then builds the OVN logical topology for that network and wires pods into it. Every logical entity it creates is named after the network and tagged with external IDs, which is what makes the databases readable during troubleshooting.</p>
+</div>
+<div class="paragraph">
+<p>The result for a Layer 2 primary UDN looks like this:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">  Namespace: udn-primary-vm-guests   (label k8s.ovn.org/primary-user-defined-network: "")
+  UserDefinedNetwork: udn-primary   topology: Layer2   role: Primary
+
+          node-1                                    node-2
+  +----------------------------+            +----------------------------+
+  |     virt-launcher pod      |            |     virt-launcher pod      |
+  |   eth0      default net    |            |   eth0      default net    |
+  |   ovn-udn1  udn-primary    |            |   ovn-udn1  udn-primary    |
+  +------+---------------+-----+            +-----+---------------+------+
+         |               |                        |               |
+     br-int (OVS)        |                        |          br-int (OVS)
+         |               |                        |               |
+         |       +-------+------------------------+-------+       |
+         |       |  udn-primary logical switch             |       |
+         |       |  one switch shared by every node       |       |
+         |       +-------------------+--------------------+       |
+         |                           |                            |
+         |              udn-primary cluster router                 |
+         |                           |                            |
+         |         +-----------------+-----------------+          |
+         |         |                                   |          |
+         |   gateway router node-1          gateway router node-2 |
+         |         |                                   |          |
+         |     node-1 VRF + br-ex             node-2 VRF + br-ex  |
+         |                                                        |
+      default cluster network (eth0) stays attached for kubelet probes,
+      health checks, and access to the Kubernetes API</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Three points in that picture drive most UDN behavior with VMs.</p>
+</div>
+<div class="paragraph">
+<p>The pod keeps two interfaces. <code>eth0</code> remains on the default cluster network and <code>ovn-udn1</code> carries the UDN. The VM only sees the UDN interface, because the <code>l2bridge</code> network binding plugin bridges the guest NIC to <code>ovn-udn1</code>. The default interface is still there for kubelet probes and for the virt-launcher process itself, and OVN-Kubernetes isolates it so that other namespaces cannot reach it.</p>
+</div>
+<div class="paragraph">
+<p>Each primary UDN gets a Linux VRF device on every node where it has workloads. Routing for the UDN lives in that VRF instead of the main routing table, which is how two UDNs can use overlapping subnets without colliding.</p>
+</div>
+<div class="paragraph">
+<p>Egress leaves through a per-node gateway router. North-south traffic for a UDN does not transit the default network&#8217;s gateway router, so egress IP, egress firewall, and gateway configuration are evaluated per network.</p>
+</div>
+<div class="sect2">
+<h3 id="_inspecting_the_generated_networkattachmentdefinition"><a class="anchor" href="#_inspecting_the_generated_networkattachmentdefinition"></a>Inspecting the Generated NetworkAttachmentDefinition</h3>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+The commands in this section and the next one inspect the <code>udn-primary-vm-guests</code> namespace and the <code>udn-primary</code> network that you build in Step 1. Run them after that step, or substitute names from a UDN you already have.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>After you create a UDN, read the NAD it produced. The <code>netAttachDefName</code> and <code>name</code> fields inside the CNI configuration are the network identity that every other component references:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get net-attach-def -n udn-primary-vm-guests -o jsonpath='{.items[0].spec.config}' | python3 -m json.tool</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Expected output</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-json hljs" data-lang="json">{
+    "cniVersion": "1.0.0",
+    "type": "ovn-k8s-cni-overlay",
+    "name": "udn-primary-vm-guests.udn-primary",
+    "netAttachDefName": "udn-primary-vm-guests/udn-primary",
+    "topology": "layer2",
+    "role": "primary",
+    "subnets": "192.168.100.0/24",
+    "allowPersistentIPs": true
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The <code>name</code> field is the OVN network name. Logical switches, routers, and ports for this network carry it, so keep UDN names short and descriptive.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_inspecting_the_ovn_northbound_database"><a class="anchor" href="#_inspecting_the_ovn_northbound_database"></a>Inspecting the OVN Northbound Database</h3>
+<div class="paragraph">
+<p>OpenShift runs OVN in interconnect mode, so each node holds its own northbound database. Pick a node that runs a VM on the network and list its logical switches:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">NODE=$(oc get pods -n udn-primary-vm-guests -l kubevirt.io=virt-launcher -o jsonpath='{.items[0].spec.nodeName}')
+OVNPOD=$(oc get pods -n openshift-ovn-kubernetes -l app=ovnkube-node \
+  --field-selector "spec.nodeName=$NODE" -o jsonpath='{.items[0].metadata.name}')
+printf 'Node: %s\nOVN pod: %s\n' "$NODE" "$OVNPOD"</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Example output</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">Node: worker-1
+OVN pod: ovnkube-node-rpqns</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Keep using the same terminal for the <code>oc exec</code> commands below so <code>$OVNPOD</code> stays defined:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc exec -n openshift-ovn-kubernetes "$OVNPOD" -c nbdb -- ovn-nbctl ls-list</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Expected output</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">8c0a4a20-...    (udn-primary-vm-guests.udn-primary_ovn_layer2_switch)
+3f9e1b77-...    (ext_node-1)
+a1d2c3e4-...    (node-1)</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The switch holding the VM port is the one named after the network. List its ports to find the VM:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc exec -n openshift-ovn-kubernetes "$OVNPOD" -c nbdb -- \
+  ovn-nbctl --columns=name,addresses,external_ids list Logical_Switch_Port | grep -A2 udn-primary-vm-guests</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Logical switch ports for VMs carry the <code>k8s.ovn.org/vm</code> and <code>k8s.ovn.org/namespace</code> external IDs. OVN-Kubernetes uses those IDs to find and reprogram a VM&#8217;s network state during live migration, which is why a VM port is tracked differently from a plain pod port.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+Treat <code>ovn-nbctl</code> output as read-only diagnostic data. Never modify OVN objects by hand on a production cluster; the controller reconciles them and your change will be reverted or will corrupt the network state.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_topology_selection_layer_2_versus_layer_3"><a class="anchor" href="#_topology_selection_layer_2_versus_layer_3"></a>Topology Selection: Layer 2 Versus Layer 3</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The <code>topology</code> field is immutable. Changing it means deleting the UDN, which means deleting every workload attached to it, so decide before the first VM boots.</p>
+</div>
+<div class="paragraph">
+<p>Layer 2 creates one logical switch shared by all nodes. Every workload on the network sits in the same broadcast domain and the same subnet, regardless of which node runs it. OVN answers ARP and neighbor discovery locally instead of flooding, so the shared segment does not generate the broadcast load a physical VLAN would.</p>
+</div>
+<div class="paragraph">
+<p>Layer 3 creates one segment per node, each with its own subnet carved out of the parent CIDR, and routes between them. It mirrors how the default cluster network works. Pods get an address from the subnet assigned to the node they land on.</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 20%;">
+<col style="width: 40%;">
+<col style="width: 40%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Aspect</th>
+<th class="tableblock halign-left valign-top">Layer 2</th>
+<th class="tableblock halign-left valign-top">Layer 3</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Address space</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">One subnet across the whole cluster</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Parent CIDR split into per-node <code>hostSubnet</code> blocks</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Address on reschedule</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The subnet is available on every node; retaining an address requires persistent IPAM</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The address can change when the workload moves to another node</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Persistent IPAM</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Supported through <code>ipam.lifecycle: Persistent</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Not available; <code>spec.layer3</code> has no <code>ipam</code> field</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Live migration</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Address remains stable with persistent IPAM</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Address can change; persistent IPAM is unavailable</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">East-west path</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Switched inside the logical switch</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Routed through the network&#8217;s cluster router</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Scale characteristic</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Subnet size bounds the whole cluster</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Scales with node count, bounded by <code>hostSubnet</code> size per node</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Typical fit</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">VMs, appliances, anything with a hardcoded or licensed IP</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Horizontally scaled pod workloads that treat addresses as disposable</p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>For VMs whose address is part of their identity, use Layer 2 with persistent IPAM. Layer 2 makes the address valid on every node; the persistent lifecycle preserves the assignment across restart and migration. Choose Layer 3 when workloads can tolerate node-specific addresses and benefit from per-node subnet aggregation.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_ipam_modes"><a class="anchor" href="#_ipam_modes"></a>IPAM Modes</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The <code>ipam</code> section exists only in <code>spec.layer2</code> (and in the localnet configuration of a CUDN). It has two fields, <code>mode</code> and <code>lifecycle</code>.</p>
+</div>
+<div class="paragraph">
+<p><code>mode: Enabled</code> is the default. OVN-Kubernetes allocates an address from <code>subnets</code> for every attachment, programs it into OVN, and enforces IP port security. Services, network policy, and anything else that selects workloads by IP work normally.</p>
+</div>
+<div class="paragraph">
+<p><code>mode: Disabled</code> turns off address allocation. OVN assigns a MAC and provides Layer 2 connectivity; you configure addresses inside the guest. It is only valid for <code>role: Secondary</code>, and <code>subnets</code> must be omitted. Features that depend on knowing a workload&#8217;s address stop working on that network: no Services, no network policy, and no IP port security. Use it when an external DHCP server or a static addressing plan owns the address space.</p>
+</div>
+<div class="paragraph">
+<p><code>lifecycle: Persistent</code> is an addition to <code>mode: Enabled</code>, not an alternative. When set, the allocated addresses are recorded in an <code>IPAMClaim</code> object that outlives the pod. A new pod for the same VM reuses the claim instead of asking for a fresh address. The Layer 2 configuration looks like this:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">layer2:
+  ipam:
+    mode: Enabled
+    lifecycle: Persistent</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The claim lifecycle for a VM runs like this:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>You create a VM on a network that has <code>allowPersistentIPs</code> set in its NAD.</p>
+</li>
+<li>
+<p>KubeVirt creates an <code>IPAMClaim</code> named after the VM and the network, and references it from the virt-launcher pod&#8217;s network selection.</p>
+</li>
+<li>
+<p>OVN-Kubernetes allocates the address, writes it to <code>status.ips</code> on the claim, and records the owning pod.</p>
+</li>
+<li>
+<p>The VM restarts or migrates. The new virt-launcher pod references the same claim, so OVN-Kubernetes reuses the recorded address.</p>
+</li>
+<li>
+<p>You delete the <code>VirtualMachine</code>. KubeVirt deletes the claim, which releases the address back to the pool.</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>A stopped VM keeps its claim. The address stays reserved while the VM is stopped, which is the behavior you want for a server with a DNS record pointing at it, and a leak you need to watch for when you abandon VMs without deleting them.</p>
+</div>
+<div class="sect2">
+<h3 id="_reserving_address_ranges_inside_a_subnet"><a class="anchor" href="#_reserving_address_ranges_inside_a_subnet"></a>Reserving Address Ranges Inside a Subnet</h3>
+<div class="paragraph">
+<p>Recent releases add three fields that carve a Layer 2 subnet into regions. Check whether your cluster serves them before using them:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc explain userdefinednetwork.spec.layer2 --recursive | grep -E 'reservedSubnets|infrastructureSubnets|defaultGatewayIPs'</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If the fields are present, you can keep automatic allocation away from ranges you manage yourself:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">layer2:
+  role: Primary
+  subnets:
+    - "10.210.0.0/16"
+  infrastructureSubnets:
+    - "10.210.0.0/24"
+  reservedSubnets:
+    - "10.210.1.0/24"
+  defaultGatewayIPs:
+    - "10.210.0.1"
+  ipam:
+    mode: Enabled
+    lifecycle: Persistent</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><code>infrastructureSubnets</code> identifies CIDRs for OVN-Kubernetes infrastructure, such as gateways and per-node management ports. If those CIDRs do not provide enough addresses, OVN-Kubernetes can fall back to the configured <code>subnets</code>, so size the infrastructure ranges for the network. <code>reservedSubnets</code> excludes ranges from automatic allocation while still allowing explicit requests. <code>defaultGatewayIPs</code> pins the gateway address instead of letting the platform choose one. Without these fields, OVN-Kubernetes chooses infrastructure addresses from the configured subnets, and their exact assignment is managed by the platform.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+These fields are immutable in practice because the subnet layout is immutable. Set them when you create the network.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_primary_versus_secondary_role"><a class="anchor" href="#_primary_versus_secondary_role"></a>Primary Versus Secondary Role</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p><code>role: Primary</code> replaces the default pod network for every workload in the namespace. The namespace must carry the <code>k8s.ovn.org/primary-user-defined-network</code> label at creation time, the UDN must exist before the first pod, and a namespace can have exactly one primary network.</p>
+</div>
+<div class="paragraph">
+<p><code>role: Secondary</code> adds an interface. Workloads opt in with the <code>k8s.v1.cni.cncf.io/networks</code> annotation, or in a VM by referencing the network in <code>spec.template.spec.networks</code>. The default pod network stays primary.</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 20%;">
+<col style="width: 40%;">
+<col style="width: 40%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Behavior</th>
+<th class="tableblock halign-left valign-top">Primary</th>
+<th class="tableblock halign-left valign-top">Secondary</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Attachment</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Automatic for every pod in the namespace</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Explicit per workload</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Default route in the guest</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Points at the UDN gateway</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Unchanged, unless you configure it in the guest</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Kubernetes Services</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Reachable from the UDN; VMs are selectable as endpoints</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Not served on the secondary interface</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Namespace isolation</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Enforced; other namespaces cannot reach the network</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Depends on topology and policy</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Count per namespace</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">One</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Many</p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>A common production layout uses both: a primary UDN for cluster-managed traffic and Services, plus a localnet secondary for the VLAN where the application&#8217;s clients live.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_1_create_a_layer_2_primary_udn"><a class="anchor" href="#_step_1_create_a_layer_2_primary_udn"></a>Step 1: Create a Layer 2 Primary UDN</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Create the namespace with the primary UDN label. A <code>ValidatingAdmissionPolicy</code> rejects adding or removing this label later, so a namespace that already exists without it cannot be converted.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+This namespace and UDN use the same names and subnet as <a href="udn-primary-networks.html" class="xref page">Configuring Layer 2 Primary Networks with UDNs</a>. If you completed that tutorial, keep the existing resources only if <code>oc get userdefinednetwork udn-primary -n udn-primary-vm-guests -o jsonpath='{.spec.layer2.ipam.lifecycle}'</code> returns <code>Persistent</code>. UDN configuration is immutable; if the field is missing, use a new namespace and UDN for the persistence steps.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/udn-deep-dive/udn-primary-namespace.yaml" class="xref attachment">Download udn-primary-namespace.yaml</a></p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f - &lt;&lt;EOF
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: udn-primary-vm-guests
+  labels:
+    k8s.ovn.org/primary-user-defined-network: ""
+EOF</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Create the network. Persistent IPAM keeps VM addresses stable across restarts and live migration.</p>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/udn-deep-dive/udn-primary.yaml" class="xref attachment">Download udn-primary.yaml</a></p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f - &lt;&lt;EOF
+apiVersion: k8s.ovn.org/v1
+kind: UserDefinedNetwork
+metadata:
+  name: udn-primary
+  namespace: udn-primary-vm-guests
+spec:
+  topology: Layer2
+  layer2:
+    role: Primary
+    subnets:
+    - "192.168.100.0/24"
+    ipam:
+      lifecycle: Persistent
+EOF</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Wait for the NAD to be created and network allocation to succeed on synced nodes:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc wait userdefinednetwork/udn-primary -n udn-primary-vm-guests \
+  --for=condition=NetworkCreated=True --timeout=60s
+oc wait userdefinednetwork/udn-primary -n udn-primary-vm-guests \
+  --for=condition=NetworkAllocationSucceeded=True --timeout=60s
+oc get userdefinednetwork udn-primary -n udn-primary-vm-guests -o jsonpath='{.status.conditions}' | python3 -m json.tool</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Expected output</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-json hljs" data-lang="json">[
+    {
+        "message": "NetworkAttachmentDefinition has been created",
+        "reason": "NetworkAttachmentDefinitionCreated",
+        "status": "True",
+        "type": "NetworkCreated"
+    },
+    {
+        "message": "Network allocation succeeded for all synced nodes.",
+        "reason": "NetworkAllocationSucceeded",
+        "status": "True",
+        "type": "NetworkAllocationSucceeded"
+    }
+]</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>A <code>False</code> condition includes a reason and message to help narrow the failure. Common <code>NetworkCreated</code> failures include a subnet that overlaps the cluster or service network, a second primary network in the namespace, or a missing primary UDN label. An allocation failure identifies the affected node in its message.</p>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-important" title="Important"></i>
+</td>
+<td class="content">
+Check your cluster and service CIDRs before choosing a subnet. Run <code>oc get network.config cluster -o jsonpath='{.spec}'</code> and pick a range that does not overlap either.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_2_deploy_a_vm_on_the_udn"><a class="anchor" href="#_step_2_deploy_a_vm_on_the_udn"></a>Step 2: Deploy a VM on the UDN</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The <code>l2bridge</code> network binding plugin connects the guest NIC to the primary UDN interface in the pod. Confirm the plugin is registered:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get hyperconverged kubevirt-hyperconverged -n openshift-cnv \
+  -o jsonpath='{.spec.network.binding}' | python3 -m json.tool</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Deploy a VM. The network entry stays <code>pod: {}</code> because the primary UDN replaces the pod network; only the binding changes.</p>
+</div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+The cloud-init password below is for lab use. Use SSH keys for anything that outlives the tutorial.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/udn-deep-dive/vm-tenant-app.yaml" class="xref attachment">Download vm-tenant-app.yaml</a></p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f - &lt;&lt;EOF
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: tenant-app
+  namespace: udn-primary-vm-guests
+  labels:
+    app: tenant-app
+spec:
+  runStrategy: Always
+  instancetype:
+    name: u1.small
+  preference:
+    name: fedora
+  dataVolumeTemplates:
+  - metadata:
+      name: tenant-app-volume
+    spec:
+      storage:
+        accessModes:
+        - ReadWriteMany
+        resources:
+          requests:
+            storage: 33Gi
+      sourceRef:
+        kind: DataSource
+        name: fedora
+        namespace: openshift-virtualization-os-images
+  template:
+    metadata:
+      labels:
+        app: tenant-app
+      annotations:
+        k8s.ovn.org/open-default-ports: |
+          - protocol: tcp
+            port: 8080
+    spec:
+      domain:
+        devices:
+          disks:
+          - name: rootdisk
+            disk:
+              bus: virtio
+          - name: cloudinitdisk
+            disk:
+              bus: virtio
+          interfaces:
+          - name: default
+            binding:
+              name: l2bridge
+      networks:
+      - name: default
+        pod: {}
+      volumes:
+      - name: rootdisk
+        dataVolume:
+          name: tenant-app-volume
+      - name: cloudinitdisk
+        cloudInitNoCloud:
+          userData: |
+            #cloud-config
+            user: fedora
+            password: fedora
+            chpasswd:
+              expire: false
+            packages:
+            - python3
+            runcmd:
+            - echo "&lt;h1&gt;tenant-app on UDN&lt;/h1&gt;" &gt; /root/index.html
+            - cd /root &amp;&amp; nohup python3 -m http.server 8080 &gt; /dev/null 2&gt;&amp;1 &amp;
+EOF</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Wait for the VM and read its address:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc wait vmi/tenant-app -n udn-primary-vm-guests --for=condition=Ready --timeout=600s
+oc get vmi tenant-app -n udn-primary-vm-guests -o wide</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The address comes from <code>192.168.100.0/24</code>, not from the cluster network range.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_3_inspect_the_ipamclaim_and_pod_annotations"><a class="anchor" href="#_step_3_inspect_the_ipamclaim_and_pod_annotations"></a>Step 3: Inspect the IPAMClaim and Pod Annotations</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Persistent IPAM produced a claim when the VM started:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get ipamclaims -n udn-primary-vm-guests</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Expected output</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">NAME                  AGE
+tenant-app.default    3m</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The claim name combines the VM name and the network name from the VM spec. Read its status:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get ipamclaim tenant-app.default -n udn-primary-vm-guests -o yaml</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Expected output</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: k8s.cni.cncf.io/v1alpha1
+kind: IPAMClaim
+metadata:
+  name: tenant-app.default
+  namespace: udn-primary-vm-guests
+  ownerReferences:
+  - apiVersion: kubevirt.io/v1
+    kind: VirtualMachine
+    name: tenant-app
+spec:
+  interface: 6c5b7c0a1f2
+  network: udn-primary-vm-guests.udn-primary
+status:
+  ips:
+  - 192.168.100.5/24
+  ownerPod:
+    name: virt-launcher-tenant-app-8xq2n</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><code>spec.network</code> matches the <code>name</code> field in the generated NAD. <code>status.ips</code> is the reservation. <code>status.ownerPod</code> names the pod currently holding it, which is the field to watch during migration.</p>
+</div>
+<div class="paragraph">
+<p>The virt-launcher pod carries the matching OVN annotation:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">POD=$(oc get pods -n udn-primary-vm-guests -l kubevirt.io=virt-launcher -o jsonpath='{.items[0].metadata.name}')
+oc get pod "$POD" -n udn-primary-vm-guests \
+  -o jsonpath='{.metadata.annotations.k8s\.ovn\.org/pod-networks}' | python3 -m json.tool</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The annotation has one entry per network. The UDN entry is keyed by <code>&lt;namespace&gt;/&lt;udn-name&gt;</code>, reports <code>"role": "primary"</code>, and lists the address, MAC, gateway, and routes that OVN-Kubernetes programmed. When a guest has no address, compare this annotation against what the guest actually configured: if the annotation is correct, the problem is inside the VM, not in OVN.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_4_verify_persistence_across_restart_and_live_migration"><a class="anchor" href="#_step_4_verify_persistence_across_restart_and_live_migration"></a>Step 4: Verify Persistence Across Restart and Live Migration</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Record the current address, restart the VM, and compare:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vmi tenant-app -n udn-primary-vm-guests -o jsonpath='{.status.interfaces[0].ipAddress}{"\n"}'
+virtctl restart tenant-app -n udn-primary-vm-guests
+oc wait vmi/tenant-app -n udn-primary-vm-guests --for=condition=Ready --timeout=600s
+oc get vmi tenant-app -n udn-primary-vm-guests -o jsonpath='{.status.interfaces[0].ipAddress}{"\n"}'</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The address is identical. Without <code>lifecycle: Persistent</code>, a replacement pod gets an address from the pool and might receive a different address.</p>
+</div>
+<div class="paragraph">
+<p>Now migrate the VM. The <code>tenant-app</code> example requests <code>ReadWriteMany</code> storage, and migration also requires at least two schedulable nodes. If you changed the volume to <code>ReadWriteOnce</code>, skip the migration test and continue to Step 5.</p>
+</div>
+<div class="paragraph">
+<p>Check if the VM can be migrated:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vmi tenant-app -n udn-primary-vm-guests -o jsonpath='{.status.conditions[?(@.type=="LiveMigratable")].status}{"\n"}'</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If the output is <code>True</code>, proceed with migration:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">virtctl migrate tenant-app -n udn-primary-vm-guests
+oc get virtualmachineinstancemigration -n udn-primary-vm-guests -w</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Once the migration reports <code>Succeeded</code>, check the address and the claim owner:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vmi tenant-app -n udn-primary-vm-guests -o wide
+oc get ipamclaim tenant-app.default -n udn-primary-vm-guests -o jsonpath='{.status.ownerPod.name}{"\n"}'</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The address and MAC are unchanged, and <code>ownerPod</code> now names the target pod. On a Layer 2 topology nothing has to be re-routed, because the logical switch spans every node; OVN-Kubernetes moves the logical switch port binding to the new chassis and the guest never sees a link event.</p>
+</div>
+<div class="paragraph">
+<p>Layer 3 topologies behave differently. OVN-Kubernetes keeps a migrated VM reachable by programming per-VM routes and policies on the network&#8217;s cluster router, tagged with the <code>k8s.ovn.org/vm</code> external ID. That keeps traffic flowing after a migration, but it does not survive a VM restart, and there is no <code>IPAMClaim</code> to reuse because <code>spec.layer3</code> has no IPAM configuration. Plan on Layer 2 whenever a VM&#8217;s address is part of its identity.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_5_add_a_localnet_secondary_interface"><a class="anchor" href="#_step_5_add_a_localnet_secondary_interface"></a>Step 5: Add a Localnet Secondary Interface</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>A primary UDN carries cluster traffic. When the same VM must also sit on a physical VLAN, add a localnet secondary network. The combination is common for VMs migrated from a traditional hypervisor: Services and cluster traffic on the UDN, existing clients on the VLAN.</p>
+</div>
+<div class="paragraph">
+<p>This step needs an OVS bridge mapping on the worker nodes. If you have not configured one, follow <a href="cudn-localnet-vlan.html" class="xref page">Localnet VLAN with CUDN</a> first and return here.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+Localnet topology with <code>ClusterUserDefinedNetwork</code> is generally available starting in OpenShift 4.19. On OpenShift 4.18, verify the feature&#8217;s support status for your cluster before using this step.
+</td>
+</tr>
+</table>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+The companion VLAN tutorial uses <code>192.168.100.0/24</code>, which overlaps the primary UDN subnet in this tutorial. Configure the physical VLAN with a subnet that does not overlap the primary UDN or cluster/service CIDRs, then use an address from that subnet below. The sample uses <code>192.168.200.51/24</code>; adjust it for your VLAN. Skip this step if you are using the companion tutorial&#8217;s VLAN example unchanged.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Create a localnet CUDN that selects the UDN namespace. Localnet is only valid as a secondary role, and only on a <code>ClusterUserDefinedNetwork</code>.</p>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/udn-deep-dive/cudn-vlan100.yaml" class="xref attachment">Download cudn-vlan100.yaml</a></p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f - &lt;&lt;EOF
+apiVersion: k8s.ovn.org/v1
+kind: ClusterUserDefinedNetwork
+metadata:
+  name: vlan100-net
+spec:
+  namespaceSelector:
+    matchLabels:
+      vlan100-access: "true"
+  network:
+    topology: Localnet
+    localnet:
+      role: Secondary
+      physicalNetworkName: localnet-vlan
+      vlan:
+        mode: Access
+        access:
+          id: 100
+      ipam:
+        mode: Disabled
+EOF</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Label the namespace so the selector matches:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc label namespace udn-primary-vm-guests vlan100-access=true
+oc get clusteruserdefinednetwork vlan100-net \
+  -o jsonpath='{.status.conditions[?(@.type=="NetworkCreated")].message}{"\n"}'</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Expected output</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">NetworkAttachmentDefinition has been created in following namespaces: [udn-primary-vm-guests]</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Attach the VM to both networks. The primary UDN stays on the <code>default</code> network entry; the localnet interface is added as a Multus attachment with a bridge binding.</p>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/udn-deep-dive/vm-dual-attached.yaml" class="xref attachment">Download vm-dual-attached.yaml</a></p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f - &lt;&lt;EOF
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: dual-attached
+  namespace: udn-primary-vm-guests
+  labels:
+    app: dual-attached
+spec:
+  runStrategy: Always
+  instancetype:
+    name: u1.small
+  preference:
+    name: fedora
+  dataVolumeTemplates:
+  - metadata:
+      name: dual-attached-volume
+    spec:
+      storage:
+        accessModes:
+        - ReadWriteMany
+        resources:
+          requests:
+            storage: 33Gi
+      sourceRef:
+        kind: DataSource
+        name: fedora
+        namespace: openshift-virtualization-os-images
+  template:
+    metadata:
+      labels:
+        app: dual-attached
+    spec:
+      domain:
+        devices:
+          disks:
+          - name: rootdisk
+            disk:
+              bus: virtio
+          - name: cloudinitdisk
+            disk:
+              bus: virtio
+          interfaces:
+          - name: default
+            binding:
+              name: l2bridge
+          - name: vlan100
+            bridge: {}
+      networks:
+      - name: default
+        pod: {}
+      - name: vlan100
+        multus:
+          networkName: udn-primary-vm-guests/vlan100-net
+      volumes:
+      - name: rootdisk
+        dataVolume:
+          name: dual-attached-volume
+      - name: cloudinitdisk
+        cloudInitNoCloud:
+          networkData: |
+            version: 2
+            ethernets:
+              eth1:
+                addresses:
+                - 192.168.200.51/24
+          userData: |
+            #cloud-config
+            user: fedora
+            password: fedora
+            chpasswd:
+              expire: false
+EOF</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Because the localnet network uses <code>ipam.mode: Disabled</code>, the guest owns the address on <code>eth1</code>. Verify both interfaces once the VM is up:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vmi dual-attached -n udn-primary-vm-guests -o jsonpath='{range .status.interfaces[*]}{.name}{"\t"}{.ipAddress}{"\n"}{end}'</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The default route still points at the UDN gateway. If the VLAN should carry the default route instead, set it in the guest with cloud-init <code>networkData</code> routes; see <a href="static-ip-configuration.html" class="xref page">Static IP Configuration</a> for the patterns.</p>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-important" title="Important"></i>
+</td>
+<td class="content">
+Interface ordering inside the guest follows PCI enumeration, not the order in the VM spec. Match on MAC address in <code>networkData</code> when the ordering matters.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_6_apply_network_policy_on_a_primary_udn"><a class="anchor" href="#_step_6_apply_network_policy_on_a_primary_udn"></a>Step 6: Apply Network Policy on a Primary UDN</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Network policy on a primary UDN is evaluated on the UDN itself. The familiar objects work, with two differences worth knowing.</p>
+</div>
+<div class="paragraph">
+<p>First, namespace selectors cannot reach across networks. A policy in <code>udn-primary-vm-guests</code> that allows traffic from namespace <code>tenant-b</code> has no effect unless both namespaces share the same network, for example through a CUDN.</p>
+</div>
+<div class="paragraph">
+<p>Second, the pod&#8217;s default-network interface is isolated by default. Health checks and probes from the kubelet work without configuration, but anything else that must reach the pod over the default network needs the <code>k8s.ovn.org/open-default-ports</code> annotation, which the VM in Step 2 already carries:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">annotations:
+  k8s.ovn.org/open-default-ports: |
+    - protocol: tcp
+      port: 8080</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Apply a default-deny policy plus a targeted allow:</p>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/udn-deep-dive/netpol-default-deny.yaml" class="xref attachment">Download netpol-default-deny.yaml</a></p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f - &lt;&lt;EOF
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-ingress
+  namespace: udn-primary-vm-guests
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+EOF</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/udn-deep-dive/netpol-allow-http.yaml" class="xref attachment">Download netpol-allow-http.yaml</a></p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f - &lt;&lt;EOF
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-http-from-tenant
+  namespace: udn-primary-vm-guests
+spec:
+  podSelector:
+    matchLabels:
+      app: tenant-app
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          app: dual-attached
+    ports:
+    - protocol: TCP
+      port: 8080
+EOF</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Test from the second VM:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">virtctl console dual-attached -n udn-primary-vm-guests</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Inside the guest, replace the address with the one reported for <code>tenant-app</code>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">curl --max-time 5 http://192.168.100.5:8080</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Policies attached to a secondary network require <code>AdminNetworkPolicy</code> or the OVN-Kubernetes multi-network policy API instead; <a href="network-policies-vms.html" class="xref page">Network Policies for VMs</a> covers those.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_7_share_a_network_across_namespaces_with_cudn"><a class="anchor" href="#_step_7_share_a_network_across_namespaces_with_cudn"></a>Step 7: Share a Network Across Namespaces with CUDN</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>A <code>UserDefinedNetwork</code> is namespaced and cannot be shared. A <code>ClusterUserDefinedNetwork</code> is cluster-scoped and attaches the same network to every namespace matched by its <code>namespaceSelector</code>. Workloads in those namespaces land on one shared Layer 2 segment and address pool.</p>
+</div>
+<div class="paragraph">
+<p>Create two namespaces, both labeled for the primary UDN and both carrying the selector label:</p>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/udn-deep-dive/namespace-shared-a.yaml" class="xref attachment">Download namespace-shared-a.yaml</a></p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f - &lt;&lt;EOF
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: shared-a
+  labels:
+    k8s.ovn.org/primary-user-defined-network: ""
+    shared-net: "true"
+EOF</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/udn-deep-dive/namespace-shared-b.yaml" class="xref attachment">Download namespace-shared-b.yaml</a></p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f - &lt;&lt;EOF
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: shared-b
+  labels:
+    k8s.ovn.org/primary-user-defined-network: ""
+    shared-net: "true"
+EOF</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Create the cluster-scoped network:</p>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/udn-deep-dive/cudn-shared-net.yaml" class="xref attachment">Download cudn-shared-net.yaml</a></p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f - &lt;&lt;EOF
+apiVersion: k8s.ovn.org/v1
+kind: ClusterUserDefinedNetwork
+metadata:
+  name: shared-net
+spec:
+  namespaceSelector:
+    matchLabels:
+      shared-net: "true"
+  network:
+    topology: Layer2
+    layer2:
+      role: Primary
+      subnets:
+      - "10.220.0.0/16"
+      ipam:
+        mode: Enabled
+        lifecycle: Persistent
+EOF</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Confirm the controller rendered a NAD in both namespaces:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get net-attach-def -A | grep shared-net</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Four rules govern CUDN behavior in production.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>The selector is evaluated continuously. Labeling a new namespace attaches the network to it; the namespace must still have been created with the primary UDN label if the role is <code>Primary</code>.</p>
+</li>
+<li>
+<p>Removing the label from a namespace that still runs workloads on the network is rejected. Delete the workloads first.</p>
+</li>
+<li>
+<p><code>spec.network</code> is immutable. Subnet changes mean a new CUDN and a workload cutover.</p>
+</li>
+<li>
+<p>Address allocation is shared across all selected namespaces. Size the subnet for the total, not per namespace.</p>
+</li>
+</ul>
+</div>
+<div class="admonitionblock caution">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-caution" title="Caution"></i>
+</td>
+<td class="content">
+Namespaces sharing a primary CUDN are not isolated from each other at the network layer. Use network policy to restore boundaries between them.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_8_dual_stack_udn"><a class="anchor" href="#_step_8_dual_stack_udn"></a>Step 8: Dual-Stack UDN</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>A Layer 2 UDN accepts at most two subnets, and when two are set they must belong to different IP families. There is no way to put two IPv4 subnets on one UDN; use <code>reservedSubnets</code> to partition a single larger subnet, or create additional networks.</p>
+</div>
+<div class="paragraph">
+<p>Check whether the cluster itself is dual-stack before adding an IPv6 subnet. A UDN with an IPv6 subnet on a single-stack cluster will not become ready.</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get network.config cluster -o jsonpath='{.status.clusterNetwork}{"\n"}'</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If both families are listed, create a dual-stack network:</p>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/udn-deep-dive/udn-dualstack.yaml" class="xref attachment">Download udn-dualstack.yaml</a></p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f - &lt;&lt;EOF
+apiVersion: k8s.ovn.org/v1
+kind: UserDefinedNetwork
+metadata:
+  name: dualstack-net
+  namespace: udn-primary-vm-guests
+spec:
+  topology: Layer2
+  layer2:
+    role: Secondary
+    mtu: 1400
+    subnets:
+    - "10.230.0.0/16"
+    - "2001:db8:230::/64"
+    ipam:
+      mode: Enabled
+      lifecycle: Persistent
+EOF</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Two constraints apply to dual-stack networks. The MTU must be at least 1280 when an IPv6 subnet is present, and the two subnets must be from different families. Both are enforced by the API server, so a mistake fails at <code>apply</code> time with a readable message rather than at runtime.</p>
+</div>
+<div class="paragraph">
+<p>A VM on a dual-stack network receives one address per family, and the <code>IPAMClaim</code> records both in <code>status.ips</code>. For a full walkthrough of dual-stack guest configuration, see <a href="dual-stack-vms.html" class="xref page">Dual-Stack VMs</a>.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_operating_udn_networks"><a class="anchor" href="#_operating_udn_networks"></a>Operating UDN Networks</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_troubleshooting_ipam_claims"><a class="anchor" href="#_troubleshooting_ipam_claims"></a>Troubleshooting IPAM Claims</h3>
+<div class="paragraph">
+<p>Start from the claim, then widen out. These are the failures you will actually hit.</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 20%;">
+<col style="width: 40%;">
+<col style="width: 40%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Symptom</th>
+<th class="tableblock halign-left valign-top">Likely cause</th>
+<th class="tableblock halign-left valign-top">Check</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">No <code>IPAMClaim</code> exists for the VM</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>lifecycle: Persistent</code> is not set, so the NAD has no <code>allowPersistentIPs</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>oc get net-attach-def &lt;name&gt; -n &lt;ns&gt; -o jsonpath='{.spec.config}'</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Claim exists with empty <code>status.ips</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Allocation failed, usually an exhausted or overlapping subnet</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>oc get events -n &lt;ns&gt; --field-selector type=Warning</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">VM stuck in <code>Pending</code> or the launcher pod fails <code>ContainerCreating</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">CNI could not honor the claim, commonly after a manual claim edit</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>oc describe pod &lt;virt-launcher-pod&gt; -n &lt;ns&gt;</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">VM got a new address after restart</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">VM was deleted and recreated, which deletes and recreates the claim</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>oc get ipamclaim &lt;name&gt; -n &lt;ns&gt; -o jsonpath='{.metadata.creationTimestamp}'</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Address not released after the VM is gone</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Orphaned claim left behind by a failed deletion</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>oc get ipamclaims -n &lt;ns&gt;</code> and compare against <code>oc get vm -n &lt;ns&gt;</code></p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>Claims are owned by the <code>VirtualMachine</code>, so normal deletion cleans them up. An orphan with no owner left can be removed directly:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get ipamclaims -n udn-primary-vm-guests -o custom-columns=\
+NAME:.metadata.name,IPS:.status.ips,POD:.status.ownerPod.name,OWNER:.metadata.ownerReferences[0].name</code></pre>
+</div>
+</div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+Never delete an <code>IPAMClaim</code> that belongs to a running VM. The address is released immediately and can be handed to another workload while the VM still uses it.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>When the claim looks correct but traffic does not flow, work down the stack: the pod annotation <code>k8s.ovn.org/pod-networks</code>, then the logical switch port in the northbound database, then the guest configuration. One of those three disagrees with the others, and whichever one does is where the bug is.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_monitoring_udn_health"><a class="anchor" href="#_monitoring_udn_health"></a>Monitoring UDN Health</h3>
+<div class="paragraph">
+<p>Three checks catch most problems before users report them.</p>
+</div>
+<div class="paragraph">
+<p>For UDNs, <code>NetworkCreated</code> confirms that the NAD exists and <code>NetworkAllocationSucceeded</code> confirms allocation on synced nodes. For CUDNs, the command shows the <code>NetworkCreated</code> condition for the generated NADs:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get userdefinednetworks -A \
+  -o 'custom-columns=NS:.metadata.namespace,NAME:.metadata.name,NETWORK:.status.conditions[?(@.type=="NetworkCreated")].status,ALLOCATED:.status.conditions[?(@.type=="NetworkAllocationSucceeded")].status'
+oc get clusteruserdefinednetworks \
+  -o 'custom-columns=NAME:.metadata.name,NAD:.status.conditions[?(@.type=="NetworkCreated")].status'</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Controller errors mentioning a specific network:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc logs -n openshift-ovn-kubernetes -l app=ovnkube-node -c ovnkube-controller \
+  --tail=200 --since=15m | grep -i -E 'udn-primary|error' | head -20</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Allocation pressure, measured by comparing live claims against subnet capacity:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get ipamclaims -A --no-headers | wc -l</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>OVN-Kubernetes exports Prometheus metrics that cover pod and network setup latency. List the series available on your release before building dashboards on them:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc -n openshift-monitoring exec -c prometheus prometheus-k8s-0 -- \
+  curl -sG 'http://localhost:9090/api/v1/label/__name__/values' | tr ',' '\n' | grep ovnkube | head -20</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Useful starting points are the pod creation and annotation latency histograms, plus <code>ovnkube_controller_num_logical_switch_ports</code> where present. Watch latency rather than raw counts: a UDN that is slow to attach pods shows up as rising setup latency long before any workload fails outright.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_scaling_considerations"><a class="anchor" href="#_scaling_considerations"></a>Scaling Considerations</h3>
+<div class="paragraph">
+<p>A UDN is not free. Each one adds OVN logical entities on every node where it has workloads, a VRF device per node, and a management port address drawn from the subnet. Plan with these limits in mind.</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 33.3333%;">
+<col style="width: 66.6667%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Dimension</th>
+<th class="tableblock halign-left valign-top">Guidance</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Addresses per Layer 2 UDN</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Usable addresses equal subnet size minus the gateway and roughly one infrastructure address per node. A <code>/24</code> on a 50-node cluster leaves fewer than 200 for workloads. Use a <code>/16</code> for anything that might grow.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Stopped VMs</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Each stopped VM with persistent IPAM still holds its address. Count stopped VMs in the capacity plan.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">UDNs per namespace</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">One primary, plus secondaries as needed. A second primary is rejected.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">UDNs per cluster</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Each network multiplies OVN objects by the node count. Tens of networks are routine; hundreds need validation against the tested limits for your release before you commit to the design.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Nodes per Layer 2 network</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">One logical switch spans all nodes. OVN suppresses ARP flooding with local responders, so node count affects database size rather than broadcast load.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">MTU</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Overlay encapsulation reduces the usable MTU. Keep UDN MTU at or below the default network MTU minus encapsulation overhead, and at least 1280 when IPv6 is in use.</p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>Two design habits keep clusters out of trouble. Separate networks by failure domain rather than by convenience, because every UDN you add is permanent in practice given the immutable fields. And oversize subnets from the start: growing a subnet is not supported, and renumbering means recreating the network and every VM on it.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_decision_guide"><a class="anchor" href="#_decision_guide"></a>Decision Guide</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_udn_compared_to_localnet_and_linux_bridge"><a class="anchor" href="#_udn_compared_to_localnet_and_linux_bridge"></a>UDN Compared to Localnet and Linux Bridge</h3>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 25%;">
+<col style="width: 25%;">
+<col style="width: 25%;">
+<col style="width: 25%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Criterion</th>
+<th class="tableblock halign-left valign-top">UDN (Layer 2 primary)</th>
+<th class="tableblock halign-left valign-top">Localnet secondary</th>
+<th class="tableblock halign-left valign-top">Linux bridge secondary</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Physical NIC required</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">No</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Yes, with an OVS bridge mapping</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Yes, with a bridge on each node</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Overlay or underlay</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Overlay, encapsulated between nodes</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Underlay, frames leave on the physical VLAN</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Underlay, frames leave on the physical VLAN</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Kubernetes Services</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Yes</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">No</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">No</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Network policy</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Yes</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>AdminNetworkPolicy</code> or multi-network policy</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Multi-network policy only</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Cluster-managed IPAM</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Yes, with persistence</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Optional; frequently delegated to external DHCP</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">No, external only</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Live migration with stable IP</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Yes</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Yes, when the address is external to the cluster</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Yes, when the address is external to the cluster</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Node configuration needed</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">None</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>NodeNetworkConfigurationPolicy</code> for bridge and mapping</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>NodeNetworkConfigurationPolicy</code> for the bridge</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Isolation model</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Namespace-scoped, enforced by OVN</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">VLAN, enforced by the physical network</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">VLAN, enforced by the physical network</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Best fit</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Cluster-native VM workloads with custom addressing</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">VMs that must stay on an existing VLAN</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Legacy attachments and non-OVS environments</p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>Choose a primary UDN when the VM is a cluster-native workload that needs Services, policy, and a stable address. Choose localnet when the VM must keep talking to an existing VLAN with the addressing that physical network already owns. Choose a Linux bridge when OVS is not an option or when you are carrying forward an existing bridge-based design. A VM can have both a UDN primary and a localnet secondary, as Step 5 showed, and that combination is often the answer during a migration.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_migrating_from_nad_based_networks_to_udn"><a class="anchor" href="#_migrating_from_nad_based_networks_to_udn"></a>Migrating from NAD-Based Networks to UDN</h3>
+<div class="paragraph">
+<p>You cannot convert a <code>NetworkAttachmentDefinition</code> into a UDN in place. The network name changes, so OVN treats it as a different network and every attached workload must be recreated. Plan a cutover instead.</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Inventory the existing attachments. Run <code>oc get net-attach-def -A</code> and record which VMs reference each one, together with their addresses.</p>
+</li>
+<li>
+<p>Map each NAD to its UDN equivalent. An <code>ovn-k8s-cni-overlay</code> layer2 NAD becomes a UDN with <code>topology: Layer2</code> and <code>role: Secondary</code>. A localnet NAD becomes a CUDN with <code>topology: Localnet</code>. A <code>cnv-bridge</code> NAD has no UDN equivalent and stays as it is.</p>
+</li>
+<li>
+<p>Watch for name collisions. The UDN controller creates a NAD with the same name in the same namespace and refuses to overwrite one it does not own. Give the new network a distinct name.</p>
+</li>
+<li>
+<p>Decide whether the target is primary or secondary. Moving to a primary UDN requires a new namespace, because the required label cannot be added to an existing one.</p>
+</li>
+<li>
+<p>Create the new network alongside the old one and verify it reports <code>NetworkCreated</code>.</p>
+</li>
+<li>
+<p>Attach one non-critical VM to both networks, confirm connectivity on the new one, then remove the old interface and restart the VM.</p>
+</li>
+<li>
+<p>Migrate the rest in batches, record the new addresses, and update DNS or load balancer targets as you go.</p>
+</li>
+<li>
+<p>Delete the old NAD only after no workload references it. Deleting it while a VM is attached leaves the VM unable to restart.</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>If the VMs carry addresses that must not change and those addresses come from a physical VLAN, the destination is a localnet CUDN rather than a Layer 2 UDN. Only a localnet network keeps the VM on the original subnet.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_cleanup"><a class="anchor" href="#_cleanup"></a>Cleanup</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Delete workloads before the secondary networks. The <code>udn-primary-vm-guests</code> namespace and <code>udn-primary</code> UDN are shared with the preceding tutorial, so keep them and any workloads created there.</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc delete vm tenant-app dual-attached -n udn-primary-vm-guests --ignore-not-found
+oc wait --for=delete vmi/tenant-app -n udn-primary-vm-guests --timeout=120s || true
+oc delete networkpolicy default-deny-ingress allow-http-from-tenant -n udn-primary-vm-guests --ignore-not-found
+oc label namespace udn-primary-vm-guests vlan100-access-
+oc delete userdefinednetwork dualstack-net -n udn-primary-vm-guests --ignore-not-found
+oc delete clusteruserdefinednetwork vlan100-net shared-net --ignore-not-found
+oc delete namespace shared-a shared-b --ignore-not-found</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Confirm the deep-dive resources are gone. The primary UDN and any VM from the first tutorial remain:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vm -n udn-primary-vm-guests
+oc get ipamclaims -n udn-primary-vm-guests
+oc get userdefinednetwork -n udn-primary-vm-guests
+oc get net-attach-def -A | grep -E 'dualstack-net|shared-net|vlan100-net' || echo "deep-dive networks removed"</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_summary"><a class="anchor" href="#_summary"></a>Summary</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>In this deep dive, you learned:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>How OVN-Kubernetes renders a <code>UserDefinedNetwork</code> into a <code>NetworkAttachmentDefinition</code> and then into OVN logical switches, routers, and ports, and how to inspect each layer</p>
+</li>
+<li>
+<p>When Layer 2 with persistent IPAM fits VM workloads, and what Layer 3 gives up in exchange for per-node subnet aggregation</p>
+</li>
+<li>
+<p>How <code>ipam.mode</code> and <code>ipam.lifecycle</code> differ, and how an <code>IPAMClaim</code> holds a VM address across restart and live migration</p>
+</li>
+<li>
+<p>How to combine a primary UDN with a localnet secondary interface on one VM</p>
+</li>
+<li>
+<p>How network policy and <code>k8s.ovn.org/open-default-ports</code> behave on a primary UDN</p>
+</li>
+<li>
+<p>How <code>ClusterUserDefinedNetwork</code> shares one network and one address pool across namespaces</p>
+</li>
+<li>
+<p>How to troubleshoot IPAM claims, monitor network readiness and controller errors, and size subnets for the long term</p>
+</li>
+<li>
+<p>When to choose UDN, localnet, or a Linux bridge, and how to cut over from existing NAD-based networks</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_see_also"><a class="anchor" href="#_see_also"></a>See Also</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p><a href="udn-primary-networks.html" class="xref page">Configuring Layer 2 Primary Networks with UDNs</a></p>
+</li>
+<li>
+<p><a href="cudn-localnet-vlan.html" class="xref page">Localnet VLAN with CUDN</a></p>
+</li>
+<li>
+<p><a href="layer2-secondary.html" class="xref page">Layer 2 Secondary Networks</a></p>
+</li>
+<li>
+<p><a href="network-policies-vms.html" class="xref page">Network Policies for VMs</a></p>
+</li>
+<li>
+<p><a href="dual-stack-vms.html" class="xref page">Dual-Stack VMs</a></p>
+</li>
+<li>
+<p><a href="../vm-lifecycle/live-migration.html" class="xref page">Live Migration of VMs</a></p>
+</li>
+<li>
+<p><a href="https://docs.redhat.com/en/documentation/openshift_container_platform/4.22/html/multiple_networks/primary-networks" target="_blank" rel="noopener">OpenShift - Configuring Primary Networks</a></p>
+</li>
+<li>
+<p><a href="https://docs.redhat.com/en/documentation/openshift_container_platform/4.22/html/multiple_networks/secondary-networks" target="_blank" rel="noopener">OpenShift - Configuring Secondary Networks</a></p>
+</li>
+<li>
+<p><a href="https://ovn-kubernetes.io/api-reference/userdefinednetwork-api-spec/" target="_blank" rel="noopener">OVN-Kubernetes - UserDefinedNetwork API Reference</a></p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<nav class="pagination">
+  <span class="prev"><a href="udn-primary-networks.html">UDN Primary Networks</a></span>
+  <span class="next"><a href="localnet-secondary.html">Localnet Secondary Networks with CUDN</a></span>
+</nav>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <img src="../../../_/img/rhl-logo-red.png" height="40px" alt="Red Hat"  href="https://redhat.com" >
+</footer><script id="site-script" src="../../../_/js/site.js" data-ui-root-path="../../../_"></script>
+<script async src="../../../_/js/vendor/highlight.js"></script>
+<script src="../../../_/js/vendor/lunr.js"></script>
+<script src="../../../_/js/search-ui.js" id="search-ui-script" data-site-root-path="../../.." data-snippet-length="100" data-stylesheet="../../../_/css/search.css"></script>
+<script async src="../../../search-index.js"></script>
+  </body>
+</html>
