@@ -1,0 +1,455 @@
+= Transferring Files to and from a Virtual Machine
+:navtitle: VM File Transfer
+
+== Overview
+
+This guide covers how to upload files to virtual machines using the command-line interface.
+The same procedure will work for both Linux and Windows VMs, provided that OpenSSH is installed and running on the target VM.
+
+Thus, an OpenSSH server (on the VM side) and the `ssh` protocol are required to transfer files to and from VMs using this tutorial.
+
+IMPORTANT: This tutorial uses `<placeholders>` which must be replaced with the actual username, VM name (or hostname or IP address) and file path.
+The example commands cannot be copied and pasted to run without modification.
+
+== What You Will Learn
+
+In this guide, you will learn how to:
+
+* <<prepare_local_env,Prepare the Local Environment.>>
+* <<ssh_connection_string,Use SSH Connection Strings.>>
+* <<transfer_files_virtctl,Transfer Files using virtctl.>>
+** <<upload_files_virtctl,Upload Files to a Virtual Machine using virtctl.>>
+*** <<upload_rhel_virtctl,Upload Files to a RHEL VM using virtctl.>>
+*** <<upload_windows_virtctl,Upload Files to a Windows VM using virtctl.>>
+** <<download_files_virtctl,Download Files from a Virtual Machine using virtctl.>>
+*** <<download_rhel_virtctl,Download Files from a RHEL VM using virtctl.>>
+*** <<download_windows_virtctl,Download Files from a Windows VM using virtctl.>>
+* <<transfer_files_native,Transfer Files using Native Tools.>>
+* <<cleanup_disable_ssh,Optionally Disable OpenSSH>> after file transfer is complete.
+
+== Business Use Cases
+
+In this guide, we showcase how to use two primary methods of transferring files to and from VMs:
+
+* using `virtctl`
+* using native file transfer tools
+
+While using `virtctl` for transferring files to VMs does have drawbacks (see the opening warning in <<transfer_files_virtctl,the `virtctl` section>>),
+there are legitimate cases when transferring files using `virtctl` may be preferred.
+
+You may want to use `virtctl` when:
+
+* your VMs do not have direct internet access and you need a simple means to upload files to (or download from) a VM.
+* you do not want VMs exposed to the `ssh` protocol over the cluster-internal network using a Kubernetes `Service`, or over the public internet using a `LoadBalancer Service`.
+* temporary exposure using the `ssh` protocol is preferred over persistent access (note that you can still use native tools in such a case).
+
+Use the native file transfer tools if:
+
+* you're in a production environment and need to transfer large files, or you need a number of concurrent connections.
+* you need `ssh` access to your VMs directly from the internet or through the cluster-internal network.
+* you need stable access to the `ssh` protocol for future file transfers and remote management, either manually or using Ansible (note that you can still configure `ssh` access temporarily).
+
+
+== Prerequisites
+
+This guide assumes that you have the following tools or infrastructure installed or available (respectively):
+
+* An OpenShift 4.18 or later cluster
+* The OpenShift Virtualization add-on
+* The `virtctl` binary
+* A compatible client-side shell environment; `bash` is mostly used here, but some PowerShell examples are given for Windows guests.
+* One or more VMs that can be used to host file transfers. Below are guides to create VMs with different operating systems:
+** xref:getting-started:vm-quick-start.adoc[VM Quick Start (quickly create a Fedora VM),window=_blank]
+** xref:getting-started:create-vm-cli-yaml.adoc[Create a RHEL VM (refer to Step 1),window=_blank]
+** xref:windows-vm-virtio-drivers.adoc[Create a Windows VM with VirtIO drivers enabled,window=_blank]
+* The `git` binary, which is used to seed file and directory transfers.
+* OpenSSH server configured and running on your applicable VM guest operating system:
+** xref:remote-access-linux-vms.adoc[Configure SSH access for RHEL and Fedora VMs,window=_blank]
+** xref:ssh-access-windows-vms.adoc[Configure SSH access for Windows VMs,window=_blank]
+* For the section on native file transfer tools, the following additional requirements:
+** A Kubernetes `Service` exposing the VM(s) (refer to either the RHEL or Windows-specific tutorials above).
+** The `rsync` tool (`scp` is also required, but typically installed alongside the `ssh` client tools).
+* All VMs must be preconfigured with a password-protected user account, with either password or public key login enabled for OpenSSH.
+
+=== Prepare the Local Environment [[prepare_local_env]]
+
+In this section, you will obtain a data source to use in the remainder of the tutorial.
+To keep things simple (and consistent), the Git repository for this documentation will be used in all examples.
+
+With the `ssh` and `scp` nuances explained, go ahead and use the `git` command to clone the docs repo:
+
+[source=bash,role=execute]
+----
+git clone https://github.com/RedHatQuickCourses/ocp-virt-cookbook
+----
+
+Change directory to the repo that was just downloaded:
+
+[source=bash,role=execute]
+----
+cd ocp-virt-cookbook
+----
+
+Now that a local source of content is available, you can continue on or <<transfer_files_virtctl,skip ahead>> if you already know how to use `ssh` connection strings.
+
+== Using SSH Connection Strings [[ssh_connection_string]]
+
+Regardless of whether you choose `virtctl` or native tools such as `scp` or `rsync`, you will use an `ssh` connection string as either the source or destination for the file transfer.
+
+A breakdown of the `ssh` connection string is provided below:
+
+[source=bash,role=execute]
+----
+<username>@<vm-name>:<filepath>
+----
+
+* **<username>** - The name of a user account on the remote machine.
+* **<vm-name>** - The Kubernetes resource name of the `VirtualMachine` or `VirtualMachineInstance` with either the `vm/` or `vmi/` prefix, respectively.
+* **<filepath>** - Either a path relative to the user's home directory or an absolute path to a file or directory on the remote machine.
+
+[NOTE]
+.On ssh and scp options
+====
+The following options are supported in `virtctl scp` as they are in the actual `scp` command, where options are passed before the `<src>` or `<dest>` parameters:
+
+* **-i <ssh-keypath>** - Provide this option to pass a (non-default) private key that can be used in lieu of a password when connecting. A matching public key must be in the user's `.ssh/authorized_keys` file on the remote host.
+* **-r** --------------- Copy recursively. Use this as with the `cp` command to allow copying the entire contents (files and subdirectories) of a source directory, whether local or remote.
+====
+
+Now that the basics of using `ssh` connection strings have been explained, continue on with using `virtctl` to transfer files.
+
+== Transfer Files Using virtctl [[transfer_files_virtctl]]
+
+[WARNING]
+====
+Using `virtctl` for especially large file transfers (in size, duration, or concurrent connections)
+can put a heavy strain on the API server, as it relies on port-forwarding through the control-plane.
+
+It is therefore best to use a Kubernetes `Service` resource to expose the `ssh` port on the VM,
+and then use native tools such as `scp` or `rsync` to transfer files.
+
+See the section on <<transfer_files_native,Using Native File Transfer Tools>> if it better fits your use case.
+====
+
+Despite the above warning, using `virtctl` for file transfers is the quickest, easiest method for transferring files to and from a VM.
+
+The process is essentially the same for all platforms, with the main difference being that Windows systems have lettered disk volumes (and therefore absolute file paths).
+This section is therefore broken into subsections covering Linux and Windows-based file transfer commands separately.
+
+The basic syntax is (as with `cp` and `scp`) `virtctl scp <src> <dest>`, where one argument is a local file path and the other is an `ssh` connection string.
+
+
+=== Upload Files using virtctl [[upload_files_virtctl]]
+
+Using files located in our locally downloaded Git repository,
+the following command examples show a few different upload operations performed on both RHEL (or Fedora) and Windows systems.
+
+When uploading, the `ssh` host connection string will be the last parameter or the destination portion of the `virtctl scp` command.
+Be mindful of the `<placeholders>` used in the commands below.
+They will each need to be replaced with the applicable value for your use case.
+
+==== Upload to RHEL, Fedora and Other Linux VMs using virtctl [[upload_rhel_virtctl]]
+
+Upload the `README.md` file to the `/var/tmp` directory on the VM, replacing `<username>` and `<vm-name>` with the values for _your_ VM:
+
+[source=bash,role=execute]
+----
+virtctl scp README.md <username>@vm/<vm-name>:/var/tmp/
+----
+
+Upload the `images` directory to the user's home directory by passing the `-r` flag (meaning to copy recursively):
+
+[source=bash,role=execute]
+----
+virtctl scp -r images/ <username>@vm/<vm-name>:
+----
+
+
+NOTE: An empty path (specifically, the part after the `:` in the `ssh` connection string) will default to the user's home directory.
+
+==== Upload to Windows VMs using virtctl [[upload_windows_virtctl]]
+
+Upload the `README.md` file to the user's home directory on the Windows VM, replacing `<username>` and `<vm-name>` with the applicable values:
+
+[source=bash,role=execute]
+----
+virtctl scp README.md <username>@vm/<vm-name>:
+----
+
+NOTE: As with RHEL, Fedora and other Linux systems, an empty path (defined after the `:` symbol) still defaults to the user's home directory on Windows systems.
+
+Upload the `images/` directory from the root of the Git repository (which should still be the current working directory on our client machine) to the Public Pictures directory.
+Replace the `<username>` and `<vm-name>` as in the previous step:
+
+[source=bash,role=execute]
+----
+virtctl scp -r images/ <username>@vm/<vm-name>:C:/Users/Public/Pictures/
+----
+
+NOTE: The only difference in syntax between uploading to a Linux or Windows host is the file path,
+since Windows uses lettered drives (`C:`) and Linux systems use a single root filesystem (`/`).
+However, when using `scp` on a Windows target VM, destination paths will use a forward-slash (`/`) separator instead of the usual backslash (`\`) that Windows would typically use.
+
+=== Download Files using virtctl [[download_files_virtctl]]
+
+Downloading is (syntactically speaking) the inverse operation of uploading.
+The `virtctl scp` source parameter is now the `ssh` connection string, while the destination parameter is a local path or filename.
+
+Using the files and directories uploaded previously, we will make backup copies of the same files and directories locally.
+This will show how to change the name of files being downloaded (or uploaded) instead of simply inheriting the existing file or directory name, as before.
+
+Remember that `<placeholders>` still need replacing with values that match your environment.
+
+==== Download from RHEL, Fedora and other Linux VMs using virtctl [[download_rhel_virtctl]]
+
+Download the `README.md` file from `/var/tmp` on the RHEL VM to the current directory and name it `README.bak`:
+
+[source=bash,role=execute]
+----
+virtctl scp <username>@vm/<vm-name>:/var/tmp/README.md ./README.bak
+----
+
+Download the `images` folder from the user's home directory on the RHEL VM (using the `-r` flag to copy recursively),
+name it `images.d`, and place it in the current directory:
+
+[source=bash,role=execute]
+----
+virtctl scp -r <username>@vm/<vm-name>:images ./images.d
+----
+
+==== Download from Windows VMs using virtctl [[download_windows_virtctl]]
+
+Download the `README.md` file from the user's home directory and save it locally as `README.bkp`. Replace `<username>` and `<vm-name>` as required:
+
+[source=bash,role=execute]
+----
+virtctl scp <username>@vm/<vm-name>:README.md ./README.bkp
+----
+
+Download the `images` folder from the Public Pictures directory and save it locally as `images.bak.d`. Replace `<username>` and `<vm-name>` as before:
+
+[source=bash,role=execute]
+----
+virtctl scp -r <username>@vm/<vm-name>:C:/Users/Public/Pictures/images ./images.bak.d
+----
+
+If you are done and wish to clean up after the exercise, then skip ahead to <<cleanup_disable_ssh,Cleanup and Disable OpenSSH>>.
+Otherwise, continue on with using native tools for file transfer.
+
+
+== Transfer Files using Native Tools [[transfer_files_native]]
+
+This section covers the use of historically Linux-native tools to transfer files to and from a VM.
+Both `scp` and `rsync` will be covered, but unlike the `virtctl` section, Windows-specific examples will not be covered.
+
+NOTE: These same tools can be used to transfer files to and from Windows VMs, but remember to account for the drive letter in the path portion of the <<ssh_connection_string,SSH Connection String>>.
+
+IMPORTANT: As noted in the Prerequisites section, you will need your VM exposed to the `ssh` protocol using a Kubernetes `Service` in order to continue.
+
+=== Transfer Files using SCP [[transfer_files_scp]]
+
+The `scp` tool (shorthand for secure copy) is a popular tool in the RHEL ecosystem for transferring files between RHEL hosts.
+
+As covered in the `virtctl` section, the `virtctl scp` command essentially mimics the `scp` tool,
+only it automatically forwards a connection from the client to the VM through the OpenShift control plane.
+This can create overhead at the API server level, and can even have connection stability issues when transferring larger files or during numerous concurrent transfers.
+
+Thus, the traditional `scp` utility is a more robust solution in a production environment, or one where either large or numerous file transfers are necessary.
+
+Uploading using `scp` is almost exactly the same as when using `virtctl`, minus the `virtctl` command.
+The main difference is that, instead of using the name of either the `VirtualMachine` or `VirtualMachineInstance`,
+you will use either the domain name or the IP address (whether public or private) of the `Service` exposing the VM:
+
+[source=bash,role=execute]
+----
+scp README.md <user>@<hostname-or-ip-address>:/run/tmpfiles.d/
+----
+
+To upload a directory, simply use the path of a local directory as the source parameter, and add the `-r` flag:
+
+[source=bash,role=execute]
+----
+scp -r images <user>@<hostname-or-ip-address>:/run/tmpfiles.d/
+----
+
+If you successfully replaced the `<user>` and `<hostname-or-ip-address>` in the above commands, then you should have both a `README.md` and an `images` folder in the `/run/tmpfiles.d/` directory on the VM.
+
+With `scp` and `virtctl scp` being so similar in use, proceed to using `rsync` if you need additional features such as incremental data transfers or directory synchronization.
+
+NOTE: Unlike when previously copying files remotely into `/var/tmp` on Linux hosts, the `/run/tmpfiles.d` directory gets wiped upon reboot,
+so cleaning up leftover files is optional.
+
+=== Transfer Files using rsync [[transfer_files_rsync]]
+
+While `scp` is a tool intended exclusively for file transfers over a network using the `ssh` protocol, `rsync` is as useful locally
+for syncing data to a secondary disk volume as it is for syncing remotely over `ssh` (with the latter case arguably being its true power).
+
+Suppose you have a local data repository that gets updated frequently, and you need to keep a secondary copy of that directory up to date
+(in addition to keeping a proper backup). In such a case, you will find `rsync` to be quite useful.
+
+When using `rsync`, you may want to closely consider preserving file and directory metadata such as modification times,
+user/group ownership, permissions, and special cases like symlinks, device nodes, and other special files.
+
+All of the above-mentioned metadata and special files are preserved when passing the `-a` option to the `rsync` command.
+There are additional cases that are _not_ handled by default, and these are (with their respective option flags parenthesized):
+
+* creation and access times (`-N` and `-U`)
+* POSIX ACLs and extended attributes (`-A` and `-X`)
+* hard links (`-H`)
+
+You may or may not need the above options (aside from `-a`), but there are a couple of other user-friendly options for `rsync` that help track progress:
+
+* `-v` - verbose mode, which lists the files and directories currently being transferred
+* `-P` - shows the current progress
+
+We've chosen the flags `-avP` for all `rsync` command examples in this guide.
+
+A simple sync of the Git repository that was cloned at the beginning of this guide could be done easily (assuming the `ocp-virt-cookbook/` repository is the current working directory):
+
+[source=bash,role=execute]
+----
+rsync -avP ./ <user>@<hostname-or-ip-address>:ocp-virt-cookbook/
+----
+
+NOTE: `rsync` will create the directory named `ocp-virt-cookbook` in the user's home directory on the VM, with the contents of the local Git repository.
+
+The `rsync` command also supports passing file and directory exclusions using a text file similar to `.gitignore` in a Git repository.
+
+Create an `rsync` exclusions file with the following list of undesired files and directories:
+
+[source=gitignore]
+----
+build/
+scripts/
+tests/
+*.sh
+----
+
+NOTE: Data exclusions for `rsync` are based on relative file names and paths,
+so any file or directory excluded by name will also be excluded from any subdirectories within the source data directory.
+
+Take the example file contents above and paste them into a file named `rsync-file-exclusions.lst` in the root of the Git repository (which should be the current working directory).
+Once saved, you can run the `rsync` command, this time passing in the list of excluded files and directories:
+
+[source=bash,role=execute]
+----
+rsync -avP --exclude-from=rsync-file-exclusions.lst ./ <user>@<hostname-or-ip-address>:ocp-virt-cookbook2
+----
+
+To check this, you can `ssh` into the destination machine:
+
+[source=bash,role=execute]
+----
+ssh <user>@<hostname-or-ip-address>
+----
+
+Once logged in, perform a quick `diff` on the two Git repositories.
+Notice that the excluded files only exist in `ocp-virt-cookbook/`,
+with the `rsync-file-exclusions.lst` file only in the second repo:
+
+[source=bash,role=execute]
+----
+diff -u ocp-virt-cookbook{,2}
+----
+
+Go ahead and clean up both Git repositories ahead of the next section:
+
+[source=bash,role=execute]
+----
+rm -rf ocp-virt-cookbook{,2}/
+----
+
+== Cleanup and Disable OpenSSH [[cleanup_disable_ssh]]
+
+IMPORTANT: As with the initial setup, you will need to connect to the VM console using `virtctl console` (RHEL/Fedora), `virtctl vnc` (Windows),
+or by simply using the console viewer provided with OpenShift Virtualization to run the cleanup steps.
+
+To clean up the local files, simply back out of the Git repository directory and then remove it:
+
+.Change to the parent directory
+[source=bash,role=execute]
+----
+cd ../
+----
+
+.Remove the Git repository
+[source=bash,role=execute]
+----
+rm -rf ocp-virt-cookbook/
+----
+
+To clean up leftover files from the VMs, run the following commands as desired.
+
+For the RHEL/Fedora VM, simply run the following `rm` command on the VM itself:
+
+[source=bash,role=execute]
+----
+rm -rf /var/tmp/README.md ~/images
+----
+
+To remove leftover files from Windows, open a PowerShell window (`WIN+R`, then type `powershell`, and press `ENTER`) and run the following command:
+
+[source=powershell,role=execute]
+----
+Remove-Item -Path "$HOME/README.md", "C:\Users\Public\Pictures\images" -Recurse
+----
+
+=== Optional: Disable OpenSSH server
+
+Once you've finished transferring files and want to reduce the attack surface of your VM,
+or if you have no use for `ssh` or `scp` access for remote management or future file transfers,
+then proceed to disable OpenSSH server.
+
+To stop the OpenSSH server process:
+
+.On RHEL and Fedora
+[source=bash,role=execute]
+----
+sudo systemctl stop sshd
+----
+
+.On Debian and Ubuntu
+[source=bash,role=execute]
+----
+sudo systemctl stop ssh
+----
+
+.On Windows (in a privileged PowerShell window)
+[source=powershell,role=execute]
+----
+Stop-Service sshd
+----
+
+To disable OpenSSH from running at startup:
+
+.On RHEL and Fedora
+[source=bash,role=execute]
+----
+sudo systemctl disable sshd
+----
+
+.On Debian and Ubuntu
+[source=bash,role=execute]
+----
+sudo systemctl disable ssh
+----
+
+.On Windows (in a privileged PowerShell window)
+[source=powershell,role=execute]
+----
+Set-Service -Name sshd -StartupType 'Manual'
+----
+
+== Summary
+
+In this guide, you've learned the following topics:
+
+* How to upload files and directories from your client machine to a VM using `virtctl`
+* How to download files and directories from a VM to your client machine using `virtctl`
+* Optionally, how to disable OpenSSH server on a VM once file transfers are complete
+
+== See Also
+
+* link:https://docs.redhat.com/en/documentation/openshift_container_platform/{ocp-docs-version}/html/virtualization/getting-started#vm-connection-commands_virt-using-the-cli-tools[OpenShift Virtualization - Getting Started - VM Connection Commands,window=_blank]
+* link:https://www.redhat.com/en/blog/sync-rsync[Keeping Linux files and directories in sync with rsync,window=_blank]
+
