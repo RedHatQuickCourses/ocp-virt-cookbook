@@ -1,0 +1,2037 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Exporting and Importing VMs for Cross-Cluster Mobility :: OpenShift Virtualization cookbook</title>
+    <link rel="prev" href="vm-snapshots.html">
+    <link rel="next" href="boot-order-boot-sources.html">
+    <meta name="generator" content="Antora 3.1.3">
+    <link rel="stylesheet" href="../../../_/css/site.css">
+    <script>var uiRootPath = '../../../_'</script>
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://www.redhat.com" target="_blank"><img src="../../../_/img/redhat-logo.png" height="40px" alt="Red Hat"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="../../..">OpenShift Virtualization cookbook</a>
+      <div class="navbar-item search hide-for-print">
+        <div id="search-field" class="field">
+          <input id="search-input" type="text" placeholder="Search the docs">
+        </div>
+      </div>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues" target="_blank">Report Issues</a>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="ocp-virt-cookbook" data-version="1">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="../index.html">OpenShift Virtualization cookbook</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../index.html">Introduction</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../getting-started/index.html">Getting Started</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/vm-quick-start.html">Quick Start</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/prerequisites.html">Prerequisites</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/architecture-overview.html">Architecture Overview</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/hosted-control-planes.html">Hosted Control Planes</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/install-openshift-virtualization.html">Install OpenShift Virtualization</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/installing-qemu-guest-agent.html">Installing QEMU Guest Agent</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/default-storage-class.html">Storage Setup</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/create-vm-web-console.html">Create VM from Web Console</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/create-vm-cli-yaml.html">Create VM from CLI</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/vm-lifecycle-states.html">VM Lifecycle States</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/virtctl-basics.html">Virtctl Basics</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/cloud-init-fundamentals.html">Cloud-init Fundamentals</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../storage/index.html">Storage Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/lvm-operator.html">LVM Operator Installation</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/lvm-troubleshooting.html">LVM Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/odf-ceph-storage.html">ODF/Ceph Storage</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/hostpath-provisioner.html">HostPath Provisioner</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/creating-managing-storage-class.html">Creating and Managing Storage Classes</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/choosing-storage-class.html">Choosing a Storage Class</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/multi-disk-configuration.html">Multi-Disk VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/expanding-vm-disk-size.html">Expanding VM Disk Size</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/cdi-operations.html">CDI Operations</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/disk-io-tuning.html">Disk I/O Tuning</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/storage-profiles.html">Storage Profiles</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/live-migration-storage.html">Live Migration Storage</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../networking/index.html">Networking Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/static-ip-configuration.html">Static IP Configuration</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/cloud-init-troubleshooting.html">Cloud-init Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/udn-primary-networks.html">UDN Primary Networks</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/udn-deep-dive.html">UDN Deep Dive</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/localnet-secondary.html">Localnet Secondary Networks with CUDN</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/localnet-vlan.html">Localnet Secondary Networks with VLAN using NAD</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/cudn-localnet-vlan.html">Localnet VLAN with CUDN</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/layer2-secondary.html">Layer 2 Secondary Networks</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/linux-bridges.html">Linux Bridges</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/sriov-secondary.html">SR-IOV Secondary Networks</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/network-policies-vms.html">Network Policies for VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/metallb-loadbalancer.html">MetalLB Load Balancer for VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/dual-stack-vms.html">Dual-Stack IPv4/IPv6 VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/vm-ingress-routes.html">VM Ingress and Routes</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/ovs-bridge-troubleshooting.html">Troubleshooting Localnet Networks</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../vm-configuration/index.html">Virtual Machine Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/internal-dns-for-vms.html">Internal DNS for VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/remote-access-linux-vms.html">Remote Access to Linux VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/remote-access-linux-troubleshooting.html">Remote Access to Linux VMs Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/remote-access-windows-vms.html">Remote Access to Windows VMs via RDP</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/ssh-access-windows-vms.html">Remote Access to Windows VMs via SSH</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/windows-vm-virtio-drivers.html">Windows VMs with VirtIO Drivers</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/legacy-windows-versions.html">Legacy Windows Versions</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/infrastructure-node-placement.html">Infrastructure Node Placement</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/node-placement-affinity.html">Node Placement and Affinity</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/hotplug-volumes-interfaces.html">Hotplug Volumes and Interfaces</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/vm-templates.html">Virtual Machine Templates</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/instancetype-preference.html">Instancetype and Preference</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/hyperconverged-configuration.html">HyperConverged Configuration</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/scheduling-tolerations-taints.html">Scheduling with Tolerations and Taints</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/vm-file-transfer.html">VM File Transfer</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../performance/index.html">VM Performance Tuning</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/resource-limits-qos.html">Resource Limits and QoS</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/cpu-pinning.html">Dedicated CPU Placement</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/numa-hugepages.html">NUMA and Hugepages</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/realtime-vms.html">Real-Time VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/vm-monitoring-metrics.html">VM Monitoring and Metrics</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/nested-virtualization.html">Nested Virtualization</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/windows-vm-optimization.html">Windows VM Optimization</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="index.html">VM Lifecycle Management</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="import-qcow2-boot-volume.html">Import qcow2 Boot Volume</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="custom-golden-images.html">Custom Golden Images</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="automated-golden-image-pipeline.html">Automated Golden Image Pipeline</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="windows-golden-images.html">Windows Golden Images</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="golden-images-troubleshooting.html">Golden Images Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="cloning-vms.html">Cloning VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="vm-snapshots.html">VM Snapshots</a>
+  </li>
+  <li class="nav-item is-current-page" data-depth="2">
+    <a class="nav-link" href="vm-export-import.html">VM Export and Import</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="boot-order-boot-sources.html">VM Boot Order and Boot Sources</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="live-migration.html">Live Migration</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="migrate-from-vmware-mtv.html">Migrate from VMware (MTV)</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../manifests/index.html">Manifests</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../api/index.html">API Guide</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../api/api-component-overview.html">API Component Overview</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../agentic-vm-management/index.html">Agentic VM Management</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/getting-started.html">Getting Started with rh-virt</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/natural-language-vm-create.html">Natural Language VM Creation</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/ai-vm-lifecycle.html">AI VM Lifecycle Operations</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/vm-clone.html">Cloning VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/ai-vm-snapshot-management.html">VM Snapshot Management</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/ai-skill-chaining.html">Day-2 Skill Chaining</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/ai-vm-rebalance.html">VM Rebalancing and Live Migration</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../appendix/glossary.html">Glossary</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">OpenShift Virtualization cookbook</span>
+    <span class="version">1</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <a class="title" href="../index.html">OpenShift Virtualization cookbook</a>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">1</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">OpenShift Virtualization cookbook</a></li>
+    <li><a href="index.html">VM Lifecycle Management</a></li>
+    <li><a href="vm-export-import.html">VM Export and Import</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">Exporting and Importing VMs for Cross-Cluster Mobility</h1>
+<div class="sect1">
+<h2 id="_overview"><a class="anchor" href="#_overview"></a>Overview</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>This tutorial demonstrates how to export virtual machines out of an OpenShift Virtualization cluster and import them into another cluster or back into the same cluster. VM export produces portable disk images and VM manifests that can be moved through a container registry, object storage, or a direct connection between clusters.</p>
+</div>
+<div class="paragraph">
+<p>Cloning and snapshots operate inside a single cluster. Export and import are the tools you use when the destination is a different cluster, a backup system, or another team.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_use_cases"><a class="anchor" href="#_use_cases"></a>Use Cases</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Cross-cluster promotion</strong>: Move a validated VM from development to staging to production clusters without rebuilding it from scratch</p>
+</li>
+<li>
+<p><strong>Offline backup</strong>: Export VM disks to S3-compatible storage for long-term retention outside the cluster</p>
+</li>
+<li>
+<p><strong>Disaster recovery</strong>: Keep exported copies of critical VMs that can be imported into a recovery cluster</p>
+</li>
+<li>
+<p><strong>VM sharing</strong>: Publish a VM image as a container image so other teams or clusters can consume it</p>
+</li>
+<li>
+<p><strong>Migration between environments</strong>: Move VMs between on-premises, hosted, and edge clusters</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_how_vm_export_works"><a class="anchor" href="#_how_vm_export_works"></a>How VM Export Works</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>A VM export is driven by the <code>VirtualMachineExport</code> custom resource. When you create one, the export controller starts an export pod that serves the VM&#8217;s disks and manifest over authenticated HTTP endpoints.</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>Source cluster
+│
+└─ VirtualMachineExport  ──  references a VirtualMachine, VirtualMachineSnapshot, or PVC
+   │
+   ├─ token secret  ──  bearer token required on every download request
+   │
+   ├─ export pod + service  ──  serves disks at /volumes/&lt;name&gt;/disk.img
+   │
+   └─ OpenShift Route  ──  exposes the endpoints outside the cluster over HTTPS</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The <code>status</code> block of the VirtualMachineExport contains the download URLs. Two URL families are provided:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Internal URLs</strong>: Reachable only from inside the cluster</p>
+</li>
+<li>
+<p><strong>External URLs</strong>: Reachable through an OpenShift Route, used for cross-cluster and workstation downloads</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Every download request must carry the token in the <code>x-kubevirt-export-token</code> HTTP header. The <code>virtctl vmexport</code> command family creates the resource, reads the token, and performs the download for you.</p>
+</div>
+<div class="paragraph">
+<p>Supported source types:</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 33.3333%;">
+<col style="width: 33.3333%;">
+<col style="width: 33.3334%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Source type</th>
+<th class="tableblock halign-left valign-top">Disk data</th>
+<th class="tableblock halign-left valign-top">VM manifest</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">VirtualMachine</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">All PVC and DataVolume disks attached to the VM</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Included</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">VirtualMachineSnapshot</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">All disks captured in the snapshot</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Included</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">PersistentVolumeClaim</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The single PVC</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Not included</p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>For KubeVirt disks, the export server offers two formats:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>raw</strong> (<code>disk.img</code>): The disk image as stored</p>
+</li>
+<li>
+<p><strong>gzip</strong> (<code>disk.img.gz</code>): The disk image compressed for transfer, the default for <code>virtctl vmexport download</code></p>
+</li>
+</ul>
+</div>
+<div class="sect2">
+<h3 id="_virtualmachineexport_lifespan"><a class="anchor" href="#_virtualmachineexport_lifespan"></a>VirtualMachineExport Lifespan</h3>
+<div class="paragraph">
+<p>A VirtualMachineExport is a short-lived resource. It is automatically deleted when its time-to-live expires, two hours by default. If you need the export to survive longer, set a longer TTL when creating it, and recreate the export when it expires.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_prerequisites"><a class="anchor" href="#_prerequisites"></a>Prerequisites</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p>OpenShift 4.18+ with the OpenShift Virtualization operator installed on the source cluster</p>
+</li>
+<li>
+<p>Worker nodes with hardware virtualization available: bare-metal hosts or AWS <code>.metal</code> instances. Regular cloud VMs without nested virtualization do not expose <code>/dev/kvm</code>, and the VMs in this tutorial cannot schedule on them</p>
+</li>
+<li>
+<p>For cross-cluster workflows, a second OpenShift cluster with OpenShift Virtualization installed</p>
+</li>
+<li>
+<p>CLI tools installed: <code>oc</code>, <code>virtctl</code></p>
+</li>
+<li>
+<p><code>podman</code> or <code>docker</code> installed, for the container registry sections</p>
+</li>
+<li>
+<p>A quay.io account or access to an internal container registry, for the container registry sections</p>
+</li>
+<li>
+<p>Optional: <code>aws</code> CLI and an S3-compatible object store, for the offline backup section</p>
+</li>
+<li>
+<p>Recommended prior tutorials: <a href="import-qcow2-boot-volume.html" class="xref page">Import qcow2 Boot Volumes</a>, <a href="cloning-vms.html" class="xref page">Cloning VMs</a>, <a href="vm-snapshots.html" class="xref page">VM Snapshots</a></p>
+</li>
+</ul>
+</div>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+You can follow this entire tutorial on a single cluster. Treat the <code>vm-export-demo</code> namespace as the source environment and <code>vm-import-demo</code> as the target environment. When you move to real cross-cluster workflows, run the source-side commands against one cluster and the target-side commands against the other by switching your <code>oc</code> context or <code>KUBECONFIG</code>.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_preparing_the_demo_environment"><a class="anchor" href="#_preparing_the_demo_environment"></a>Preparing the Demo Environment</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_step_1_create_the_namespaces"><a class="anchor" href="#_step_1_create_the_namespaces"></a>Step 1: Create the Namespaces</h3>
+<div class="paragraph">
+<p>Create the two namespaces used in this tutorial. On two clusters, create <code>vm-export-demo</code> on the source cluster and <code>vm-import-demo</code> on the target cluster.</p>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/vm-export-import/namespace-vm-export-demo.yaml" class="xref attachment">Download namespace-vm-export-demo.yaml</a></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: v1
+kind: Namespace
+metadata:
+  name: vm-export-demo</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/vm-export-import/namespace-vm-import-demo.yaml" class="xref attachment">Download namespace-vm-import-demo.yaml</a></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: v1
+kind: Namespace
+metadata:
+  name: vm-import-demo</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Apply both namespaces:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f namespace-vm-export-demo.yaml
+oc apply -f namespace-vm-import-demo.yaml</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_step_2_create_the_demo_vm"><a class="anchor" href="#_step_2_create_the_demo_vm"></a>Step 2: Create the Demo VM</h3>
+<div class="paragraph">
+<p>Create the demo VM in the source namespace. The VM boots Fedora from a container image imported into a DataVolume, giving it a real PVC-backed disk to export:</p>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/vm-export-import/vm-app-server.yaml" class="xref attachment">Download vm-app-server.yaml</a></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: app-server
+  namespace: vm-export-demo
+  labels:
+    app: app-server
+spec:
+  runStrategy: Always
+  template:
+    metadata:
+      labels:
+        kubevirt.io/vm: app-server
+    spec:
+      domain:
+        cpu:
+          cores: 1
+        devices:
+          disks:
+            - name: rootdisk
+              disk:
+                bus: virtio
+            - name: cloudinitdisk
+              disk:
+                bus: virtio
+          interfaces:
+            - name: default
+              masquerade: {}
+          rng: {}
+        memory:
+          guest: 2Gi
+      networks:
+        - name: default
+          pod: {}
+      volumes:
+        - name: rootdisk
+          dataVolume:
+            name: app-server-root
+        - name: cloudinitdisk
+          cloudInitNoCloud:
+            userData: |-
+              #cloud-config
+              user: fedora
+              password: fedora123
+              chpasswd:
+                expire: false
+              ssh_pwauth: true
+  dataVolumeTemplates:
+    - metadata:
+        name: app-server-root
+      spec:
+        source:
+          registry:
+            url: "docker://quay.io/containerdisks/fedora:latest"
+        storage:
+          resources:
+            requests:
+              storage: 10Gi</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Apply the VM:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f vm-app-server.yaml</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_step_3_verify_the_source_vm"><a class="anchor" href="#_step_3_verify_the_source_vm"></a>Step 3: Verify the Source VM</h3>
+<div class="paragraph">
+<p>Wait for the DataVolume import to finish and the VM to start:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get dv app-server-root -n vm-export-demo -w</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Expected output:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">NAME              PHASE        PROGRESS   RESTARTS   AGE
+app-server-root   Succeeded    100.0%     0          2m</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Press Ctrl+C to stop watching once the phase is <code>Succeeded</code>. Confirm the VM is running:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vm app-server -n vm-export-demo</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Expected output:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">NAME         AGE   STATUS    READY
+app-server   3m    Running   True</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Verify the VirtualMachineInstance is active and scheduled to a node:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vmi app-server -n vm-export-demo</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Expected output:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">NAME         AGE   PHASE     IP           NODENAME   READY
+app-server   3m    Running   10.244.1.5   worker-1   True</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="exporting-a-vm-from-the-source-cluster"><a class="anchor" href="#exporting-a-vm-from-the-source-cluster"></a>Exporting a VM from the Source Cluster</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>This section covers creating the export, reading the download links, and retrieving the disk image and VM manifest.</p>
+</div>
+<div class="sect2">
+<h3 id="_preparing_the_vm_for_a_consistent_export"><a class="anchor" href="#_preparing_the_vm_for_a_consistent_export"></a>Step 1: Preparing the VM for a Consistent Export</h3>
+<div class="paragraph">
+<p>Stop the VM before exporting it. A stopped VM guarantees a consistent, clean copy of the disk, in the same way a powered-off server images cleanly. If the VM must keep running, export a VirtualMachineSnapshot instead, as described in <a href="vm-snapshots.html" class="xref page">VM Snapshots</a>, and accept a crash-consistent copy.</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">virtctl stop app-server -n vm-export-demo</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Confirm the VM has stopped:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vm app-server -n vm-export-demo</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Expected output:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">NAME         AGE   STATUS    READY
+app-server   5m    Stopped   False</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_creating_the_virtualmachineexport"><a class="anchor" href="#_creating_the_virtualmachineexport"></a>Step 2: Creating the VirtualMachineExport</h3>
+<div class="paragraph">
+<p>The quickest path is <code>virtctl vmexport create</code>, which creates the VirtualMachineExport and generates the token secret for you:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">virtctl vmexport create app-server-export --vm=app-server -n vm-export-demo</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The first argument is the name of the VirtualMachineExport object, and <code>--vm</code> names the source VM. You can also export a snapshot with <code>--snapshot=&lt;snapshot-name&gt;</code> or a single PVC with <code>--pvc=&lt;pvc-name&gt;</code>.</p>
+</div>
+<div class="paragraph">
+<p>To keep the export available for longer than the default two hours, set an explicit TTL:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">virtctl vmexport create app-server-export --vm=app-server --ttl=24h \
+  -n vm-export-demo</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>For GitOps-managed environments, create the same resources from manifests. First generate a token value:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">openssl rand -hex 32</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Store the generated value in a secret:</p>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/vm-export-import/export-token-secret.yaml" class="xref attachment">Download export-token-secret.yaml</a></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: v1
+kind: Secret
+metadata:
+  name: app-server-export-token
+  namespace: vm-export-demo
+stringData:
+  token: &lt;generated-token&gt;</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Then reference the secret from the export object:</p>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/vm-export-import/virtualmachineexport-app-server.yaml" class="xref attachment">Download virtualmachineexport-app-server.yaml</a></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: export.kubevirt.io/v1beta1
+kind: VirtualMachineExport
+metadata:
+  name: app-server-export
+  namespace: vm-export-demo
+spec:
+  tokenSecretRef: app-server-export-token
+  source:
+    apiGroup: kubevirt.io
+    kind: VirtualMachine
+    name: app-server</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Apply both manifests:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f export-token-secret.yaml
+oc apply -f virtualmachineexport-app-server.yaml</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_waiting_for_the_export_to_become_ready"><a class="anchor" href="#_waiting_for_the_export_to_become_ready"></a>Step 3: Waiting for the Export to Become Ready</h3>
+<div class="paragraph">
+<p>The export controller starts an export pod and exposes it through a Route. Wait for the export to report that the disks are ready to serve:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc wait vmexport app-server-export --for=condition=Ready --timeout=5m \
+  -n vm-export-demo</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Expected output:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">virtualmachineexport.export.kubevirt.io/app-server-export condition met</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="reading-the-download-links"><a class="anchor" href="#reading-the-download-links"></a>Step 4: Reading the Download Links</h3>
+<div class="paragraph">
+<p>The download URLs live in the <code>status</code> block:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vmexport app-server-export -n vm-export-demo -o yaml</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The interesting part of the output is the <code>status.links</code> section. Download URLs are listed separately for external (Route) and internal (in-cluster) access, under <code>status.links.external.volumes</code> and <code>status.links.internal.volumes</code>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">status:
+  links:
+    external:
+      volumes:
+        - name: app-server-root
+          formats:
+            - format: raw
+              url: https://virt-exportproxy-openshift-cnv.apps.example.com/api/export.kubevirt.io/v1beta1/namespaces/vm-export-demo/virtualmachineexports/app-server-export/volumes/app-server-root/disk.img
+            - format: gzip
+              url: https://virt-exportproxy-openshift-cnv.apps.example.com/api/export.kubevirt.io/v1beta1/namespaces/vm-export-demo/virtualmachineexports/app-server-export/volumes/app-server-root/disk.img.gz</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Each volume entry lists its formats and URLs. The volume is named after the DataVolume that backs it (<code>app-server-root</code>), not the disk device name used inside the VM template (<code>rootdisk</code>). External URLs go through the OpenShift Route; internal URLs, under <code>status.links.internal</code>, resolve only inside the cluster.</p>
+</div>
+<div class="paragraph">
+<p>To extract the volume names and URLs directly:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vmexport app-server-export -n vm-export-demo \
+  -o jsonpath='{.status.links.external.volumes[*].name}'</code></pre>
+</div>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vmexport app-server-export -n vm-export-demo \
+  -o jsonpath='{.status.links.external.volumes[*].formats[*].url}'</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_downloading_the_exported_disk"><a class="anchor" href="#_downloading_the_exported_disk"></a>Step 5: Downloading the Exported Disk</h3>
+<div class="paragraph">
+<p>Download the root disk with <code>virtctl vmexport download</code>. The gzip format is the default and is decompressed transparently while downloading:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">virtctl vmexport download app-server-export --volume=app-server-root \
+  --output=app-server-root.img --insecure --keep-vme -n vm-export-demo</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The <code>--insecure</code> flag skips route certificate verification, which is necessary in labs with self-signed certificates. See <a href="#verifying-data-integrity">Verifying Data Integrity</a> for the production guidance on TLS verification.</p>
+</div>
+<div class="paragraph">
+<p>Verify the downloaded file is a valid raw disk image. KubeVirt exports PVC content as a raw image regardless of how the disk was originally sourced, so the file is raw even though the source VM was built from a container-registry image:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">qemu-img info app-server-root.img</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Expected output:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">image: app-server-root.img
+file format: raw
+virtual size: 5.5 GiB (5962612224 bytes)
+disk size: 5.5 GiB</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_accessing_the_export_with_token_authenticated_urls"><a class="anchor" href="#_accessing_the_export_with_token_authenticated_urls"></a>Step 6: Accessing the Export with Token-Authenticated URLs</h3>
+<div class="paragraph">
+<p>The <code>virtctl</code> wrapper hides the underlying mechanism, but every export download is an HTTP GET that carries the token in a header. Understanding this lets you integrate exports with any HTTP client or pipeline.</p>
+</div>
+<div class="paragraph">
+<p>Retrieve the token:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">virtctl vmexport get-token app-server-export -n vm-export-demo</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Download the gzip-formatted disk directly with <code>curl</code>, using the token and the full external URL read from the export status in <a href="#reading-the-download-links">Step 4: Reading the Download Links</a>:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">curl --insecure -H "x-kubevirt-export-token: &lt;export-token&gt;" \
+  -o app-server-root.img.gz "&lt;external-gzip-url&gt;"</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Decompress the archive:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">gunzip app-server-root.img.gz</code></pre>
+</div>
+</div>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+If your workstation cannot reach the cluster Routes, add <code>--port-forward</code> to the <code>virtctl vmexport download</code> command. It tunnels the download through a local port forwarded to the export service, which is useful in clusters without external ingress.
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="downloading-the-vm-manifest"><a class="anchor" href="#downloading-the-vm-manifest"></a>Step 7: Downloading the VM Manifest</h3>
+<div class="paragraph">
+<p>A VirtualMachine export also exposes the VM manifest, which you can reapply on the target cluster instead of rewriting the VM specification by hand:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">virtctl vmexport download app-server-export --manifest \
+  --output=app-server-manifest.yaml --insecure -n vm-export-demo</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The manifest is not directly applyable on another cluster: it references the source PVC, contains cluster-specific metadata, and includes the DataVolume template that created the source disk. <a href="#recreating-the-vm">[recreating-the-vm]</a> shows the required edits, and provides a ready-to-use target manifest.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_packaging_a_vm_disk_as_a_container_image"><a class="anchor" href="#_packaging_a_vm_disk_as_a_container_image"></a>Packaging a VM Disk as a Container Image</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Container registries are a convenient transport for VM disks: they provide authentication, versioning, and replication, and every cluster already knows how to pull from them. A VM disk packaged this way is called a <strong>containerDisk</strong>.</p>
+</div>
+<div class="sect2">
+<h3 id="_step_1_create_the_containerfile"><a class="anchor" href="#_step_1_create_the_containerfile"></a>Step 1: Create the Containerfile</h3>
+<div class="paragraph">
+<p>Create a <code>Containerfile</code> next to the downloaded disk. The disk image must be placed in the <code>/disk/</code> directory of the container image:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-dockerfile hljs" data-lang="dockerfile">FROM scratch
+COPY app-server-root.img /disk/</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_step_2_build_and_push_the_image"><a class="anchor" href="#_step_2_build_and_push_the_image"></a>Step 2: Build and Push the Image</h3>
+<div class="paragraph">
+<p>Build the image, targeting the architecture of your cluster&#8217;s worker nodes explicitly. <code>FROM scratch</code> has no base image to infer a platform from, so without <code>--platform</code> the build silently tags the image with the architecture of the machine running <code>podman build</code>&#8201;&#8212;&#8201;a problem if you are building on Apple Silicon or another arm64 workstation and your cluster runs on amd64:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">podman build --platform linux/amd64 \
+  -t quay.io/&lt;quay-username&gt;/vm-images:app-server .</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Confirm the architecture before pushing:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">podman image inspect quay.io/&lt;quay-username&gt;/vm-images:app-server \
+  --format '{{.Architecture}}'</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Log in to the registry:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">podman login quay.io</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Push the image:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">podman push quay.io/&lt;quay-username&gt;/vm-images:app-server</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The repository on quay.io must be public, or the target cluster must authenticate as described in <a href="#importing-from-a-container-registry">Option 2: Importing from a Container Registry</a>.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+Container images have a layer size limit of 20 GiB on most registries. For larger disks, use the object storage path described in <a href="#offline-backup-to-s3-compatible-storage">Offline Backup to S3-Compatible Storage</a> instead.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="importing-a-vm-into-the-target-cluster"><a class="anchor" href="#importing-a-vm-into-the-target-cluster"></a>Importing a VM into the Target Cluster</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The target cluster needs two things: the disk, imported into a DataVolume, and the VM definition. This section shows three import paths. Pick one; they all produce the same result.</p>
+</div>
+<div class="paragraph">
+<p>All commands in this section run against the target cluster. Switch your <code>oc</code> context or <code>KUBECONFIG</code> before continuing if you are using two clusters.</p>
+</div>
+<div class="sect2">
+<h3 id="_step_1_choose_an_import_method"><a class="anchor" href="#_step_1_choose_an_import_method"></a>Step 1: Choose an Import Method</h3>
+<div class="sect3">
+<h4 id="_uploading_a_local_disk_with_virtctl_image_upload"><a class="anchor" href="#_uploading_a_local_disk_with_virtctl_image_upload"></a>Option 1: Uploading a Local Disk with virtctl image-upload</h4>
+<div class="paragraph">
+<p>If the exported disk file is on your workstation, upload it directly. This is the same mechanism covered in <a href="import-qcow2-boot-volume.html" class="xref page">Import qcow2 Boot Volumes</a>:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">virtctl image-upload dv app-server-root \
+  --image-path=app-server-root.img \
+  --size=10Gi \
+  --insecure \
+  -n vm-import-demo</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Watch the import progress:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get dv app-server-root -n vm-import-demo -w</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Expected output:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">NAME              PHASE        PROGRESS   RESTARTS   AGE
+app-server-root   Succeeded    100.0%     0          3m</code></pre>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="importing-from-a-container-registry"><a class="anchor" href="#importing-from-a-container-registry"></a>Option 2: Importing from a Container Registry</h4>
+<div class="paragraph">
+<p>If you pushed the disk to a registry in the previous section, import it as a DataVolume. CDI pulls the image, extracts the disk from <code>/disk/</code>, and writes it to a new PVC:</p>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/vm-export-import/dv-registry-import.yaml" class="xref attachment">Download dv-registry-import.yaml</a></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: cdi.kubevirt.io/v1beta1
+kind: DataVolume
+metadata:
+  name: app-server-root
+  namespace: vm-import-demo
+  annotations:
+    cdi.kubevirt.io/storage.bind.immediate.requested: "true"
+spec:
+  source:
+    registry:
+      url: "docker://quay.io/&lt;quay-username&gt;/vm-images:app-server"
+  storage:
+    resources:
+      requests:
+        storage: 10Gi</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Apply the DataVolume:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f dv-registry-import.yaml</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>For a private repository, first create a registry credential secret on the target cluster:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc create secret docker-registry quay-credentials --docker-server=quay.io \
+  --docker-username=&lt;quay-username&gt; --docker-password=&lt;registry-token&gt; \
+  -n vm-import-demo</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Then reference it from the DataVolume with <code>spec.source.registry.secretRef: quay-credentials</code>.</p>
+</div>
+<div class="paragraph">
+<p>Watch the import:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get dv app-server-root -n vm-import-demo -w</code></pre>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="importing-over-http"><a class="anchor" href="#importing-over-http"></a>Option 3: Importing over HTTP</h4>
+<div class="paragraph">
+<p>If the exported disk is hosted on a web server or object storage, import it over HTTP. This is the path used for restores from S3-compatible storage, where the URL is a presigned object URL:</p>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/vm-export-import/dv-http-import.yaml" class="xref attachment">Download dv-http-import.yaml</a></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: cdi.kubevirt.io/v1beta1
+kind: DataVolume
+metadata:
+  name: app-server-root
+  namespace: vm-import-demo
+  annotations:
+    cdi.kubevirt.io/storage.bind.immediate.requested: "true"
+spec:
+  source:
+    http:
+      url: "&lt;http-url-to-disk&gt;"
+  storage:
+    resources:
+      requests:
+        storage: 10Gi</code></pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+If the URL is served over HTTPS with a certificate that is not publicly trusted, which is common with self-hosted S3-compatible stores, the import fails certificate verification. Create a ConfigMap holding the server&#8217;s CA certificate:
+</td>
+</tr>
+</table>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc create configmap s3-backup-ca --from-file=ca.pem=&lt;ca-certificate-file&gt; \
+  -n vm-import-demo</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Then add <code>certConfigMap: s3-backup-ca</code> next to <code>url</code> in the manifest above. Imports from AWS S3 and other publicly trusted endpoints need no such setting.</p>
+</div>
+<div class="paragraph">
+<p>Apply the DataVolume:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f dv-http-import.yaml</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Watch the import:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get dv app-server-root -n vm-import-demo -w</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_recreating_the_vm"><a class="anchor" href="#_recreating_the_vm"></a>Step 2: Recreating the VM</h3>
+<div id="recreating-the-vm" class="paragraph">
+<p>Start from the manifest downloaded in <a href="#downloading-the-vm-manifest">Step 7: Downloading the VM Manifest</a> and make these edits:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Remove <code>status: {}</code>, and the leftover annotations under <code>metadata</code>: <code>kubectl.kubernetes.io/last-applied-configuration</code>, <code>kubemacpool.io/transaction-timestamp</code>, <code>kubevirt.io/latest-observed-api-version</code>, and <code>kubevirt.io/storage-observed-api-version</code>. None of them apply on the target cluster; it generates its own.</p>
+</li>
+<li>
+<p>Change the namespace to <code>vm-import-demo</code></p>
+</li>
+<li>
+<p>Remove the <code>dataVolumeTemplates</code> section. virtctl rewrites its <code>source</code> to pull from the export server&#8217;s own internal Kubernetes Service URL, authenticated with a <code>certConfigMap</code> and a <code>secretExtraHeaders</code> secret that is not included in this download. It is not usable here; the disk already exists as an imported DataVolume.</p>
+</li>
+<li>
+<p>Point the volume at the imported DataVolume, so the <code>volumes</code> entry reads <code>name: rootdisk</code> with <code>dataVolume.name: app-server-root</code></p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>The result looks like this:</p>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/vm-export-import/vm-app-server-imported.yaml" class="xref attachment">Download vm-app-server-imported.yaml</a></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: app-server
+  namespace: vm-import-demo
+  labels:
+    app: app-server
+spec:
+  runStrategy: Halted
+  template:
+    metadata:
+      labels:
+        kubevirt.io/vm: app-server
+    spec:
+      domain:
+        cpu:
+          cores: 1
+        devices:
+          disks:
+            - name: rootdisk
+              disk:
+                bus: virtio
+            - name: cloudinitdisk
+              disk:
+                bus: virtio
+          interfaces:
+            - name: default
+              masquerade: {}
+          rng: {}
+        memory:
+          guest: 2Gi
+      networks:
+        - name: default
+          pod: {}
+      volumes:
+        - name: rootdisk
+          dataVolume:
+            name: app-server-root
+        - name: cloudinitdisk
+          cloudInitNoCloud:
+            userData: |-
+              #cloud-config
+              user: fedora
+              password: fedora123
+              chpasswd:
+                expire: false
+              ssh_pwauth: true</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Apply the VM:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f vm-app-server-imported.yaml</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_verifying_the_imported_vm"><a class="anchor" href="#_verifying_the_imported_vm"></a>Step 3: Verifying the Imported VM</h3>
+<div class="paragraph">
+<p>Start the VM:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">virtctl start app-server -n vm-import-demo</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Confirm it reaches <code>Running</code>:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vm app-server -n vm-import-demo</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Expected output:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">NAME         AGE   STATUS    READY
+app-server   1m    Running   True</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Verify the VirtualMachineInstance is active:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vmi app-server -n vm-import-demo</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>A VM that boots, reports guest agents, and serves traffic has survived the move. Log in through the console to confirm the operating system itself is healthy:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">virtctl console app-server -n vm-import-demo</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Log in with user <code>fedora</code> and password <code>fedora123</code>. Type <code>exit</code> to disconnect. For a stronger check, see <a href="#verifying-data-integrity">Verifying Data Integrity</a>.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="cross-cluster-migration-workflow"><a class="anchor" href="#cross-cluster-migration-workflow"></a>Cross-Cluster Migration Workflow</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The full workflow chains the previous sections into a repeatable procedure, using a container registry or object storage as the transport between clusters. Both clusters only need access to the shared registry or bucket, not to each other directly&#8201;&#8212;&#8201;this is the pattern for dev-to-prod promotion, sharing, and backups.</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>Source cluster                 Transport                    Target cluster
+──────────────                 ─────────                    ──────────────
+Stop the VM            ┌─────────────────────────┐   Create DataVolume
+       │               │  Container registry     │   (registry or HTTP import)
+       ▼               │  or object storage      │          │
+VirtualMachineExport ─►│                         │◄─────────┘
+       │               └─────────────────────────┘          ▼
+Download disk                                             Apply VM manifest
+and manifest                                                    │
+                                                                ▼
+                                                          Start and verify</pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<code>virtctl vmexport download --manifest --include-secret</code> can bundle a VM manifest together with an authentication secret for a direct, storage-less transfer between the export pod and a target DataVolume. In practice this only works within the same cluster: the bundled manifest&#8217;s disk source is always the export service&#8217;s internal Kubernetes Service DNS name, which no other cluster can resolve, and the manifest&#8217;s own <code>namespace</code> field is the source namespace, which conflicts with applying it into a different target namespace. Use the registry or object-storage path below for an actual cross-cluster move.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="offline-backup-to-s3-compatible-storage"><a class="anchor" href="#offline-backup-to-s3-compatible-storage"></a>Offline Backup to S3-Compatible Storage</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Object storage is the right transport for backups: it is cheap, durable, and independent of any cluster. Any S3-compatible store works, including AWS S3, MinIO, and Red Hat OpenShift Data Foundation with object storage.</p>
+</div>
+<div class="sect2">
+<h3 id="_step_1_export_the_disk_and_compute_its_checksum"><a class="anchor" href="#_step_1_export_the_disk_and_compute_its_checksum"></a>Step 1: Export the Disk and Compute Its Checksum</h3>
+<div class="paragraph">
+<p>Export and download the disk as shown in <a href="#exporting-a-vm-from-the-source-cluster">Exporting a VM from the Source Cluster</a>, compute its checksum, and upload it next to the checksum file:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">sha256sum app-server-root.img &gt; app-server-root.sha256</code></pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+On macOS, use <code>shasum -a 256 app-server-root.img &gt; app-server-root.sha256</code> instead.
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_step_2_upload_the_backup_files"><a class="anchor" href="#_step_2_upload_the_backup_files"></a>Step 2: Upload the Backup Files</h3>
+<div class="paragraph">
+<p>Upload both files to your backup bucket:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">aws s3 cp app-server-root.img \
+  s3://&lt;backup-bucket&gt;/vm-backups/app-server/app-server-root.img</code></pre>
+</div>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">aws s3 cp app-server-root.sha256 \
+  s3://&lt;backup-bucket&gt;/vm-backups/app-server/app-server-root.sha256</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>For MinIO and other S3-compatible stores, the <code>mc cp</code> command is an equivalent alternative to <code>aws s3 cp</code>.</p>
+</div>
+<div class="paragraph">
+<p>Store the VM manifest alongside the disk so restores are self-describing:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">aws s3 cp app-server-manifest.yaml \
+  s3://&lt;backup-bucket&gt;/vm-backups/app-server/app-server-manifest.yaml</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_restoring_from_backup"><a class="anchor" href="#_restoring_from_backup"></a>Step 3: Restoring from Backup</h3>
+<div class="paragraph">
+<p>Restoring is an HTTP import with a presigned URL. Generate a URL that is valid long enough for the import:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">aws s3 presign s3://&lt;backup-bucket&gt;/vm-backups/app-server/app-server-root.img \
+  --expires-in 43200</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Create the DataVolume using the presigned URL, exactly as in <a href="#importing-over-http">Option 3: Importing over HTTP</a>, apply the stored VM manifest with the edits from <a href="#recreating-the-vm">[recreating-the-vm]</a>, and start the VM.</p>
+</div>
+<div class="paragraph">
+<p>Apply retention at the storage layer, not in the cluster: configure the bucket&#8217;s lifecycle rules to expire old backup prefixes, and rely on object storage versioning for accidental-delete protection. Nothing inside the cluster needs to run between backups, which is what makes this an offline backup strategy.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_publishing_vm_images_for_sharing"><a class="anchor" href="#_publishing_vm_images_for_sharing"></a>Publishing VM Images for Sharing</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Once a disk lives in a container registry, sharing it is a consumption problem: other teams need a stable, named reference to clone from, without copying images around by hand. CDI provides this with <code>DataImportCron</code>, which periodically imports a registry image into a namespace and keeps an updated <code>DataSource</code> pointing at the result.</p>
+</div>
+<div class="sect2">
+<h3 id="_step_1_create_the_dataimportcron"><a class="anchor" href="#_step_1_create_the_dataimportcron"></a>Step 1: Create the DataImportCron</h3>
+<div class="paragraph">
+<p>Create a DataImportCron in the consuming namespace:</p>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/vm-export-import/dataimportcron-shared-image.yaml" class="xref attachment">Download dataimportcron-shared-image.yaml</a></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: cdi.kubevirt.io/v1beta1
+kind: DataImportCron
+metadata:
+  name: app-server-image
+  namespace: vm-import-demo
+spec:
+  schedule: "0 2 * * *"
+  managedDataSource: app-server-image
+  template:
+    spec:
+      source:
+        registry:
+          url: "docker://quay.io/&lt;quay-username&gt;/vm-images:app-server"
+      storage:
+        resources:
+          requests:
+            storage: 10Gi</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Apply it:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f dataimportcron-shared-image.yaml</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_step_2_check_datasource_readiness"><a class="anchor" href="#_step_2_check_datasource_readiness"></a>Step 2: Check DataSource Readiness</h3>
+<div class="paragraph">
+<p>Confirm the managed DataSource becomes ready:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc wait datasource app-server-image --for=condition=Ready --timeout=10m \
+  -n vm-import-demo</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Expected output:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">datasource.cdi.kubevirt.io/app-server-image condition met</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_step_3_clone_from_the_datasource"><a class="anchor" href="#_step_3_clone_from_the_datasource"></a>Step 3: Clone from the DataSource</h3>
+<div class="paragraph">
+<p>VMs in that namespace now clone from the DataSource by reference, receiving a fresh copy of the disk on creation:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: app-server-clone
+  namespace: vm-import-demo
+spec:
+  runStrategy: Halted
+  template:
+    metadata:
+      labels:
+        kubevirt.io/vm: app-server-clone
+    spec:
+      domain:
+        cpu:
+          cores: 1
+        devices:
+          disks:
+            - name: rootdisk
+              disk:
+                bus: virtio
+          rng: {}
+        memory:
+          guest: 2Gi
+  dataVolumeTemplates:
+    - metadata:
+        name: app-server-clone-root
+      spec:
+        sourceRef:
+          kind: DataSource
+          name: app-server-image
+          namespace: vm-import-demo
+        storage:
+          resources:
+            requests:
+              storage: 10Gi
+  volumes:
+    - name: rootdisk
+      dataVolume:
+        name: app-server-clone-root</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Each consuming namespace needs its own DataImportCron, or an RBAC rule granting access to a shared DataSource in a central namespace. This is the same pattern used by the golden image tutorials, <a href="custom-golden-images.html" class="xref page">Custom Golden Images</a>.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="verifying-data-integrity"><a class="anchor" href="#verifying-data-integrity"></a>Verifying Data Integrity</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Every hop in the export-import chain is a file transfer, and every transfer can corrupt data silently. Verification is what turns a working demo into a trustworthy procedure.</p>
+</div>
+<div class="sect2">
+<h3 id="_checksums"><a class="anchor" href="#_checksums"></a>Step 1: Checksums</h3>
+<div class="paragraph">
+<p>Compute a checksum on the source side, immediately after download:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">sha256sum app-server-root.img</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Compute it again at each downstream resting point: after uploading to a registry, after downloading from a registry on the target side, after retrieving from backup storage. The values must match exactly. Store the checksum next to the artifact, as the backup section does, so verification does not depend on remembering the value.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_image_validation"><a class="anchor" href="#_image_validation"></a>Step 2: Image Validation</h3>
+<div class="paragraph">
+<p><code>qemu-img check</code> validates internal consistency structures found in formats like qcow2. It does not support raw images&#8201;&#8212;&#8201;the format KubeVirt always exports&#8201;&#8212;&#8201;so it cannot be used here.</p>
+</div>
+<div class="paragraph">
+<p>For raw images, <code>qemu-img info</code> is the available validation: it confirms the file parses as a disk image and reports its actual size, catching a truncated download, a zero-length file, or anything that is not actually a disk image:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">qemu-img info app-server-root.img</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>A file that fails to parse, or reports a size that does not match what the export produced, was corrupted in transit&#8201;&#8212;&#8201;re-download it rather than importing it. This check cannot detect subtle bit-level corruption inside an otherwise well-formed file; the checksum comparison above is what proves byte-for-byte integrity across every hop.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_post_import_validation"><a class="anchor" href="#_post_import_validation"></a>Step 3: Post-Import Validation</h3>
+<div class="paragraph">
+<p>After the DataVolume reports <code>Succeeded</code>, confirm the size and format CDI wrote:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get dv app-server-root -n vm-import-demo \
+  -o jsonpath='{.status.phase}{"\n"}{.status.progress}'</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The decisive test is functional: a VM that boots, reports <code>Running</code> with <code>Ready True</code>, and responds on its console. A disk with silent corruption often still imports; it fails at boot. For critical VMs, run an application-level check after import, such as a database consistency check, before cutting over.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_encryption_in_transit"><a class="anchor" href="#_encryption_in_transit"></a>Step 4: Encryption in Transit</h3>
+<div class="ulist">
+<ul>
+<li>
+<p>The export Route serves over HTTPS, so downloads between clusters and workstations are encrypted by default. The <code>--insecure</code> flag disables certificate verification only, not encryption. It is acceptable in labs with self-signed certificates; in production, trust the cluster CA on the downloading side instead, or use <code>--port-forward</code> to tunnel through the API server.</p>
+</li>
+<li>
+<p>Registry pushes and pulls are encrypted over HTTPS and authenticated with registry credentials or pull secrets.</p>
+</li>
+<li>
+<p>Object storage transfers use HTTPS endpoints, and presigned URLs add scoped, time-limited authorization.</p>
+</li>
+<li>
+<p>The internal export URLs are plain HTTP. They never leave the cluster network, but use the external URLs or <code>--port-forward</code> rather than routing internal traffic through untrusted paths.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_automating_export_and_import_workflows"><a class="anchor" href="#_automating_export_and_import_workflows"></a>Automating Export and Import Workflows</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The manual procedure above is a sequence of six steps: stop the VM, create the export, wait for readiness, download the disk and manifest, transfer to the transport of choice, and import on the target. Each step is a single CLI command, which makes the whole workflow straightforward to script.</p>
+</div>
+<div class="sect2">
+<h3 id="_step_1_automate_the_export_download"><a class="anchor" href="#_step_1_automate_the_export_download"></a>Step 1: Automate the Export Download</h3>
+<div class="paragraph">
+<p><code>virtctl vmexport</code> includes flags designed for unattended runs:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>--ttl</code> bounds how long the export exists, so a failed pipeline cleans up after itself</p>
+</li>
+<li>
+<p><code>--readiness-timeout</code> fails the command instead of hanging when the export never becomes ready</p>
+</li>
+<li>
+<p><code>--retry</code> retries transient download errors</p>
+</li>
+<li>
+<p><code>--delete-vme</code> removes the export object after a successful download</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>For example, an unattended download becomes:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">virtctl vmexport download app-server-export --volume=app-server-root \
+  --output=app-server-root.img --insecure --retry=3 --readiness-timeout=10m \
+  --delete-vme -n vm-export-demo</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_step_2_automate_the_target_import"><a class="anchor" href="#_step_2_automate_the_target_import"></a>Step 2: Automate the Target Import</h3>
+<div class="paragraph">
+<p>The target side of an automated run is the import sequence from <a href="#importing-a-vm-into-the-target-cluster">Importing a VM into the Target Cluster</a>, gated on the DataVolume reaching readiness before the VM is started:</p>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/vm-export-import/dv-registry-import.yaml" class="xref attachment">Download dv-registry-import.yaml</a></p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f dv-registry-import.yaml</code></pre>
+</div>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc wait dv app-server-root --for=condition=Ready --timeout=10m -n vm-import-demo</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/vm-export-import/vm-app-server-imported.yaml" class="xref attachment">Download vm-app-server-imported.yaml</a></p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f vm-app-server-imported.yaml</code></pre>
+</div>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">virtctl start app-server -n vm-import-demo</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The <code>oc wait</code> command blocks until the import finishes, so the steps chain directly in a script: an import that fails or stalls past the timeout returns a non-zero exit code and stops the pipeline before a VM is started against an incomplete disk.</p>
+</div>
+<div class="paragraph">
+<p>Wrap the command sequence in whatever scheduler your platform already provides. Common patterns:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>CI pipelines</strong>: Run the export-download-push sequence in a Jenkins or GitLab CI job, gated on the checksum verification step, so a corrupted transfer never reaches the registry</p>
+</li>
+<li>
+<p><strong>Scheduled backup</strong>: An OpenShift CronJob or external scheduler running a container with <code>oc</code> and <code>virtctl</code> that performs the export-to-S3 procedure nightly for selected VMs</p>
+</li>
+<li>
+<p><strong>Disaster recovery replication</strong>: The same scheduled job pointed at a second cluster, importing with the registry or HTTP DataVolume, so the DR cluster always holds a recent copy</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Whichever scheduler you choose, keep the checksum comparison inside the automated flow. A backup pipeline that does not verify its transfers will silently back up corrupted disks.</p>
+</div>
+<div class="paragraph">
+<p>Two safety rules for automated exports: schedule them for VMs that are stopped or snapshot-backed, so the copy is always consistent, and use short TTLs so a crashed pipeline does not leave authenticated export endpoints exposed longer than necessary.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_troubleshooting"><a class="anchor" href="#_troubleshooting"></a>Troubleshooting</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_the_virtualmachineexport_never_becomes_ready"><a class="anchor" href="#_the_virtualmachineexport_never_becomes_ready"></a>The VirtualMachineExport never becomes Ready</h3>
+<div class="paragraph">
+<p>Check the conditions and events:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc describe vmexport app-server-export -n vm-export-demo</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Common causes: the source VM is still running with its disks in use, the token secret referenced by <code>tokenSecretRef</code> does not exist, or the export pod failed to start. Check the export pod directly:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get pods -n vm-export-demo</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_certificate_errors_during_download"><a class="anchor" href="#_certificate_errors_during_download"></a>Certificate errors during download</h3>
+<div class="paragraph">
+<p>An error such as <code>x509: certificate signed by unknown authority</code> means the route certificate is not trusted on your workstation. In labs, use <code>--insecure</code>. In production, install the cluster CA certificate on the downloading system, or use <code>--port-forward</code>.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_401_unauthorized_on_download"><a class="anchor" href="#_401_unauthorized_on_download"></a>401 Unauthorized on download</h3>
+<div class="paragraph">
+<p>The token is missing, wrong, or belongs to a different export. Retrieve the current token and confirm the secret name matches <code>spec.tokenSecretRef</code>:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">virtctl vmexport get-token app-server-export -n vm-export-demo</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_the_virtualmachineexport_disappeared"><a class="anchor" href="#_the_virtualmachineexport_disappeared"></a>The VirtualMachineExport disappeared</h3>
+<div class="paragraph">
+<p>Exports are deleted when their TTL expires, two hours by default. Recreate the export and use <code>--ttl</code> to extend the window for long transfers.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_the_import_datavolume_is_stuck_in_importinprogress"><a class="anchor" href="#_the_import_datavolume_is_stuck_in_importinprogress"></a>The import DataVolume is stuck in ImportInProgress</h3>
+<div class="paragraph">
+<p>The importer pod does the actual transfer. Inspect it for the real error:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get pods -n vm-import-demo</code></pre>
+</div>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc logs &lt;importer-pod-name&gt; -n vm-import-demo</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Common causes: the registry repository is private and no <code>secretRef</code> is configured, the target cluster cannot resolve or reach the registry or HTTP URL, or the URL is a presigned URL that has expired.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_the_imported_vm_fails_to_boot"><a class="anchor" href="#_the_imported_vm_fails_to_boot"></a>The imported VM fails to boot</h3>
+<div class="paragraph">
+<p>A VM that imports but fails to start usually has a corrupted disk. Run <code>qemu-img info</code> on the source file to confirm it still parses and reports the expected size, compare checksums across the transfer, and re-import. If the image is intact, compare the imported VM&#8217;s volume mode and access mode with the source PVC.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_cleanup"><a class="anchor" href="#_cleanup"></a>Cleanup</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_step_1_remove_source_resources"><a class="anchor" href="#_step_1_remove_source_resources"></a>Step 1: Remove Source Resources</h3>
+<div class="paragraph">
+<p>On the source cluster, remove the export, the VM, and the namespace:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">virtctl vmexport delete app-server-export -n vm-export-demo</code></pre>
+</div>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc delete vm app-server -n vm-export-demo
+oc delete namespace vm-export-demo</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_step_2_remove_target_resources"><a class="anchor" href="#_step_2_remove_target_resources"></a>Step 2: Remove Target Resources</h3>
+<div class="paragraph">
+<p>On the target cluster, remove the VM, the imported disk, the sharing resources, and the namespace:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc delete vm app-server app-server-clone -n vm-import-demo
+oc delete dataimportcron app-server-image -n vm-import-demo
+oc delete dv --all -n vm-import-demo
+oc delete secret quay-credentials -n vm-import-demo
+oc delete namespace vm-import-demo</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_step_3_remove_workstation_artifacts"><a class="anchor" href="#_step_3_remove_workstation_artifacts"></a>Step 3: Remove Workstation Artifacts</h3>
+<div class="paragraph">
+<p>Remove the workstation artifacts:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">rm -f app-server-root.img app-server-root.sha256 app-server-manifest.yaml \
+  Containerfile</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The container image in quay.io and any objects uploaded to S3 are outside the cluster; delete them through the registry and storage consoles if you no longer need them.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_summary"><a class="anchor" href="#_summary"></a>Summary</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>In this tutorial, you learned:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>What the VirtualMachineExport resource is and how its token-authenticated download endpoints work</p>
+</li>
+<li>
+<p>How to create an export with <code>virtctl vmexport create</code> or from manifests, and how to retrieve disks with <code>virtctl vmexport download</code> or plain <code>curl</code></p>
+</li>
+<li>
+<p>How to package a VM disk as a containerDisk image and push it to a container registry</p>
+</li>
+<li>
+<p>Three ways to import a disk into the target cluster: <code>virtctl image-upload</code>, registry DataVolume, and HTTP DataVolume</p>
+</li>
+<li>
+<p>How to adapt and reapply the exported VM manifest on the target cluster</p>
+</li>
+<li>
+<p>How to chain these steps into a repeatable cross-cluster migration using a registry or object storage as the transport</p>
+</li>
+<li>
+<p>How to export VM disks to S3-compatible storage for offline backup, and how to restore them with presigned URLs</p>
+</li>
+<li>
+<p>How to publish VM images for sharing with DataImportCron and DataSource resources</p>
+</li>
+<li>
+<p>How to verify integrity with checksums, <code>qemu-img info</code>, and post-import validation, and how transfers are encrypted</p>
+</li>
+<li>
+<p>How to automate the workflow with scripting-oriented vmexport flags, schedulers, and CI pipelines</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Export and import complete the VM lifecycle toolbox: cloning and snapshots move VMs inside a cluster, while export and import move them between clusters, into backups, and out to other teams.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_see_also"><a class="anchor" href="#_see_also"></a>See Also</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p><a href="import-qcow2-boot-volume.html" class="xref page">Import qcow2 Boot Volumes</a> - uploading disk images into the cluster</p>
+</li>
+<li>
+<p><a href="cloning-vms.html" class="xref page">Cloning VMs</a> - same-cluster alternatives to export and import</p>
+</li>
+<li>
+<p><a href="vm-snapshots.html" class="xref page">VM Snapshots</a> - point-in-time copies that can also be exported</p>
+</li>
+<li>
+<p><a href="custom-golden-images.html" class="xref page">Custom Golden Images</a> - the DataSource sharing pattern in depth</p>
+</li>
+<li>
+<p><a href="../storage/cdi-operations.html" class="xref page">CDI Operations</a> - how CDI imports, clones, and uploads work</p>
+</li>
+<li>
+<p><a href="https://docs.redhat.com/en/documentation/openshift_container_platform/4.22/html/virtualization/managing-vms#virt-exporting-vms" target="_blank" rel="noopener">Exporting virtual machines</a></p>
+</li>
+<li>
+<p><a href="https://kubevirt.io/user-guide/storage/export_api/" target="_blank" rel="noopener">KubeVirt VM export documentation</a></p>
+</li>
+<li>
+<p><a href="https://kubevirt.io/user-guide/storage/disks_and_volumes/#containerdisk" target="_blank" rel="noopener">KubeVirt containerDisks</a></p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<nav class="pagination">
+  <span class="prev"><a href="vm-snapshots.html">VM Snapshots</a></span>
+  <span class="next"><a href="boot-order-boot-sources.html">VM Boot Order and Boot Sources</a></span>
+</nav>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <img src="../../../_/img/rhl-logo-red.png" height="40px" alt="Red Hat"  href="https://redhat.com" >
+</footer><script id="site-script" src="../../../_/js/site.js" data-ui-root-path="../../../_"></script>
+<script async src="../../../_/js/vendor/highlight.js"></script>
+<script src="../../../_/js/vendor/lunr.js"></script>
+<script src="../../../_/js/search-ui.js" id="search-ui-script" data-site-root-path="../../.." data-snippet-length="100" data-stylesheet="../../../_/css/search.css"></script>
+<script async src="../../../search-index.js"></script>
+  </body>
+</html>
