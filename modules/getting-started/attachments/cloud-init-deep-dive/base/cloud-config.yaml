@@ -1,0 +1,25 @@
+#cloud-config
+ssh_pwauth: false
+users:
+  - name: ops
+    groups:
+      - wheel
+    shell: /bin/bash
+    sudo: "ALL=(ALL) NOPASSWD:ALL"
+    lock_passwd: true
+    ssh_authorized_keys:
+      - REPLACE_WITH_YOUR_ED25519_PUBLIC_KEY
+write_files:
+  - path: /etc/cloud-init-deep-dive.conf
+    owner: root:root
+    permissions: '0640'
+    content: |
+      provisioned_by: cloud-init
+      purpose: deep-dive-lab
+  - path: /etc/cloud-init-deep-dive-encoded.txt
+    owner: root:root
+    permissions: '0644'
+    encoding: b64
+    content: SGVsbG8K
+runcmd:
+  - [sh, -c, 'test -s /etc/cloud-init-deep-dive.conf && printf "complete\n" > /var/lib/cloud-init-deep-dive.status']
