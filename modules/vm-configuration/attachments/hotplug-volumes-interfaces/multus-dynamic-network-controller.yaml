@@ -1,4 +1,14 @@
 ---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: hotplug-demo
+  labels:
+    pod-security.kubernetes.io/enforce: privileged
+    pod-security.kubernetes.io/audit: privileged
+    pod-security.kubernetes.io/warn: privileged
+    security.openshift.io/scc.podSecurityLabelSync: "false"
+---
 kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
@@ -42,19 +52,19 @@ roleRef:
 subjects:
   - kind: ServiceAccount
     name: dynamic-networks-controller
-    namespace: openshift-multus
+    namespace: hotplug-demo
 ---
 apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: dynamic-networks-controller
-  namespace: openshift-multus
+  namespace: hotplug-demo
 ---
 kind: ConfigMap
 apiVersion: v1
 metadata:
   name: dynamic-networks-controller-config
-  namespace: openshift-multus
+  namespace: hotplug-demo
   labels:
     tier: node
     app: multus-dynamic-networks-controller
@@ -65,14 +75,28 @@ data:
         "multusSocketPath": "/host/run/multus/socket/multus.sock"
     }
 ---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: dynamic-networks-controller-privileged-scc
+  namespace: hotplug-demo
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: system:openshift:scc:privileged
+subjects:
+  - kind: ServiceAccount
+    name: dynamic-networks-controller
+    namespace: hotplug-demo
+---
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
   name: dynamic-networks-controller-ds
-  namespace: openshift-multus
+  namespace: hotplug-demo
   labels:
     tier: node
-    app: dynamic-networks-controller
+    app: multus-dynamic-networks-controller
     name: dynamic-networks-controller
 spec:
   selector:
@@ -84,7 +108,7 @@ spec:
     metadata:
       labels:
         tier: node
-        app: dynamic-networks-controller
+        app: multus-dynamic-networks-controller
         name: dynamic-networks-controller
     spec:
       tolerations:
@@ -100,7 +124,7 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: spec.nodeName
-          image: ghcr.io/k8snetworkplumbingwg/multus-dynamic-networks-controller:latest-amd64
+          image: ghcr.io/k8snetworkplumbingwg/multus-dynamic-networks-controller:v0.3.9@sha256:fa4b6ce3b060050b0db41daeabeb5ff6528375e7b679baa9954f767301f532b9
           command: ["/dynamic-networks-controller"]
           args:
             - "-config=/etc/dynamic-networks-controller/dynamic-networks-config.json"

@@ -383,6 +383,8 @@ OpenShift Virtualization supports hotplugging network interfaces through two pat
 | Upstream DNC; not shipped or supported by Red Hat
 |===
 
+NOTE: `LiveMigratable` is a VMI condition shown in the web console. `LiveUpdate` is the VM rollout-strategy value that enables automatic migration for VM changes on OpenShift 4.20 and later. They are related but are not interchangeable.
+
 This section focuses on hotplugging and unplugging a network interface and verifying whether it was attached in place or through migration. For the complete secondary-network setup and connectivity verification, see xref:networking:linux-bridges.adoc[Linux Bridges].
 
 The result is the same pattern as volume hotplugging, the running VM gains a device it did not boot with:
@@ -399,6 +401,18 @@ AFTER   — two interfaces
 ├─ default     — masquerade, pod network
 └─ dyniface1   — bridge, secondary network
 ....
+
+=== How It Works
+
+Unlike volume hotplugging (which uses `virtctl addvolume`), network interface hotplugging is done by patching the VM spec:
+
+. Create a NetworkAttachmentDefinition (NAD) for the secondary network.
+. Patch the VM spec to add the new interface and network definitions.
+. In-place hotplug adds the interface to the existing launcher pod and guest through thick Multus and the DNC. Migration-based hotplug creates a destination launcher pod with the attachment and adds the guest interface when live migration completes. Both paths update the running VM without a stop/start cycle.
+
+image::nic-hotplug-flow.svg[NIC hotplug and unplug flow, align=center]
+
+KubeVirt uses the launcher's `k8s.v1.cni.cncf.io/network-status` annotation to determine whether the requested pod attachment is present. A working DNC can provide that attachment in place. If it is not present, completion requires the migration-based path: automatic with `LiveUpdate` on OpenShift 4.20+, or manually triggered on 4.18/4.19. Verify the actual outcome using the VMI’s `status.nodeName` and `status.migrationState`, the pod `network-status` annotation, and the migration records rather than inferring it from the installed components alone.
 
 === Prerequisites
 
@@ -426,9 +440,19 @@ NOTE: If you plan to try both paths, complete Path 1 before installing the DNC i
 
 SR-IOV hotplug always uses migration, even when the DNC is installed. This example uses bridge binding.
 
-NOTE: Before publishing, confirm the OpenShift Virtualization-to-KubeVirt version mapping against the release notes: OpenShift Virtualization 4.18 = KubeVirt 1.4, 4.19 = 1.5, and 4.20 = 1.6. The migration instructions here are gated on the OpenShift Virtualization release.
+NOTE: The KubeVirt version included with OpenShift Virtualization can change between OpenShift releases. Use the OpenShift-version-specific capabilities described here rather than assuming the underlying KubeVirt version stays the same across releases.
 
 === Set Up Shared Demo Resources
+
+Check the VM rollout strategy configured for the cluster:
+
+[source,bash,role=execute]
+----
+oc get kubevirt kubevirt-kubevirt-hyperconverged -n openshift-cnv \
+  -o jsonpath='{.spec.configuration.vmRolloutStrategy}{"\n"}'
+----
+
+For this tutorial on OpenShift 4.20 and later, the expected value is `LiveUpdate`.
 
 Create `hotplug-demo` before installing the DNC or creating the NAD. The namespace may already exist from the storage tutorial:
 
@@ -496,7 +520,7 @@ NAD_NAME=lnbr0-bridge
 IFACE_NAME=dyniface1
 ----
 
-=== Path 1: Migration-Based Hotplug (Supported)
+=== Path 1: Migration-Based Hotplug
 
 Set the migration-path VM and VMI name. A VM and its VMI share the same name:
 
@@ -595,58 +619,103 @@ A live migration does not create a new VMI object. The VMI name stays the same; 
 
 ==== Step 3: Add the Secondary Interface
 
-Patch the VM with the complete desired `interfaces` and `networks` lists:
+Patch the VM with the complete desired `interfaces` and `networks` lists (click <<migration-add-interface-web-console,here>> for web console steps):
 
 [source,bash,role=execute]
 ----
 oc patch vm "$MIG_VMI_NAME" -n "$NAMESPACE" --type merge -p "$(cat <<EOF
-{
-  "spec": {
-    "template": {
-      "spec": {
-        "domain": {
-          "devices": {
-            "interfaces": [
-              {"name": "default", "masquerade": {}},
-              {"name": "$IFACE_NAME", "bridge": {}}
-            ]
-          }
-        },
-        "networks": [
-          {"name": "default", "pod": {}},
-          {"name": "$IFACE_NAME", "multus": {"networkName": "$NAD_NAME"}}
-        ]
-      }
-    }
-  }
-}
+spec:
+  template:
+    spec:
+      domain:
+        devices:
+          interfaces:
+          - name: default
+            masquerade: {}
+          - name: "$IFACE_NAME" # <.>
+            bridge: {} # <.>
+      networks:
+      - name: default
+        pod: {}
+      - name: "$IFACE_NAME" # <.>
+        multus:
+          networkName: "$NAD_NAME" # <.>
 EOF
 )"
 ----
+<.> Add a new interface and give it the name in `$IFACE_NAME`.
+<.> Use bridge binding for the hotplugged interface.
+<.> Add a matching network entry with the same interface name.
+<.> Connect the interface to the NetworkAttachmentDefinition in `$NAD_NAME`.
 
-[NOTE]
-====
-If you prefer the web console, edit the VM and add the same entries in the YAML tab:
+[#migration-add-interface-web-console]
+===== Add the Interface in the Web Console
+
+. In **Virtualization** -> **VirtualMachines**, select the `hotplug-demo` project and the `nic-hotplug-migration` VM.
+. Open the **Configuration** tab, select **Network**, and turn on the **YAML** editor.
+
+image::steps-to-network-tab-yaml.png[Open the migration VM's Network configuration and YAML editor]
+
+NOTE: You can open the YAML editor directly from the **Configuration** tab. These steps take you to the **Network** sub-tab so you can see the network interface appear in the interface list after you save.
+
+To add the secondary interface and its matching network, replace the editor contents with the complete VM manifest below, then click **Save**:
 
 [source,yaml]
 ----
-interfaces:
-- name: default
-  masquerade: {}
-- name: dyniface1
-  bridge: {}
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: nic-hotplug-migration
+  namespace: hotplug-demo
+spec:
+  runStrategy: Always
+  template:
+    metadata:
+      labels:
+        kubevirt.io/domain: nic-hotplug-migration
+    spec:
+      domain:
+        devices:
+          disks:
+          - name: rootdisk
+            disk:
+              bus: virtio
+          - name: cloudinitdisk
+            disk:
+              bus: virtio
+          interfaces:
+          - name: default
+            masquerade: {}
+          - name: dyniface1 # <.>
+            bridge: {} # <.>
+        resources:
+          requests:
+            memory: 1Gi
+      networks:
+      - name: default
+        pod: {}
+      - name: dyniface1 # <.>
+        multus:
+          networkName: lnbr0-bridge # <.>
+      volumes:
+      - name: rootdisk
+        containerDisk:
+          image: quay.io/kubevirt/fedora-with-test-tooling-container-disk:devel
+      - name: cloudinitdisk
+        cloudInitNoCloud:
+          userData: |
+            #cloud-config
+            user: fedora
+            password: fedora
+            chpasswd:
+              expire: false
 ----
+<.> Add a new interface and give it the name `dyniface1`.
+<.> Use bridge binding for the hotplugged interface.
+<.> Add a matching network entry with the same `dyniface1` name.
+<.> Connect the interface to the `lnbr0-bridge` NetworkAttachmentDefinition.
 
-[source,yaml]
-----
-networks:
-- name: default
-  pod: {}
-- name: dyniface1
-  multus:
-    networkName: lnbr0-bridge
-----
-====
+After saving, the **Network** sub-tab shows the new interface. Continue with the migration checks below.
 
 In another terminal, watch the migration objects while the interface change is picked up. Leave this command running until the migration reports `Succeeded`, then press `Ctrl+C`:
 
@@ -789,34 +858,48 @@ Exact interface names depend on the guest image; the hotplugged secondary interf
 
 ==== Step 6: Remove the Interface and Verify
 
-Patch the VM to set `state: absent` for `dyniface1` under `spec.template.spec.domain.devices.interfaces`. Keep the default interface and matching network definitions. Simply deleting the interface entry does not unplug it:
+Patch the VM to set `state: absent` for `dyniface1` under `spec.template.spec.domain.devices.interfaces`. Keep the default interface and matching network definitions. When editing the VM spec directly, simply deleting the interface entry does not unplug it. For web-console options, click <<migration-remove-interface-web-console,here>>:
 
 [source,bash,role=execute]
 ----
 oc patch vm "$MIG_VMI_NAME" -n "$NAMESPACE" --type merge -p "$(cat <<EOF
-{
-  "spec": {
-    "template": {
-      "spec": {
-        "domain": {
-          "devices": {
-            "interfaces": [
-              {"name": "default", "masquerade": {}},
-              {"name": "$IFACE_NAME", "state": "absent", "bridge": {}}
-            ]
-          }
-        }
-      }
-    }
-  }
-}
+spec:
+  template:
+    spec:
+      domain:
+        devices:
+          interfaces:
+          - name: default
+            masquerade: {}
+          - name: "$IFACE_NAME"
+            state: absent
+            bridge: {} # <.>
 EOF
 )"
 ----
+<.> Set `state: absent` on the bridge interface to request hot-unplug.
 
-[NOTE]
-====
-If you prefer the web console, set `state: absent` on the interface entry in the YAML tab:
+[#migration-remove-interface-web-console]
+===== Hot-Unplug the Interface in the Web Console
+
+===== Delete the Interface from the Network Tab (No YAML)
+
+. In **Virtualization** -> **VirtualMachines**, select the `hotplug-demo` project and the `nic-hotplug-migration` VM.
+. Open the **Configuration** tab and select **Network**.
+. In the `dyniface1` row, open the kebab menu and select **Delete**.
+
+image::unplug-netiface-UI-migration.png[Delete the migration VM's secondary interface from the Network tab]
+
+This removes the secondary interface through the web console without editing YAML. Continue with the migration checks below; the guest NIC detaches when the VM observes the change, and the pod-side attachment is removed when migration completes.
+
+===== Use the YAML Editor
+
+. In **Virtualization** -> **VirtualMachines**, select the `hotplug-demo` project and the `nic-hotplug-migration` VM.
+. Open the **Configuration** tab, select **Network**, and turn on the **YAML** editor.
+
+image::unplug-netiface-migration.png[Set the migration VM's secondary interface state to absent in the YAML editor]
+
+In the YAML editor, set `state: absent` on the `dyniface1` interface. Keep the interface entry and its bridge binding, and leave the `networks` section unchanged; deleting the entry does not request a hot-unplug:
 
 [source,yaml]
 ----
@@ -827,7 +910,8 @@ interfaces:
   state: absent
   bridge: {}
 ----
-====
+
+Click **Save**, then continue with the migration checks below.
 
 NOTE: Hot-unplug is only supported for bridge-binding interfaces. SR-IOV interfaces cannot be hot-unplugged.
 
@@ -835,7 +919,7 @@ The guest NIC is detached immediately after the unplug change reaches the VMI. T
 
 Repeat the launcher pod, `network-status`, VMI mapping, and guest `ip -br link` checks to verify that the interface has been unplugged.
 
-=== Path 2: In-Place Hotplug with the Upstream DNC (Unsupported)
+=== Path 2: In-Place Hotplug with the Upstream DNC
 
 Set the in-place-path VM and VMI name:
 
@@ -861,11 +945,9 @@ Expected output when the DNC is NOT installed:
 Error from server (NotFound): daemonsets.apps "dynamic-networks-controller-ds" not found
 ----
 
-The manifest below creates cluster-scoped RBAC resources, a privileged DNC DaemonSet in `hotplug-demo`, and its SCC RoleBinding before creating the DaemonSet. Its Namespace object adds the required Pod Security labels even if `hotplug-demo` already exists.
+The manifest below creates cluster-scoped RBAC resources, a privileged DNC DaemonSet in `hotplug-demo`, and its SCC RoleBinding before creating the DaemonSet. Its Namespace object adds the required Pod Security labels even if `hotplug-demo` already exists. The Pod Security labels apply to the entire project, and the SCC RoleBinding grants privileged SCC access to the DNC ServiceAccount.
 
-NOTE: For tutorial purposes only, this demo installs the DNC in the same project (`hotplug-demo`) as the VM to keep the resources together and make the controller's behavior easy to demonstrate. The DNC is cluster-wide infrastructure: each controller serves pods from every namespace on its node. Deleting `hotplug-demo` removes this DNC deployment and stops it serving pods across the cluster. Outside a tutorial, install the DNC in a dedicated namespace. Do not install it in `openshift-multus`: in testing, DNC pods there timed out connecting to the API service IP `172.30.0.1:443`. The observed timeout does not establish the exact cause.
-
-NOTE: The privileged Pod Security labels apply to the entire demo namespace; the SCC RoleBinding grants privileged SCC access to the DNC ServiceAccount. Before publishing, run one clean end-to-end test with the final manifest: the namespace labels and SCC RoleBinding are additions to the configuration tested so far.
+NOTE: For this demo, install the DNC in the working project (`hotplug-demo`) to keep its resources with the VM. The DNC is cluster-wide infrastructure: each controller serves pods from every namespace on its node. Deleting `hotplug-demo` removes this DNC deployment and stops it serving pods across the cluster. Do not install it in `openshift-multus`; OpenShift reserves `openshift-*` and `kube-*` projects for cluster components and advises against running workloads in default projects. See the link:https://docs.redhat.com/en/documentation/openshift_container_platform/{ocp-docs-version}/html/building_applications/projects[OpenShift projects documentation,window=_blank]. Outside a demo, install the DNC in a dedicated project.
 
 xref:attachment$hotplug-volumes-interfaces/multus-dynamic-network-controller.yaml[Download multus-dynamic-network-controller.yaml]
 
@@ -1166,58 +1248,103 @@ Launcher pod: virt-launcher-nic-hotplug-inplace-<hash>
 
 ==== Step 4: Add the Secondary Interface
 
-Patch the VM with the complete desired `interfaces` and `networks` lists:
+Patch the VM with the complete desired `interfaces` and `networks` lists (click <<inplace-add-interface-web-console,here>> for web console steps):
 
 [source,bash,role=execute]
 ----
 oc patch vm "$INPLACE_VMI_NAME" -n "$NAMESPACE" --type merge -p "$(cat <<EOF
-{
-  "spec": {
-    "template": {
-      "spec": {
-        "domain": {
-          "devices": {
-            "interfaces": [
-              {"name": "default", "masquerade": {}},
-              {"name": "$IFACE_NAME", "bridge": {}}
-            ]
-          }
-        },
-        "networks": [
-          {"name": "default", "pod": {}},
-          {"name": "$IFACE_NAME", "multus": {"networkName": "$NAD_NAME"}}
-        ]
-      }
-    }
-  }
-}
+spec:
+  template:
+    spec:
+      domain:
+        devices:
+          interfaces:
+          - name: default
+            masquerade: {}
+          - name: "$IFACE_NAME" # <.>
+            bridge: {} # <.>
+      networks:
+      - name: default
+        pod: {}
+      - name: "$IFACE_NAME" # <.>
+        multus:
+          networkName: "$NAD_NAME" # <.>
 EOF
 )"
 ----
+<.> Add a new interface and give it the name in `$IFACE_NAME`.
+<.> Use bridge binding for the hotplugged interface.
+<.> Add a matching network entry with the same interface name.
+<.> Connect the interface to the NetworkAttachmentDefinition in `$NAD_NAME`.
 
-[NOTE]
-====
-If you prefer the web console, edit the VM and add the same entries in the YAML tab:
+[#inplace-add-interface-web-console]
+===== Add the Interface in the Web Console
+
+. In **Virtualization** -> **VirtualMachines**, select the `hotplug-demo` project and the `nic-hotplug-inplace` VM.
+. Open the **Configuration** tab, select **Network**, and turn on the **YAML** editor.
+
+image::steps-to-network-tab-in-place-yaml.png[Open the in-place VM's Network configuration and YAML editor]
+
+NOTE: You can open the YAML editor directly from the **Configuration** tab. These steps take you to the **Network** sub-tab so you can see the network interface appear in the interface list after you save.
+
+To add the secondary interface and its matching network, replace the editor contents with the complete VM manifest below, then click **Save**:
 
 [source,yaml]
 ----
-interfaces:
-- name: default
-  masquerade: {}
-- name: dyniface1
-  bridge: {}
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: nic-hotplug-inplace
+  namespace: hotplug-demo
+spec:
+  runStrategy: Always
+  template:
+    metadata:
+      labels:
+        kubevirt.io/domain: nic-hotplug-inplace
+    spec:
+      domain:
+        devices:
+          disks:
+          - name: rootdisk
+            disk:
+              bus: virtio
+          - name: cloudinitdisk
+            disk:
+              bus: virtio
+          interfaces:
+          - name: default
+            masquerade: {}
+          - name: dyniface1 # <.>
+            bridge: {} # <.>
+        resources:
+          requests:
+            memory: 1Gi
+      networks:
+      - name: default
+        pod: {}
+      - name: dyniface1 # <.>
+        multus:
+          networkName: lnbr0-bridge # <.>
+      volumes:
+      - name: rootdisk
+        containerDisk:
+          image: quay.io/kubevirt/fedora-with-test-tooling-container-disk:devel
+      - name: cloudinitdisk
+        cloudInitNoCloud:
+          userData: |
+            #cloud-config
+            user: fedora
+            password: fedora
+            chpasswd:
+              expire: false
 ----
+<.> Add a new interface and give it the name `dyniface1`.
+<.> Use bridge binding for the hotplugged interface.
+<.> Add a matching network entry with the same `dyniface1` name.
+<.> Connect the interface to the `lnbr0-bridge` NetworkAttachmentDefinition.
 
-[source,yaml]
-----
-networks:
-- name: default
-  pod: {}
-- name: dyniface1
-  multus:
-    networkName: lnbr0-bridge
-----
-====
+After saving, the **Network** sub-tab shows the new interface. Continue with the checks below.
 
 Then check that `dyniface1` has reached the VMI specification:
 
@@ -1311,34 +1438,48 @@ Exact interface names depend on the guest image; the hotplugged secondary interf
 
 ==== Step 6: Remove the Interface and Verify
 
-Patch the VM to set `state: absent` for `dyniface1` under `spec.template.spec.domain.devices.interfaces`. Keep the default interface and matching network definitions. Simply deleting the interface entry does not unplug it:
+Patch the VM to set `state: absent` for `dyniface1` under `spec.template.spec.domain.devices.interfaces`. Keep the default interface and matching network definitions. When editing the VM spec directly, simply deleting the interface entry does not unplug it. For web-console options, click <<inplace-remove-interface-web-console,here>>:
 
 [source,bash,role=execute]
 ----
 oc patch vm "$INPLACE_VMI_NAME" -n "$NAMESPACE" --type merge -p "$(cat <<EOF
-{
-  "spec": {
-    "template": {
-      "spec": {
-        "domain": {
-          "devices": {
-            "interfaces": [
-              {"name": "default", "masquerade": {}},
-              {"name": "$IFACE_NAME", "state": "absent", "bridge": {}}
-            ]
-          }
-        }
-      }
-    }
-  }
-}
+spec:
+  template:
+    spec:
+      domain:
+        devices:
+          interfaces:
+          - name: default
+            masquerade: {}
+          - name: "$IFACE_NAME"
+            state: absent
+            bridge: {} # <.>
 EOF
 )"
 ----
+<.> Set `state: absent` on the bridge interface to request hot-unplug.
 
-[NOTE]
-====
-If you prefer the web console, set `state: absent` on the interface entry in the YAML tab:
+[#inplace-remove-interface-web-console]
+===== Hot-Unplug the Interface in the Web Console
+
+===== Delete the Interface from the Network Tab (No YAML)
+
+. In **Virtualization** -> **VirtualMachines**, select the `hotplug-demo` project and the `nic-hotplug-inplace` VM.
+. Open the **Configuration** tab and select **Network**.
+. In the `dyniface1` row, open the kebab menu and select **Delete**.
+
+image::unplug-netiface-UI-inplace.png[Delete the in-place VM's secondary interface from the Network tab]
+
+This removes the secondary interface through the web console without editing YAML. Continue with the DNC and attachment checks below to verify that the guest NIC and pod-side attachment have been removed.
+
+===== Use the YAML Editor
+
+. In **Virtualization** -> **VirtualMachines**, select the `hotplug-demo` project and the `nic-hotplug-inplace` VM.
+. Open the **Configuration** tab, select **Network**, and turn on the **YAML** editor.
+
+image::unplug-iface-inplace.png[Set the in-place VM's secondary interface state to absent in the YAML editor]
+
+In the YAML editor, set `state: absent` on the `dyniface1` interface. Keep the interface entry and its bridge binding, and leave the `networks` section unchanged; deleting the entry does not request a hot-unplug:
 
 [source,yaml]
 ----
@@ -1349,7 +1490,8 @@ interfaces:
   state: absent
   bridge: {}
 ----
-====
+
+Click **Save**, then continue with the DNC and attachment checks below.
 
 NOTE: Hot-unplug is only supported for bridge-binding interfaces. SR-IOV interfaces cannot be hot-unplugged.
 
@@ -1390,22 +1532,12 @@ NOTE: DNC logs provide evidence of the pod-side attachment removal only; KubeVir
 
 Repeat the launcher pod, `network-status`, VMI mapping, and guest `ip -br link` checks to verify that the interface has been unplugged. The requested networks annotation drives the DNC; `network-status` reports the resulting attachments.
 
-=== How It Works
-
-Unlike volume hotplugging (which uses `virtctl addvolume`), network interface hotplugging is done by patching the VM spec:
-
-. Create a NetworkAttachmentDefinition (NAD) for the secondary network.
-. Patch the VM spec to add the new interface and network definitions.
-. In-place hotplug adds the interface to the existing launcher pod and guest through thick Multus and the DNC. Migration-based hotplug creates a destination launcher pod with the attachment and adds the guest interface when live migration completes. Both paths update the running VM without a stop/start cycle.
-
-KubeVirt uses the launcher's `k8s.v1.cni.cncf.io/network-status` annotation to determine whether the requested pod attachment is present. A working DNC can provide that attachment in place. If it is not present, completion requires the migration-based path: automatic with `LiveUpdate` on OpenShift 4.20+, or manually triggered on 4.18/4.19. Verify the actual outcome using the VMI’s `status.nodeName` and `status.migrationState`, the pod `network-status` annotation, and the migration records rather than inferring it from the installed components alone.
-
 === Troubleshooting Network Hotplug
 
 *Migration-based path*
 
 * *"Pending changes"*: Inspect `MigrationRequired` and `LiveMigratable` in the VMI conditions. A tested blocked case reported `MigrationRequired=True` with reason `AutoMigrationDueToLiveUpdate` and `LiveMigratable=False`. Check the condition message for the migration blocker. A single worker or non-migratable RWO disks can prevent the migration-based path from completing.
-* *VMI spec updated, but no guest NIC*: Check `network-status` on the current launcher pod. If the attachment is absent, the DNC has not attached it in place. For migration-based hotplug on 4.18/4.19, trigger manual migration after the change reaches the VMI; on 4.20+, check `LiveUpdate` and migration progress. Confirm placement and shared-storage requirements.
+* *VMI spec updated, but no guest NIC*: Check `network-status` on the current launcher pod. If the attachment is absent, the DNC has not attached it in place. For migration-based hotplug on 4.18/4.19, trigger manual migration after the change reaches the VMI. On 4.20+, verify the VM rollout strategy is `LiveUpdate`, check the VMI's `LiveMigratable` condition in the web console, and inspect migration progress. Confirm placement and shared-storage requirements.
 * *Automatic migration does not start on OpenShift 4.20 or later*: Check the effective VM rollout strategy. `LiveUpdate` is required for automatic migration-based hotplug. The HyperConverged operator manages the rollout strategy and reconciles it to `LiveUpdate`; do not edit the KubeVirt custom resource directly. Ask the cluster administrator to inspect HyperConverged conditions and operator logs. The upstream rollout-strategy guide explains behavior, but its KubeVirt custom-resource editing procedure does not apply to OpenShift.
 
 +
@@ -1430,7 +1562,6 @@ Worker count alone does not establish migration readiness; available capacity, p
 *In-place path*
 
 * *DNC works on only some VMs*: Compare the VM's node with the DNC pod list. Each controller serves only its own node; it must be ready on every VM-eligible node.
-* *DNC API timeout in `openshift-multus`*: Testing there reported timeouts to `172.30.0.1:443`. Use `hotplug-demo` for this demo and a dedicated namespace outside the demo. Do not treat the observed timeout as proof of a specific CNO or egress-policy cause.
 * *DNC pods rejected or not Ready*: Check DaemonSet events, the privileged SCC RoleBinding, namespace Pod Security labels, image pull errors, and host socket availability.
 
 For the demo DNC, inspect events and logs with:
