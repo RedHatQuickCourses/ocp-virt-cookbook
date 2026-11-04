@@ -1,0 +1,15 @@
+apiVersion: cdi.kubevirt.io/v1beta1
+kind: DataVolume
+metadata:
+  name: app-server-root
+  namespace: vm-import-demo
+  annotations:
+    cdi.kubevirt.io/storage.bind.immediate.requested: "true"
+spec:
+  source:
+    registry:
+      url: "docker://quay.io/<quay-username>/vm-images:app-server"
+  storage:
+    resources:
+      requests:
+        storage: 10Gi
