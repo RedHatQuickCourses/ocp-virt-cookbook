@@ -1,0 +1,1224 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Cloud-init Deep Dive for OpenShift Virtualization :: OpenShift Virtualization cookbook</title>
+    <link rel="prev" href="cloud-init-fundamentals.html">
+    <link rel="next" href="../storage/index.html">
+    <meta name="generator" content="Antora 3.1.3">
+    <link rel="stylesheet" href="../../../_/css/site.css">
+    <script>var uiRootPath = '../../../_'</script>
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://www.redhat.com" target="_blank"><img src="../../../_/img/redhat-logo.png" height="40px" alt="Red Hat"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="../../..">OpenShift Virtualization cookbook</a>
+      <div class="navbar-item search hide-for-print">
+        <div id="search-field" class="field">
+          <input id="search-input" type="text" placeholder="Search the docs">
+        </div>
+      </div>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues" target="_blank">Report Issues</a>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="ocp-virt-cookbook" data-version="1">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="../index.html">OpenShift Virtualization cookbook</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../index.html">Introduction</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="index.html">Getting Started</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="vm-quick-start.html">Quick Start</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="prerequisites.html">Prerequisites</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="architecture-overview.html">Architecture Overview</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="hosted-control-planes.html">Hosted Control Planes</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="install-openshift-virtualization.html">Install OpenShift Virtualization</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="installing-qemu-guest-agent.html">Installing QEMU Guest Agent</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="default-storage-class.html">Storage Setup</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="create-vm-web-console.html">Create VM from Web Console</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="create-vm-cli-yaml.html">Create VM from CLI</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="vm-lifecycle-states.html">VM Lifecycle States</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="virtctl-basics.html">Virtctl Basics</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="cloud-init-fundamentals.html">Cloud-init Fundamentals</a>
+  </li>
+  <li class="nav-item is-current-page" data-depth="2">
+    <a class="nav-link" href="cloud-init-deep-dive.html">Cloud-init Deep Dive</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../storage/index.html">Storage Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/lvm-operator.html">LVM Operator Installation</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/lvm-troubleshooting.html">LVM Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/odf-ceph-storage.html">ODF/Ceph Storage</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/hostpath-provisioner.html">HostPath Provisioner</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/creating-managing-storage-class.html">Creating and Managing Storage Classes</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/choosing-storage-class.html">Choosing a Storage Class</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/multi-disk-configuration.html">Multi-Disk VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/expanding-vm-disk-size.html">Expanding VM Disk Size</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/cdi-operations.html">CDI Operations</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/disk-io-tuning.html">Disk I/O Tuning</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/storage-profiles.html">Storage Profiles</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../storage/live-migration-storage.html">Live Migration Storage</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../networking/index.html">Networking Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/static-ip-configuration.html">Static IP Configuration</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/cloud-init-troubleshooting.html">Cloud-init Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/udn-primary-networks.html">UDN Primary Networks</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/udn-deep-dive.html">UDN Deep Dive</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/localnet-secondary.html">Localnet Secondary Networks with CUDN</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/localnet-vlan.html">Localnet Secondary Networks with VLAN using NAD</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/cudn-localnet-vlan.html">Localnet VLAN with CUDN</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/layer2-secondary.html">Layer 2 Secondary Networks</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/linux-bridges.html">Linux Bridges</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/sriov-secondary.html">SR-IOV Secondary Networks</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/network-policies-vms.html">Network Policies for VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/metallb-loadbalancer.html">MetalLB Load Balancer for VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/dual-stack-vms.html">Dual-Stack IPv4/IPv6 VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/vm-ingress-routes.html">VM Ingress and Routes</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/ovs-bridge-troubleshooting.html">Troubleshooting Localnet Networks</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../vm-configuration/index.html">Virtual Machine Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/internal-dns-for-vms.html">Internal DNS for VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/remote-access-linux-vms.html">Remote Access to Linux VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/remote-access-linux-troubleshooting.html">Remote Access to Linux VMs Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/remote-access-windows-vms.html">Remote Access to Windows VMs via RDP</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/ssh-access-windows-vms.html">Remote Access to Windows VMs via SSH</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/windows-vm-virtio-drivers.html">Windows VMs with VirtIO Drivers</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/legacy-windows-versions.html">Legacy Windows Versions</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/infrastructure-node-placement.html">Infrastructure Node Placement</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/node-placement-affinity.html">Node Placement and Affinity</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/hotplug-volumes-interfaces.html">Hotplug Volumes and Interfaces</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/vm-templates.html">Virtual Machine Templates</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/instancetype-preference.html">Instancetype and Preference</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/hyperconverged-configuration.html">HyperConverged Configuration</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/scheduling-tolerations-taints.html">Scheduling with Tolerations and Taints</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/vm-file-transfer.html">VM File Transfer</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../performance/index.html">VM Performance Tuning</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/resource-limits-qos.html">Resource Limits and QoS</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/cpu-pinning.html">Dedicated CPU Placement</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/numa-hugepages.html">NUMA and Hugepages</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/realtime-vms.html">Real-Time VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/vm-monitoring-metrics.html">VM Monitoring and Metrics</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/nested-virtualization.html">Nested Virtualization</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/windows-vm-optimization.html">Windows VM Optimization</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../vm-lifecycle/index.html">VM Lifecycle Management</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/import-qcow2-boot-volume.html">Import qcow2 Boot Volume</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/custom-golden-images.html">Custom Golden Images</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/automated-golden-image-pipeline.html">Automated Golden Image Pipeline</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/windows-golden-images.html">Windows Golden Images</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/golden-images-troubleshooting.html">Golden Images Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/cloning-vms.html">Cloning VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/vm-snapshots.html">VM Snapshots</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/vm-export-import.html">VM Export and Import</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/boot-order-boot-sources.html">VM Boot Order and Boot Sources</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/live-migration.html">Live Migration</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/migrate-from-vmware-mtv.html">Migrate from VMware (MTV)</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../manifests/index.html">Manifests</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../api/index.html">API Guide</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../api/api-component-overview.html">API Component Overview</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../agentic-vm-management/index.html">Agentic VM Management</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/getting-started.html">Getting Started with rh-virt</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/natural-language-vm-create.html">Natural Language VM Creation</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/ai-vm-lifecycle.html">AI VM Lifecycle Operations</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/vm-clone.html">Cloning VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/ai-vm-snapshot-management.html">VM Snapshot Management</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/ai-skill-chaining.html">Day-2 Skill Chaining</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/ai-vm-rebalance.html">VM Rebalancing and Live Migration</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../appendix/glossary.html">Glossary</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">OpenShift Virtualization cookbook</span>
+    <span class="version">1</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <a class="title" href="../index.html">OpenShift Virtualization cookbook</a>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">1</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">OpenShift Virtualization cookbook</a></li>
+    <li><a href="index.html">Getting Started</a></li>
+    <li><a href="cloud-init-deep-dive.html">Cloud-init Deep Dive</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">Cloud-init Deep Dive for OpenShift Virtualization</h1>
+<div class="sect1">
+<h2 id="_overview"><a class="anchor" href="#_overview"></a>Overview</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>This tutorial builds on <a href="cloud-init-fundamentals.html" class="xref page">Cloud-init Fundamentals</a>. It focuses on repeatable first-boot configuration for Linux VMs: composing user data, configuring guest networking, delivering data with Kustomize, and diagnosing a failed run.</p>
+</div>
+<div class="paragraph">
+<p>Cloud-init operates inside the guest. OpenShift Virtualization supplies its NoCloud seed on an attached disk; the guest image must include a compatible cloud-init package and datasource. Cloud-init then interprets the seed according to the guest distribution&#8217;s configuration and module list.</p>
+</div>
+<div class="sect2">
+<h3 id="_what_youll_learn"><a class="anchor" href="#_what_youll_learn"></a>What You&#8217;ll Learn</h3>
+<div class="ulist">
+<ul>
+<li>
+<p>How NoCloud data reaches a guest and when cloud-init modules run</p>
+</li>
+<li>
+<p>How to manage users, packages, files, commands, services, and new data disks</p>
+</li>
+<li>
+<p>How to configure network-config v2 for DHCP, static addresses, routes, DNS, MTU, and virtual interfaces</p>
+</li>
+<li>
+<p>How to reference user data from a Secret and render its name with Kustomize</p>
+</li>
+<li>
+<p>How to combine cloud-config and scripts with multipart MIME and report completion with <code>phone_home</code></p>
+</li>
+<li>
+<p>How to validate, inspect, and safely rerun cloud-init</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_prerequisites"><a class="anchor" href="#_prerequisites"></a>Prerequisites</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p>OpenShift 4.18+ with OpenShift Virtualization installed</p>
+</li>
+<li>
+<p>The OpenShift CLI (<code>oc</code>) and <code>virtctl</code> installed</p>
+</li>
+<li>
+<p>Permission to create a namespace, VM, Secret, and DataVolume</p>
+</li>
+<li>
+<p>A storage class and the Fedora <code>DataSource</code> in <code>openshift-virtualization-os-images</code>, or an equivalent cloud-init-enabled Linux boot source</p>
+</li>
+<li>
+<p><code>ssh-keygen</code> available on your workstation; an existing Ed25519 key pair is optional</p>
+</li>
+<li>
+<p>Familiarity with VM manifests and cloud-init basics; complete <a href="cloud-init-fundamentals.html" class="xref page">Cloud-init Fundamentals for OpenShift Virtualization VMs</a> first</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_procedure"><a class="anchor" href="#_procedure"></a>Procedure</h2>
+<div class="sectionbody">
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Create a namespace for the lab resources:</p>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc create namespace cloud-init-deep-dive</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If this name is already in use, choose a new namespace and update the <code>namespace</code> value in the Kustomize base and the namespace arguments in the remaining commands.</p>
+</div>
+</li>
+<li>
+<p>Create the Kustomize base files locally:</p>
+<div class="paragraph">
+<p>Create the directory, then copy each block below into the file with the same name. You can use the linked attachment instead if you prefer downloading files.</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">mkdir -p cloud-init-deep-dive/base</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><code>cloud-config.yaml</code> — <a href="_attachments/cloud-init-deep-dive/base/cloud-config.yaml" class="xref attachment">download</a></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">#cloud-config
+ssh_pwauth: false
+users:
+  - name: ops
+    groups:
+      - wheel
+    shell: /bin/bash
+    sudo: "ALL=(ALL) NOPASSWD:ALL"
+    lock_passwd: true
+    ssh_authorized_keys:
+      - REPLACE_WITH_YOUR_ED25519_PUBLIC_KEY
+write_files:
+  - path: /etc/cloud-init-deep-dive.conf
+    owner: root:root
+    permissions: '0640'
+    content: |
+      provisioned_by: cloud-init
+      purpose: deep-dive-lab
+  - path: /etc/cloud-init-deep-dive-encoded.txt
+    owner: root:root
+    permissions: '0644'
+    encoding: b64
+    content: SGVsbG8K
+runcmd:
+  - [sh, -c, 'test -s /etc/cloud-init-deep-dive.conf &amp;&amp; printf "complete\n" &gt; /var/lib/cloud-init-deep-dive.status']</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><code>cloud-init-reference.yaml</code> — <a href="_attachments/cloud-init-deep-dive/base/cloud-init-reference.yaml" class="xref attachment">download</a></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">nameReference:
+  - kind: Secret
+    version: v1
+    fieldSpecs:
+      - group: kubevirt.io
+        version: v1
+        kind: VirtualMachine
+        path: spec/template/spec/volumes/cloudInitNoCloud/secretRef/name</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><code>kustomization.yaml</code> — <a href="_attachments/cloud-init-deep-dive/base/kustomization.yaml" class="xref attachment">download</a></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: cloud-init-deep-dive
+resources:
+  - virtualmachine.yaml
+configurations:
+  - cloud-init-reference.yaml
+secretGenerator:
+  - name: cloud-init-bootstrap
+    files:
+      - userdata=cloud-config.yaml</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><code>virtualmachine.yaml</code> — <a href="_attachments/cloud-init-deep-dive/base/virtualmachine.yaml" class="xref attachment">download</a></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: cloud-init-deep-dive
+spec:
+  runStrategy: Always
+  dataVolumeTemplates:
+    - metadata:
+        name: cloud-init-deep-dive-rootdisk
+      spec:
+        sourceRef:
+          kind: DataSource
+          name: fedora
+          namespace: openshift-virtualization-os-images
+        storage:
+          resources:
+            requests:
+              storage: 30Gi
+  template:
+    metadata:
+      labels:
+        app: cloud-init-deep-dive
+    spec:
+      domain:
+        resources:
+          requests:
+            memory: 2Gi
+        devices:
+          disks:
+            - name: rootdisk
+              disk:
+                bus: virtio
+            - name: cloudinitdisk
+              disk:
+                bus: virtio
+          interfaces:
+            - name: default
+              masquerade: {}
+      networks:
+        - name: default
+          pod: {}
+      volumes:
+        - name: rootdisk
+          dataVolume:
+            name: cloud-init-deep-dive-rootdisk
+        - name: cloudinitdisk
+          cloudInitNoCloud:
+            secretRef:
+              name: cloud-init-bootstrap</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The cloud-config creates an <code>ops</code> user, writes two files, and runs a final command that verifies the main configuration file exists. The Kustomize configuration generates a Secret with the required <code>userdata</code> key and updates the VM&#8217;s Secret reference to the generated Secret name.</p>
+</div>
+</li>
+<li>
+<p>Prepare an SSH public key for the VM:</p>
+<div class="paragraph">
+<p>If you already have an SSH key pair, use its public key. Otherwise, generate an Ed25519 key pair with this command. Press Enter to use the default file path, <code>~/.ssh/id_ed25519</code>.</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">ssh-keygen -t ed25519 -C "cloud-init-deep-dive"</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Replace <code>REPLACE_WITH_YOUR_ED25519_PUBLIC_KEY</code> in <code>cloud-init-deep-dive/base/cloud-config.yaml</code> with the contents of your public key file, such as <code>~/.ssh/id_ed25519.pub</code>. If you use the optional dev overlay, replace the same marker in <code>cloud-config-dev.yaml</code> too. Keep the private key on your workstation; do not add it to cloud-init data.</p>
+</div>
+</li>
+<li>
+<p>Render the Kustomize resources and inspect the generated Secret reference:</p>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc kustomize ./cloud-init-deep-dive/base</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Confirm that <code>spec.template.spec.volumes</code> for the VM points to the generated Secret name. The rendered output includes Secret data in base64 form. Treat it as sensitive if you add credentials to the cloud-config file; base64 is not encryption.</p>
+</div>
+</li>
+<li>
+<p>Apply the Kustomize directory to create the Secret and VM:</p>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -k ./cloud-init-deep-dive/base</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The VM template uses the Fedora DataSource and requests a 30 GiB root disk. Change the boot source and disk size if your cluster uses a different image or storage policy.</p>
+</div>
+</li>
+<li>
+<p>Wait for the VM and its DataVolume to become ready:</p>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vm,vmi,dv -n cloud-init-deep-dive</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Connect to the guest over SSH:</p>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">virtctl -n cloud-init-deep-dive ssh ops@vm/cloud-init-deep-dive -i ~/.ssh/id_ed25519</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Include the resource type (<code>vm/</code> or <code>vmi/</code>) in the target. If you used a different key file, set <code>-i</code> to the matching private-key path.</p>
+</div>
+</li>
+<li>
+<p>Verify cloud-init status and the files created by the configuration:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">sudo cloud-init status --long
+sudo cat /etc/cloud-init-deep-dive.conf
+sudo cat /etc/cloud-init-deep-dive-encoded.txt
+sudo cat /var/lib/cloud-init-deep-dive.status</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The status should report <code>done</code> with no errors. The last two files should contain <code>Hello</code> and <code>complete</code> respectively.</p>
+</div>
+</li>
+</ol>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_cloud_init_delivery_and_execution"><a class="anchor" href="#_cloud_init_delivery_and_execution"></a>Cloud-init Delivery and Execution</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>KubeVirt creates a seed disk from the VM&#8217;s <code>cloudInitNoCloud</code> data or referenced Secret and attaches it to the guest. This is the NoCloud datasource. Cloud-init reads the seed during boot; a metadata <code>instance-id</code> helps it decide whether per-instance modules have already run.</p>
+</div>
+<div class="paragraph">
+<p>KubeVirt also supports <code>cloudInitConfigDrive</code>. Use NoCloud for standard Linux cloud images unless the guest&#8217;s cloud-init implementation requires ConfigDrive. Their network-data formats differ: NoCloud accepts cloud-init network-config, while ConfigDrive uses the OpenStack Metadata Service format. Selecting a data-source format does not install a guest initialization agent or replace the documented Sysprep workflow for Windows.</p>
+</div>
+<div class="paragraph">
+<p>Cloud-init has several boot stages. The generator decides whether cloud-init is enabled. The local stage identifies the datasource before networking is available. The network stage applies network configuration and retrieves instance data. The config stage runs configuration modules, and the final stage runs remaining work such as user scripts. Distros can order modules differently within a stage, so check the guest&#8217;s <code>/etc/cloud/cloud.cfg</code> when a task depends on another module&#8217;s completion.</p>
+</div>
+<div class="paragraph">
+<p>Cloud-init does not reapply all user data on every reboot. Modules have different frequencies: some run once per instance, while others can run every boot. Replacing a Secret or editing the VM template does not make an already initialized guest repeat every module.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_user_data_deep_dive"><a class="anchor" href="#_user_data_deep_dive"></a>User-data Deep Dive</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p><code>userData</code> is a cloud-config document when it starts with <code>#cloud-config</code>. The document is YAML with top-level configuration keys that cloud-init modules consume. A key does not always match the module&#8217;s internal name; for example, <code>packages</code> activates <code>cc_package_update_upgrade_install</code>. Validate the syntax and schema against the cloud-init version installed in the guest; newer modules or options might not exist in an older image.</p>
+</div>
+<div class="sect2">
+<h3 id="_users_and_access"><a class="anchor" href="#_users_and_access"></a>Users and Access</h3>
+<div class="paragraph">
+<p>Define additional users in <code>users</code>. The guest&#8217;s default user varies by image. Include the special <code>default</code> entry when you want to retain the image&#8217;s default account:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">#cloud-config
+ssh_pwauth: false
+users:
+  - default
+  - name: appops
+    groups:
+      - wheel
+    shell: /bin/bash
+    sudo: "ALL=(ALL) NOPASSWD:ALL"
+    lock_passwd: true
+    ssh_authorized_keys:
+      - ssh-ed25519 AAAA...replace-with-a-public-key...</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Use SSH public keys where possible. If you must set a password, use the <code>hashed_passwd</code> field rather than <code>plain_text_passwd</code>, and keep the data in a Secret with narrowly scoped access. Enable SSH password authentication only when you need it. A Secret does not hide user data from a guest that receives it, and cloud-init may retain the input under <code>/var/lib/cloud/instance/</code>.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_package_installation_and_upgrades"><a class="anchor" href="#_package_installation_and_upgrades"></a>Package Installation and Upgrades</h3>
+<div class="paragraph">
+<p>The <code>cc_package_update_upgrade_install</code> module uses the guest&#8217;s configured package manager. The <code>packages</code>, <code>package_update</code>, and <code>package_upgrade</code> keys let it install packages, refresh package metadata, and request upgrades:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">#cloud-config
+package_update: true
+package_upgrade: false
+packages:
+  - qemu-guest-agent</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Set <code>package_upgrade: true</code> only when the boot time, repository access, and package changes are acceptable. Package names and repositories depend on the guest distribution. For predictable VM creation, bake stable dependencies into a generalized image and use first-boot package work for small differences.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_files_ownership_permissions_and_encoding"><a class="anchor" href="#_files_ownership_permissions_and_encoding"></a>Files, Ownership, Permissions, and Encoding</h3>
+<div class="paragraph">
+<p><code>write_files</code> creates or replaces files during configuration. Specify the owner and quote permission modes so YAML does not convert them to numbers:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">#cloud-config
+write_files:
+  - path: /etc/example-app.conf
+    owner: root:root
+    permissions: '0640'
+    content: |
+      mode: production
+      listen_port: 8443
+  - path: /etc/example-message.txt
+    permissions: '0644'
+    encoding: b64
+    content: SGVsbG8K</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The encoded value decodes to <code>Hello</code> followed by a newline. Cloud-init supports encoded file content; check the installed release&#8217;s schema for supported encodings. Avoid writing temporary files under <code>/tmp</code> during early boot because system cleanup may remove them.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_command_and_service_ordering"><a class="anchor" href="#_command_and_service_ordering"></a>Command and Service Ordering</h3>
+<div class="paragraph">
+<p>Use <code>bootcmd</code> only for work that must happen very early. It runs on each boot and may run before networking is ready. Use <code>runcmd</code> for first-boot commands that can wait until the final stage:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">#cloud-config
+bootcmd:
+  - [cloud-init-per, once, create-example-dir, install, -d, /var/lib/example]
+runcmd:
+  - [systemctl, enable, --now, qemu-guest-agent.service]
+  - [test, -s, /etc/example-app.conf]</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Entries in <code>runcmd</code> run in list order. A string entry runs through a shell; a list entry runs the executable and arguments directly. The <code>runcmd</code> module writes a script during configuration, and the final-stage <code>scripts_user</code> module runs it. <code>bootcmd</code> is repeated each boot unless you guard one-time work with a command such as <code>cloud-init-per</code>. Use <code>systemctl enable --now</code> or <code>systemctl disable --now</code> in <code>runcmd</code> to manage a service that already exists in the image. Do not assume a particular ordering between <code>packages</code> and <code>runcmd</code> on every image; check the guest&#8217;s module list or install and enable a service in a tested image build.</p>
+</div>
+<div class="paragraph">
+<p>Cloud-init is not a replacement for a configuration-management system. Keep commands small and idempotent, and move complex or long-running setup into a purpose-built image or a post-boot configuration tool.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_partitioning_and_mounting_a_new_disk"><a class="anchor" href="#_partitioning_and_mounting_a_new_disk"></a>Partitioning and Mounting a New Disk</h3>
+<div class="paragraph">
+<p>The <code>disk_setup</code> and <code>fs_setup</code> keys configure the <code>cc_disk_setup</code> module to partition and format an additional blank disk. The <code>mounts</code> key configures <code>cc_mounts</code> to make its filesystem persistent across boots:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">#cloud-config
+device_aliases:
+  data_disk: /dev/vdb
+disk_setup:
+  data_disk:
+    table_type: gpt
+    layout: true
+    overwrite: false
+fs_setup:
+  - label: vmdata
+    filesystem: ext4
+    device: data_disk.1
+mounts:
+  - [LABEL=vmdata, /srv/data, ext4, "defaults,nofail", "0", "2"]</code></pre>
+</div>
+</div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+Use this pattern only for a newly attached, empty data disk. Confirm the guest device mapping with <code>lsblk</code> before applying it. Never guess the device path on a VM that contains data; a mistaken partition or filesystem operation can destroy it. Do not use this example to format a boot disk.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_network_data_deep_dive"><a class="anchor" href="#_network_data_deep_dive"></a>Network-data Deep Dive</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p><code>networkData</code> is a separate network-config document. For NoCloud, start with <code>version: 2</code> directly; do not add a top-level <code>network:</code> wrapper. Network-config v2 supports Ethernet devices, bonds, bridges, and VLANs, but the exact features depend on the cloud-init version and network renderer in the guest. A supported YAML key does not create an OpenShift network or a NetworkAttachmentDefinition.</p>
+</div>
+<div class="paragraph">
+<p>Keep the VM&#8217;s first interface on its normal pod-network configuration unless you have a specific reason to change it. Configure secondary interfaces only with addresses, routes, and MTU values that match the connected network. See <a href="../networking/static-ip-configuration.html" class="xref page">Configuring Static IPs for VMs</a> for OpenShift-specific static IP choices, and <a href="../networking/cloud-init-troubleshooting.html" class="xref page">Cloud-init IP Configuration Troubleshooting Guide</a> for IP diagnosis.</p>
+</div>
+<div class="sect2">
+<h3 id="_match_interfaces_configure_dhcp_or_static_addresses"><a class="anchor" href="#_match_interfaces_configure_dhcp_or_static_addresses"></a>Match Interfaces, Configure DHCP or Static Addresses</h3>
+<div class="paragraph">
+<p>Guest interface names vary by image and device model. Inspect them with <code>ip -brief link</code>. When the VM manifest assigns stable MAC addresses, match those addresses instead of relying on <code>enp1s0</code>, <code>enp2s0</code>, or <code>eth0</code> names:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">version: 2
+ethernets:
+  primary:
+    match:
+      macaddress: "02:00:00:00:00:01"
+    set-name: enp1s0
+    dhcp4: true
+  application:
+    match:
+      macaddress: "02:00:00:00:00:02"
+    set-name: enp2s0
+    dhcp4: false
+    addresses:
+      - 192.0.2.50/24
+      - 2001:db8:100::50/64
+    mtu: 1400
+    nameservers:
+      addresses:
+        - 192.0.2.53
+        - 2001:db8:100::53
+      search:
+        - example.test
+    routes:
+      - to: 10.40.0.0/16
+        via: 192.0.2.1</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The example leaves the primary interface on DHCP, gives the application interface IPv4 and IPv6 addresses, and adds a route for a private network. Do not add a second default route unless you intend to change the VM&#8217;s egress path. For the default pod network&#8217;s IPv6 address, follow the cluster&#8217;s dual-stack configuration rather than selecting an arbitrary address.</p>
+</div>
+<div class="paragraph">
+<p>To use this configuration in a VM, add it as the <code>networkData</code> field and retain a minimal <code>userData</code> document:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">volumes:
+  - name: cloudinitdisk
+    cloudInitNoCloud:
+      userData: |
+        #cloud-config
+      networkData: |
+        version: 2
+        ethernets:
+          enp1s0:
+            dhcp4: true</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>OpenShift network setup, the guest&#8217;s network renderer, and cloud-init&#8217;s network configuration must agree. If using <code>networkDataSecretRef</code>, confirm the behavior for your KubeVirt release. The cookbook&#8217;s <a href="../networking/static-ip-configuration.html" class="xref page">Configuring Static IPs for VMs</a> currently recommends inline <code>networkData</code> for its examples.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_vlans_bonds_and_bridges"><a class="anchor" href="#_vlans_bonds_and_bridges"></a>VLANs, Bonds, and Bridges</h3>
+<div class="paragraph">
+<p>These are guest-side virtual devices. The underlying NICs must already be attached to the VM and the network must support the chosen topology. Match the <code>link</code> and <code>interfaces</code> values to IDs declared in the same network-config document:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">version: 2
+ethernets:
+  uplink-a:
+    match:
+      macaddress: "02:00:00:00:00:02"
+    set-name: enp2s0
+  uplink-b:
+    match:
+      macaddress: "02:00:00:00:00:03"
+    set-name: enp3s0
+bonds:
+  bond0:
+    interfaces:
+      - uplink-a
+      - uplink-b
+    parameters:
+      mode: active-backup
+vlans:
+  vlan100:
+    id: 100
+    link: bond0
+bridges:
+  br100:
+    interfaces:
+      - vlan100
+    addresses:
+      - 192.0.2.100/24</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Use a bond only when the connected network and both attached NICs support the selected bond mode. A guest VLAN device tags traffic inside the guest; it does not configure a VLAN on the OpenShift network. A bridge connects guest interfaces at layer 2 and can change how the VM handles DHCP and routes. Confirm these designs against the secondary network&#8217;s CNI configuration.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_advanced_data_delivery_patterns"><a class="anchor" href="#_advanced_data_delivery_patterns"></a>Advanced Data-delivery Patterns</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_secrets_and_kustomize"><a class="anchor" href="#_secrets_and_kustomize"></a>Secrets and Kustomize</h3>
+<div class="paragraph">
+<p>KubeVirt can read NoCloud <code>userData</code> from a Secret reference. The Secret key is <code>userdata</code>. Keep sensitive data out of inline VM manifests, but remember that Kubernetes Secrets are base64-encoded API objects; encryption at rest and access controls depend on cluster configuration. Anyone who can read the Secret or the initialized guest can recover the delivered data. Do not store private SSH keys in user data.</p>
+</div>
+<div class="paragraph">
+<p>The attached lab uses Kustomize&#8217;s <code>secretGenerator</code> to create a Secret from <code>cloud-config.yaml</code>. Kustomize appends a content hash to the Secret name. The custom name-reference configuration maps the nested KubeVirt <code>secretRef.name</code> field, so Kustomize updates the VM reference when the Secret name changes. This is needed because Kustomize does not treat every custom resource field as a built-in Secret reference.</p>
+</div>
+<div class="paragraph">
+<p>You can add environment overlays that replace the generated <code>userdata</code> content with an environment-specific file. Keep the same generator name and custom name-reference configuration. Render each overlay with <code>oc kustomize &lt;overlay-directory&gt;</code> and inspect the VM&#8217;s Secret reference before applying it with <code>oc apply -k &lt;overlay-directory&gt;</code>. Do not commit password-bearing input files to Git; use an approved secret-management workflow for production.</p>
+</div>
+<div class="paragraph">
+<p>Choose the base or an overlay when creating a VM. Do not apply the overlay to an initialized VM and expect cloud-init to repeat; use a fresh test VM to compare different first-boot configurations.</p>
+</div>
+<div class="paragraph">
+<p>For example, place the <a href="_attachments/cloud-init-deep-dive/overlays/dev/kustomization.yaml" class="xref attachment">dev overlay</a> and <a href="_attachments/cloud-init-deep-dive/overlays/dev/cloud-config-dev.yaml" class="xref attachment">environment-specific user data</a> under <code>overlays/dev/</code>. The overlay imports <code>base/</code> and replaces only the generated user data:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - ../../base
+secretGenerator:
+  - name: cloud-init-bootstrap
+    behavior: replace
+    files:
+      - userdata=cloud-config-dev.yaml</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Keep <code>cloud-config-dev.yaml</code> beside the overlay <code>kustomization.yaml</code>. Kustomize carries the custom name-reference configuration from the base into the overlay, so the VM&#8217;s Secret reference follows the generated Secret name. Replace the SSH-key marker in <code>cloud-config-dev.yaml</code> with the public key before applying the overlay.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_multipart_mime_user_data"><a class="anchor" href="#_multipart_mime_user_data"></a>Multipart MIME User Data</h3>
+<div class="paragraph">
+<p>Use multipart MIME when one seed must contain more than one user-data format, such as a cloud-config document and a shell script. Each part needs a supported MIME content type. With a cloud-init release that includes the helper, build the payload from separate files:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">cloud-init devel make-mime \
+  -a cloud-config.yaml:cloud-config \
+  -a configure.sh:x-shellscript &gt; userdata.mime</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Use <code>userdata.mime</code> as the value for the <code>userdata</code> Secret key or as inline <code>userData</code>. The helper&#8217;s availability and accepted formats depend on the cloud-init version. Prefer one cloud-config document when it meets the requirement; multipart data can make execution order and debugging harder to follow.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_completion_callback_with_phone_home"><a class="anchor" href="#_completion_callback_with_phone_home"></a>Completion Callback with <code>phone_home</code></h3>
+<div class="paragraph">
+<p>The <code>phone_home</code> module can send selected instance details to an HTTP endpoint after cloud-init finishes. Use HTTPS, make the endpoint reachable from the guest, and choose only the fields the receiver needs. Do not use the default <code>post: all</code> when the endpoint does not need public SSH key material:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">#cloud-config
+phone_home:
+  url: https://provisioner.example.net/cloud-init
+  post:
+    - instance_id
+    - hostname
+    - fqdn
+  tries: 5</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The callback is a signal for an external workflow, not proof that the application is healthy. Have the receiver validate the VM&#8217;s identity and check the application separately.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_debugging_and_rerunning_cloud_init"><a class="anchor" href="#_debugging_and_rerunning_cloud_init"></a>Debugging and Rerunning Cloud-init</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_check_status_logs_and_input"><a class="anchor" href="#_check_status_logs_and_input"></a>Check Status, Logs, and Input</h3>
+<div class="paragraph">
+<p>Run these commands in the guest:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">sudo cloud-init status --long
+sudo cloud-init analyze blame
+sudo tail -n 100 /var/log/cloud-init.log
+sudo tail -n 100 /var/log/cloud-init-output.log
+sudo cat /var/lib/cloud/instance/user-data.txt
+sudo cat /var/lib/cloud/instance/network-config.txt</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><code>cloud-init analyze blame</code> may be unavailable on older guest images. Review <code>errors</code> and <code>recoverable_errors</code> in the long status output. The main log records module activity; the output log captures command output. The instance directory shows the data cloud-init consumed. These files can contain credentials, so redact them before sharing logs or a <code>cloud-init collect-logs</code> archive.</p>
+</div>
+<div class="paragraph">
+<p>To check a YAML document before boot, use the schema command available in the guest&#8217;s cloud-init release:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">sudo cloud-init schema --config-file /path/to/cloud-config.yaml</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If that subcommand is missing, check <code>cloud-init --help</code> and the installed release&#8217;s documentation. A successful YAML parse does not prove that every key is supported by that release or that the guest network can satisfy the configuration.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_diagnose_common_failures"><a class="anchor" href="#_diagnose_common_failures"></a>Diagnose Common Failures</h3>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Cloud-init did not run:</strong> Check that the guest image includes cloud-init, recognizes the selected NoCloud datasource, and can read the attached seed disk. Review the VM events and <code>cloud-init status --long</code>.</p>
+</li>
+<li>
+<p><strong>Configuration is ignored:</strong> Confirm that user data starts with <code>#cloud-config</code>, indentation is valid, and the Secret has the expected <code>userdata</code> key. For combined network settings, include a minimal user-data document.</p>
+</li>
+<li>
+<p><strong>A command failed:</strong> Find its output in <code>/var/log/cloud-init-output.log</code> and inspect the final-stage module log. Check package repositories, executable paths, and service names for that guest distribution.</p>
+</li>
+<li>
+<p><strong>Network configuration is missing:</strong> Confirm the guest interface name or MAC address, network-config v2 support in the installed cloud-init build, and the guest renderer. Compare <code>ip address</code>, <code>ip route</code>, DNS settings, and VM interface order with the intended network.</p>
+</li>
+<li>
+<p><strong>An update did not take effect:</strong> Cloud-init is usually a first-boot or once-per-instance tool. A Secret update alone does not make an initialized guest rerun its modules. Recreate a disposable VM from a clean boot source to test changed configuration.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_reset_state_only_on_a_disposable_vm"><a class="anchor" href="#_reset_state_only_on_a_disposable_vm"></a>Reset State Only on a Disposable VM</h3>
+<div class="paragraph">
+<p><code>cloud-init clean</code> removes cached state so that cloud-init can run again after reboot. It can repeat commands, change users, rewrite networking, or repartition attached disks. Test this only on a disposable VM with no data to preserve:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">sudo cloud-init clean --logs --seed
+sudo reboot</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Do not use a state reset as a routine update method for an existing workload. Build a generalized image with clean cloud-init state and create a fresh VM for repeatable testing.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_windows_vms"><a class="anchor" href="#_windows_vms"></a>Windows VMs</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The Linux cloud-init package does not run in Windows. The documented OpenShift Virtualization workflow uses Sysprep and an <code>unattend.xml</code> answer file for Windows first-boot customization. A Windows image that includes Cloudbase-Init can consume ConfigDriveV2 data through <code>cloudInitConfigDrive</code>; this depends on that guest agent and its image configuration. See <a href="../vm-lifecycle/windows-golden-images.html" class="xref page">Creating Windows Golden Images</a> for the Sysprep workflow and <a href="https://cloudbase.it/cloudbase-init/" target="_blank" rel="noopener">Cloudbase-Init</a> for its Windows guest behavior.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_cleanup"><a class="anchor" href="#_cleanup"></a>Cleanup</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Delete only the lab resources created in this tutorial:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc delete namespace cloud-init-deep-dive</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_summary"><a class="anchor" href="#_summary"></a>Summary</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p>KubeVirt delivers NoCloud user data and network data on an attached seed disk; cloud-init module behavior depends on the guest image and its release.</p>
+</li>
+<li>
+<p>Use cloud-config keys such as <code>users</code>, <code>packages</code>, <code>write_files</code>, <code>runcmd</code>, and the disk setup directives for first-boot tasks; account for the corresponding modules' frequency and stage.</p>
+</li>
+<li>
+<p>Match network interfaces by stable MAC address where possible, and align guest network settings with OpenShift&#8217;s pod or secondary network configuration.</p>
+</li>
+<li>
+<p>Kustomize can generate a Secret and update a VM&#8217;s nested Secret reference; it does not encrypt Secret contents.</p>
+</li>
+<li>
+<p>Use status, logs, and schema checks to diagnose failures. Reset cloud-init state only on a disposable VM.</p>
+</li>
+<li>
+<p>Use Sysprep and <code>unattend.xml</code> for Windows VMs.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_see_also"><a class="anchor" href="#_see_also"></a>See Also</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p><a href="cloud-init-fundamentals.html" class="xref page">Cloud-init Fundamentals for OpenShift Virtualization VMs</a> - First-boot basics, data types, and a minimal VM</p>
+</li>
+<li>
+<p><a href="../networking/static-ip-configuration.html" class="xref page">Configuring Static IPs for VMs</a> - Static IP choices and network configuration in OpenShift Virtualization</p>
+</li>
+<li>
+<p><a href="../networking/cloud-init-troubleshooting.html" class="xref page">Cloud-init IP Configuration Troubleshooting Guide</a> - Cloud-init and guest networking diagnosis</p>
+</li>
+<li>
+<p><a href="../vm-lifecycle/windows-golden-images.html" class="xref page">Creating Windows Golden Images</a> - Windows VM customization with Sysprep</p>
+</li>
+<li>
+<p><a href="https://docs.redhat.com/en/documentation/openshift_container_platform/4.22/html/virtualization/managing-vms" target="_blank" rel="noopener">OpenShift Container Platform 4.22 VM management</a></p>
+</li>
+<li>
+<p><a href="https://kubevirt.io/user-guide/user_workloads/startup_scripts/" target="_blank" rel="noopener">KubeVirt startup scripts and cloud-init</a></p>
+</li>
+<li>
+<p><a href="https://docs.cloud-init.io/en/latest/reference/modules.html" target="_blank" rel="noopener">Cloud-init module reference</a></p>
+</li>
+<li>
+<p><a href="https://docs.cloud-init.io/en/latest/reference/network-config-format-v2.html" target="_blank" rel="noopener">Cloud-init network-config v2</a></p>
+</li>
+<li>
+<p><a href="https://kubernetes.io/docs/tasks/manage-kubernetes-objects/kustomization/" target="_blank" rel="noopener">Kustomize documentation</a></p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<nav class="pagination">
+  <span class="prev"><a href="cloud-init-fundamentals.html">Cloud-init Fundamentals</a></span>
+  <span class="next"><a href="../storage/index.html">Storage Configuration</a></span>
+</nav>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <img src="../../../_/img/rhl-logo-red.png" height="40px" alt="Red Hat"  href="https://redhat.com" >
+</footer><script id="site-script" src="../../../_/js/site.js" data-ui-root-path="../../../_"></script>
+<script async src="../../../_/js/vendor/highlight.js"></script>
+<script src="../../../_/js/vendor/lunr.js"></script>
+<script src="../../../_/js/search-ui.js" id="search-ui-script" data-site-root-path="../../.." data-snippet-length="100" data-stylesheet="../../../_/css/search.css"></script>
+<script async src="../../../search-index.js"></script>
+  </body>
+</html>
