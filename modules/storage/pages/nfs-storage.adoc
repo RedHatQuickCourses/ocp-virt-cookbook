@@ -1,0 +1,339 @@
+= Using NFS Storage for Virtual Machine Workloads
+:navtitle: NFS Storage for VMs
+
+== Overview
+
+This tutorial uses the upstream NFS Container Storage Interface (CSI) driver to provision VM disks from an existing NFS export. The driver creates a directory for each PersistentVolumeClaim (PVC); it does not install or configure an NFS server.
+
+The example uses a `ReadWriteMany` (RWX) `Filesystem` PVC. RWX lets the same disk remain accessible from the source and destination nodes during live migration. NFS provides a filesystem volume, so it does not offer the raw `Block` mode that OpenShift recommends for VM performance when a backend supports it. NFS also adds network latency; measure your workload before you use it for latency-sensitive or high-IOPS disks.
+
+The upstream CSI chart runs privileged containers with host mounts and host networking. This tutorial grants the privileged Security Context Constraint (SCC) only to the chart's two service accounts in a dedicated namespace. Review the chart, your cluster policies, and your support requirements before installing it. The `nfs.csi.k8s.io` driver is not listed in the OpenShift Container Platform {ocp-docs-version} table of supported CSI drivers; check the Red Hat Ecosystem Catalog and your NFS vendor's support policy for production use.
+
+== Prerequisites
+
+* **OpenShift {ocp-min-version}+** with OpenShift Virtualization installed
+* **Cluster administrator access** to create a cluster-scoped CSI driver and grant SCC permissions
+* **Helm 3** and the `oc` and `virtctl` CLIs installed
+* An existing NFSv4.1 server and a dedicated writable export for this tutorial
+* Network connectivity from every worker node to the NFS server on TCP port 2049
+* At least **10Gi** of capacity in the export for the example VM disk
+* Two schedulable worker nodes if you want to run the optional live migration check
+
+Use a dedicated export such as `/exports/openshift-vm-demo`. Restrict the export to the worker-node network and use the permissions approved by your storage administrator. The NFS CSI controller must be able to create and remove directories beneath the export. The VM launcher must also have the numeric user and group permissions needed to write its disk image.
+
+== Provisioning Path
+
+[source,text]
+----
+StorageClass nfs-vm-demo
+        |
+        v
+NFS CSI controller creates a directory under the export
+        |
+        v
+RWX Filesystem PVC mounts on a worker node
+        |
+        v
+virt-launcher reads and writes the VM disk image
+----
+
+The upstream NFS CSI driver supports NFSv3 and NFSv4 servers and dynamically provisions PVCs by creating subdirectories. This tutorial selects NFSv4.1 and limits the export to the worker-node network.
+
+== Procedure
+
+=== Step 1: Prepare the NFS Export
+
+Ask your NFS administrator to create a dedicated writable export for this tutorial and restrict its allowed clients to the worker nodes. For example, an NFS server might use an export entry like this, with the path, CIDR, anonymous UID, and anonymous GID replaced for your environment:
+
+[source,text]
+----
+/exports/openshift-vm-demo 10.20.0.0/24(rw,sync,root_squash,anonuid=65534,anongid=23000,no_subtree_check)
+----
+
+Do not copy these example numbers without checking your server's export syntax and identity-mapping policy. With `root_squash`, client root is mapped to the configured anonymous UID and GID. For this example, set the export directory's owner and group to those IDs and its mode to `2770`; the setgid bit makes new subdirectories inherit the group. The mapped identity must be able to create and remove subdirectories. Treat GID `23000` as a placeholder. Confirm the numeric group used by the VM launcher on your OpenShift Virtualization release and coordinate a matching export group with your storage administrator. Avoid disabling `root_squash` on a shared export to work around provisioning errors; use an isolated export and grant only the required access.
+
+=== Step 2: Create the CSI Namespace and Service Accounts
+
+Create the dedicated namespace and the service accounts used by the upstream Helm chart:
+
+xref:attachment$nfs-storage/namespace-nfs-csi-system.yaml[Download namespace-nfs-csi-system.yaml]
+
+[source,bash,role=execute]
+----
+oc apply -f namespace-nfs-csi-system.yaml
+----
+
+=== Step 3: Grant the CSI Service Accounts the Privileged SCC
+
+The upstream controller and node plugin require host-level privileges to mount NFS volumes. Grant the `privileged` SCC to only the two service accounts in the dedicated namespace:
+
+[source,bash,role=execute]
+----
+oc adm policy add-scc-to-user privileged -z csi-nfs-controller-sa -n nfs-csi-system
+oc adm policy add-scc-to-user privileged -z csi-nfs-node-sa -n nfs-csi-system
+----
+
+This permission is cluster-scoped in effect. Keep the service accounts dedicated to this driver, and follow your organization's process for approving privileged workloads.
+
+=== Step 4: Add the Upstream Helm Repository
+
+Add the NFS CSI project's chart repository:
+
+[source,bash,role=execute]
+----
+helm repo add csi-driver-nfs https://kubernetes-csi.github.io/csi-driver-nfs --force-update
+----
+
+=== Step 5: Select a Driver Chart Version
+
+Refresh the chart index:
+
+[source,bash,role=execute]
+----
+helm repo update csi-driver-nfs
+----
+
+List the chart versions and check the upstream driver's Kubernetes compatibility table before you install a version:
+
+[source,bash,role=execute]
+----
+helm search repo csi-driver-nfs/csi-driver-nfs --versions
+----
+
+=== Step 6: Install the NFS CSI Driver
+
+Install chart version `4.13.6`. The upstream Helm instructions use this chart version; select a compatible version for your cluster when you follow this tutorial later:
+
+[source,bash,role=execute]
+----
+helm install csi-driver-nfs csi-driver-nfs/csi-driver-nfs \
+  --namespace nfs-csi-system \
+  --version 4.13.6 \
+  --set serviceAccount.create=false
+----
+
+The `serviceAccount.create=false` setting tells Helm to use the service accounts you created before granting the SCC. The chart still creates its RBAC resources.
+
+=== Step 7: Verify the Driver
+
+Wait for the controller Deployment and node DaemonSet to become ready:
+
+[source,bash,role=execute]
+----
+oc rollout status deployment/csi-nfs-controller -n nfs-csi-system --timeout=5m
+oc rollout status daemonset/csi-nfs-node -n nfs-csi-system --timeout=5m
+----
+
+Confirm that the driver is registered and that node pods run on the Linux workers:
+
+[source,bash,role=execute]
+----
+oc get csidriver nfs.csi.k8s.io
+oc get pods -n nfs-csi-system -o wide
+----
+
+=== Step 8: Create an NFS StorageClass
+
+Edit `server` and `share` in the manifest to match your NFS server and dedicated export. The example uses `mountPermissions: "0770"` so only the directory owner and its group can access each provisioned subdirectory. This relies on the export's setgid group matching the VM launcher's permitted GID. The StorageClass also uses `reclaimPolicy: Delete` and the driver's `onDelete: delete` parameter so the tutorial's throwaway PVC directory is removed when you delete the claim. Use a retention policy for important VM data.
+
+xref:attachment$nfs-storage/storageclass-nfs-vm-demo.yaml[Download storageclass-nfs-vm-demo.yaml]
+
+[source,bash,role=execute]
+----
+oc apply -f storageclass-nfs-vm-demo.yaml
+----
+
+Verify the StorageClass:
+
+[source,bash,role=execute]
+----
+oc get storageclass nfs-vm-demo
+----
+
+Do not mark this StorageClass as the cluster default. Select it explicitly for the tutorial VM so other workloads do not consume the demonstration export accidentally.
+
+=== Step 9: Create the VM Demo Namespace
+
+Create a namespace for the VM and its disk:
+
+[source,bash,role=execute]
+----
+oc new-project nfs-vm-demo
+----
+
+=== Step 10: Create a VM with an NFS-Backed Disk
+
+The VM boots from a Fedora image imported into a 10Gi DataVolume on NFS. The DataVolume requests RWX access and Filesystem mode explicitly, so the boot disk persists on the NFS export and can be shared across nodes for migration.
+
+xref:attachment$nfs-storage/vm-nfs-storage.yaml[Download vm-nfs-storage.yaml]
+
+[source,bash,role=execute]
+----
+oc apply -f vm-nfs-storage.yaml
+----
+
+=== Step 11: Verify the PVC and VM
+
+Wait for CDI to create the VM disk:
+
+[source,bash,role=execute]
+----
+oc wait dv/nfs-vm-demo-rootdisk -n nfs-vm-demo --for=condition=Ready --timeout=10m
+----
+
+Check that the claim is bound and advertises RWX:
+
+[source,bash,role=execute]
+----
+oc get pvc nfs-vm-demo-rootdisk -n nfs-vm-demo
+----
+
+Wait for the VM instance to become ready:
+
+[source,bash,role=execute]
+----
+oc wait vmi/nfs-vm-demo -n nfs-vm-demo --for=condition=Ready --timeout=10m
+----
+
+=== Step 12: Write a Test File from the Guest
+
+The example cloud-init configuration sets a throwaway password for the demo's `fedora` account. Do not reuse it outside this tutorial. Open the VM's serial console:
+
+[source,bash,role=execute]
+----
+virtctl console nfs-vm-demo -n nfs-vm-demo
+----
+
+Log in as `fedora` with the password `fedora`. Write a small file to the guest filesystem and read it back:
+
+[source,bash]
+----
+echo 'NFS-backed VM disk is writable' | sudo tee /var/tmp/nfs-probe.txt
+cat /var/tmp/nfs-probe.txt
+----
+
+Disconnect from the console with `Ctrl+]`.
+
+=== Step 13: Check Live Migration Readiness
+
+Read the `LiveMigratable` condition:
+
+[source,bash,role=execute]
+----
+oc get vmi nfs-vm-demo -n nfs-vm-demo \
+  -o jsonpath='{.status.conditions[?(@.type=="LiveMigratable")].status}{"\n"}'
+----
+
+An RWX claim is one requirement for migration; the cluster also needs suitable nodes and the VM must meet the other migration requirements. If the condition is `True` and at least two worker nodes can run the VM, you can start a migration:
+
+[source,bash,role=execute]
+----
+virtctl migrate nfs-vm-demo -n nfs-vm-demo
+----
+
+Check the VM instance's node and the migration resource to confirm that the migration completes. See xref:live-migration-storage.adoc[Storage Requirements and Configuration for VM Live Migration] for the full storage and migration workflow.
+
+== NFS Permissions and Data Safety
+
+NFS access control uses numeric user IDs (UIDs) and group IDs (GIDs), not the user and group names shown inside the guest. OpenShift assigns project-specific UID and group ranges. Before you provision VM disks, confirm the identity used by the VM launcher pod and coordinate the NFS directory's owner and group with your virtualization and storage administrators. OpenShift's NFS guidance generally recommends supplemental groups for shared storage rather than relying on a fixed user ID; use the configuration supported by your OpenShift Virtualization release.
+
+The NFS CSI driver's `uid` and `gid` StorageClass parameters request ownership changes on the NFS path. A root-squashed export can reject those changes. Do not add these parameters until you have confirmed that the server's mapping and export policy allow them. The example's `mountPermissions: "0770"` grants access to the owner and group only; it does not create per-tenant isolation if several projects share the same GID. Avoid `mountPermissions: "0777"`; it makes a volume directory writable by every user that can reach the mount. An NFS export restricted by node IP also cannot distinguish individual pods, so use separate exports or a vendor CSI driver with the isolation controls required by your trust boundaries.
+
+An RWX access mode allows multiple nodes to mount a volume. It does not make concurrent guest writers safe. Attach a writable VM disk to one VM at a time; live migration temporarily uses the same disk for that VM on source and destination nodes as part of the handoff. Do not share a writable VM disk between independent VMs.
+
+== Performance and Use Cases
+
+The VM disk image is a file on a network filesystem. Guest I/O therefore depends on NFS server load, network latency, client mount behavior, and export configuration. Use NFS for workloads whose measured latency and throughput fit the service target, such as shared golden-image or ISO libraries and general-purpose VMs. Consider lower-latency block storage for databases and other high-IOPS workloads unless benchmarks show that your NFS system meets their requirements.
+
+Benchmark in a dedicated test window and coordinate with the storage team. A guest-side `fio` test can generate sustained load against the shared export and affect other clients. For disk settings and benchmark cautions, see xref:disk-io-tuning.adoc[VM Disk I/O Performance Tuning].
+
+== Troubleshooting
+
+[cols="2,3,3",options="header"]
+|===
+|Symptom |Check |Action
+
+|Controller or node pods report an SCC or `forbidden` error
+|Inspect pod events with `oc describe pod` in `nfs-csi-system`.
+|Confirm that the two driver service accounts have the `privileged` SCC and that the Helm release uses those service accounts.
+
+|PVC remains `Pending` or provisioning fails
+|Run `oc describe pvc nfs-vm-demo-rootdisk -n nfs-vm-demo` and check the CSI controller logs.
+|Verify that `provisioner` is `nfs.csi.k8s.io`, the export path exists, and the controller can reach the server and create a subdirectory.
+
+|Volume mount times out
+|Check NFS server reachability from every worker node and inspect the VM launcher's events.
+|Allow NFSv4.1 traffic on TCP port 2049. If you use NFSv3, also allow its required RPC services and ports.
+
+|Guest receives `Permission denied`
+|Compare the export directory's numeric owner and group with the VM launcher pod's assigned IDs; inspect the server's root-squash mapping.
+|Set directory permissions and an approved supplemental group for the intended workload. Do not make the export world-writable to hide an ID mismatch.
+
+|`LiveMigratable` is `False`
+|Inspect the VMI conditions and confirm that every writable disk uses a migratable volume.
+|Confirm RWX access, two suitable nodes, and the other live-migration requirements. See xref:live-migration-storage.adoc[Storage Requirements and Configuration for VM Live Migration].
+|===
+
+To inspect the controller and node plugin logs, use the following commands:
+
+[source,bash,role=execute]
+----
+oc logs deployment/csi-nfs-controller -n nfs-csi-system -c nfs
+oc get pods -n nfs-csi-system -l app=csi-nfs-node
+----
+
+Use a node pod name from the output to inspect its driver log:
+
+[source,bash,role=execute]
+----
+oc logs <csi-nfs-node-pod> -n nfs-csi-system -c nfs --tail=100
+----
+
+== Cleanup
+
+Delete the VM's namespace. This stops the VM and removes its PVC; the tutorial StorageClass then deletes the test volume directory from the export.
+
+[source,bash,role=execute]
+----
+oc delete namespace nfs-vm-demo
+----
+
+Delete the StorageClass if you created it only for this tutorial:
+
+[source,bash,role=execute]
+----
+oc delete storageclass nfs-vm-demo
+----
+
+Keep the CSI driver installed if any other PVCs use it. If this driver and its namespace were created only for this tutorial, first confirm that no other workloads depend on the driver, then remove the Helm release and its SCC grants:
+
+[source,bash,role=execute]
+----
+helm uninstall csi-driver-nfs -n nfs-csi-system
+oc adm policy remove-scc-from-user privileged -z csi-nfs-controller-sa -n nfs-csi-system
+oc adm policy remove-scc-from-user privileged -z csi-nfs-node-sa -n nfs-csi-system
+oc delete namespace nfs-csi-system
+----
+
+== Summary
+
+You learned how to:
+
+* Install the upstream NFS CSI driver on OpenShift and grant its service accounts the required SCC
+* Create an NFS-backed StorageClass with RWX access and filesystem volume mode
+* Attach an NFS-backed disk to a VM and verify guest writes
+* Check whether the VM is ready for live migration
+* Plan NFS export permissions, UID/GID mapping, and data retention
+* Troubleshoot provisioning, mount, permission, and migration issues
+
+== See Also
+
+* xref:choosing-storage-class.adoc[Choosing the Right Storage Class for VM Disks]
+* xref:live-migration-storage.adoc[Storage Requirements and Configuration for VM Live Migration]
+* xref:odf-ceph-storage.adoc[OpenShift Data Foundation with Ceph Storage]
+* link:https://github.com/kubernetes-csi/csi-driver-nfs[Upstream NFS CSI Driver,window=_blank]
+* link:https://github.com/kubernetes-csi/csi-driver-nfs/blob/master/charts/README.md[Upstream NFS CSI Helm instructions,window=_blank]
+* link:https://github.com/kubernetes-csi/csi-driver-nfs/blob/master/docs/driver-parameters.md[NFS CSI driver parameters and permissions,window=_blank]
+* link:https://docs.redhat.com/en/documentation/openshift_container_platform/{ocp-docs-version}/html/storage/configuring-persistent-storage[OpenShift persistent storage configuration,window=_blank]
+* link:https://docs.redhat.com/en/documentation/openshift_container_platform/{ocp-docs-version}/html/storage/using-container-storage-interface-csi[CSI drivers supported by OpenShift Container Platform,window=_blank]
+* link:https://docs.redhat.com/en/documentation/openshift_container_platform/{ocp-docs-version}/html/virtualization/managing-vms[OpenShift Virtualization VM storage,window=_blank]

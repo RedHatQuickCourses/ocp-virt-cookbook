@@ -1,0 +1,15 @@
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: nfs-vm-demo
+provisioner: nfs.csi.k8s.io
+parameters:
+  server: nfs.example.com
+  share: /exports/openshift-vm-demo
+  onDelete: delete
+  mountPermissions: "0770"
+reclaimPolicy: Delete
+volumeBindingMode: Immediate
+mountOptions:
+  - nfsvers=4.1
+  - hard
