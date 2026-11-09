@@ -1,0 +1,574 @@
+= Cloud-init Deep Dive for OpenShift Virtualization
+:navtitle: Cloud-init Deep Dive
+
+== Overview
+
+This tutorial builds on xref:cloud-init-fundamentals.adoc[Cloud-init Fundamentals]. It focuses on repeatable first-boot configuration for Linux VMs: composing user data, configuring guest networking, delivering data with Kustomize, and diagnosing a failed run.
+
+Cloud-init operates inside the guest. OpenShift Virtualization supplies its NoCloud seed on an attached disk; the guest image must include a compatible cloud-init package and datasource. Cloud-init then interprets the seed according to the guest distribution's configuration and module list.
+
+=== What You'll Learn
+
+* How NoCloud data reaches a guest and when cloud-init modules run
+* How to manage users, packages, files, commands, services, and new data disks
+* How to configure network-config v2 for DHCP, static addresses, routes, DNS, MTU, and virtual interfaces
+* How to reference user data from a Secret and render its name with Kustomize
+* How to combine cloud-config and scripts with multipart MIME and report completion with `phone_home`
+* How to validate, inspect, and safely rerun cloud-init
+
+== Prerequisites
+
+* OpenShift {ocp-min-version}+ with OpenShift Virtualization installed
+* The OpenShift CLI (`oc`) and `virtctl` installed
+* Permission to create a namespace, VM, Secret, and DataVolume
+* A storage class and the Fedora `DataSource` in `openshift-virtualization-os-images`, or an equivalent cloud-init-enabled Linux boot source
+* `ssh-keygen` available on your workstation; an existing Ed25519 key pair is optional
+* Familiarity with VM manifests and cloud-init basics; complete xref:cloud-init-fundamentals.adoc[] first
+
+== Procedure
+
+. Create a namespace for the lab resources:
++
+[source,bash,role=execute]
+----
+oc create namespace cloud-init-deep-dive
+----
++
+If this name is already in use, choose a new namespace and update the `namespace` value in the Kustomize base and the namespace arguments in the remaining commands.
+
+. Create the Kustomize base files locally:
++
+Create the directory, then copy each block below into the file with the same name. You can use the linked attachment instead if you prefer downloading files.
++
+[source,bash,role=execute]
+----
+mkdir -p cloud-init-deep-dive/base
+----
++
+`cloud-config.yaml` — xref:attachment$cloud-init-deep-dive/base/cloud-config.yaml[download]
++
+[source,yaml]
+----
+#cloud-config
+ssh_pwauth: false
+users:
+  - name: ops
+    groups:
+      - wheel
+    shell: /bin/bash
+    sudo: "ALL=(ALL) NOPASSWD:ALL"
+    lock_passwd: true
+    ssh_authorized_keys:
+      - REPLACE_WITH_YOUR_ED25519_PUBLIC_KEY
+write_files:
+  - path: /etc/cloud-init-deep-dive.conf
+    owner: root:root
+    permissions: '0640'
+    content: |
+      provisioned_by: cloud-init
+      purpose: deep-dive-lab
+  - path: /etc/cloud-init-deep-dive-encoded.txt
+    owner: root:root
+    permissions: '0644'
+    encoding: b64
+    content: SGVsbG8K
+runcmd:
+  - [sh, -c, 'test -s /etc/cloud-init-deep-dive.conf && printf "complete\n" > /var/lib/cloud-init-deep-dive.status']
+----
++
+`cloud-init-reference.yaml` — xref:attachment$cloud-init-deep-dive/base/cloud-init-reference.yaml[download]
++
+[source,yaml]
+----
+nameReference:
+  - kind: Secret
+    version: v1
+    fieldSpecs:
+      - group: kubevirt.io
+        version: v1
+        kind: VirtualMachine
+        path: spec/template/spec/volumes/cloudInitNoCloud/secretRef/name
+----
++
+`kustomization.yaml` — xref:attachment$cloud-init-deep-dive/base/kustomization.yaml[download]
++
+[source,yaml]
+----
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: cloud-init-deep-dive
+resources:
+  - virtualmachine.yaml
+configurations:
+  - cloud-init-reference.yaml
+secretGenerator:
+  - name: cloud-init-bootstrap
+    files:
+      - userdata=cloud-config.yaml
+----
++
+`virtualmachine.yaml` — xref:attachment$cloud-init-deep-dive/base/virtualmachine.yaml[download]
++
+[source,yaml]
+----
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: cloud-init-deep-dive
+spec:
+  runStrategy: Always
+  dataVolumeTemplates:
+    - metadata:
+        name: cloud-init-deep-dive-rootdisk
+      spec:
+        sourceRef:
+          kind: DataSource
+          name: fedora
+          namespace: openshift-virtualization-os-images
+        storage:
+          resources:
+            requests:
+              storage: 30Gi
+  template:
+    metadata:
+      labels:
+        app: cloud-init-deep-dive
+    spec:
+      domain:
+        resources:
+          requests:
+            memory: 2Gi
+        devices:
+          disks:
+            - name: rootdisk
+              disk:
+                bus: virtio
+            - name: cloudinitdisk
+              disk:
+                bus: virtio
+          interfaces:
+            - name: default
+              masquerade: {}
+      networks:
+        - name: default
+          pod: {}
+      volumes:
+        - name: rootdisk
+          dataVolume:
+            name: cloud-init-deep-dive-rootdisk
+        - name: cloudinitdisk
+          cloudInitNoCloud:
+            secretRef:
+              name: cloud-init-bootstrap
+----
++
+The cloud-config creates an `ops` user, writes two files, and runs a final command that verifies the main configuration file exists. The Kustomize configuration generates a Secret with the required `userdata` key and updates the VM's Secret reference to the generated Secret name.
+
+. Prepare an SSH public key for the VM:
++
+If you already have an SSH key pair, use its public key. Otherwise, generate an Ed25519 key pair with this command. Press Enter to use the default file path, `~/.ssh/id_ed25519`.
++
+[source,bash,role=execute]
+----
+ssh-keygen -t ed25519 -C "cloud-init-deep-dive"
+----
++
+Replace `REPLACE_WITH_YOUR_ED25519_PUBLIC_KEY` in `cloud-init-deep-dive/base/cloud-config.yaml` with the contents of your public key file, such as `~/.ssh/id_ed25519.pub`. If you use the optional dev overlay, replace the same marker in `cloud-config-dev.yaml` too. Keep the private key on your workstation; do not add it to cloud-init data.
+
+. Render the Kustomize resources and inspect the generated Secret reference:
++
+[source,bash,role=execute]
+----
+oc kustomize ./cloud-init-deep-dive/base
+----
++
+Confirm that `spec.template.spec.volumes` for the VM points to the generated Secret name. The rendered output includes Secret data in base64 form. Treat it as sensitive if you add credentials to the cloud-config file; base64 is not encryption.
+
+. Apply the Kustomize directory to create the Secret and VM:
++
+[source,bash,role=execute]
+----
+oc apply -k ./cloud-init-deep-dive/base
+----
++
+The VM template uses the Fedora DataSource and requests a 30 GiB root disk. Change the boot source and disk size if your cluster uses a different image or storage policy.
+
+. Wait for the VM and its DataVolume to become ready:
++
+[source,bash,role=execute]
+----
+oc get vm,vmi,dv -n cloud-init-deep-dive
+----
+
+. Connect to the guest over SSH:
++
+[source,bash,role=execute]
+----
+virtctl -n cloud-init-deep-dive ssh ops@vm/cloud-init-deep-dive -i ~/.ssh/id_ed25519
+----
++
+Include the resource type (`vm/` or `vmi/`) in the target. If you used a different key file, set `-i` to the matching private-key path.
+
+. Verify cloud-init status and the files created by the configuration:
++
+[source,bash]
+----
+sudo cloud-init status --long
+sudo cat /etc/cloud-init-deep-dive.conf
+sudo cat /etc/cloud-init-deep-dive-encoded.txt
+sudo cat /var/lib/cloud-init-deep-dive.status
+----
++
+The status should report `done` with no errors. The last two files should contain `Hello` and `complete` respectively.
+
+== Cloud-init Delivery and Execution
+
+KubeVirt creates a seed disk from the VM's `cloudInitNoCloud` data or referenced Secret and attaches it to the guest. This is the NoCloud datasource. Cloud-init reads the seed during boot; a metadata `instance-id` helps it decide whether per-instance modules have already run.
+
+KubeVirt also supports `cloudInitConfigDrive`. Use NoCloud for standard Linux cloud images unless the guest's cloud-init implementation requires ConfigDrive. Their network-data formats differ: NoCloud accepts cloud-init network-config, while ConfigDrive uses the OpenStack Metadata Service format. Selecting a data-source format does not install a guest initialization agent or replace the documented Sysprep workflow for Windows.
+
+Cloud-init has several boot stages. The generator decides whether cloud-init is enabled. The local stage identifies the datasource before networking is available. The network stage applies network configuration and retrieves instance data. The config stage runs configuration modules, and the final stage runs remaining work such as user scripts. Distros can order modules differently within a stage, so check the guest's `/etc/cloud/cloud.cfg` when a task depends on another module's completion.
+
+Cloud-init does not reapply all user data on every reboot. Modules have different frequencies: some run once per instance, while others can run every boot. Replacing a Secret or editing the VM template does not make an already initialized guest repeat every module.
+
+== User-data Deep Dive
+
+`userData` is a cloud-config document when it starts with `#cloud-config`. The document is YAML with top-level configuration keys that cloud-init modules consume. A key does not always match the module's internal name; for example, `packages` activates `cc_package_update_upgrade_install`. Validate the syntax and schema against the cloud-init version installed in the guest; newer modules or options might not exist in an older image.
+
+=== Users and Access
+
+Define additional users in `users`. The guest's default user varies by image. Include the special `default` entry when you want to retain the image's default account:
+
+[source,yaml]
+----
+#cloud-config
+ssh_pwauth: false
+users:
+  - default
+  - name: appops
+    groups:
+      - wheel
+    shell: /bin/bash
+    sudo: "ALL=(ALL) NOPASSWD:ALL"
+    lock_passwd: true
+    ssh_authorized_keys:
+      - ssh-ed25519 AAAA...replace-with-a-public-key...
+----
+
+Use SSH public keys where possible. If you must set a password, use the `hashed_passwd` field rather than `plain_text_passwd`, and keep the data in a Secret with narrowly scoped access. Enable SSH password authentication only when you need it. A Secret does not hide user data from a guest that receives it, and cloud-init may retain the input under `/var/lib/cloud/instance/`.
+
+=== Package Installation and Upgrades
+
+The `cc_package_update_upgrade_install` module uses the guest's configured package manager. The `packages`, `package_update`, and `package_upgrade` keys let it install packages, refresh package metadata, and request upgrades:
+
+[source,yaml]
+----
+#cloud-config
+package_update: true
+package_upgrade: false
+packages:
+  - qemu-guest-agent
+----
+
+Set `package_upgrade: true` only when the boot time, repository access, and package changes are acceptable. Package names and repositories depend on the guest distribution. For predictable VM creation, bake stable dependencies into a generalized image and use first-boot package work for small differences.
+
+=== Files, Ownership, Permissions, and Encoding
+
+`write_files` creates or replaces files during configuration. Specify the owner and quote permission modes so YAML does not convert them to numbers:
+
+[source,yaml]
+----
+#cloud-config
+write_files:
+  - path: /etc/example-app.conf
+    owner: root:root
+    permissions: '0640'
+    content: |
+      mode: production
+      listen_port: 8443
+  - path: /etc/example-message.txt
+    permissions: '0644'
+    encoding: b64
+    content: SGVsbG8K
+----
+
+The encoded value decodes to `Hello` followed by a newline. Cloud-init supports encoded file content; check the installed release's schema for supported encodings. Avoid writing temporary files under `/tmp` during early boot because system cleanup may remove them.
+
+=== Command and Service Ordering
+
+Use `bootcmd` only for work that must happen very early. It runs on each boot and may run before networking is ready. Use `runcmd` for first-boot commands that can wait until the final stage:
+
+[source,yaml]
+----
+#cloud-config
+bootcmd:
+  - [cloud-init-per, once, create-example-dir, install, -d, /var/lib/example]
+runcmd:
+  - [systemctl, enable, --now, qemu-guest-agent.service]
+  - [test, -s, /etc/example-app.conf]
+----
+
+Entries in `runcmd` run in list order. A string entry runs through a shell; a list entry runs the executable and arguments directly. The `runcmd` module writes a script during configuration, and the final-stage `scripts_user` module runs it. `bootcmd` is repeated each boot unless you guard one-time work with a command such as `cloud-init-per`. Use `systemctl enable --now` or `systemctl disable --now` in `runcmd` to manage a service that already exists in the image. Do not assume a particular ordering between `packages` and `runcmd` on every image; check the guest's module list or install and enable a service in a tested image build.
+
+Cloud-init is not a replacement for a configuration-management system. Keep commands small and idempotent, and move complex or long-running setup into a purpose-built image or a post-boot configuration tool.
+
+=== Partitioning and Mounting a New Disk
+
+The `disk_setup` and `fs_setup` keys configure the `cc_disk_setup` module to partition and format an additional blank disk. The `mounts` key configures `cc_mounts` to make its filesystem persistent across boots:
+
+[source,yaml]
+----
+#cloud-config
+device_aliases:
+  data_disk: /dev/vdb
+disk_setup:
+  data_disk:
+    table_type: gpt
+    layout: true
+    overwrite: false
+fs_setup:
+  - label: vmdata
+    filesystem: ext4
+    device: data_disk.1
+mounts:
+  - [LABEL=vmdata, /srv/data, ext4, "defaults,nofail", "0", "2"]
+----
+
+WARNING: Use this pattern only for a newly attached, empty data disk. Confirm the guest device mapping with `lsblk` before applying it. Never guess the device path on a VM that contains data; a mistaken partition or filesystem operation can destroy it. Do not use this example to format a boot disk.
+
+== Network-data Deep Dive
+
+`networkData` is a separate network-config document. For NoCloud, start with `version: 2` directly; do not add a top-level `network:` wrapper. Network-config v2 supports Ethernet devices, bonds, bridges, and VLANs, but the exact features depend on the cloud-init version and network renderer in the guest. A supported YAML key does not create an OpenShift network or a NetworkAttachmentDefinition.
+
+Keep the VM's first interface on its normal pod-network configuration unless you have a specific reason to change it. Configure secondary interfaces only with addresses, routes, and MTU values that match the connected network. See xref:networking:static-ip-configuration.adoc[] for OpenShift-specific static IP choices, and xref:networking:cloud-init-troubleshooting.adoc[] for IP diagnosis.
+
+=== Match Interfaces, Configure DHCP or Static Addresses
+
+Guest interface names vary by image and device model. Inspect them with `ip -brief link`. When the VM manifest assigns stable MAC addresses, match those addresses instead of relying on `enp1s0`, `enp2s0`, or `eth0` names:
+
+[source,yaml]
+----
+version: 2
+ethernets:
+  primary:
+    match:
+      macaddress: "02:00:00:00:00:01"
+    set-name: enp1s0
+    dhcp4: true
+  application:
+    match:
+      macaddress: "02:00:00:00:00:02"
+    set-name: enp2s0
+    dhcp4: false
+    addresses:
+      - 192.0.2.50/24
+      - 2001:db8:100::50/64
+    mtu: 1400
+    nameservers:
+      addresses:
+        - 192.0.2.53
+        - 2001:db8:100::53
+      search:
+        - example.test
+    routes:
+      - to: 10.40.0.0/16
+        via: 192.0.2.1
+----
+
+The example leaves the primary interface on DHCP, gives the application interface IPv4 and IPv6 addresses, and adds a route for a private network. Do not add a second default route unless you intend to change the VM's egress path. For the default pod network's IPv6 address, follow the cluster's dual-stack configuration rather than selecting an arbitrary address.
+
+To use this configuration in a VM, add it as the `networkData` field and retain a minimal `userData` document:
+
+[source,yaml]
+----
+volumes:
+  - name: cloudinitdisk
+    cloudInitNoCloud:
+      userData: |
+        #cloud-config
+      networkData: |
+        version: 2
+        ethernets:
+          enp1s0:
+            dhcp4: true
+----
+
+OpenShift network setup, the guest's network renderer, and cloud-init's network configuration must agree. If using `networkDataSecretRef`, confirm the behavior for your KubeVirt release. The cookbook's xref:networking:static-ip-configuration.adoc[] currently recommends inline `networkData` for its examples.
+
+=== VLANs, Bonds, and Bridges
+
+These are guest-side virtual devices. The underlying NICs must already be attached to the VM and the network must support the chosen topology. Match the `link` and `interfaces` values to IDs declared in the same network-config document:
+
+[source,yaml]
+----
+version: 2
+ethernets:
+  uplink-a:
+    match:
+      macaddress: "02:00:00:00:00:02"
+    set-name: enp2s0
+  uplink-b:
+    match:
+      macaddress: "02:00:00:00:00:03"
+    set-name: enp3s0
+bonds:
+  bond0:
+    interfaces:
+      - uplink-a
+      - uplink-b
+    parameters:
+      mode: active-backup
+vlans:
+  vlan100:
+    id: 100
+    link: bond0
+bridges:
+  br100:
+    interfaces:
+      - vlan100
+    addresses:
+      - 192.0.2.100/24
+----
+
+Use a bond only when the connected network and both attached NICs support the selected bond mode. A guest VLAN device tags traffic inside the guest; it does not configure a VLAN on the OpenShift network. A bridge connects guest interfaces at layer 2 and can change how the VM handles DHCP and routes. Confirm these designs against the secondary network's CNI configuration.
+
+== Advanced Data-delivery Patterns
+
+=== Secrets and Kustomize
+
+KubeVirt can read NoCloud `userData` from a Secret reference. The Secret key is `userdata`. Keep sensitive data out of inline VM manifests, but remember that Kubernetes Secrets are base64-encoded API objects; encryption at rest and access controls depend on cluster configuration. Anyone who can read the Secret or the initialized guest can recover the delivered data. Do not store private SSH keys in user data.
+
+The attached lab uses Kustomize's `secretGenerator` to create a Secret from `cloud-config.yaml`. Kustomize appends a content hash to the Secret name. The custom name-reference configuration maps the nested KubeVirt `secretRef.name` field, so Kustomize updates the VM reference when the Secret name changes. This is needed because Kustomize does not treat every custom resource field as a built-in Secret reference.
+
+You can add environment overlays that replace the generated `userdata` content with an environment-specific file. Keep the same generator name and custom name-reference configuration. Render each overlay with `oc kustomize <overlay-directory>` and inspect the VM's Secret reference before applying it with `oc apply -k <overlay-directory>`. Do not commit password-bearing input files to Git; use an approved secret-management workflow for production.
+
+Choose the base or an overlay when creating a VM. Do not apply the overlay to an initialized VM and expect cloud-init to repeat; use a fresh test VM to compare different first-boot configurations.
+
+For example, place the xref:attachment$cloud-init-deep-dive/overlays/dev/kustomization.yaml[dev overlay] and xref:attachment$cloud-init-deep-dive/overlays/dev/cloud-config-dev.yaml[environment-specific user data] under `overlays/dev/`. The overlay imports `base/` and replaces only the generated user data:
+
+[source,yaml]
+----
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - ../../base
+secretGenerator:
+  - name: cloud-init-bootstrap
+    behavior: replace
+    files:
+      - userdata=cloud-config-dev.yaml
+----
+
+Keep `cloud-config-dev.yaml` beside the overlay `kustomization.yaml`. Kustomize carries the custom name-reference configuration from the base into the overlay, so the VM's Secret reference follows the generated Secret name. Replace the SSH-key marker in `cloud-config-dev.yaml` with the public key before applying the overlay.
+
+=== Multipart MIME User Data
+
+Use multipart MIME when one seed must contain more than one user-data format, such as a cloud-config document and a shell script. Each part needs a supported MIME content type. With a cloud-init release that includes the helper, build the payload from separate files:
+
+[source,bash]
+----
+cloud-init devel make-mime \
+  -a cloud-config.yaml:cloud-config \
+  -a configure.sh:x-shellscript > userdata.mime
+----
+
+Use `userdata.mime` as the value for the `userdata` Secret key or as inline `userData`. The helper's availability and accepted formats depend on the cloud-init version. Prefer one cloud-config document when it meets the requirement; multipart data can make execution order and debugging harder to follow.
+
+=== Completion Callback with `phone_home`
+
+The `phone_home` module can send selected instance details to an HTTP endpoint after cloud-init finishes. Use HTTPS, make the endpoint reachable from the guest, and choose only the fields the receiver needs. Do not use the default `post: all` when the endpoint does not need public SSH key material:
+
+[source,yaml]
+----
+#cloud-config
+phone_home:
+  url: https://provisioner.example.net/cloud-init
+  post:
+    - instance_id
+    - hostname
+    - fqdn
+  tries: 5
+----
+
+The callback is a signal for an external workflow, not proof that the application is healthy. Have the receiver validate the VM's identity and check the application separately.
+
+== Debugging and Rerunning Cloud-init
+
+=== Check Status, Logs, and Input
+
+Run these commands in the guest:
+
+[source,bash]
+----
+sudo cloud-init status --long
+sudo cloud-init analyze blame
+sudo tail -n 100 /var/log/cloud-init.log
+sudo tail -n 100 /var/log/cloud-init-output.log
+sudo cat /var/lib/cloud/instance/user-data.txt
+sudo cat /var/lib/cloud/instance/network-config.txt
+----
+
+`cloud-init analyze blame` may be unavailable on older guest images. Review `errors` and `recoverable_errors` in the long status output. The main log records module activity; the output log captures command output. The instance directory shows the data cloud-init consumed. These files can contain credentials, so redact them before sharing logs or a `cloud-init collect-logs` archive.
+
+To check a YAML document before boot, use the schema command available in the guest's cloud-init release:
+
+[source,bash]
+----
+sudo cloud-init schema --config-file /path/to/cloud-config.yaml
+----
+
+If that subcommand is missing, check `cloud-init --help` and the installed release's documentation. A successful YAML parse does not prove that every key is supported by that release or that the guest network can satisfy the configuration.
+
+=== Diagnose Common Failures
+
+* **Cloud-init did not run:** Check that the guest image includes cloud-init, recognizes the selected NoCloud datasource, and can read the attached seed disk. Review the VM events and `cloud-init status --long`.
+* **Configuration is ignored:** Confirm that user data starts with `#cloud-config`, indentation is valid, and the Secret has the expected `userdata` key. For combined network settings, include a minimal user-data document.
+* **A command failed:** Find its output in `/var/log/cloud-init-output.log` and inspect the final-stage module log. Check package repositories, executable paths, and service names for that guest distribution.
+* **Network configuration is missing:** Confirm the guest interface name or MAC address, network-config v2 support in the installed cloud-init build, and the guest renderer. Compare `ip address`, `ip route`, DNS settings, and VM interface order with the intended network.
+* **An update did not take effect:** Cloud-init is usually a first-boot or once-per-instance tool. A Secret update alone does not make an initialized guest rerun its modules. Recreate a disposable VM from a clean boot source to test changed configuration.
+
+=== Reset State Only on a Disposable VM
+
+`cloud-init clean` removes cached state so that cloud-init can run again after reboot. It can repeat commands, change users, rewrite networking, or repartition attached disks. Test this only on a disposable VM with no data to preserve:
+
+[source,bash]
+----
+sudo cloud-init clean --logs --seed
+sudo reboot
+----
+
+Do not use a state reset as a routine update method for an existing workload. Build a generalized image with clean cloud-init state and create a fresh VM for repeatable testing.
+
+== Windows VMs
+
+The Linux cloud-init package does not run in Windows. The documented OpenShift Virtualization workflow uses Sysprep and an `unattend.xml` answer file for Windows first-boot customization. A Windows image that includes Cloudbase-Init can consume ConfigDriveV2 data through `cloudInitConfigDrive`; this depends on that guest agent and its image configuration. See xref:vm-lifecycle:windows-golden-images.adoc[] for the Sysprep workflow and link:https://cloudbase.it/cloudbase-init/[Cloudbase-Init,window=_blank] for its Windows guest behavior.
+
+== Cleanup
+
+Delete only the lab resources created in this tutorial:
+
+[source,bash,role=execute]
+----
+oc delete namespace cloud-init-deep-dive
+----
+
+== Summary
+
+* KubeVirt delivers NoCloud user data and network data on an attached seed disk; cloud-init module behavior depends on the guest image and its release.
+* Use cloud-config keys such as `users`, `packages`, `write_files`, `runcmd`, and the disk setup directives for first-boot tasks; account for the corresponding modules' frequency and stage.
+* Match network interfaces by stable MAC address where possible, and align guest network settings with OpenShift's pod or secondary network configuration.
+* Kustomize can generate a Secret and update a VM's nested Secret reference; it does not encrypt Secret contents.
+* Use status, logs, and schema checks to diagnose failures. Reset cloud-init state only on a disposable VM.
+* Use Sysprep and `unattend.xml` for Windows VMs.
+
+== See Also
+
+* xref:cloud-init-fundamentals.adoc[] - First-boot basics, data types, and a minimal VM
+* xref:networking:static-ip-configuration.adoc[] - Static IP choices and network configuration in OpenShift Virtualization
+* xref:networking:cloud-init-troubleshooting.adoc[] - Cloud-init and guest networking diagnosis
+* xref:vm-lifecycle:windows-golden-images.adoc[] - Windows VM customization with Sysprep
+* link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.22/html/virtualization/managing-vms[OpenShift Container Platform 4.22 VM management,window=_blank]
+* link:https://kubevirt.io/user-guide/user_workloads/startup_scripts/[KubeVirt startup scripts and cloud-init,window=_blank]
+* link:https://docs.cloud-init.io/en/latest/reference/modules.html[Cloud-init module reference,window=_blank]
+* link:https://docs.cloud-init.io/en/latest/reference/network-config-format-v2.html[Cloud-init network-config v2,window=_blank]
+* link:https://kubernetes.io/docs/tasks/manage-kubernetes-objects/kustomization/[Kustomize documentation,window=_blank]

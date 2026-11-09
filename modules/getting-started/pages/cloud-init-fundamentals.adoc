@@ -196,10 +196,10 @@ Cloud-init runs in five stages during the boot process. Understanding these stag
 
 |Final
 |Near end of boot
-|Runs `runcmd` commands, installs packages, executes final scripts
+|Runs final modules, including package installation and user scripts, in the guest's configured order
 |===
 
-This ordering means that network configuration (from networkData) is applied before user configuration (from userData modules). Commands specified in `runcmd` run last, after all other modules.
+This ordering means that network configuration (from networkData) is applied before user configuration (from userData modules). `runcmd` runs in the final stage after the config stage, but the order among final-stage modules, such as package installation and user scripts, depends on the guest's cloud-init configuration.
 
 == Common Cloud-config Modules
 
@@ -519,6 +519,7 @@ In this tutorial you learned:
 * xref:networking:static-ip-configuration.adoc[] - Deep-dive into static IP, DHCP, multiple interfaces, and VLANs with cloud-init
 * xref:networking:cloud-init-troubleshooting.adoc[] - Diagnostic procedures and solutions for cloud-init issues
 * xref:vm-configuration:remote-access-windows-vms.adoc[] - Windows VM configuration with Sysprep
+* xref:cloud-init-deep-dive.adoc[] - Advanced cloud-config, network-config v2, Kustomize, and troubleshooting patterns
 * link:https://cloudinit.readthedocs.io/en/latest/[Cloud-init Official Documentation,window=_blank]
 * link:https://cloudinit.readthedocs.io/en/latest/reference/modules.html[Cloud-init Module Reference,window=_blank]
 * link:https://kubevirt.io/user-guide/virtual_machines/disks_and_volumes/#cloudinitnocloud[KubeVirt cloudInitNoCloud Documentation,window=_blank]
