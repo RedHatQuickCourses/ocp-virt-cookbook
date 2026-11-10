@@ -26,6 +26,14 @@ make test                # generate attachments, yamllint, dry-run test
 
 `make test` runs all three steps in sequence.
 
+## Documentation review tests
+
+Run the YAML style and page-type regression tests without a cluster or additional dependencies:
+
+```bash
+python3 -m unittest discover -s tests -p 'test_review_docs*.py'
+```
+
 ## Architecture
 
 ```

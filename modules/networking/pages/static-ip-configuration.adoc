@@ -1,5 +1,6 @@
 = Configuring Static IPs for VMs
 :navtitle: Static IP Configuration
+:page-type: tutorial
 
 == Overview
 
@@ -270,6 +271,7 @@ ip addr show
 ----
 
 .Expected output
+[source,text]
 ----
 1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN group default qlen 1000
     link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
@@ -297,6 +299,7 @@ ip route show
 ----
 
 .Expected output
+[source,text]
 ----
 default via 10.0.2.1 dev enp1s0 proto dhcp src 10.0.2.2 metric 100
 10.0.2.0/24 dev enp1s0 proto kernel scope link src 10.0.2.2 metric 100
@@ -359,6 +362,7 @@ cloud-init status
 ----
 
 .Expected output
+[source,text]
 ----
 status: done
 ----
@@ -369,6 +373,7 @@ nmcli connection show
 ----
 
 .Expected output
+[source,text]
 ----
 NAME               UUID                                  TYPE      DEVICE
 cloud-init enp1s0  a41601f3-3acc-5f60-ac5f-9d9011ab7c25  ethernet  enp1s0
@@ -545,6 +550,7 @@ ip addr show enp2s0
 With a DHCP reservation in place, the output shows the reserved IP on the fixed MAC:
 
 .Expected output
+[source,text]
 ----
 3: enp2s0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1400 qdisc fq_codel state UP group default qlen 1000
     link/ether 02:00:00:01:00:01 brd ff:ff:ff:ff:ff:ff

@@ -1,5 +1,6 @@
 = VM Snapshot Management with Agentic Workflows
 :navtitle: VM Snapshot Management
+:page-type: tutorial
 
 This tutorial demonstrates how to manage the full virtual machine snapshot lifecycle using natural language commands through four agent skills: `vm-snapshot-create`, `vm-snapshot-list`, `vm-snapshot-restore`, and `vm-snapshot-delete`. You will walk through a realistic scenario of creating a pre-upgrade snapshot, listing available snapshots, restoring after a failed upgrade, verifying the restored VM, and cleaning up old snapshots.
 
@@ -21,6 +22,7 @@ oc create namespace my-vms
 
 If you do not have a VM to manage, create one using the `vm-create` skill by typing in your IDE chat:
 
+[source,text]
 ----
 Create a Fedora VM named database-01 in namespace my-vms
 ----
@@ -34,6 +36,7 @@ oc get vm -n my-vms
 
 Expected output:
 
+[source,text]
 ----
 NAME          AGE   STATUS    READY
 database-01   5m    Running   True
@@ -48,6 +51,7 @@ oc get volumesnapshotclass
 
 Expected output (your driver and class name may differ):
 
+[source,text]
 ----
 NAME              DRIVER       DELETIONPOLICY   AGE
 lvms-snapclass    topolvm.io   Delete           17d
@@ -119,24 +123,28 @@ This scenario demonstrates creating a snapshot before upgrading application soft
 
 . In your IDE chat, type:
 +
+[source,text]
 ----
 Create a snapshot of database-01 before I upgrade it
 ----
 
 . The agent asks for the namespace:
 +
+[source,text]
 ----
 Which namespace is database-01 in?
 ----
 
 . You provide the namespace:
 +
+[source,text]
 ----
 my-vms
 ----
 
 . The agent verifies the VM, analyzes the storage backend, checks the guest agent status, and presents the configuration for review:
 +
+[source,markdown]
 ----
 ## VM Snapshot - Review Configuration
 
@@ -180,12 +188,14 @@ my-vms
 
 . You review the configuration and confirm:
 +
+[source,text]
 ----
 yes
 ----
 
 . The agent creates the snapshot and monitors its progress:
 +
+[source,text]
 ----
 Creating VM snapshot...
 Snapshot `database-01-snapshot-20260714-100000` created for VM `database-01`
@@ -231,6 +241,7 @@ You can verify the snapshot was created:
 oc get virtualmachinesnapshot -n my-vms
 ----
 
+[source,text]
 ----
 NAME                                     SOURCEVMNAME   PHASE       READYTOUSE   CREATIONTIMESTAMP            AGE
 database-01-snapshot-20260714-100000      database-01    Succeeded   true         2026-07-14T10:00:22Z        2m
@@ -242,12 +253,14 @@ After creating one or more snapshots, you can view them using the `vm-snapshot-l
 
 . In your IDE chat, type:
 +
+[source,text]
 ----
 List snapshots for VM database-01 in namespace my-vms
 ----
 
 . The agent queries the cluster and displays the results:
 +
+[source,markdown]
 ----
 ## VM Snapshots
 
@@ -279,6 +292,7 @@ List snapshots for VM database-01 in namespace my-vms
 
 To list all snapshots in a namespace without filtering by VM, type:
 
+[source,text]
 ----
 Show me all snapshots in namespace my-vms
 ----
@@ -289,24 +303,28 @@ The upgrade has failed and the database is corrupted. You need to roll back to t
 
 . In your IDE chat, type:
 +
+[source,text]
 ----
 The database upgrade failed. Restore database-01 from snapshot database-01-snapshot-20260714-100000
 ----
 
 . The agent asks for the namespace:
 +
+[source,text]
 ----
 Which namespace is database-01 in?
 ----
 
 . You provide the namespace:
 +
+[source,text]
 ----
 my-vms
 ----
 
 . The agent verifies the VM is running and warns that it must be stopped first:
 +
+[source,markdown]
 ----
 ## VM Must Be Stopped Before Restore
 
@@ -325,12 +343,14 @@ How would you like to proceed?
 
 . You choose to stop and restore:
 +
+[source,text]
 ----
 stop-and-restore
 ----
 
 . The agent stops the VM, verifies the snapshot exists and is ready, then presents the data loss warning with typed confirmation:
 +
+[source,markdown]
 ----
 ## VM RESTORE - Data Loss Warning
 
@@ -373,12 +393,14 @@ Type `database-01-snapshot-20260714-100000` to confirm: _____
 
 . You type the exact snapshot name:
 +
+[source,text]
 ----
 database-01-snapshot-20260714-100000
 ----
 
 . The agent confirms typed verification passed and asks for final confirmation:
 +
+[source,markdown]
 ----
 ## Typed Verification Passed
 
@@ -404,12 +426,14 @@ Your choice: _____
 
 . You confirm:
 +
+[source,text]
 ----
 yes
 ----
 
 . The agent executes the restore and monitors progress:
 +
+[source,text]
 ----
 Restoring VM from snapshot...
 This may take several minutes...
@@ -440,6 +464,7 @@ After the restore completes, start the VM and verify it is healthy:
 oc get vm database-01 -n my-vms
 ----
 
+[source,text]
 ----
 NAME          AGE   STATUS    READY
 database-01   45m   Stopped   False
@@ -447,6 +472,7 @@ database-01   45m   Stopped   False
 
 Start the VM using the `vm-lifecycle-manager` skill by typing in your IDE chat:
 
+[source,text]
 ----
 Start VM database-01 in namespace my-vms
 ----
@@ -464,12 +490,14 @@ After a successful restore and verification, you may want to delete old snapshot
 
 . In your IDE chat, type:
 +
+[source,text]
 ----
 Delete snapshot database-01-weekly-backup in namespace my-vms
 ----
 
 . The agent retrieves the snapshot details, lists other snapshots for the same VM, and presents the deletion confirmation:
 +
+[source,markdown]
 ----
 ## Snapshot Deletion - Review
 
@@ -502,12 +530,14 @@ Delete snapshot database-01-weekly-backup in namespace my-vms
 
 . You type the exact snapshot name:
 +
+[source,text]
 ----
 database-01-weekly-backup
 ----
 
 . The agent deletes the snapshot and reports the result:
 +
+[source,text]
 ----
 Deleting snapshot...
 Snapshot `database-01-weekly-backup` deleted
@@ -535,6 +565,7 @@ You can verify the snapshot was removed:
 oc get virtualmachinesnapshot -n my-vms
 ----
 
+[source,text]
 ----
 NAME                                     SOURCEVMNAME   PHASE       READYTOUSE   CREATIONTIMESTAMP            AGE
 database-01-snapshot-20260714-100000      database-01    Succeeded   true         2026-07-14T10:00:22Z        40m
@@ -546,12 +577,14 @@ When deleting the only remaining snapshot for a VM, the agent issues an addition
 
 . In your IDE chat, type:
 +
+[source,text]
 ----
 Delete snapshot database-01-snapshot-20260714-100000 in namespace my-vms
 ----
 
 . The agent detects this is the last snapshot and warns you:
 +
+[source,markdown]
 ----
 ## Snapshot Deletion - Review
 
@@ -587,6 +620,7 @@ This section summarizes the complete workflow you practiced in the scenarios abo
 
 . **Create a pre-upgrade snapshot** -- Before starting the upgrade, create a snapshot as a rollback point.
 +
+[source,text]
 ----
 Create a snapshot of database-01 in namespace my-vms
 ----
@@ -597,24 +631,28 @@ Create a snapshot of database-01 in namespace my-vms
 
 . **If the upgrade succeeded** -- Delete the pre-upgrade snapshot to free storage.
 +
+[source,text]
 ----
 Delete snapshot database-01-snapshot-20260714-100000 in namespace my-vms
 ----
 
 . **If the upgrade failed** -- Restore the VM from the pre-upgrade snapshot.
 +
+[source,text]
 ----
 Restore database-01 from snapshot database-01-snapshot-20260714-100000
 ----
 
 . **Start the restored VM** -- After restore completes, start the VM and verify it is healthy.
 +
+[source,text]
 ----
 Start VM database-01 in namespace my-vms
 ----
 
 . **Clean up old snapshots** -- After verifying the restored VM is healthy, remove any snapshots you no longer need.
 +
+[source,text]
 ----
 List snapshots for VM database-01 in namespace my-vms
 ----
@@ -684,6 +722,7 @@ Verify the agent is connected:
 oc get vmi database-01 -n my-vms -o jsonpath='{.status.conditions[?(@.type=="AgentConnected")].status}'
 ----
 
+[source,text]
 ----
 True
 ----

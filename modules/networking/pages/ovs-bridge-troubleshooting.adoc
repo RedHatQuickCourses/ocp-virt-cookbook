@@ -1,5 +1,6 @@
 = Troubleshooting OVS Bridge Creation for Localnet Networks
 :navtitle: Troubleshooting Localnet Networks
+:page-type: troubleshooting
 
 This guide helps you verify that OVS (Open vSwitch) bridges are correctly created and configured for localnet secondary networks in OpenShift Virtualization.
 
@@ -28,6 +29,7 @@ oc get nncp br-vlan-creation
 
 **Expected Output:**
 
+[source,text]
 ----
 NAME               STATUS      REASON
 br-vlan-creation   Available   SuccessfullyConfigured
@@ -78,6 +80,7 @@ oc debug node/<node-name> -- chroot /host ovs-vsctl list-br
 
 **Example Output:**
 
+[source,text]
 ----
 Starting pod/ocplab01-debug-k7bfc ...
 To use host binaries, run `chroot /host`
@@ -101,6 +104,7 @@ oc debug node/<node-name> -- chroot /host ovs-vsctl show
 
 **Example Output (relevant section):**
 
+[source,text]
 ----
 Bridge br-vlan
     Port enp11s0f0np0
@@ -125,6 +129,7 @@ oc debug node/<node-name> -- chroot /host ip link show <interface-name>
 
 **Example Output:**
 
+[source,text]
 ----
 4: enp11s0f0np0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc mq master ovs-system state UP mode DEFAULT group default qlen 1000
     link/ether e8:eb:d3:13:06:16 brd ff:ff:ff:ff:ff:ff
@@ -147,6 +152,7 @@ oc debug node/<node-name> -- chroot /host ip addr show br-vlan
 
 **Expected Result:**
 
+[source,text]
 ----
 Device "br-vlan" does not exist.
 ----
@@ -288,6 +294,7 @@ oc get nncp localnet-vlan-bridge-mapping
 
 **Expected Output:**
 
+[source,text]
 ----
 localnet-vlan-bridge-mapping   Available   SuccessfullyConfigured
 ----
@@ -331,6 +338,7 @@ oc debug node/<node-name> -- chroot /host ovs-vsctl get Open_vSwitch . external_
 
 **Expected Output:**
 
+[source,text]
 ----
 "localnet-vlan:br-vlan,physnet:br-ex"
 ----
@@ -352,6 +360,7 @@ oc debug node/<node-name> -- chroot /host ovs-vsctl list Open_vSwitch | grep -A 
 
 **Example Output:**
 
+[source,text]
 ----
 external_ids        : {hostname=ocplab01, ovn-bridge-mappings="localnet-vlan:br-vlan,physnet:br-ex", ovn-bridge-remote-probe-interval="0", ovn-enable-lflow-cache="true", ovn-encap-ip="192.168.2.241", ovn-encap-type=geneve, ovn-is-interconn="true", ovn-memlimit-lflow-cache-kb="1048576", ovn-monitor-all="true", ovn-ofctrl-wait-before-clear="0", ovn-remote="unix:/var/run/ovn/ovnsb_db.sock", ovn-remote-probe-interval="180000", ovn-set-local-ip="true", rundir="/var/run/openvswitch", system-id="1b41fc3f-f597-4cd9-b508-e8247c209d97"}
 ----
@@ -373,6 +382,7 @@ oc debug node/<node-name> -- chroot /host ovs-vsctl list-ports br-vlan
 
 **Expected Output:**
 
+[source,text]
 ----
 enp11s0f0np0
 ----
@@ -383,6 +393,7 @@ This confirms your physical interface is a port on the bridge and ready to carry
 
 Understanding how traffic flows through bridge mappings:
 
+[source,text]
 ----
 ┌─────────────────────────────────────────────────────────────────┐
 │ Virtual Machine                                                  │
@@ -507,6 +518,7 @@ oc debug node/<node-name> -- chroot /host ovs-vsctl get Open_vSwitch . external_
 
 **Expected format:**
 
+[source,text]
 ----
 "mapping1:bridge1,mapping2:bridge2,mapping3:bridge3"
 ----
@@ -597,6 +609,7 @@ oc get clusteruserdefinednetwork <cudn-name> -o yaml
 
 **Expected Output:**
 
+[source,text]
 ----
 NAME                     AGE
 cudn-localnet-vlan-100   5m
@@ -620,7 +633,9 @@ spec:
     matchExpressions: 
     - key: kubernetes.io/metadata.name
       operator: In 
-      values: ["vm-guests-vlan-prod", "vm-guests-vlan-dev"]
+      values:
+      - "vm-guests-vlan-prod"
+      - "vm-guests-vlan-dev"
   network:
     topology: Localnet 
     localnet:
@@ -646,6 +661,7 @@ oc get network-attachment-definitions -n <namespace>
 
 **Expected Output:**
 
+[source,text]
 ----
 NAMESPACE             NAME                     AGE
 vm-guests-vlan-dev    cudn-localnet-vlan-100   5m

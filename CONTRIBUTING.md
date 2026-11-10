@@ -158,6 +158,25 @@ make check-deps
 
 Follow these conventions when writing tutorials (see [USAGEGUIDE.adoc](USAGEGUIDE.adoc) for full details):
 
+### Page Types
+
+Declare a page type on every content page, after the title and before the first
+blank line. Use `tutorial` for tutorials, which require `== Prerequisites` and
+either `== Summary` or `== Verification`:
+
+```asciidoc
+= Creating a Virtual Machine
+:navtitle: Creating a VM
+:page-type: tutorial
+```
+
+Use `reference` for API and term references, `troubleshooting` for diagnostic
+guides, or `setup` for requirements and setup references. These types skip only
+the tutorial-section requirements. General formatting, YAML, and link checks
+still apply. Unrecognized types retain the tutorial-section checks.
+Existing pages without a type also receive the tutorial-section checks. Index
+and navigation files do not require a page type.
+
 ### Headings
 
 - Use `= Title` for H1 (one per file)
@@ -195,7 +214,7 @@ Always include alt text.
 ### YAML Manifests
 
 - Remove `creationTimestamp: null`
-- Avoid inline `{}` or `[]` in YAML
+- Use block style for YAML collections. Keep `{}` for empty mappings, which block style cannot express; a bare key has a `null` value.
 - Use proper indentation (2 spaces)
 
 ### Admonitions
@@ -246,6 +265,9 @@ This checks for common issues:
 - YAML formatting issues
 - Link formatting
 - And more...
+
+See [Documentation review rules and page types](docs/document-review-exceptions.md)
+for the supported page metadata and YAML conventions.
 
 ## Pull Request Process
 
