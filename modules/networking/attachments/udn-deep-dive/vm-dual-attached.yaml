@@ -1,0 +1,71 @@
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: dual-attached
+  namespace: udn-primary-vm-guests
+  labels:
+    app: dual-attached
+spec:
+  runStrategy: Always
+  instancetype:
+    name: u1.small
+  preference:
+    name: fedora
+  dataVolumeTemplates:
+  - metadata:
+      name: dual-attached-volume
+    spec:
+      storage:
+        accessModes:
+        - ReadWriteMany
+        resources:
+          requests:
+            storage: 33Gi
+      sourceRef:
+        kind: DataSource
+        name: fedora
+        namespace: openshift-virtualization-os-images
+  template:
+    metadata:
+      labels:
+        app: dual-attached
+    spec:
+      domain:
+        devices:
+          disks:
+          - name: rootdisk
+            disk:
+              bus: virtio
+          - name: cloudinitdisk
+            disk:
+              bus: virtio
+          interfaces:
+          - name: default
+            binding:
+              name: l2bridge
+          - name: vlan100
+            bridge: {}
+      networks:
+      - name: default
+        pod: {}
+      - name: vlan100
+        multus:
+          networkName: udn-primary-vm-guests/vlan100-net
+      volumes:
+      - name: rootdisk
+        dataVolume:
+          name: dual-attached-volume
+      - name: cloudinitdisk
+        cloudInitNoCloud:
+          networkData: |
+            version: 2
+            ethernets:
+              eth1:
+                addresses:
+                - 192.168.200.51/24
+          userData: |
+            #cloud-config
+            user: fedora
+            password: fedora
+            chpasswd:
+              expire: false

@@ -1,0 +1,69 @@
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: tenant-app
+  namespace: udn-primary-vm-guests
+  labels:
+    app: tenant-app
+spec:
+  runStrategy: Always
+  instancetype:
+    name: u1.small
+  preference:
+    name: fedora
+  dataVolumeTemplates:
+  - metadata:
+      name: tenant-app-volume
+    spec:
+      storage:
+        accessModes:
+        - ReadWriteMany
+        resources:
+          requests:
+            storage: 33Gi
+      sourceRef:
+        kind: DataSource
+        name: fedora
+        namespace: openshift-virtualization-os-images
+  template:
+    metadata:
+      labels:
+        app: tenant-app
+      annotations:
+        k8s.ovn.org/open-default-ports: |
+          - protocol: tcp
+            port: 8080
+    spec:
+      domain:
+        devices:
+          disks:
+          - name: rootdisk
+            disk:
+              bus: virtio
+          - name: cloudinitdisk
+            disk:
+              bus: virtio
+          interfaces:
+          - name: default
+            binding:
+              name: l2bridge
+      networks:
+      - name: default
+        pod: {}
+      volumes:
+      - name: rootdisk
+        dataVolume:
+          name: tenant-app-volume
+      - name: cloudinitdisk
+        cloudInitNoCloud:
+          userData: |
+            #cloud-config
+            user: fedora
+            password: fedora
+            chpasswd:
+              expire: false
+            packages:
+            - python3
+            runcmd:
+            - echo "<h1>tenant-app on UDN</h1>" > /root/index.html
+            - cd /root && nohup python3 -m http.server 8080 > /dev/null 2>&1 &

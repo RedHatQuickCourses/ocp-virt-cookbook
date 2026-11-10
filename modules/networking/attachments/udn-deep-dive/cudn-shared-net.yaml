@@ -1,0 +1,17 @@
+apiVersion: k8s.ovn.org/v1
+kind: ClusterUserDefinedNetwork
+metadata:
+  name: shared-net
+spec:
+  namespaceSelector:
+    matchLabels:
+      shared-net: "true"
+  network:
+    topology: Layer2
+    layer2:
+      role: Primary
+      subnets:
+      - "10.220.0.0/16"
+      ipam:
+        mode: Enabled
+        lifecycle: Persistent

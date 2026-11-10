@@ -1,0 +1,320 @@
+= Automating Golden Image Pipelines
+:navtitle: Automated Golden Image Pipeline
+
+== Overview
+
+This tutorial extends the xref:custom-golden-images.adoc[custom golden image workflow] with a repeatable build, test, release, and distribution process. It uses a RHEL 9 QCOW2 image as an example and shows where to connect GitHub Actions or OpenShift Pipelines, RHEL Image Builder, OpenSCAP, a container registry, and OpenShift Virtualization.
+
+Keep the image build outside the OpenShift cluster when you use RHEL Image Builder. Image Builder runs on a dedicated RHEL host or virtual machine. The pipeline coordinates that builder, imports its output into a test cluster, and publishes only an image that passes your checks.
+
+....
+Blueprint and source versions
+          |
+          v
+CI trigger --> RHEL Image Builder --> QCOW2 --> container disk in registry
+                                                 |
+                                                 v
+                                   import and boot candidate VM
+                                   smoke tests + OpenSCAP scan
+                                                 |
+                                  pass ----------+---------- fail
+                                    |                        |
+                                    v                        v
+                           promote stable tag       retain report; stop
+                                    |
+                                    v
+                        DataImportCron updates DataSource
+                                    |
+                           GitOps config per cluster
+....
+
+`DataImportCron` polls and updates a boot source so that VMs can clone the latest imported image. It does not start a Tekton or GitHub Actions run. Trigger your build pipeline from a blueprint change, an upstream registry webhook, or a scheduled job that checks for a new source digest. For RHEL Image Builder, track the repository content or Satellite content view used by the build; a DataImportCron is for a CDI boot source and does not monitor RHEL package repositories.
+
+== Prerequisites
+
+* OpenShift {ocp-min-version}+ with OpenShift Virtualization installed
+* A default or virtualization default storage class with capacity for the source image and test VM
+* Administrator access to add a custom boot source to the `HyperConverged` resource, or a platform team that manages that resource through GitOps
+* A dedicated, subscribed RHEL 9 host or virtual machine with RHEL Image Builder (`composer-cli`) installed
+* A container registry that accepts container disk images and is reachable from the builder and every target cluster
+* A Git provider and either OpenShift Pipelines or GitHub Actions to coordinate the pipeline
+* `oc`, `virtctl`, `podman`, and `skopeo` on the systems where you run the commands
+* A RHEL blueprint, a guest test plan, and an approved OpenSCAP profile
+
+The CI runner can call the Image Builder host over a controlled interface or run on that host. Do not run RHEL Image Builder in a container; Red Hat does not support that deployment.
+
+== Procedure
+
+=== Step 1: Define inputs, triggers, and release identifiers
+
+Store the blueprint and its supporting files in version control. Pin the base image or repository content used for a build and keep the identifier with the build results. Use an immutable release name such as `rhel9-2026.10.30-a1b2c3d`; reserve a mutable tag such as `stable` for promotion after testing.
+
+For a base image in a registry, record its manifest digest. For example, run this on a system with registry access:
+
+[source,bash,role=execute]
+----
+skopeo inspect --format '{{.Digest}}' docker://registry.example.com/base/rhel9:latest
+----
+
+If you use a DataImportCron for that source, it keeps the CDI `DataSource` current. Configure a separate trigger for the build. A registry webhook can start a run when the upstream image changes. A scheduled run can compare the current digest with the last successful build and skip work when they match. For Image Builder, trigger on blueprint changes and on the update schedule for the RHEL repositories or Satellite content view.
+
+Use a pipeline with these stages. In Tekton, make each stage a Task and pass the immutable image digest and build ID between Tasks. In GitHub Actions, use jobs with the same boundaries and store the reports as run artifacts.
+
+[cols="1,2"]
+|===
+|Stage |Action and gate
+
+|Resolve source
+|Record the blueprint commit, base image digest or repository content view, target architecture, and build ID.
+
+|Build
+|Validate the blueprint, build a QCOW2 image, and fail the run if Image Builder reports an error.
+
+|Package
+|Wrap the QCOW2 file as a container disk and push it under an immutable candidate tag.
+
+|Test
+|Import the candidate into a temporary namespace, boot a VM, check expected packages and services, and save the results.
+
+|Scan
+|Run OpenSCAP against the approved profile. Do not promote if the scan fails or its report is missing.
+
+|Promote
+|Record the registry digest and test evidence, then move the `stable` tag only after all required gates pass.
+
+|Distribute
+|Configure a DataImportCron for the promoted source in each cluster, and manage that configuration with GitOps or your multicluster policy system.
+|===
+
+=== Step 2: Build the QCOW2 image with RHEL Image Builder
+
+Run this command on the dedicated RHEL Image Builder host. The blueprint file name includes `.toml` when you push it; later commands use the blueprint name without the extension.
+
+[source,bash,role=execute]
+----
+sudo composer-cli blueprints push rhel9-golden.toml
+----
+
+Validate the blueprint's package dependencies before starting the compose:
+
+[source,bash,role=execute]
+----
+sudo composer-cli blueprints depsolve rhel9-golden
+----
+
+Start a QCOW2 compose and note its UUID:
+
+[source,bash,role=execute]
+----
+sudo composer-cli compose start rhel9-golden qcow2
+sudo composer-cli compose status
+----
+
+Wait until the compose status is `FINISHED`, then download the artifact using its UUID:
+
+[source,bash,role=execute]
+----
+sudo composer-cli compose image COMPOSE_UUID
+----
+
+Stage the downloaded QCOW2 file as `rhel9-golden.qcow2` in the directory where you build the container disk. Include the OpenSCAP scanner and the approved SCAP Security Guide content in the blueprint if the guest will scan itself. Record the blueprint commit and the Image Builder compose UUID in the pipeline results.
+
+=== Step 3: Package and push an immutable candidate
+
+Create a `Containerfile` beside `rhel9-golden.qcow2`. KubeVirt container disk images store the virtual machine disk under `/disk/`; the file must be readable by the QEMU user, UID `107`.
+
+[source,text]
+----
+FROM scratch
+ADD --chown=107:107 rhel9-golden.qcow2 /disk/
+----
+
+Build and push the image using an immutable build identifier. Replace `BUILD_ID` with a unique value that includes the source or blueprint revision.
+
+[source,bash,role=execute]
+----
+podman build -t registry.example.com/virt/rhel9-golden:BUILD_ID .
+podman push registry.example.com/virt/rhel9-golden:BUILD_ID
+----
+
+Keep the pushed image and its digest as the candidate artifact. Do not move the `stable` tag yet. For a private registry, configure credentials for both the test cluster's CDI importer and the target clusters before importing the image.
+
+=== Step 4: Import and boot the candidate in a test namespace
+
+Create a namespace for temporary image tests:
+
+[source,bash,role=execute]
+----
+oc create namespace golden-image-ci
+----
+
+Save the following DataVolume as `rhel9-candidate-dv.yaml`. Set the storage request to at least the virtual disk size.
+
+[source,yaml]
+----
+apiVersion: cdi.kubevirt.io/v1beta1
+kind: DataVolume
+metadata:
+  name: rhel9-candidate
+  namespace: golden-image-ci
+spec:
+  source:
+    registry:
+      url: docker://registry.example.com/virt/rhel9-golden:BUILD_ID
+  storage:
+    resources:
+      requests:
+        storage: 30Gi
+----
+
+Replace `BUILD_ID` with the tag pushed in Step 3, then create the DataVolume:
+
+[source,bash,role=execute]
+----
+oc apply -f rhel9-candidate-dv.yaml
+----
+
+Wait for the DataVolume import to finish:
+
+[source,bash,role=execute]
+----
+oc wait --for=jsonpath='{.status.phase}'=Succeeded datavolume/rhel9-candidate -n golden-image-ci --timeout=60m
+----
+
+Create `rhel9-candidate-vm.yaml` from the VM manifest in the xref:custom-golden-images.adoc[custom golden image tutorial]. Remove its `dataVolumeTemplates` and set `volumes.rootdisk.dataVolume.name` to `rhel9-candidate`. Supply guest access through a test-only cloud-init key or another approved method, then create the VM and confirm that it reaches `Running`:
+
+[source,bash,role=execute]
+----
+oc apply -f rhel9-candidate-vm.yaml
+oc get vm,vmi -n golden-image-ci
+----
+
+Run your guest smoke tests through the configured guest access method. For example, check package consistency and required services inside the guest:
+
+[source,bash]
+----
+sudo dnf check
+rpm -q qemu-guest-agent
+systemctl is-enabled qemu-guest-agent
+----
+
+Run OpenSCAP against a profile approved for this workload. Profile IDs differ by installed SCAP content, so inspect the available profiles first:
+
+[source,bash]
+----
+oscap info /usr/share/xml/scap/ssg/content/ssg-rhel9-ds.xml
+----
+
+Then run the selected profile in the guest and save its report with the pipeline run:
+
+[source,bash]
+----
+sudo oscap xccdf eval \
+  --report rhel9-compliance.html \
+  --profile PROFILE_ID \
+  /usr/share/xml/scap/ssg/content/ssg-rhel9-ds.xml
+----
+
+Make the promotion gate check the report and your organization's allowed findings. A scan report is evidence for review; it does not by itself guarantee compliance. Keep the report, image digest, blueprint commit, and test results together.
+
+=== Step 5: Configure a managed boot source for the release tag
+
+Add a custom `dataImportCronTemplates` entry to the existing `HyperConverged` custom resource. Manage this cluster configuration through the platform team's normal change process. The following is one list entry under `spec.dataImportCronTemplates`; it is not a complete `HyperConverged` resource. Replace the storage class and registry path with values from your cluster.
+
+[source,yaml]
+----
+- metadata:
+    name: rhel9-golden-cron
+    annotations:
+      cdi.kubevirt.io/storage.bind.immediate.requested: "true"
+  spec:
+    schedule: "0 */6 * * *"
+    template:
+      spec:
+        source:
+          registry:
+            url: docker://registry.example.com/virt/rhel9-golden:stable
+        storage:
+          storageClassName: fast-block
+          resources:
+            requests:
+              storage: 30Gi
+    garbageCollect: Outdated
+    managedDataSource: rhel9-golden-stable
+----
+
+The `cdi.kubevirt.io/storage.bind.immediate.requested` annotation is needed when the selected storage class uses `WaitForFirstConsumer`. For a private registry, set `source.registry.secretRef` to a pull secret in the generated DataVolume namespace, `openshift-virtualization-os-images`. The six-hour schedule controls how often CDI checks the promoted registry source; choose an interval that meets your update and capacity requirements.
+
+After the platform team saves the HCO change, confirm that the `DataImportCron` and managed `DataSource` are ready:
+
+[source,bash,role=execute]
+----
+oc get dataimportcron -n openshift-virtualization-os-images
+oc get datasource rhel9-golden-stable -n openshift-virtualization-os-images
+oc describe datasource rhel9-golden-stable -n openshift-virtualization-os-images
+----
+
+When the source is ready, VM manifests can use `rhel9-golden-stable` as the `DataSource` in their `DataVolumeTemplate`. See the xref:custom-golden-images.adoc[custom golden image tutorial] for a VM example. CDI imports and updates this source on its schedule; it does not trigger the image build pipeline.
+
+=== Step 6: Promote, version, and distribute the image
+
+After the candidate VM tests and OpenSCAP gate pass, promote the tested immutable image to the `stable` tag. For registries that allow mutable tags, one way to do this is:
+
+[source,bash,role=execute]
+----
+podman pull registry.example.com/virt/rhel9-golden:BUILD_ID
+podman tag registry.example.com/virt/rhel9-golden:BUILD_ID registry.example.com/virt/rhel9-golden:stable
+podman push registry.example.com/virt/rhel9-golden:stable
+----
+
+Record the digest of both the immutable tag and the promoted tag. CDI will import the changed `stable` image at the next scheduled check. Existing VMs keep their own disks; new VMs that clone the managed `DataSource` use the newly imported image after it is ready.
+
+Keep immutable release tags, for example `rhel9-2026.10.30-a1b2c3d`, for rollback. To roll back, repoint `stable` to the last approved release and wait for the DataImportCron to import it. If the registry does not permit tag updates, use your registry's promotion mechanism to move the tag without rebuilding the image. `garbageCollect: Outdated` can remove older imported boot-source volumes, so retain the immutable registry artifact and the test evidence for each release.
+
+For multiple architectures, run a build and test for each target architecture. Keep the architecture in the release name or registry path, such as `rhel9-amd64` and `rhel9-arm64`, and configure each cluster to import an image that matches its VM architecture. If you publish a multi-architecture OCI index, test every architecture-specific image before promoting the index.
+
+For multi-cluster distribution, store the tested image in a registry reachable by each cluster. Use OpenShift GitOps or your ACM policy workflow to apply the same DataImportCron configuration to each target cluster. Each cluster imports its own copy into its selected storage class; the registry distributes the image artifact, while GitOps or policy distributes the cluster configuration.
+
+Estimate capacity before increasing the release count. A first estimate is:
+
+[source,text]
+----
+image size x retained versions x target clusters
+    + candidate imports and temporary test VM storage
+----
+
+Adjust this estimate for your storage provisioner's thin provisioning, snapshots, replicas, and clone strategy. Set a retention window for both registry tags and cluster volumes. Keep enough previous releases to meet the rollback policy, and remove older artifacts only after their retention period expires.
+
+=== Step 7: Remove test resources
+
+Delete the temporary test namespace after you have saved the test and scan reports:
+
+[source,bash,role=execute]
+----
+oc delete namespace golden-image-ci
+----
+
+On a sandbox cluster, remove the `rhel9-golden-cron` entry through the same process that manages the `HyperConverged` resource if you no longer need the published source. Verify that the generated `DataImportCron` and `DataSource` are no longer in use before removing any retained boot-source volumes. On a shared cluster, keep the managed source if other VMs depend on it.
+
+== Summary
+
+In this tutorial, you:
+
+* Defined versioned inputs and independent CI triggers for a golden image build
+* Built a RHEL QCOW2 image with RHEL Image Builder and packaged it as a container disk
+* Imported and booted a candidate image for smoke tests and an OpenSCAP scan
+* Configured a custom DataImportCron to publish a managed DataSource
+* Promoted and rolled back immutable image versions through registry tags
+* Planned multi-architecture builds, multi-cluster distribution, and storage retention
+
+== See Also
+
+* xref:custom-golden-images.adoc[Creating Custom OS Images and Golden Images]
+* xref:golden-images-troubleshooting.adoc[Golden Images Troubleshooting]
+* xref:windows-golden-images.adoc[Creating Windows Golden Images with Tekton]
+* link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.18/html/virtualization/storage[OpenShift Virtualization: Managing automatic boot source updates,window=_blank]
+* link:https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/9/html/composing_a_customized_rhel_system_image/creating-system-images-with-composer-command-line-interface_composing-a-customized-rhel-system-image[RHEL 9: Creating system images with the Image Builder CLI,window=_blank]
+* link:https://kubevirt.io/user-guide/storage/disks_and_volumes/[KubeVirt: Container disks,window=_blank]
+* link:https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/9/html/security_hardening/scanning-the-system-for-configuration-compliance-and-vulnerabilities_security-hardening[RHEL 9: Scanning for configuration compliance,window=_blank]
+* link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.18/html/pipelines/index[OpenShift Pipelines documentation,window=_blank]
+* link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.18/html/gitops/index[OpenShift GitOps documentation,window=_blank]
