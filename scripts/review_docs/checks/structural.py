@@ -35,11 +35,29 @@ def check_tutorial_sections(
     cfg: Config,
     file_result: FileResult,
 ) -> None:
-    """Check tutorial pages have required sections."""
+    """Check required tutorial sections unless the header declares another type."""
     # Only applies to tutorial pages (not index or nav files)
     if not re.search(r"modules/[^/]+/pages/[^/]+\.adoc$", filepath):
         return
     if filepath.endswith("/index.adoc") or filepath.endswith("/nav.adoc"):
+        return
+
+    # Only read metadata in the document header, before its first blank line.
+    # Attribute examples in the body must not opt a tutorial out of this check.
+    page_type = "tutorial"
+    in_header = False
+    for line in lines:
+        if not in_header:
+            if re.match(r"^=\s+", line):
+                in_header = True
+            continue
+        if not line.strip():
+            break
+        match = re.match(r"^:page-type:\s*(.*?)\s*$", line)
+        if match:
+            page_type = match.group(1)
+
+    if page_type in {"reference", "troubleshooting", "setup"}:
         return
 
     has_prerequisites = False

@@ -1,5 +1,6 @@
 = Creating a Linux Bridge Secondary Network for Virtual Machines
 :navtitle: Linux Bridges
+:page-type: tutorial
 
 A Linux bridge secondary network uses the https://nmstate.io/kubernetes-nmstate/[Kubernetes NMState Operator,_window=blank] to create a new Linux bridge device on the cluster nodes,
 and the https://github.com/k8snetworkplumbingwg/multus-cni[Multus CNI,window=_blank] in conjunction with the https://www.cni.dev/plugins/current/main/bridge/[bridge CNI plugin,_window=blank]
@@ -117,10 +118,11 @@ NOTE: As with `nmstate` objects (which trigger the NMState Operator), `nncp` obj
 Once the existence of the Linux bridge interface is confirmed on the node(s), proceed with <<create_net_attach_def,creating a NetworkAttachmentDefinition>>.
 
 == Creating a Linux Bridge Network Attachment Definition [[create_net_attach_def]]
+
 The next step is to create a `NetworkAttachmentDefinition` to provides Layer 2 networking to your pods/VMs.
 The `NetworkAttachmentDefinition` is what allows pods/VMs within a specific project/namespace to connect to a secondary network.
 
-IMPORTANT: While not strictly required to create a `NetworkAttachmentDefinition`, an `nncp` object defining the bridge interface must exist on the cluster before you attach a `VirtualMachine` to a bridge network. 
+IMPORTANT: While not strictly required to create a `NetworkAttachmentDefinition`, an `nncp` object defining the bridge interface must exist on the cluster before you attach a `VirtualMachine` to a bridge network.
 Neglecting to do so will prevent any VM with a bridge-based NIC from booting.
 
 First, create the namespace for your VMs if it doesn't already exist:
