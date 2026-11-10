@@ -1,9 +1,11 @@
 = Golden Images Troubleshooting Guide
 :navtitle: Golden Images Troubleshooting
+:page-type: troubleshooting
 
 This guide provides troubleshooting steps, verification commands, and solutions for issues related to creating and using custom OS images and golden images in OpenShift Virtualization.
 
 == Table of Contents
+
 * <<Quick Health Checks>>
 * <<Detailed Verification by Step>>
 * <<Common Issues and Solutions>>
@@ -11,6 +13,7 @@ This guide provides troubleshooting steps, verification commands, and solutions 
 == Quick Health Checks
 
 === Check Namespace
+
 [source,bash,role=execute]
 ----
 oc get namespace golden-images
@@ -24,24 +27,28 @@ golden-images    Active   5m
 ----
 
 === Check All Resources
+
 [source,bash,role=execute]
 ----
 oc get all -n golden-images
 ----
 
 === Check VMs and VMIs
+
 [source,bash,role=execute]
 ----
 oc get vm,vmi -n golden-images
 ----
 
 === Check DataVolumes and PVCs
+
 [source,bash,role=execute]
 ----
 oc get dv,pvc -n golden-images
 ----
 
 === Check DataSources
+
 [source,bash,role=execute]
 ----
 oc get datasource -n golden-images
@@ -52,6 +59,7 @@ oc get datasource -n golden-images
 === Step 1: Verify Base VM Creation
 
 ==== Check VM Status
+
 [source,bash,role=execute]
 ----
 oc get vm base-fedora-vm -n golden-images
@@ -65,6 +73,7 @@ base-fedora-vm   2m    Running   True
 ----
 
 ==== Check VMI Details
+
 [source,bash,role=execute]
 ----
 oc get vmi base-fedora-vm -n golden-images -o yaml
@@ -102,6 +111,7 @@ status:
 ----
 
 ==== Check Base VM DataVolume
+
 [source,bash,role=execute]
 ----
 oc get dv base-fedora-vm-disk -n golden-images
@@ -115,6 +125,7 @@ base-fedora-vm-disk   Succeeded   100.0%                5m
 ----
 
 ==== Check PVC for Base VM
+
 [source,bash,role=execute]
 ----
 oc get pvc base-fedora-vm-disk -n golden-images
@@ -130,12 +141,14 @@ base-fedora-vm-disk   Bound    pvc-abc123...                              30Gi  
 === Step 2: Verify VM Customization
 
 ==== Access VM Console
+
 [source,bash,role=execute]
 ----
 virtctl console base-fedora-vm -n golden-images
 ----
 
 ==== Check if Software is Installed
+
 Inside the VM:
 [source,bash]
 ----
@@ -149,6 +162,7 @@ ls -la /usr/share/nginx/html/
 ----
 
 ==== Check Cloud-init Logs (if used)
+
 [source,bash]
 ----
 cat /var/log/cloud-init.log
@@ -158,6 +172,7 @@ cat /var/log/cloud-init-output.log
 === Step 3: Verify VM Shutdown
 
 ==== Check VM is Stopped
+
 [source,bash,role=execute]
 ----
 oc get vm base-fedora-vm -n golden-images
@@ -171,6 +186,7 @@ base-fedora-vm   10m   Stopped   False
 ----
 
 ==== Verify No VMI Exists
+
 [source,bash,role=execute]
 ----
 oc get vmi base-fedora-vm -n golden-images 2>&1
@@ -185,6 +201,7 @@ Error from server (NotFound): virtualmachineinstances.kubevirt.io "base-fedora-v
 === Step 4: Verify DataSource Creation
 
 ==== Check DataSource
+
 [source,bash,role=execute]
 ----
 oc get datasource fedora-nginx-golden -n golden-images
@@ -198,6 +215,7 @@ fedora-nginx-golden    1m
 ----
 
 ==== Check DataSource Details
+
 [source,bash,role=execute]
 ----
 oc get datasource fedora-nginx-golden -n golden-images -o yaml
@@ -216,6 +234,7 @@ spec:
 === Step 5: Verify VMs Deployed from Golden Image
 
 ==== Check Deployed VMs
+
 [source,bash,role=execute]
 ----
 oc get vm webserver-vm-1 webserver-vm-2 -n golden-images
@@ -230,6 +249,7 @@ webserver-vm-2    2m    Running   True
 ----
 
 ==== Check DataVolumes for Deployed VMs
+
 [source,bash,role=execute]
 ----
 oc get dv webserver-vm-1-disk webserver-vm-2-disk -n golden-images
@@ -244,6 +264,7 @@ webserver-vm-2-disk    Succeeded   100.0%                2m
 ----
 
 ==== Verify VMs are Clones
+
 [source,bash,role=execute]
 ----
 oc get dv webserver-vm-1-disk -n golden-images -o jsonpath='{.spec.sourceRef}'
@@ -256,6 +277,7 @@ Expected output shows reference to DataSource:
 ----
 
 ==== Check VM Functionality
+
 Get VM IPs:
 [source,bash,role=execute]
 ----
@@ -278,6 +300,7 @@ oc run test-curl --image=curlimages/curl:latest --rm -it --restart=Never -- curl
 === Step 6: Verify Resource Efficiency
 
 ==== Check PVC Usage
+
 [source,bash,role=execute]
 ----
 oc get pvc -n golden-images
@@ -293,6 +316,7 @@ webserver-vm-2-disk    Bound    pvc-ghi789...    30Gi       RWO            lvms-
 ----
 
 ==== Check Actual Storage Usage (if using LVM)
+
 [source,bash,role=execute]
 ----
 # Get the LVM thin pool usage
@@ -556,6 +580,7 @@ spec:
 == Diagnostic Commands Summary
 
 === Full Resource Check
+
 [source,bash,role=execute]
 ----
 # Everything in namespace
@@ -569,6 +594,7 @@ oc get vm,vmi,dv -n golden-images -w
 ----
 
 === Logs and Events
+
 [source,bash,role=execute]
 ----
 # Recent events
@@ -582,6 +608,7 @@ oc logs -n openshift-cnv -l app=cdi-operator --tail=50
 ----
 
 === Storage Details
+
 [source,bash,role=execute]
 ----
 # PVC details

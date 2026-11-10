@@ -1,5 +1,6 @@
 = NUMA Topology and Hugepages for Virtual Machines
 :navtitle: NUMA and Hugepages
+:page-type: tutorial
 
 == Overview
 
@@ -55,6 +56,7 @@ Non-Uniform Memory Access (NUMA) is a hardware architecture where each CPU socke
 
 On a typical two-socket server:
 
+[source,text]
 ----
 NUMA Node 0: CPUs 0-19, 40-59   Local Memory: 128Gi
 NUMA Node 1: CPUs 20-39, 60-79  Local Memory: 128Gi
@@ -116,6 +118,7 @@ oc get mcp worker -w
 
 Wait until `UPDATED` returns to `True` and `MACHINECOUNT` equals `READYMACHINECOUNT`:
 
+[source,text]
 ----
 NAME     CONFIG                                             UPDATED   UPDATING   DEGRADED
 worker   rendered-worker-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx   True      False      False
@@ -134,6 +137,7 @@ oc get node <node-name> -o jsonpath='{.status.allocatable.hugepages-2Mi}{"\n"}'
 
 Expected output:
 
+[source,text]
 ----
 2Gi
 ----
@@ -154,6 +158,7 @@ chroot /host grep -i hugepages /proc/meminfo
 
 Expected output:
 
+[source,text]
 ----
 AnonHugePages:         0 kB
 ShmemHugePages:        0 kB
@@ -194,6 +199,7 @@ chroot /host ls /sys/devices/system/node/
 
 Example output on a two-socket server:
 
+[source,text]
 ----
 node0  node1
 ----
@@ -205,6 +211,7 @@ Check which CPUs belong to each NUMA node:
 chroot /host cat /sys/devices/system/node/node0/cpulist
 ----
 
+[source,text]
 ----
 0-9,40-49
 ----
@@ -214,6 +221,7 @@ chroot /host cat /sys/devices/system/node/node0/cpulist
 chroot /host cat /sys/devices/system/node/node1/cpulist
 ----
 
+[source,text]
 ----
 20-29,60-69
 ----
@@ -227,6 +235,7 @@ chroot /host cat /sys/devices/system/node/node0/meminfo
 
 Example output (abbreviated):
 
+[source,text]
 ----
 Node 0 MemTotal:       131072000 kB
 Node 0 MemFree:        125000000 kB
@@ -243,6 +252,7 @@ chroot /host lscpu | grep -i numa
 
 Example output:
 
+[source,text]
 ----
 NUMA node(s):          2
 NUMA node0 CPU(s):     0-9,40-49
@@ -347,6 +357,7 @@ oc get vm vm-hugepages -n numa-hugepages-demo -w
 
 Expected output:
 
+[source,text]
 ----
 NAME           AGE   STATUS    READY
 vm-hugepages   45s   Running   True
@@ -424,6 +435,7 @@ oc get vm vm-hugepages -n numa-hugepages-demo
 
 Expected output:
 
+[source,text]
 ----
 NAME           AGE    STATUS    READY
 vm-hugepages   5m     Stopped   False
@@ -512,6 +524,7 @@ oc get vm vm-numa-hugepages -n numa-hugepages-demo -w
 
 Expected output:
 
+[source,text]
 ----
 NAME                AGE   STATUS    READY
 vm-numa-hugepages   60s   Running   True
@@ -530,6 +543,7 @@ oc get vmi vm-numa-hugepages -n numa-hugepages-demo -o jsonpath='{.spec.domain.c
 
 Expected output:
 
+[source,json]
 ----
 {"guestMappingPassthrough":{}}
 ----
@@ -568,6 +582,7 @@ ls /sys/devices/system/node/
 
 Example output:
 
+[source,text]
 ----
 node0
 ----
@@ -581,6 +596,7 @@ cat /sys/devices/system/node/node0/cpulist
 
 Example output:
 
+[source,text]
 ----
 0-1
 ----
@@ -594,6 +610,7 @@ cat /sys/devices/system/node/node0/meminfo | head -5
 
 Example output:
 
+[source,text]
 ----
 Node 0 MemTotal:        1048576 kB
 Node 0 MemFree:          800000 kB

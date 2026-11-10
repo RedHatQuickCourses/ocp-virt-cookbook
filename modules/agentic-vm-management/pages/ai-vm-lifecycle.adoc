@@ -1,5 +1,6 @@
 = AI-Assisted VM Lifecycle Operations
 :navtitle: AI VM Lifecycle Operations
+:page-type: tutorial
 
 This tutorial demonstrates how to manage the lifecycle of OpenShift VirtualMachines using natural language commands through the `vm-lifecycle-manager` and `vm-delete` agent skills. You will learn how to start, stop, restart, and delete VMs with human-in-the-loop safety confirmations, and how the agent handles edge cases like protected VMs and running VM deletion.
 
@@ -19,6 +20,7 @@ oc create namespace my-vms
 
 If you do not have a VM to manage, create one using the `vm-create` skill by typing in your IDE chat:
 
+[source,text]
 ----
 Create a Fedora VM named lifecycle-demo in namespace my-vms
 ----
@@ -32,6 +34,7 @@ oc get vm -n my-vms
 
 Expected output:
 
+[source,text]
 ----
 NAME             AGE   STATUS    READY
 lifecycle-demo   2m    Running   True
@@ -69,12 +72,14 @@ This example starts a stopped VM using the `vm-lifecycle-manager` skill.
 
 . In your IDE chat, type:
 +
+[source,text]
 ----
 Start VM lifecycle-demo in namespace my-vms
 ----
 
 . The agent presents the operation for confirmation:
 +
+[source,markdown]
 ----
 ## VM Lifecycle Operation
 
@@ -89,12 +94,14 @@ Confirm: yes/no
 
 . You review the impact and confirm:
 +
+[source,text]
 ----
 yes
 ----
 
 . The agent calls `vm_lifecycle` to change the RunStrategy from `Halted` to `Always` and verifies the VM reaches Running status:
 +
+[source,markdown]
 ----
 ## VM Start Successful
 
@@ -114,6 +121,7 @@ You can verify the VM is running with:
 oc get vm lifecycle-demo -n my-vms
 ----
 
+[source,text]
 ----
 NAME             AGE   STATUS    READY
 lifecycle-demo   10m   Running   True
@@ -125,12 +133,14 @@ This example gracefully stops a running VM.
 
 . In your IDE chat, type:
 +
+[source,text]
 ----
 Stop VM lifecycle-demo in namespace my-vms
 ----
 
 . The agent presents the stop operation with its impact:
 +
+[source,markdown]
 ----
 ## VM Lifecycle Operation
 
@@ -145,6 +155,7 @@ Confirm: yes/no
 
 . After you confirm, the agent performs a graceful shutdown and transitions the RunStrategy to `Halted`:
 +
+[source,markdown]
 ----
 ## VM Stop Successful
 
@@ -165,12 +176,14 @@ The restart operation uses a composite stop-then-start pattern to avoid Kubernet
 
 . In your IDE chat, type:
 +
+[source,text]
 ----
 Restart VM lifecycle-demo in namespace my-vms
 ----
 
 . The agent warns about the brief interruption:
 +
+[source,markdown]
 ----
 ## VM Lifecycle Operation
 
@@ -185,6 +198,7 @@ Confirm: yes/no
 
 . After confirmation, the agent executes the composite restart:
 +
+[source,markdown]
 ----
 ## VM Restart Successful
 
@@ -208,12 +222,14 @@ This example deletes a VM and its associated storage using the `vm-delete` skill
 
 . In your IDE chat, type:
 +
+[source,text]
 ----
 Delete VM lifecycle-demo in namespace my-vms
 ----
 
 . The agent validates the VM, discovers associated storage, and presents the deletion scope:
 +
+[source,markdown]
 ----
 ## VM Deletion - Review Scope
 
@@ -233,12 +249,14 @@ Select (1, 2, or 3):
 
 . You select option 2 to free all resources:
 +
+[source,text]
 ----
 2
 ----
 
 . The agent requires you to type the exact VM name to confirm:
 +
+[source,markdown]
 ----
 ## PERMANENT DELETION - Typed Confirmation Required
 
@@ -255,12 +273,14 @@ Type `lifecycle-demo` to confirm: _____
 
 . You type the exact name:
 +
+[source,text]
 ----
 lifecycle-demo
 ----
 
 . The agent stops the running VM, deletes it and its storage, and reports the result:
 +
+[source,markdown]
 ----
 ## VM Deleted (Complete Cleanup)
 
@@ -276,6 +296,7 @@ You can verify the VM and its storage are gone:
 oc get vm -n my-vms
 ----
 
+[source,text]
 ----
 No resources found in my-vms namespace.
 ----
@@ -285,6 +306,7 @@ No resources found in my-vms namespace.
 oc get pvc -n my-vms
 ----
 
+[source,text]
 ----
 No resources found in my-vms namespace.
 ----
@@ -311,12 +333,14 @@ When you attempt to delete a protected VM:
 
 . In your IDE chat, type:
 +
+[source,text]
 ----
 Delete VM production-db in namespace production
 ----
 
 . The agent detects the protection label and refuses the operation:
 +
+[source,text]
 ----
 Cannot Delete Protected VM
 
@@ -336,12 +360,14 @@ If a VM is already in the requested state, the agent informs you without taking 
 
 . In your IDE chat, type:
 +
+[source,text]
 ----
 Start VM lifecycle-demo in namespace my-vms
 ----
 
 . If the VM is already running:
 +
+[source,markdown]
 ----
 ## VM Already Running
 
@@ -357,18 +383,21 @@ Sometimes you want to delete the VM definition but keep its disk for reattachmen
 
 . In your IDE chat, type:
 +
+[source,text]
 ----
 Delete VM lifecycle-demo in namespace my-vms
 ----
 
 . At the deletion options prompt, select option 1:
 +
+[source,text]
 ----
 1
 ----
 
 . After typing the VM name to confirm, the agent deletes only the VirtualMachine resource:
 +
+[source,markdown]
 ----
 ## VM Deleted (VM Only)
 
@@ -384,6 +413,7 @@ The PVC remains in the namespace for reuse:
 oc get pvc -n my-vms
 ----
 
+[source,text]
 ----
 NAME                       STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS
 lifecycle-demo-rootdisk    Bound    pvc-abc12345-6789-0def-ghij-klmnopqrstuv   30Gi       RWO            lvms-vg1

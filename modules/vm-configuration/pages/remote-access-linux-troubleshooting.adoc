@@ -1,9 +1,11 @@
 = Troubleshooting Remote Access to Linux VMs
 :navtitle: Remote Access to Linux VMs Troubleshooting
+:page-type: troubleshooting
 
 This guide provides troubleshooting steps, verification commands, and solutions for issues related to remote access to Linux VMs in OpenShift Virtualization.
 
 == Table of Contents
+
 * <<Quick Health Checks>>
 * <<Method 1: Console Access>>
 * <<Method 2: VNC Access>>
@@ -17,6 +19,7 @@ This guide provides troubleshooting steps, verification commands, and solutions 
 == Quick Health Checks
 
 === Check VM Status
+
 [source,bash,role=execute]
 ----
 oc get vm <vm-name> -n <namespace>
@@ -31,6 +34,7 @@ my-vm       5m    Running   True
 ----
 
 === Check VM Has IP Address
+
 [source,bash,role=execute]
 ----
 oc get vmi <vm-name> -n <namespace> -o jsonpath='{.status.interfaces[*].ipAddress}'
@@ -39,6 +43,7 @@ oc get vmi <vm-name> -n <namespace> -o jsonpath='{.status.interfaces[*].ipAddres
 Should return at least one IP address.
 
 === Check VM Pod is Running
+
 [source,bash,role=execute]
 ----
 oc get pods -n <namespace> -l kubevirt.io/domain=<vm-name>
@@ -52,6 +57,7 @@ virt-launcher-<vm>-xxxxx   3/3     Running   0          5m
 ----
 
 === Check Guest Agent Status
+
 [source,bash,role=execute]
 ----
 oc get vmi <vm-name> -n <namespace> -o jsonpath='{.status.guestOSInfo.id}'

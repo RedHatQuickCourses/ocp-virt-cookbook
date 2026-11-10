@@ -46,6 +46,9 @@ _XML_TOKEN_RE = re.compile(r"<!--(\d+|\.)-->")
 # Pattern to match a callout annotation line: "<1> explanation", "<.> explanation"
 _ANNOTATION_RE = re.compile(r"^<(\d+|\.)>\s")
 
+# Attribute tokens embedded in YAML scalars are not flow mappings.
+_ATTRIBUTE_REFERENCE_RE = re.compile(r"(?<![\\$])\{[A-Za-z0-9_][A-Za-z0-9_-]*\}")
+
 
 @register_check("code-block-language", "warning", "code_block_boundary")
 def check_code_block_language(
@@ -102,11 +105,29 @@ def check_yaml_flow_syntax(
     cfg: Config,
     file_result: FileResult,
 ) -> None:
-    """Check for inline YAML flow syntax ({} or []) in YAML blocks."""
+    """Prefer block style for YAML collections, allowing empty mappings.
+
+    Block style cannot express an empty mapping. Keep ``{}`` (including
+    whitespace inside the braces); a bare key would have a null value.
+    AsciiDoc attribute references embedded in scalar text are also allowed.
+    """
     if state.code_block_lang != "yaml":
         return
 
-    if re.search(r".*:\s*\{.*\}", line) or re.search(r".*:\s*\[.*\]", line):
+    def mask_scalar_attribute(match: re.Match) -> str:
+        before = line[match.start() - 1] if match.start() else ""
+        after = line[match.end()] if match.end() < len(line) else ""
+        if (before and not before.isspace() and before not in "{[,") or (
+            after and not after.isspace() and after not in "}],#"
+        ):
+            return "attribute-reference"
+        # A standalone {key} can be a YAML mapping with a null value.
+        return match.group()
+
+    style_line = _ATTRIBUTE_REFERENCE_RE.sub(mask_scalar_attribute, line)
+    has_flow_mapping = re.search(r":\s*\{(?!\s*\}).*\}", style_line)
+    has_flow_sequence = re.search(r":\s*\[.*\]", style_line)
+    if has_flow_mapping or has_flow_sequence:
         # Skip legitimate cases
         if not re.search(r"chpasswd:\s*\{.*\}", line) and not re.search(
             r"capabilities:$", line
