@@ -1,0 +1,147 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="900" viewBox="0 0 1200 900" font-family="'Red Hat Text', 'Red Hat Display', Helvetica, Arial, sans-serif">
+  <title>NIC hotplug and unplug in OpenShift Virtualization</title>
+  <desc>Hotplug flow from VM spec edit through virt-controller, the multus dynamic networks controller, the Multus thick daemon, virt-handler and libvirt to the guest; hot unplug flow; migration-based path; and requirements.</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M2 1L8 5L2 9" fill="none" stroke="#5F5E5A" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+    </marker>
+    <style>
+      .title { font-size: 24px; font-weight: 600; fill: #2C2C2A; }
+      .sub { font-size: 14px; fill: #5F5E5A; }
+      .h { font-size: 15px; font-weight: 600; }
+      .s { font-size: 13px; }
+      .panel-h { font-size: 16px; font-weight: 600; fill: #2C2C2A; }
+      .body { font-size: 13px; fill: #444441; }
+      .zone { font-size: 13px; font-weight: 600; fill: #5F5E5A; }
+      .kv rect { fill: #EEEDFE; stroke: #534AB7; }
+      .kv .h { fill: #3C3489; } .kv .s { fill: #534AB7; }
+      .mu rect { fill: #E1F5EE; stroke: #0F6E56; }
+      .mu .h { fill: #085041; } .mu .s { fill: #0F6E56; }
+      .us rect { fill: #F1EFE8; stroke: #5F5E5A; }
+      .us .h { fill: #2C2C2A; } .us .s { fill: #5F5E5A; }
+      .arr { stroke: #5F5E5A; stroke-width: 1.4; fill: none; }
+    </style>
+  </defs>
+
+  <rect x="0" y="0" width="1200" height="900" fill="#FFFFFF"/>
+
+  <text class="title" x="60" y="52">NIC hotplug and unplug in OpenShift Virtualization</text>
+  <text class="sub" x="60" y="76">In-place path for a bridge-bound virtio secondary interface, enabled by Multus thick plugin + multus-dynamic-networks-controller</text>
+
+  <!-- ===== Left column: hotplug ===== -->
+  <text class="panel-h" x="60" y="104">Hotplug</text>
+
+  <g class="us">
+    <rect x="90" y="116" width="460" height="56" rx="8" stroke-width="1"/>
+    <text class="h" x="320" y="138" text-anchor="middle">1. You edit the VirtualMachine spec</text>
+    <text class="s" x="320" y="158" text-anchor="middle">Add interface (bridge: {}) + multus network (NAD name)</text>
+  </g>
+  <line class="arr" x1="320" y1="174" x2="320" y2="226" marker-end="url(#arrow)"/>
+
+  <rect x="70" y="192" width="500" height="178" rx="12" fill="none" stroke="#B4B2A9" stroke-width="1" stroke-dasharray="6 4"/>
+  <text class="zone" x="86" y="212">Control plane</text>
+
+  <g class="kv">
+    <rect x="90" y="228" width="460" height="56" rx="8" stroke-width="1"/>
+    <text class="h" x="320" y="250" text-anchor="middle">2. virt-controller syncs VM to VMI</text>
+    <text class="s" x="320" y="270" text-anchor="middle">New interface and network copied into the VMI spec</text>
+  </g>
+  <line class="arr" x1="320" y1="286" x2="320" y2="298" marker-end="url(#arrow)"/>
+  <g class="kv">
+    <rect x="90" y="300" width="460" height="56" rx="8" stroke-width="1"/>
+    <text class="h" x="320" y="322" text-anchor="middle">3. virt-controller patches the virt-launcher pod</text>
+    <text class="s" x="320" y="342" text-anchor="middle">Appends an entry to k8s.v1.cni.cncf.io/networks</text>
+  </g>
+  <line class="arr" x1="320" y1="358" x2="320" y2="438" marker-end="url(#arrow)"/>
+
+  <rect x="70" y="396" width="500" height="330" rx="12" fill="none" stroke="#B4B2A9" stroke-width="1" stroke-dasharray="6 4"/>
+  <text class="zone" x="86" y="416">Worker node running the VM</text>
+
+  <g class="mu">
+    <rect x="90" y="440" width="460" height="56" rx="8" stroke-width="1"/>
+    <text class="h" x="320" y="462" text-anchor="middle">4. multus-dynamic-networks-controller</text>
+    <text class="s" x="320" y="482" text-anchor="middle">Sees annotation diff vs network-status, calls Multus socket</text>
+  </g>
+  <line class="arr" x1="320" y1="498" x2="320" y2="510" marker-end="url(#arrow)"/>
+  <g class="mu">
+    <rect x="90" y="512" width="460" height="56" rx="8" stroke-width="1"/>
+    <text class="h" x="320" y="534" text-anchor="middle">5. Multus thick daemon</text>
+    <text class="s" x="320" y="554" text-anchor="middle">Runs delegate CNI ADD in pod netns, updates network-status</text>
+  </g>
+  <line class="arr" x1="320" y1="570" x2="320" y2="582" marker-end="url(#arrow)"/>
+  <g class="kv">
+    <rect x="90" y="584" width="460" height="56" rx="8" stroke-width="1"/>
+    <text class="h" x="320" y="606" text-anchor="middle">6. virt-handler</text>
+    <text class="s" x="320" y="626" text-anchor="middle">Builds the in-pod bridge + tap for the new interface</text>
+  </g>
+  <line class="arr" x1="320" y1="642" x2="320" y2="654" marker-end="url(#arrow)"/>
+  <g class="kv">
+    <rect x="90" y="656" width="460" height="56" rx="8" stroke-width="1"/>
+    <text class="h" x="320" y="678" text-anchor="middle">7. virt-launcher, libvirt, QEMU</text>
+    <text class="s" x="320" y="698" text-anchor="middle">Attaches virtio-net to a free PCIe root port</text>
+  </g>
+  <line class="arr" x1="320" y1="714" x2="320" y2="748" marker-end="url(#arrow)"/>
+
+  <g class="us">
+    <rect x="90" y="750" width="460" height="56" rx="8" stroke-width="1"/>
+    <text class="h" x="320" y="772" text-anchor="middle">8. Guest OS sees the new NIC</text>
+    <text class="s" x="320" y="792" text-anchor="middle">Reported in VMI status.interfaces</text>
+  </g>
+
+  <!-- ===== Right column ===== -->
+  <!-- Unplug panel -->
+  <rect x="640" y="92" width="500" height="306" rx="12" fill="#FAFAF7" stroke="#D3D1C7" stroke-width="1"/>
+  <text class="panel-h" x="662" y="120">Hot unplug (bridge binding only)</text>
+
+  <g class="us">
+    <rect x="670" y="136" width="440" height="46" rx="8" stroke-width="1"/>
+    <text class="h" x="890" y="164" text-anchor="middle">Set state: absent in the VM spec</text>
+  </g>
+  <line class="arr" x1="890" y1="184" x2="890" y2="194" marker-end="url(#arrow)"/>
+  <g class="kv">
+    <rect x="670" y="196" width="440" height="46" rx="8" stroke-width="1"/>
+    <text class="h" x="890" y="224" text-anchor="middle">virt-controller marks the VMI interface absent</text>
+  </g>
+  <line class="arr" x1="890" y1="244" x2="890" y2="254" marker-end="url(#arrow)"/>
+  <g class="kv">
+    <rect x="670" y="256" width="440" height="46" rx="8" stroke-width="1"/>
+    <text class="h" x="890" y="284" text-anchor="middle">virt-handler + libvirt detach from guest</text>
+  </g>
+  <line class="arr" x1="890" y1="304" x2="890" y2="314" marker-end="url(#arrow)"/>
+  <g class="mu">
+    <rect x="670" y="316" width="440" height="46" rx="8" stroke-width="1"/>
+    <text class="h" x="890" y="344" text-anchor="middle">Pod interface removed (CNI DEL)</text>
+  </g>
+  <text class="body" x="670" y="384">Pod-side cleanup may wait for the next migration on some versions.</text>
+
+  <!-- Migration path panel -->
+  <rect x="640" y="414" width="500" height="160" rx="12" fill="#FAEEDA" stroke="#BA7517" stroke-width="1"/>
+  <text class="panel-h" x="662" y="442" fill="#633806">Migration-based path</text>
+  <text class="body" x="662" y="466" fill="#633806">Used for SR-IOV NICs, or clusters without the dynamic controller.</text>
+  <text class="body" x="662" y="490" fill="#633806">1. VM spec edited, VMI spec updated (not yet in the guest)</text>
+  <text class="body" x="662" y="512" fill="#633806">2. KubeVirt live migrates the VM (automatic with LiveUpdate)</text>
+  <text class="body" x="662" y="534" fill="#633806">3. Target virt-launcher pod starts with the new interface</text>
+  <text class="body" x="662" y="558" fill="#633806">SR-IOV always migrates: device plugins can't add VFs live.</text>
+
+  <!-- Requirements panel -->
+  <rect x="640" y="590" width="500" height="216" rx="12" fill="#FAFAF7" stroke="#D3D1C7" stroke-width="1"/>
+  <text class="panel-h" x="662" y="618">Requirements</text>
+  <text class="body" x="662" y="644">• Multus running in thick plugin mode</text>
+  <text class="body" x="662" y="664">• multus-dynamic-networks-controller running on the nodes</text>
+  <text class="body" x="662" y="684">• vmRolloutStrategy: LiveUpdate on the KubeVirt CR</text>
+  <text class="body" x="662" y="704">• virtio model + bridge binding for in-place plug and unplug</text>
+  <text class="body" x="662" y="724">• SR-IOV: hotplug via migration only, no hot unplug</text>
+  <text class="body" x="662" y="744">• NetworkAttachmentDefinition exists in the VM namespace first</text>
+  <text class="body" x="662" y="764">• Free PCIe slots: up to 4 reserved for hotplugged NICs</text>
+  <text class="body" x="662" y="784">• Unplug with state: absent, never by deleting the entry</text>
+
+  <!-- Legend -->
+  <rect x="90" y="846" width="14" height="14" rx="3" fill="#F1EFE8" stroke="#5F5E5A"/>
+  <text class="body" x="112" y="858">You / guest OS</text>
+  <rect x="240" y="846" width="14" height="14" rx="3" fill="#EEEDFE" stroke="#534AB7"/>
+  <text class="body" x="262" y="858">KubeVirt (OpenShift Virtualization)</text>
+  <rect x="500" y="846" width="14" height="14" rx="3" fill="#E1F5EE" stroke="#0F6E56"/>
+  <text class="body" x="522" y="858">Multus</text>
+  <rect x="610" y="846" width="14" height="14" rx="3" fill="#FAEEDA" stroke="#BA7517"/>
+  <text class="body" x="632" y="858">Migration required</text>
+</svg>
