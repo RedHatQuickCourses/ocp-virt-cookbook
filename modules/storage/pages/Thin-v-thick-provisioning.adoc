@@ -1,0 +1,89 @@
+= Thin vs. Thick Provisioning
+:navtitle: Thin vs. Thick Provisioning
+
+== Overview
+This tutorial explains the differences between thin and thick provisioning, their advantages and disadvantages, and when to use each method.
+
+== Prerequisites
+
+* OpenShift v4.18 or later
+* OpenShift CLI installed
+* OpenShift Virtualization operator
+* cluster admin access
+
+== Thin Provisioning
+
+Thin provisioning is a storage allocation method where the storage space is not immediately allocated when a volume is created. Instead, space is allocated only when data is written to the volume. This allows for more efficient use of storage resources, as the full capacity of the volume is not consumed until it is actually needed.
+
+=== Configuring Thin Provisioning
+
+This is configured in the storage class by setting the `thinProvisioned` parameter to `true`. For example:
+
+[source, yaml]
+
+----
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: thin-storage-class
+provisioner: kubernetes.io/no-provisioner
+parameters:     
+  thinProvisioned: "true"
+----
+
+NOTE: LVM storage uses thin provisioning by default.
+
+=== Overprovisioning Ratio
+
+The overprovisioning ratio is the ratio of the total allocated storage to the actual physical storage available. For example, if you have 100 GB of physical storage and you allocate 200 GB of thin-provisioned volumes, the overprovisioning ratio is 2:1. This means that you are allocating twice as much storage as is physically available.
+
+=== Advantages of Thin Provisioning
+
+* Efficient use of storage: Thin provisioning allows for better utilization of storage resources, as space is allocated only when needed.
+* Cost savings: By allocating storage on demand, organizations can reduce the amount of physical storage required, leading to cost savings.
+* Flexibility: Thin provisioning allows for easier management of storage resources.
+
+=== What to watch out for with thin provisioning
+
+* Over-provisioning: Since thin provisioning allows for more storage to be allocated than is physically available, it can lead to over-provisioning. This means that if all volumes are used to their maximum capacity, the physical storage may run out, leading to potential data loss or application failures.
+** When there is over-provisioning, you will see I/O errors and the VM will be unable to write to the disk. This can lead to application failures and data loss.
+* Performance: Thin provisioning can introduce performance overhead, as the storage system needs to manage the allocation of space dynamically. This can lead to slower write speeds compared to thick provisioning, especially under heavy load.
+* Monitoring: It is important to monitor the actual usage of thin-provisioned volumes to ensure that the physical storage does not run out. This can be done using monitoring tools that track storage usage and alert administrators when thresholds are reached.
+
+== Thick Provisioning
+
+Thick provisioning allocates the entire storage space for a volume at the time of its creation. This means that the full capacity of the volume is reserved and cannot be used by other volumes, even if it is not fully utilized. Thick provisioning can lead to wasted storage space if the allocated capacity is not fully used.
+
+=== Advantages of Thick Provisioning
+
+* Predictable performance: Since the entire storage space is allocated upfront, thick provisioning can provide more predictable performance, as there is no overhead associated with dynamic allocation.
+* Avoids over-provisioning: Thick provisioning ensures that the allocated storage space is always available, reducing the risk of running out of physical storage and potential data loss or application failures.
+* Simplicity: Thick provisioning can be simpler to manage, as there is no need to monitor and manage the allocation of storage space dynamically.
+
+=== What to watch out for with thick provisioning
+
+* Wasted storage space: Thick provisioning can lead to wasted storage space if the allocated capacity is not fully utilized. This can result in higher costs for physical storage.
+
+== When should I use thin or thick provisioning?
+
+Use thin provisioning:
+
+* Non-critical workloads: Thin provisioning is suitable for workloads that do not require high performance or guaranteed storage capacity, such as development and testing environments.
+* Cost-sensitive environments: If you are looking to optimize storage costs and can tolerate the risks associated with thin provisioning, it may be a good choice.
+
+Use thick provisioning:
+
+* High I/O workloads: Thick provisioning can provide better performance for workloads that require high I/O throughput, as there is no overhead associated with dynamic allocation.
+* Predictable performance: If you need consistent and predictable performance, thick provisioning may be more suitable, as it avoids the potential performance variability associated with thin provisioning.
+* Critical workloads: Thick provisioning is often preferred for mission-critical applications where performance and reliability are paramount.
+
+== Summary
+
+* Thin provisioning allows for more efficient use of storage resources by allocating space only when needed.
+* Thin provisioning is useful for non-critical workloads and cost-sensitive environments.
+* Thick provisioning allocates the entire storage space upfront, providing predictable performance.
+* Thick provisioning is suitable for high I/O workloads and critical applications where performance and reliability are essential.
+
+== See Also
+
+* link:https://docs.redhat.com/en/documentation/red_hat_virtualization/4.4/html/technical_reference/over-commitment[Thin Provisioning and Storage Over-Commitment, window=_blank].
