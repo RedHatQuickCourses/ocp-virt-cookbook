@@ -1,0 +1,645 @@
+= Using NFS Storage for Virtual Machine Workloads
+:navtitle: NFS Storage for VMs
+
+== Overview
+
+This tutorial uses the upstream NFS Container Storage Interface (CSI) driver to provision VM disks. Step 1 creates a disposable NFS server VM inside the cluster, so you can try the full workflow without an external storage system. If you already have an NFS server, you can use its export instead.
+
+The example uses a `ReadWriteMany` (RWX) `Filesystem` PVC. RWX lets the same disk remain accessible from the source and destination nodes during live migration. NFS provides a filesystem volume, so it does not offer the raw `Block` mode that OpenShift recommends for VM performance when a backend supports it. NFS also adds network latency; measure your workload before you use it for latency-sensitive or high-IOPS disks.
+
+The upstream CSI chart runs privileged containers with host mounts and host networking. This tutorial grants the privileged Security Context Constraint (SCC) only to the chart's two service accounts in a dedicated namespace. Review the chart, your cluster policies, and your support requirements before installing it. The `nfs.csi.k8s.io` driver is not listed in the OpenShift Container Platform {ocp-docs-version} table of supported CSI drivers; check the Red Hat Ecosystem Catalog and your NFS vendor's support policy for production use.
+
+The lab NFS server is intentionally temporary. It uses an ephemeral export disk, maps all NFS client identities to UID/GID `107` (the QEMU runtime ID), and makes the demo export world-writable. Use it only in a disposable, single-user cluster. For a shared or production cluster, use an existing NFS service with permissions and support appropriate for your environment.
+
+== Prerequisites
+
+* **OpenShift {ocp-min-version}+** with OpenShift Virtualization installed
+* **Cluster administrator access** to create a cluster-scoped CSI driver and grant SCC permissions
+* **Helm 3** and the `oc` and `virtctl` CLIs installed
+* Network connectivity from worker nodes to the NFS server on TCP port 2049
+* The cluster has a ready `fedora` DataSource in `openshift-virtualization-os-images`, backed by a bootable PVC of at least **30Gi**, and its default StorageClass can provide a 30Gi `Block` PVC for the lab server root disk
+* The lab server VM can reach Fedora package repositories to install `nfs-utils`, and a worker has at least **40Gi** of available ephemeral storage for the export disk
+* For an existing NFS server, at least **40Gi** of capacity in the dedicated export
+* Two schedulable worker nodes if you want to run the optional live migration check
+
+The lab server uses the VM's default pod network and a cluster-internal Service. If your cluster has network policies that restrict this traffic, allow NFS from the CSI controller and worker nodes to the server VM. If the cluster is disconnected, prepare an NFS server image with `nfs-utils` already installed or use an existing NFSv4.1 export.
+
+== Provisioning Path
+
+[source,text]
+----
+Temporary Fedora NFS server VM
+        |
+        v
+StorageClass nfs-vm-demo
+        |
+        v
+NFS CSI controller creates a directory under the export
+        |
+        v
+RWX Filesystem PVC mounts on a worker node
+        |
+        v
+virt-launcher reads and writes the VM disk image
+----
+
+The upstream NFS CSI driver supports NFSv3 and NFSv4 servers and dynamically provisions PVCs by creating subdirectories. This tutorial selects NFSv4.1. The lab server is reachable only through a `ClusterIP` Service; an existing server must be reachable from every worker node.
+
+== Procedure
+
+=== Step 1: Deploy a Temporary NFS Server VM
+
+The lab server runs in its own namespace. It clones the cluster's Fedora DataSource to a 30Gi boot disk on the default StorageClass, uses a 40Gi empty disk for the export, installs the NFS server packages with cloud-init, and exposes TCP port 2049 through a cluster-internal Service. Stopping or restarting the VM discards the export data.
+
+xref:attachment$nfs-storage/nfs-lab-server.yaml[Download nfs-lab-server.yaml]
+
+
+You can also apply the YAML directly from your terminal.
+
+Create the lab server namespace:
+
+[source,bash,role=execute]
+----
+cat <<'EOF' | oc apply -f -
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: nfs-lab-server
+EOF
+----
+
+Create the NFS server VM:
+
+[source,bash,role=execute]
+----
+cat <<'EOF' | oc apply -f -
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: nfs-lab-server
+  namespace: nfs-lab-server
+spec:
+  runStrategy: Always
+  dataVolumeTemplates:
+    - apiVersion: cdi.kubevirt.io/v1beta1
+      kind: DataVolume
+      metadata:
+        name: nfs-lab-server-rootdisk-fedora
+      spec:
+        sourceRef:
+          kind: DataSource
+          name: fedora
+          namespace: openshift-virtualization-os-images
+        storage:
+          accessModes:
+            - ReadWriteOnce
+          volumeMode: Block
+          resources:
+            requests:
+              storage: 30Gi
+  template:
+    metadata:
+      labels:
+        app: nfs-lab-server
+    spec:
+      domain:
+        cpu:
+          cores: 1
+        memory:
+          guest: 1Gi
+        devices:
+          disks:
+            - name: rootdisk
+              disk:
+                bus: virtio
+            - name: nfsdata
+              disk:
+                bus: virtio
+            - name: cloudinitdisk
+              disk:
+                bus: virtio
+          interfaces:
+            - name: default
+              masquerade: {}
+              ports:
+                - port: 2049
+      networks:
+        - name: default
+          pod: {}
+      volumes:
+        - name: rootdisk
+          dataVolume:
+            name: nfs-lab-server-rootdisk-fedora
+        - name: nfsdata
+          emptyDisk:
+            capacity: 40Gi
+        - name: cloudinitdisk
+          cloudInitNoCloud:
+            userData: |
+              #cloud-config
+              user: fedora
+              password: fedora
+              chpasswd:
+                expire: false
+              package_update: true
+              packages:
+                - firewalld
+                - nfs-utils
+                - xfsprogs
+              write_files:
+                - path: /usr/local/sbin/configure-lab-nfs
+                  owner: root:root
+                  permissions: '0755'
+                  content: |
+                    #!/bin/bash
+                    set -euo pipefail
+
+                    mkfs.xfs -f /dev/vdb
+                    mkdir -p /exports
+                    export_uuid=$(blkid -s UUID -o value /dev/vdb)
+                    echo "UUID=${export_uuid} /exports xfs defaults 0 0" >> /etc/fstab
+                    mount /exports
+
+                    mkdir -p /exports/openshift-vm-demo
+                    chown 107:107 /exports/openshift-vm-demo
+                    chmod 0777 /exports/openshift-vm-demo
+                    cat > /etc/exports <<'EOF'
+                    /exports/openshift-vm-demo *(rw,sync,root_squash,all_squash,anonuid=107,anongid=107,fsid=0,no_subtree_check)
+                    EOF
+
+                    systemctl enable --now firewalld
+                    firewall-cmd --permanent --add-port=2049/tcp
+                    firewall-cmd --reload
+                    # Create /var/lib/nfs/etab before nfs-mountd starts.
+                    exportfs -rav
+                    systemctl enable --now nfs-server
+                    systemctl is-active --quiet nfs-server
+                    systemctl is-active --quiet nfs-mountd
+              runcmd:
+                - /usr/local/sbin/configure-lab-nfs
+EOF
+----
+
+Expose the VM through a cluster-internal Service:
+
+[source,bash,role=execute]
+----
+cat <<'EOF' | oc apply -f -
+apiVersion: v1
+kind: Service
+metadata:
+  name: nfs-lab-server
+  namespace: nfs-lab-server
+spec:
+  type: ClusterIP
+  selector:
+    app: nfs-lab-server
+  ports:
+    - name: nfs
+      port: 2049
+      targetPort: 2049
+      protocol: TCP
+EOF
+----
+
+
+Wait for the VM instance and confirm the Service has an endpoint:
+
+[source,bash,role=execute]
+----
+oc wait vmi/nfs-lab-server -n nfs-lab-server --for=condition=Ready --timeout=10m
+oc get service,endpoints nfs-lab-server -n nfs-lab-server
+----
+
+VMI readiness confirms that the VM is running, but cloud-init can still be configuring the NFS server. Connect to the console and wait for cloud-init to finish:
+
+[source,bash,role=execute]
+----
+virtctl console nfs-lab-server -n nfs-lab-server
+----
+
+Log in with the lab account from the manifest, then verify both NFS services and the export:
+
+[source,bash]
+----
+sudo cloud-init status --wait
+sudo systemctl is-active nfs-server nfs-mountd
+sudo exportfs -v
+----
+
+Both services must report `active`, and `exportfs` must list `/exports/openshift-vm-demo`. Disconnect from the console with `Ctrl+]`.
+
+The VM exports `/` as the NFSv4.1 pseudoroot. Its backing directory is `/exports/openshift-vm-demo`. The export maps all client IDs to UID/GID `107`, which lets the VM launcher set up the disk image with the QEMU runtime ID, and uses mode `0777`. This provides no tenant isolation; do not put real data on this server.
+
+If you already have an NFSv4.1 server, skip this step and use a dedicated export that allows the CSI controller to create and remove directories and lets the VM launcher write disk images. Set `server` and `share` in Step 5 to that server's address and export path, then adjust `mountPermissions`, `uid`, and `gid` to match its identity-mapping policy.
+
+The NFS server VM provides the export, but the `nfs-vm-demo` StorageClass needs the `nfs.csi.k8s.io` driver to create a directory for each claim and mount it on worker nodes. Install the driver before creating the StorageClass. If `oc get csidriver nfs.csi.k8s.io` already returns a driver and its controller and node pods are ready, skip Steps 2 through 4 and continue at Step 5.
+
+=== Step 2: Prepare the CSI Driver Namespace and Permissions
+
+Create the dedicated namespace and the service accounts used by the upstream Helm chart:
+
+xref:attachment$nfs-storage/namespace-nfs-csi-system.yaml[Download namespace-nfs-csi-system.yaml]
+
+You can also apply the YAML directly from your terminal.
+
+Create the CSI namespace:
+
+[source,bash,role=execute]
+----
+cat <<'EOF' | oc apply -f -
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: nfs-csi-system
+EOF
+----
+
+Create the controller ServiceAccount:
+
+[source,bash,role=execute]
+----
+cat <<'EOF' | oc apply -f -
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: csi-nfs-controller-sa
+  namespace: nfs-csi-system
+EOF
+----
+
+Create the node plugin ServiceAccount:
+
+[source,bash,role=execute]
+----
+cat <<'EOF' | oc apply -f -
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: csi-nfs-node-sa
+  namespace: nfs-csi-system
+EOF
+----
+
+The upstream controller and node plugin require host-level privileges to mount NFS volumes. Grant the `privileged` SCC to only the two service accounts in the dedicated namespace:
+
+[source,bash,role=execute]
+----
+oc adm policy add-scc-to-user privileged -z csi-nfs-controller-sa -n nfs-csi-system
+oc adm policy add-scc-to-user privileged -z csi-nfs-node-sa -n nfs-csi-system
+----
+
+This permission is cluster-scoped in effect. Keep the service accounts dedicated to this driver, and follow your organization's process for approving privileged workloads.
+
+=== Step 3: Install the NFS CSI Driver
+
+This tutorial pins chart version `4.13.6` for a repeatable install. If you update the pin, check the chart's Kubernetes compatibility against the OpenShift release used by the tutorial.
+
+[source,bash,role=execute]
+----
+helm install csi-driver-nfs csi-driver-nfs \
+  --repo https://kubernetes-csi.github.io/csi-driver-nfs \
+  --namespace nfs-csi-system \
+  --version 4.13.6 \
+  --set serviceAccount.create=false
+----
+
+The `serviceAccount.create=false` setting tells Helm to use the service accounts you created before granting the SCC. The chart still creates its RBAC resources.
+
+=== Step 4: Verify the Driver
+
+Wait for the controller Deployment and node DaemonSet to become ready:
+
+[source,bash,role=execute]
+----
+oc rollout status deployment/csi-nfs-controller -n nfs-csi-system --timeout=5m
+oc rollout status daemonset/csi-nfs-node -n nfs-csi-system --timeout=5m
+----
+
+Confirm that the driver is registered and that node pods run on the Linux workers:
+
+[source,bash,role=execute]
+----
+oc get csidriver nfs.csi.k8s.io
+oc get pods -n nfs-csi-system -o wide
+----
+
+=== Step 5: Create an NFS StorageClass
+
+The manifest points to the lab server's internal Service and NFSv4.1 pseudoroot. `mountPermissions: "0777"` is only appropriate for this disposable lab server. The StorageClass uses `reclaimPolicy: Delete` and the driver's `onDelete: delete` parameter so the tutorial's throwaway PVC directory is removed when you delete the claim. For an existing server, replace `server` and `share` with its service address and export path, then change `mountPermissions`, `uid`, and `gid` to match its identity-mapping policy.
+
+xref:attachment$nfs-storage/storageclass-nfs-vm-demo.yaml[Download storageclass-nfs-vm-demo.yaml]
+
+
+You can also apply the YAML directly from your terminal.
+
+Create the StorageClass:
+
+[source,bash,role=execute]
+----
+cat <<'EOF' | oc apply -f -
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: nfs-vm-demo
+provisioner: nfs.csi.k8s.io
+parameters:
+  server: nfs-lab-server.nfs-lab-server.svc.cluster.local
+  share: /
+  onDelete: delete
+  mountPermissions: "0777"
+reclaimPolicy: Delete
+volumeBindingMode: Immediate
+mountOptions:
+  - nfsvers=4.1
+  - hard
+EOF
+----
+
+
+Verify the StorageClass:
+
+[source,bash,role=execute]
+----
+oc get storageclass nfs-vm-demo
+----
+
+Do not mark this StorageClass as the cluster default. Select it explicitly for the tutorial VM so other workloads do not consume the demonstration export accidentally.
+
+=== Step 6: Create the VM Demo Namespace
+
+Create a namespace for the VM and its disk:
+
+[source,bash,role=execute]
+----
+oc new-project nfs-vm-demo
+----
+
+=== Step 7: Create a VM with an NFS-Backed Disk
+
+The VM clones the ready `fedora` DataSource from `openshift-virtualization-os-images` into a 30Gi DataVolume on NFS. CDI copies the bootable PVC already in the cluster, so this disk does not require an image import from a registry. The NFS-backed DataVolume requests RWX access and Filesystem mode, so the boot disk persists on the NFS export and can be shared across nodes for migration. The target size must be at least as large as the source PVC.
+
+xref:attachment$nfs-storage/vm-nfs-storage.yaml[Download vm-nfs-storage.yaml]
+
+
+Confirm the boot source is ready and inspect its PVC size:
+
+[source,bash,role=execute]
+----
+oc get datasource fedora -n openshift-virtualization-os-images
+oc get pvc fedora -n openshift-virtualization-os-images
+----
+
+You can also apply the YAML directly from your terminal.
+
+Create the demo VM:
+
+[source,bash,role=execute]
+----
+cat <<'EOF' | oc apply -f -
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: nfs-vm-demo
+  namespace: nfs-vm-demo
+spec:
+  runStrategy: Always
+  dataVolumeTemplates:
+    - apiVersion: cdi.kubevirt.io/v1beta1
+      kind: DataVolume
+      metadata:
+        name: nfs-vm-demo-rootdisk-fedora
+      spec:
+        sourceRef:
+          kind: DataSource
+          name: fedora
+          namespace: openshift-virtualization-os-images
+        storage:
+          accessModes:
+            - ReadWriteMany
+          volumeMode: Filesystem
+          storageClassName: nfs-vm-demo
+          resources:
+            requests:
+              storage: 30Gi
+  template:
+    metadata:
+      labels:
+        kubevirt.io/domain: nfs-vm-demo
+    spec:
+      domain:
+        cpu:
+          cores: 1
+        memory:
+          guest: 2Gi
+        devices:
+          disks:
+            - name: rootdisk
+              disk:
+                bus: virtio
+            - name: cloudinitdisk
+              disk:
+                bus: virtio
+          interfaces:
+            - name: default
+              masquerade: {}
+      networks:
+        - name: default
+          pod: {}
+      volumes:
+        - name: rootdisk
+          dataVolume:
+            name: nfs-vm-demo-rootdisk-fedora
+        - name: cloudinitdisk
+          cloudInitNoCloud:
+            userData: |
+              #cloud-config
+              user: fedora
+              password: fedora
+              chpasswd:
+                expire: false
+              ssh_pwauth: true
+EOF
+----
+
+
+=== Step 8: Verify the PVC and VM
+
+Wait for CDI to create the VM disk:
+
+[source,bash,role=execute]
+----
+oc wait dv/nfs-vm-demo-rootdisk-fedora -n nfs-vm-demo --for=condition=Ready --timeout=10m
+----
+
+Check that the claim is bound and advertises RWX:
+
+[source,bash,role=execute]
+----
+oc get pvc nfs-vm-demo-rootdisk-fedora -n nfs-vm-demo
+----
+
+Wait for the VM instance to become ready:
+
+[source,bash,role=execute]
+----
+oc wait vmi/nfs-vm-demo -n nfs-vm-demo --for=condition=Ready --timeout=10m
+----
+
+=== Step 9: Write a Test File from the Guest
+
+The example cloud-init configuration sets a throwaway password for the demo's `fedora` account. Do not reuse it outside this tutorial. Open the VM's serial console:
+
+[source,bash,role=execute]
+----
+virtctl console nfs-vm-demo -n nfs-vm-demo
+----
+
+Log in as `fedora` with the password `fedora`. Write a small file to the guest filesystem and read it back:
+
+[source,bash]
+----
+echo 'NFS-backed VM disk is writable' | sudo tee /var/tmp/nfs-probe.txt
+cat /var/tmp/nfs-probe.txt
+----
+
+Disconnect from the console with `Ctrl+]`.
+
+=== Step 10: Check Live Migration Readiness
+
+Read the `LiveMigratable` condition:
+
+[source,bash,role=execute]
+----
+oc get vmi nfs-vm-demo -n nfs-vm-demo \
+  -o jsonpath='{.status.conditions[?(@.type=="LiveMigratable")].status}{"\n"}'
+----
+
+An RWX claim is one requirement for migration; the cluster also needs suitable nodes and the VM must meet the other migration requirements. If the condition is `True` and at least two worker nodes can run the VM, you can start a migration:
+
+[source,bash,role=execute]
+----
+virtctl migrate nfs-vm-demo -n nfs-vm-demo
+----
+
+Check the VM instance's node and the migration resource to confirm that the migration completes. See xref:live-migration-storage.adoc[Storage Requirements and Configuration for VM Live Migration] for the full storage and migration workflow.
+
+== NFS Permissions and Data Safety
+
+NFS access control uses numeric user IDs (UIDs) and group IDs (GIDs), not the user and group names shown inside the guest. The lab server maps all clients to UID/GID `107`, the QEMU runtime ID, and makes the export world-writable so the VM launcher can set up the disk image. Any client that can reach the Service can read and write the demo data, so this setup is only for an isolated lab.
+
+For an existing NFS server, align the export permissions with the numeric IDs used by the CSI controller and VM launcher. The NFS CSI driver's `uid` and `gid` StorageClass parameters request ownership changes on the NFS path; a root-squashed export can reject those changes. Do not add these parameters until you have confirmed that the server's mapping and export policy allow them. `mountPermissions: "0777"` makes a directory writable by every client that can reach the mount. Use a vendor CSI driver or separate exports when you need tenant isolation.
+
+An RWX access mode allows multiple nodes to mount a volume. It does not make concurrent guest writers safe. Attach a writable VM disk to one VM at a time; live migration temporarily uses the same disk for that VM on source and destination nodes as part of the handoff. Do not share a writable VM disk between independent VMs.
+
+== Performance and Use Cases
+
+The VM disk image is a file on a network filesystem. Guest I/O therefore depends on NFS server load, network latency, client mount behavior, and export configuration. Use NFS for workloads whose measured latency and throughput fit the service target, such as shared golden-image or ISO libraries and general-purpose VMs. Consider lower-latency block storage for databases and other high-IOPS workloads unless benchmarks show that your NFS system meets their requirements.
+
+Benchmark in a dedicated test window and coordinate with the storage team. A guest-side `fio` test can generate sustained load against the shared export and affect other clients. For disk settings and benchmark cautions, see xref:disk-io-tuning.adoc[VM Disk I/O Performance Tuning].
+
+== Troubleshooting
+
+[cols="2,3,3",options="header"]
+|===
+|Symptom |Check |Action
+
+|Controller or node pods report an SCC or `forbidden` error
+|Inspect pod events with `oc describe pod` in `nfs-csi-system`.
+|Confirm that the two driver service accounts have the `privileged` SCC and that the Helm release uses those service accounts.
+
+|PVC remains `Pending` or provisioning fails
+|Run `oc describe pvc nfs-vm-demo-rootdisk-fedora -n nfs-vm-demo` and check the CSI controller logs.
+|Verify that `provisioner` is `nfs.csi.k8s.io`, the export path exists, and the controller can reach the server and create a subdirectory.
+
+|DataVolume reports `ClonePending`, `CloneInProgress`, or `CloneFailed`
+|Inspect the DataVolume conditions and events, and check both the source and target PVCs.
+|Confirm the `fedora` DataSource is ready, its source PVC exists, and the NFS-backed target requests at least as much storage as the source PVC.
+
+|Volume mount times out
+|Check NFS server reachability from every worker node, inspect the VM launcher's events, and verify `nfs-mountd` is active inside the lab VM.
+|Allow NFSv4.1 traffic on TCP port 2049. For the lab VM, run `exportfs -rav` before starting `nfs-server` so `/var/lib/nfs/etab` exists when `nfs-mountd` starts. To recover a running lab VM, run `exportfs -rav` and restart `nfs-mountd`. If you use NFSv3, also allow its required RPC services and ports.
+
+|Guest receives `Permission denied`
+|Compare the export directory's numeric owner and group with the VM launcher's runtime IDs; inspect the server's root-squash mapping.
+|For the lab export, confirm that the directory is owned by UID/GID `107` and that the export maps clients to that ID. For an existing export, use permissions and groups approved for the intended workload. The lab server is world-writable and must not hold real data.
+
+|`LiveMigratable` is `False`
+|Inspect the VMI conditions and confirm that every writable disk uses a migratable volume.
+|Confirm RWX access, two suitable nodes, and the other live-migration requirements. See xref:live-migration-storage.adoc[Storage Requirements and Configuration for VM Live Migration].
+|===
+
+To inspect the controller and node plugin logs, use the following commands:
+
+[source,bash,role=execute]
+----
+oc logs deployment/csi-nfs-controller -n nfs-csi-system -c nfs
+oc get pods -n nfs-csi-system -l app=csi-nfs-node
+----
+
+Use a node pod name from the output to inspect its driver log:
+
+[source,bash,role=execute]
+----
+oc logs <csi-nfs-node-pod> -n nfs-csi-system -c nfs --tail=100
+----
+
+== Cleanup
+
+Delete the VM demo namespace while the NFS server is still running. Wait for the CSI provisioner to remove the test volume from the export before deleting the server:
+
+[source,bash,role=execute]
+----
+pv=$(oc get pvc nfs-vm-demo-rootdisk-fedora -n nfs-vm-demo -o jsonpath='{.spec.volumeName}')
+oc delete namespace nfs-vm-demo
+oc wait --for=delete "pv/${pv}" --timeout=10m
+----
+
+Delete the StorageClass if you created it only for this tutorial:
+
+[source,bash,role=execute]
+----
+oc delete storageclass nfs-vm-demo
+----
+
+If you deployed the lab NFS server, delete its namespace after the demo PVC and PV are gone:
+
+[source,bash,role=execute]
+----
+oc delete namespace nfs-lab-server
+----
+
+Keep the CSI driver installed if any other PVCs use it. If this driver and its namespace were created only for this tutorial, first confirm that no other workloads depend on the driver, then remove the Helm release and its SCC grants:
+
+[source,bash,role=execute]
+----
+helm uninstall csi-driver-nfs -n nfs-csi-system
+oc adm policy remove-scc-from-user privileged -z csi-nfs-controller-sa -n nfs-csi-system
+oc adm policy remove-scc-from-user privileged -z csi-nfs-node-sa -n nfs-csi-system
+oc delete namespace nfs-csi-system
+----
+
+== Summary
+
+You learned how to:
+
+* Install the upstream NFS CSI driver on OpenShift and grant its service accounts the required SCC
+* Deploy a disposable NFS server VM and expose it through a cluster-internal Service
+* Create an NFS-backed StorageClass with RWX access and filesystem volume mode
+* Attach an NFS-backed disk to a VM and verify guest writes
+* Check whether the VM is ready for live migration
+* Plan NFS export permissions, UID/GID mapping, and data retention
+* Troubleshoot provisioning, mount, permission, and migration issues
+
+== See Also
+
+* xref:choosing-storage-class.adoc[Choosing the Right Storage Class for VM Disks]
+* xref:live-migration-storage.adoc[Storage Requirements and Configuration for VM Live Migration]
+* xref:odf-ceph-storage.adoc[OpenShift Data Foundation with Ceph Storage]
+* link:https://github.com/kubernetes-csi/csi-driver-nfs[Upstream NFS CSI Driver,window=_blank]
+* link:https://github.com/kubernetes-csi/csi-driver-nfs/blob/master/charts/README.md[Upstream NFS CSI Helm instructions,window=_blank]
+* link:https://github.com/kubernetes-csi/csi-driver-nfs/blob/master/docs/driver-parameters.md[NFS CSI driver parameters and permissions,window=_blank]
+* link:https://docs.redhat.com/en/documentation/openshift_container_platform/{ocp-docs-version}/html/storage/configuring-persistent-storage[OpenShift persistent storage configuration,window=_blank]
+* link:https://docs.redhat.com/en/documentation/openshift_container_platform/{ocp-docs-version}/html/storage/using-container-storage-interface-csi[CSI drivers supported by OpenShift Container Platform,window=_blank]
+* link:https://docs.redhat.com/en/documentation/openshift_container_platform/{ocp-docs-version}/html/virtualization/managing-vms[OpenShift Virtualization VM storage,window=_blank]
+* link:https://docs.redhat.com/en/documentation/openshift_container_platform/{ocp-docs-version}/html/virtualization/networking[OpenShift Virtualization VM networking and Services,window=_blank]
