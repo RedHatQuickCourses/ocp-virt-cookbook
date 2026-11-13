@@ -4,10 +4,10 @@ metadata:
   name: nfs-vm-demo
 provisioner: nfs.csi.k8s.io
 parameters:
-  server: nfs.example.com
-  share: /exports/openshift-vm-demo
+  server: nfs-lab-server.nfs-lab-server.svc.cluster.local
+  share: /
   onDelete: delete
-  mountPermissions: "0770"
+  mountPermissions: "0777"
 reclaimPolicy: Delete
 volumeBindingMode: Immediate
 mountOptions:
