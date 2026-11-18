@@ -17,7 +17,7 @@ The lab NFS server is intentionally temporary. It uses an ephemeral export disk,
 * **Cluster administrator access** to create a cluster-scoped CSI driver and grant SCC permissions
 * **Helm 3** and the `oc` and `virtctl` CLIs installed
 * Network connectivity from worker nodes to the NFS server on TCP port 2049
-* The cluster has a ready `fedora` DataSource in `openshift-virtualization-os-images`, backed by a bootable PVC of at least **30Gi**, and its default StorageClass can provide a 30Gi `Block` PVC for the lab server root disk
+* The cluster has a ready `fedora` DataSource in `openshift-virtualization-os-images`, backed by a bootable PVC. Both example DataVolumes request **30Gi**, so each target must be at least as large as the source PVC. If the source PVC is larger than 30Gi, increase both target sizes and the lab export capacity. The default StorageClass must be able to provide the lab server's requested `Block` PVC.
 * The lab server VM can reach Fedora package repositories to install `nfs-utils`, and a worker has at least **40Gi** of available ephemeral storage for the export disk
 * For an existing NFS server, at least **40Gi** of capacity in the dedicated export
 * Two schedulable worker nodes if you want to run the optional live migration check
