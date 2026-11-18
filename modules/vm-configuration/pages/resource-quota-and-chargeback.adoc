@@ -1,0 +1,71 @@
+= Implementing Resource Quotas and Chargeback for VM Workloads
+
+== Overview
+
+This guide provides instructions for implementing resource quotas and chargeback for virtual machine (VM) workloads in an OpenShift cluster.
+
+== Prerequisites
+
+* admin access to the OpenShift cluster
+* oc command line tool installed and configured
+* OpenShift v 4.18 or later
+
+== Configuring Resource Quotas
+
+To set quotas, you defina a ResourceQuota object. The ResourceQuota object specifies the maximum amount of compute resources that can be consumed by all pods in the namespace. Quotas can be set for many different resources, including CPU, memory, and persistent volume claims. Below is an example of a ResourceQuota configuration that sets a limit of 1 CPU core, 1Gi of memory, and 2 persistent volume claims for all pods in the namespace.
+
+[source, yaml]
+----
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: example-quota
+spec:
+  hard:
+    requests.cpu: "1"
+    requests.memory: 1Gi
+    persistentvolumeclaims: "2"
+----   
+
+== LimitRanges
+
+LimitRanges are used to set default resource requests and limits for pods in a namespace. This ensures that all pods have a minimum and maximum amount of resources allocated to them, which helps prevent resource contention and ensures fair usage among different workloads.
+
+[source, yaml]
+----
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: example-limitrange
+spec:
+  limits:
+  - type: VirtualMachine
+    default:    
+      cpu: "1"
+      memory: 512Mi
+      storage: 1Gi
+    defaultRequest:
+      cpu: "1"
+      memory: 256Mi
+      storage: 512Mi
+    max:
+      cpu: "2"
+      memory: 1Gi
+      storage: 2Gi
+    min:
+      cpu: "1"
+      memory: 128Mi
+      storage: 128Mi
+----
+
+== Setting up cost management
+
+== How to build a simple usage report
+
+== Pricing models
+
+=== Per VM
+
+=== Per resource unit
+
+=== Tiered
