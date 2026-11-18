@@ -1,0 +1,124 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: nfs-lab-server
+---
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: nfs-lab-server
+  namespace: nfs-lab-server
+spec:
+  runStrategy: Always
+  dataVolumeTemplates:
+    - apiVersion: cdi.kubevirt.io/v1beta1
+      kind: DataVolume
+      metadata:
+        name: nfs-lab-server-rootdisk-fedora
+      spec:
+        sourceRef:
+          kind: DataSource
+          name: fedora
+          namespace: openshift-virtualization-os-images
+        storage:
+          accessModes:
+            - ReadWriteOnce
+          volumeMode: Block
+          resources:
+            requests:
+              storage: 30Gi
+  template:
+    metadata:
+      labels:
+        app: nfs-lab-server
+    spec:
+      domain:
+        cpu:
+          cores: 1
+        memory:
+          guest: 1Gi
+        devices:
+          disks:
+            - name: rootdisk
+              disk:
+                bus: virtio
+            - name: nfsdata
+              disk:
+                bus: virtio
+            - name: cloudinitdisk
+              disk:
+                bus: virtio
+          interfaces:
+            - name: default
+              masquerade: {}
+              ports:
+                - port: 2049
+      networks:
+        - name: default
+          pod: {}
+      volumes:
+        - name: rootdisk
+          dataVolume:
+            name: nfs-lab-server-rootdisk-fedora
+        - name: nfsdata
+          emptyDisk:
+            capacity: 40Gi
+        - name: cloudinitdisk
+          cloudInitNoCloud:
+            userData: |
+              #cloud-config
+              user: fedora
+              password: fedora
+              chpasswd:
+                expire: false
+              package_update: true
+              packages:
+                - firewalld
+                - nfs-utils
+                - xfsprogs
+              write_files:
+                - path: /usr/local/sbin/configure-lab-nfs
+                  owner: root:root
+                  permissions: '0755'
+                  content: |
+                    #!/bin/bash
+                    set -euo pipefail
+
+                    mkfs.xfs -f /dev/vdb
+                    mkdir -p /exports
+                    export_uuid=$(blkid -s UUID -o value /dev/vdb)
+                    echo "UUID=${export_uuid} /exports xfs defaults 0 0" >> /etc/fstab
+                    mount /exports
+
+                    mkdir -p /exports/openshift-vm-demo
+                    chown 107:107 /exports/openshift-vm-demo
+                    chmod 0777 /exports/openshift-vm-demo
+                    cat > /etc/exports <<'EOF'
+                    /exports/openshift-vm-demo *(rw,sync,root_squash,all_squash,anonuid=107,anongid=107,fsid=0,no_subtree_check)
+                    EOF
+
+                    systemctl enable --now firewalld
+                    firewall-cmd --permanent --add-port=2049/tcp
+                    firewall-cmd --reload
+                    # Create /var/lib/nfs/etab before nfs-mountd starts.
+                    exportfs -rav
+                    systemctl enable --now nfs-server
+                    systemctl is-active --quiet nfs-server
+                    systemctl is-active --quiet nfs-mountd
+              runcmd:
+                - /usr/local/sbin/configure-lab-nfs
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nfs-lab-server
+  namespace: nfs-lab-server
+spec:
+  type: ClusterIP
+  selector:
+    app: nfs-lab-server
+  ports:
+    - name: nfs
+      port: 2049
+      targetPort: 2049
+      protocol: TCP

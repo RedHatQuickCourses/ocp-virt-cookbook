@@ -1,0 +1,1265 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Using NFS Storage for Virtual Machine Workloads :: OpenShift Virtualization cookbook</title>
+    <link rel="prev" href="storage-profiles.html">
+    <link rel="next" href="live-migration-storage.html">
+    <meta name="generator" content="Antora 3.1.3">
+    <link rel="stylesheet" href="../../../_/css/site.css">
+    <script>var uiRootPath = '../../../_'</script>
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://www.redhat.com" target="_blank"><img src="../../../_/img/redhat-logo.png" height="40px" alt="Red Hat"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="../../..">OpenShift Virtualization cookbook</a>
+      <div class="navbar-item search hide-for-print">
+        <div id="search-field" class="field">
+          <input id="search-input" type="text" placeholder="Search the docs">
+        </div>
+      </div>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://github.com/RedHatQuickCourses/ocp-virt-cookbook/issues" target="_blank">Report Issues</a>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="ocp-virt-cookbook" data-version="1">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="../index.html">OpenShift Virtualization cookbook</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../index.html">Introduction</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../getting-started/index.html">Getting Started</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/vm-quick-start.html">Quick Start</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/prerequisites.html">Prerequisites</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/architecture-overview.html">Architecture Overview</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/hosted-control-planes.html">Hosted Control Planes</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/install-openshift-virtualization.html">Install OpenShift Virtualization</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/installing-qemu-guest-agent.html">Installing QEMU Guest Agent</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/default-storage-class.html">Storage Setup</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/create-vm-web-console.html">Create VM from Web Console</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/create-vm-cli-yaml.html">Create VM from CLI</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/vm-lifecycle-states.html">VM Lifecycle States</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/virtctl-basics.html">Virtctl Basics</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/cloud-init-fundamentals.html">Cloud-init Fundamentals</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../getting-started/cloud-init-deep-dive.html">Cloud-init Deep Dive</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="index.html">Storage Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="lvm-operator.html">LVM Operator Installation</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="lvm-troubleshooting.html">LVM Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="odf-ceph-storage.html">ODF/Ceph Storage</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="hostpath-provisioner.html">HostPath Provisioner</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="creating-managing-storage-class.html">Creating and Managing Storage Classes</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="choosing-storage-class.html">Choosing a Storage Class</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="multi-disk-configuration.html">Multi-Disk VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="expanding-vm-disk-size.html">Expanding VM Disk Size</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="cdi-operations.html">CDI Operations</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="disk-io-tuning.html">Disk I/O Tuning</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="storage-profiles.html">Storage Profiles</a>
+  </li>
+  <li class="nav-item is-current-page" data-depth="2">
+    <a class="nav-link" href="nfs-storage.html">NFS Storage for VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="live-migration-storage.html">Live Migration Storage</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../networking/index.html">Networking Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/static-ip-configuration.html">Static IP Configuration</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/cloud-init-troubleshooting.html">Cloud-init Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/udn-primary-networks.html">UDN Primary Networks</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/udn-deep-dive.html">UDN Deep Dive</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/localnet-secondary.html">Localnet Secondary Networks with CUDN</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/localnet-vlan.html">Localnet Secondary Networks with VLAN using NAD</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/cudn-localnet-vlan.html">Localnet VLAN with CUDN</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/layer2-secondary.html">Layer 2 Secondary Networks</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/linux-bridges.html">Linux Bridges</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/sriov-secondary.html">SR-IOV Secondary Networks</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/network-policies-vms.html">Network Policies for VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/metallb-loadbalancer.html">MetalLB Load Balancer for VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/dual-stack-vms.html">Dual-Stack IPv4/IPv6 VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/vm-ingress-routes.html">VM Ingress and Routes</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../networking/ovs-bridge-troubleshooting.html">Troubleshooting Localnet Networks</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../vm-configuration/index.html">Virtual Machine Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/internal-dns-for-vms.html">Internal DNS for VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/remote-access-linux-vms.html">Remote Access to Linux VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/remote-access-linux-troubleshooting.html">Remote Access to Linux VMs Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/remote-access-windows-vms.html">Remote Access to Windows VMs via RDP</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/ssh-access-windows-vms.html">Remote Access to Windows VMs via SSH</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/windows-vm-virtio-drivers.html">Windows VMs with VirtIO Drivers</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/legacy-windows-versions.html">Legacy Windows Versions</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/infrastructure-node-placement.html">Infrastructure Node Placement</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/node-placement-affinity.html">Node Placement and Affinity</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/hotplug-volumes-interfaces.html">Hotplug Volumes and Interfaces</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/vm-templates.html">Virtual Machine Templates</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/instancetype-preference.html">Instancetype and Preference</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/hyperconverged-configuration.html">HyperConverged Configuration</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/scheduling-tolerations-taints.html">Scheduling with Tolerations and Taints</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-configuration/vm-file-transfer.html">VM File Transfer</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../performance/index.html">VM Performance Tuning</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/resource-limits-qos.html">Resource Limits and QoS</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/cpu-pinning.html">Dedicated CPU Placement</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/numa-hugepages.html">NUMA and Hugepages</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/realtime-vms.html">Real-Time VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/vm-monitoring-metrics.html">VM Monitoring and Metrics</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/nested-virtualization.html">Nested Virtualization</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../performance/windows-vm-optimization.html">Windows VM Optimization</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../vm-lifecycle/index.html">VM Lifecycle Management</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/import-qcow2-boot-volume.html">Import qcow2 Boot Volume</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/custom-golden-images.html">Custom Golden Images</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/automated-golden-image-pipeline.html">Automated Golden Image Pipeline</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/windows-golden-images.html">Windows Golden Images</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/golden-images-troubleshooting.html">Golden Images Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/cloning-vms.html">Cloning VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/vm-snapshots.html">VM Snapshots</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/vm-export-import.html">VM Export and Import</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/boot-order-boot-sources.html">VM Boot Order and Boot Sources</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/live-migration.html">Live Migration</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../vm-lifecycle/migrate-from-vmware-mtv.html">Migrate from VMware (MTV)</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../manifests/index.html">Manifests</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../api/index.html">API Guide</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../api/api-component-overview.html">API Component Overview</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../agentic-vm-management/index.html">Agentic VM Management</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/getting-started.html">Getting Started with rh-virt</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/natural-language-vm-create.html">Natural Language VM Creation</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/ai-vm-lifecycle.html">AI VM Lifecycle Operations</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/vm-clone.html">Cloning VMs</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/ai-vm-snapshot-management.html">VM Snapshot Management</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/ai-skill-chaining.html">Day-2 Skill Chaining</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../agentic-vm-management/ai-vm-rebalance.html">VM Rebalancing and Live Migration</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../appendix/glossary.html">Glossary</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">OpenShift Virtualization cookbook</span>
+    <span class="version">1</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <a class="title" href="../index.html">OpenShift Virtualization cookbook</a>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">1</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">OpenShift Virtualization cookbook</a></li>
+    <li><a href="index.html">Storage Configuration</a></li>
+    <li><a href="nfs-storage.html">NFS Storage for VMs</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">Using NFS Storage for Virtual Machine Workloads</h1>
+<div class="sect1">
+<h2 id="_overview"><a class="anchor" href="#_overview"></a>Overview</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>This tutorial uses the upstream NFS Container Storage Interface (CSI) driver to provision VM disks. Step 1 creates a disposable NFS server VM inside the cluster, so you can try the full workflow without an external storage system. If you already have an NFS server, you can use its export instead.</p>
+</div>
+<div class="paragraph">
+<p>The example uses a <code>ReadWriteMany</code> (RWX) <code>Filesystem</code> PVC. RWX lets the same disk remain accessible from the source and destination nodes during live migration. NFS provides a filesystem volume, so it does not offer the raw <code>Block</code> mode that OpenShift recommends for VM performance when a backend supports it. NFS also adds network latency; measure your workload before you use it for latency-sensitive or high-IOPS disks.</p>
+</div>
+<div class="paragraph">
+<p>The upstream CSI chart runs privileged containers with host mounts and host networking. This tutorial grants the privileged Security Context Constraint (SCC) only to the chart&#8217;s two service accounts in a dedicated namespace. Review the chart, your cluster policies, and your support requirements before installing it. The <code>nfs.csi.k8s.io</code> driver is not listed in the OpenShift Container Platform 4.22 table of supported CSI drivers; check the Red Hat Ecosystem Catalog and your NFS vendor&#8217;s support policy for production use.</p>
+</div>
+<div class="paragraph">
+<p>The lab NFS server is intentionally temporary. It uses an ephemeral export disk, maps all NFS client identities to UID/GID <code>107</code> (the QEMU runtime ID), and makes the demo export world-writable. Use it only in a disposable, single-user cluster. For a shared or production cluster, use an existing NFS service with permissions and support appropriate for your environment.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_prerequisites"><a class="anchor" href="#_prerequisites"></a>Prerequisites</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p><strong>OpenShift 4.18+</strong> with OpenShift Virtualization installed</p>
+</li>
+<li>
+<p><strong>Cluster administrator access</strong> to create a cluster-scoped CSI driver and grant SCC permissions</p>
+</li>
+<li>
+<p><strong>Helm 3</strong> and the <code>oc</code> and <code>virtctl</code> CLIs installed</p>
+</li>
+<li>
+<p>Network connectivity from worker nodes to the NFS server on TCP port 2049</p>
+</li>
+<li>
+<p>The cluster has a ready <code>fedora</code> DataSource in <code>openshift-virtualization-os-images</code>, backed by a bootable PVC. Both example DataVolumes request <strong>30Gi</strong>, so each target must be at least as large as the source PVC. If the source PVC is larger than 30Gi, increase both target sizes and the lab export capacity. The default StorageClass must be able to provide the lab server&#8217;s requested <code>Block</code> PVC.</p>
+</li>
+<li>
+<p>The lab server VM can reach Fedora package repositories to install <code>nfs-utils</code>, and a worker has at least <strong>40Gi</strong> of available ephemeral storage for the export disk</p>
+</li>
+<li>
+<p>For an existing NFS server, at least <strong>40Gi</strong> of capacity in the dedicated export</p>
+</li>
+<li>
+<p>Two schedulable worker nodes if you want to run the optional live migration check</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>The lab server uses the VM&#8217;s default pod network and a cluster-internal Service. If your cluster has network policies that restrict this traffic, allow NFS from the CSI controller and worker nodes to the server VM. If the cluster is disconnected, prepare an NFS server image with <code>nfs-utils</code> already installed or use an existing NFSv4.1 export.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_provisioning_path"><a class="anchor" href="#_provisioning_path"></a>Provisioning Path</h2>
+<div class="sectionbody">
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">Temporary Fedora NFS server VM
+        |
+        v
+StorageClass nfs-vm-demo
+        |
+        v
+NFS CSI controller creates a directory under the export
+        |
+        v
+RWX Filesystem PVC mounts on a worker node
+        |
+        v
+virt-launcher reads and writes the VM disk image</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The upstream NFS CSI driver supports NFSv3 and NFSv4 servers and dynamically provisions PVCs by creating subdirectories. This tutorial selects NFSv4.1. The lab server is reachable only through a <code>ClusterIP</code> Service; an existing server must be reachable from every worker node.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_procedure"><a class="anchor" href="#_procedure"></a>Procedure</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_step_1_deploy_a_temporary_nfs_server_vm"><a class="anchor" href="#_step_1_deploy_a_temporary_nfs_server_vm"></a>Step 1: Deploy a Temporary NFS Server VM</h3>
+<div class="paragraph">
+<p>The lab server runs in its own namespace. It clones the cluster&#8217;s Fedora DataSource to a 30Gi boot disk on the default StorageClass, uses a 40Gi empty disk for the export, installs the NFS server packages with cloud-init, and exposes TCP port 2049 through a cluster-internal Service. Stopping or restarting the VM discards the export data.</p>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/nfs-storage/nfs-lab-server.yaml" class="xref attachment">Download nfs-lab-server.yaml</a></p>
+</div>
+<div class="paragraph">
+<p>You can also apply the YAML directly from your terminal.</p>
+</div>
+<div class="paragraph">
+<p>Create the lab server namespace:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">cat &lt;&lt;'EOF' | oc apply -f -
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: nfs-lab-server
+EOF</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Create the NFS server VM:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">cat &lt;&lt;'EOF' | oc apply -f -
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: nfs-lab-server
+  namespace: nfs-lab-server
+spec:
+  runStrategy: Always
+  dataVolumeTemplates:
+    - apiVersion: cdi.kubevirt.io/v1beta1
+      kind: DataVolume
+      metadata:
+        name: nfs-lab-server-rootdisk-fedora
+      spec:
+        sourceRef:
+          kind: DataSource
+          name: fedora
+          namespace: openshift-virtualization-os-images
+        storage:
+          accessModes:
+            - ReadWriteOnce
+          volumeMode: Block
+          resources:
+            requests:
+              storage: 30Gi
+  template:
+    metadata:
+      labels:
+        app: nfs-lab-server
+    spec:
+      domain:
+        cpu:
+          cores: 1
+        memory:
+          guest: 1Gi
+        devices:
+          disks:
+            - name: rootdisk
+              disk:
+                bus: virtio
+            - name: nfsdata
+              disk:
+                bus: virtio
+            - name: cloudinitdisk
+              disk:
+                bus: virtio
+          interfaces:
+            - name: default
+              masquerade: {}
+              ports:
+                - port: 2049
+      networks:
+        - name: default
+          pod: {}
+      volumes:
+        - name: rootdisk
+          dataVolume:
+            name: nfs-lab-server-rootdisk-fedora
+        - name: nfsdata
+          emptyDisk:
+            capacity: 40Gi
+        - name: cloudinitdisk
+          cloudInitNoCloud:
+            userData: |
+              #cloud-config
+              user: fedora
+              password: fedora
+              chpasswd:
+                expire: false
+              package_update: true
+              packages:
+                - firewalld
+                - nfs-utils
+                - xfsprogs
+              write_files:
+                - path: /usr/local/sbin/configure-lab-nfs
+                  owner: root:root
+                  permissions: '0755'
+                  content: |
+                    #!/bin/bash
+                    set -euo pipefail
+
+                    mkfs.xfs -f /dev/vdb
+                    mkdir -p /exports
+                    export_uuid=$(blkid -s UUID -o value /dev/vdb)
+                    echo "UUID=${export_uuid} /exports xfs defaults 0 0" &gt;&gt; /etc/fstab
+                    mount /exports
+
+                    mkdir -p /exports/openshift-vm-demo
+                    chown 107:107 /exports/openshift-vm-demo
+                    chmod 0777 /exports/openshift-vm-demo
+                    cat &gt; /etc/exports &lt;&lt;'EOF'
+                    /exports/openshift-vm-demo *(rw,sync,root_squash,all_squash,anonuid=107,anongid=107,fsid=0,no_subtree_check)
+                    EOF
+
+                    systemctl enable --now firewalld
+                    firewall-cmd --permanent --add-port=2049/tcp
+                    firewall-cmd --reload
+                    # Create /var/lib/nfs/etab before nfs-mountd starts.
+                    exportfs -rav
+                    systemctl enable --now nfs-server
+                    systemctl is-active --quiet nfs-server
+                    systemctl is-active --quiet nfs-mountd
+              runcmd:
+                - /usr/local/sbin/configure-lab-nfs
+EOF</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Expose the VM through a cluster-internal Service:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">cat &lt;&lt;'EOF' | oc apply -f -
+apiVersion: v1
+kind: Service
+metadata:
+  name: nfs-lab-server
+  namespace: nfs-lab-server
+spec:
+  type: ClusterIP
+  selector:
+    app: nfs-lab-server
+  ports:
+    - name: nfs
+      port: 2049
+      targetPort: 2049
+      protocol: TCP
+EOF</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Wait for the VM instance and confirm the Service has an endpoint:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc wait vmi/nfs-lab-server -n nfs-lab-server --for=condition=Ready --timeout=10m
+oc get service,endpoints nfs-lab-server -n nfs-lab-server</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>VMI readiness confirms that the VM is running, but cloud-init can still be configuring the NFS server. Connect to the console and wait for cloud-init to finish:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">virtctl console nfs-lab-server -n nfs-lab-server</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Log in with the lab account from the manifest, then verify both NFS services and the export:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">sudo cloud-init status --wait
+sudo systemctl is-active nfs-server nfs-mountd
+sudo exportfs -v</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Both services must report <code>active</code>, and <code>exportfs</code> must list <code>/exports/openshift-vm-demo</code>. Disconnect from the console with <code>Ctrl+]</code>.</p>
+</div>
+<div class="paragraph">
+<p>The VM exports <code>/</code> as the NFSv4.1 pseudoroot. Its backing directory is <code>/exports/openshift-vm-demo</code>. The export maps all client IDs to UID/GID <code>107</code>, which lets the VM launcher set up the disk image with the QEMU runtime ID, and uses mode <code>0777</code>. This provides no tenant isolation; do not put real data on this server.</p>
+</div>
+<div class="paragraph">
+<p>If you already have an NFSv4.1 server, skip this step and use a dedicated export that allows the CSI controller to create and remove directories and lets the VM launcher write disk images. Set <code>server</code> and <code>share</code> in Step 5 to that server&#8217;s address and export path, then adjust <code>mountPermissions</code>, <code>uid</code>, and <code>gid</code> to match its identity-mapping policy.</p>
+</div>
+<div class="paragraph">
+<p>The NFS server VM provides the export, but the <code>nfs-vm-demo</code> StorageClass needs the <code>nfs.csi.k8s.io</code> driver to create a directory for each claim and mount it on worker nodes. Install the driver before creating the StorageClass. If <code>oc get csidriver nfs.csi.k8s.io</code> already returns a driver and its controller and node pods are ready, skip Steps 2 through 4 and continue at Step 5.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_step_2_prepare_the_csi_driver_namespace_and_permissions"><a class="anchor" href="#_step_2_prepare_the_csi_driver_namespace_and_permissions"></a>Step 2: Prepare the CSI Driver Namespace and Permissions</h3>
+<div class="paragraph">
+<p>Create the dedicated namespace and the service accounts used by the upstream Helm chart:</p>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/nfs-storage/namespace-nfs-csi-system.yaml" class="xref attachment">Download namespace-nfs-csi-system.yaml</a></p>
+</div>
+<div class="paragraph">
+<p>You can also apply the YAML directly from your terminal.</p>
+</div>
+<div class="paragraph">
+<p>Create the CSI namespace:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">cat &lt;&lt;'EOF' | oc apply -f -
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: nfs-csi-system
+EOF</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Create the controller ServiceAccount:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">cat &lt;&lt;'EOF' | oc apply -f -
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: csi-nfs-controller-sa
+  namespace: nfs-csi-system
+EOF</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Create the node plugin ServiceAccount:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">cat &lt;&lt;'EOF' | oc apply -f -
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: csi-nfs-node-sa
+  namespace: nfs-csi-system
+EOF</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The upstream controller and node plugin require host-level privileges to mount NFS volumes. Grant the <code>privileged</code> SCC to only the two service accounts in the dedicated namespace:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc adm policy add-scc-to-user privileged -z csi-nfs-controller-sa -n nfs-csi-system
+oc adm policy add-scc-to-user privileged -z csi-nfs-node-sa -n nfs-csi-system</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This permission is cluster-scoped in effect. Keep the service accounts dedicated to this driver, and follow your organization&#8217;s process for approving privileged workloads.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_step_3_install_the_nfs_csi_driver"><a class="anchor" href="#_step_3_install_the_nfs_csi_driver"></a>Step 3: Install the NFS CSI Driver</h3>
+<div class="paragraph">
+<p>This tutorial pins chart version <code>4.13.6</code> for a repeatable install. If you update the pin, check the chart&#8217;s Kubernetes compatibility against the OpenShift release used by the tutorial.</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">helm install csi-driver-nfs csi-driver-nfs \
+  --repo https://kubernetes-csi.github.io/csi-driver-nfs \
+  --namespace nfs-csi-system \
+  --version 4.13.6 \
+  --set serviceAccount.create=false</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The <code>serviceAccount.create=false</code> setting tells Helm to use the service accounts you created before granting the SCC. The chart still creates its RBAC resources.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_step_4_verify_the_driver"><a class="anchor" href="#_step_4_verify_the_driver"></a>Step 4: Verify the Driver</h3>
+<div class="paragraph">
+<p>Wait for the controller Deployment and node DaemonSet to become ready:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc rollout status deployment/csi-nfs-controller -n nfs-csi-system --timeout=5m
+oc rollout status daemonset/csi-nfs-node -n nfs-csi-system --timeout=5m</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Confirm that the driver is registered and that node pods run on the Linux workers:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get csidriver nfs.csi.k8s.io
+oc get pods -n nfs-csi-system -o wide</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_step_5_create_an_nfs_storageclass"><a class="anchor" href="#_step_5_create_an_nfs_storageclass"></a>Step 5: Create an NFS StorageClass</h3>
+<div class="paragraph">
+<p>The manifest points to the lab server&#8217;s internal Service and NFSv4.1 pseudoroot. <code>mountPermissions: "0777"</code> is only appropriate for this disposable lab server. The StorageClass uses <code>reclaimPolicy: Delete</code> and the driver&#8217;s <code>onDelete: delete</code> parameter so the tutorial&#8217;s throwaway PVC directory is removed when you delete the claim. For an existing server, replace <code>server</code> and <code>share</code> with its service address and export path, then change <code>mountPermissions</code>, <code>uid</code>, and <code>gid</code> to match its identity-mapping policy.</p>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/nfs-storage/storageclass-nfs-vm-demo.yaml" class="xref attachment">Download storageclass-nfs-vm-demo.yaml</a></p>
+</div>
+<div class="paragraph">
+<p>You can also apply the YAML directly from your terminal.</p>
+</div>
+<div class="paragraph">
+<p>Create the StorageClass:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">cat &lt;&lt;'EOF' | oc apply -f -
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: nfs-vm-demo
+provisioner: nfs.csi.k8s.io
+parameters:
+  server: nfs-lab-server.nfs-lab-server.svc.cluster.local
+  share: /
+  onDelete: delete
+  mountPermissions: "0777"
+reclaimPolicy: Delete
+volumeBindingMode: Immediate
+mountOptions:
+  - nfsvers=4.1
+  - hard
+EOF</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Verify the StorageClass:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get storageclass nfs-vm-demo</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Do not mark this StorageClass as the cluster default. Select it explicitly for the tutorial VM so other workloads do not consume the demonstration export accidentally.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_step_6_create_the_vm_demo_namespace"><a class="anchor" href="#_step_6_create_the_vm_demo_namespace"></a>Step 6: Create the VM Demo Namespace</h3>
+<div class="paragraph">
+<p>Create a namespace for the VM and its disk:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc new-project nfs-vm-demo</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_step_7_create_a_vm_with_an_nfs_backed_disk"><a class="anchor" href="#_step_7_create_a_vm_with_an_nfs_backed_disk"></a>Step 7: Create a VM with an NFS-Backed Disk</h3>
+<div class="paragraph">
+<p>The VM clones the ready <code>fedora</code> DataSource from <code>openshift-virtualization-os-images</code> into a 30Gi DataVolume on NFS. CDI copies the bootable PVC already in the cluster, so this disk does not require an image import from a registry. The NFS-backed DataVolume requests RWX access and Filesystem mode, so the boot disk persists on the NFS export and can be shared across nodes for migration. The target size must be at least as large as the source PVC.</p>
+</div>
+<div class="paragraph">
+<p><a href="_attachments/nfs-storage/vm-nfs-storage.yaml" class="xref attachment">Download vm-nfs-storage.yaml</a></p>
+</div>
+<div class="paragraph">
+<p>Confirm the boot source is ready and inspect its PVC size:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get datasource fedora -n openshift-virtualization-os-images
+oc get pvc fedora -n openshift-virtualization-os-images</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>You can also apply the YAML directly from your terminal.</p>
+</div>
+<div class="paragraph">
+<p>Create the demo VM:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">cat &lt;&lt;'EOF' | oc apply -f -
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: nfs-vm-demo
+  namespace: nfs-vm-demo
+spec:
+  runStrategy: Always
+  dataVolumeTemplates:
+    - apiVersion: cdi.kubevirt.io/v1beta1
+      kind: DataVolume
+      metadata:
+        name: nfs-vm-demo-rootdisk-fedora
+      spec:
+        sourceRef:
+          kind: DataSource
+          name: fedora
+          namespace: openshift-virtualization-os-images
+        storage:
+          accessModes:
+            - ReadWriteMany
+          volumeMode: Filesystem
+          storageClassName: nfs-vm-demo
+          resources:
+            requests:
+              storage: 30Gi
+  template:
+    metadata:
+      labels:
+        kubevirt.io/domain: nfs-vm-demo
+    spec:
+      domain:
+        cpu:
+          cores: 1
+        memory:
+          guest: 2Gi
+        devices:
+          disks:
+            - name: rootdisk
+              disk:
+                bus: virtio
+            - name: cloudinitdisk
+              disk:
+                bus: virtio
+          interfaces:
+            - name: default
+              masquerade: {}
+      networks:
+        - name: default
+          pod: {}
+      volumes:
+        - name: rootdisk
+          dataVolume:
+            name: nfs-vm-demo-rootdisk-fedora
+        - name: cloudinitdisk
+          cloudInitNoCloud:
+            userData: |
+              #cloud-config
+              user: fedora
+              password: fedora
+              chpasswd:
+                expire: false
+              ssh_pwauth: true
+EOF</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_step_8_verify_the_pvc_and_vm"><a class="anchor" href="#_step_8_verify_the_pvc_and_vm"></a>Step 8: Verify the PVC and VM</h3>
+<div class="paragraph">
+<p>Wait for CDI to create the VM disk:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc wait dv/nfs-vm-demo-rootdisk-fedora -n nfs-vm-demo --for=condition=Ready --timeout=10m</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Check that the claim is bound and advertises RWX:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get pvc nfs-vm-demo-rootdisk-fedora -n nfs-vm-demo</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Wait for the VM instance to become ready:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc wait vmi/nfs-vm-demo -n nfs-vm-demo --for=condition=Ready --timeout=10m</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_step_9_write_a_test_file_from_the_guest"><a class="anchor" href="#_step_9_write_a_test_file_from_the_guest"></a>Step 9: Write a Test File from the Guest</h3>
+<div class="paragraph">
+<p>The example cloud-init configuration sets a throwaway password for the demo&#8217;s <code>fedora</code> account. Do not reuse it outside this tutorial. Open the VM&#8217;s serial console:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">virtctl console nfs-vm-demo -n nfs-vm-demo</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Log in as <code>fedora</code> with the password <code>fedora</code>. Write a small file to the guest filesystem and read it back:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">echo 'NFS-backed VM disk is writable' | sudo tee /var/tmp/nfs-probe.txt
+cat /var/tmp/nfs-probe.txt</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Disconnect from the console with <code>Ctrl+]</code>.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_step_10_check_live_migration_readiness"><a class="anchor" href="#_step_10_check_live_migration_readiness"></a>Step 10: Check Live Migration Readiness</h3>
+<div class="paragraph">
+<p>Read the <code>LiveMigratable</code> condition:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get vmi nfs-vm-demo -n nfs-vm-demo \
+  -o jsonpath='{.status.conditions[?(@.type=="LiveMigratable")].status}{"\n"}'</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>An RWX claim is one requirement for migration; the cluster also needs suitable nodes and the VM must meet the other migration requirements. If the condition is <code>True</code> and at least two worker nodes can run the VM, you can start a migration:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">virtctl migrate nfs-vm-demo -n nfs-vm-demo</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Check the VM instance&#8217;s node and the migration resource to confirm that the migration completes. See <a href="live-migration-storage.html" class="xref page">Storage Requirements and Configuration for VM Live Migration</a> for the full storage and migration workflow.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_nfs_permissions_and_data_safety"><a class="anchor" href="#_nfs_permissions_and_data_safety"></a>NFS Permissions and Data Safety</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>NFS access control uses numeric user IDs (UIDs) and group IDs (GIDs), not the user and group names shown inside the guest. The lab server maps all clients to UID/GID <code>107</code>, the QEMU runtime ID, and makes the export world-writable so the VM launcher can set up the disk image. Any client that can reach the Service can read and write the demo data, so this setup is only for an isolated lab.</p>
+</div>
+<div class="paragraph">
+<p>For an existing NFS server, align the export permissions with the numeric IDs used by the CSI controller and VM launcher. The NFS CSI driver&#8217;s <code>uid</code> and <code>gid</code> StorageClass parameters request ownership changes on the NFS path; a root-squashed export can reject those changes. Do not add these parameters until you have confirmed that the server&#8217;s mapping and export policy allow them. <code>mountPermissions: "0777"</code> makes a directory writable by every client that can reach the mount. Use a vendor CSI driver or separate exports when you need tenant isolation.</p>
+</div>
+<div class="paragraph">
+<p>An RWX access mode allows multiple nodes to mount a volume. It does not make concurrent guest writers safe. Attach a writable VM disk to one VM at a time; live migration temporarily uses the same disk for that VM on source and destination nodes as part of the handoff. Do not share a writable VM disk between independent VMs.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_performance_and_use_cases"><a class="anchor" href="#_performance_and_use_cases"></a>Performance and Use Cases</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The VM disk image is a file on a network filesystem. Guest I/O therefore depends on NFS server load, network latency, client mount behavior, and export configuration. Use NFS for workloads whose measured latency and throughput fit the service target, such as shared golden-image or ISO libraries and general-purpose VMs. Consider lower-latency block storage for databases and other high-IOPS workloads unless benchmarks show that your NFS system meets their requirements.</p>
+</div>
+<div class="paragraph">
+<p>Benchmark in a dedicated test window and coordinate with the storage team. A guest-side <code>fio</code> test can generate sustained load against the shared export and affect other clients. For disk settings and benchmark cautions, see <a href="disk-io-tuning.html" class="xref page">VM Disk I/O Performance Tuning</a>.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_troubleshooting"><a class="anchor" href="#_troubleshooting"></a>Troubleshooting</h2>
+<div class="sectionbody">
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 25%;">
+<col style="width: 37.5%;">
+<col style="width: 37.5%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Symptom</th>
+<th class="tableblock halign-left valign-top">Check</th>
+<th class="tableblock halign-left valign-top">Action</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Controller or node pods report an SCC or <code>forbidden</code> error</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Inspect pod events with <code>oc describe pod</code> in <code>nfs-csi-system</code>.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Confirm that the two driver service accounts have the <code>privileged</code> SCC and that the Helm release uses those service accounts.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">PVC remains <code>Pending</code> or provisioning fails</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Run <code>oc describe pvc nfs-vm-demo-rootdisk-fedora -n nfs-vm-demo</code> and check the CSI controller logs.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Verify that <code>provisioner</code> is <code>nfs.csi.k8s.io</code>, the export path exists, and the controller can reach the server and create a subdirectory.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">DataVolume reports <code>ClonePending</code>, <code>CloneInProgress</code>, or <code>CloneFailed</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Inspect the DataVolume conditions and events, and check both the source and target PVCs.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Confirm the <code>fedora</code> DataSource is ready, its source PVC exists, and the NFS-backed target requests at least as much storage as the source PVC.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Volume mount times out</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Check NFS server reachability from every worker node, inspect the VM launcher&#8217;s events, and verify <code>nfs-mountd</code> is active inside the lab VM.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Allow NFSv4.1 traffic on TCP port 2049. For the lab VM, run <code>exportfs -rav</code> before starting <code>nfs-server</code> so <code>/var/lib/nfs/etab</code> exists when <code>nfs-mountd</code> starts. To recover a running lab VM, run <code>exportfs -rav</code> and restart <code>nfs-mountd</code>. If you use NFSv3, also allow its required RPC services and ports.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Guest receives <code>Permission denied</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Compare the export directory&#8217;s numeric owner and group with the VM launcher&#8217;s runtime IDs; inspect the server&#8217;s root-squash mapping.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">For the lab export, confirm that the directory is owned by UID/GID <code>107</code> and that the export maps clients to that ID. For an existing export, use permissions and groups approved for the intended workload. The lab server is world-writable and must not hold real data.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>LiveMigratable</code> is <code>False</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Inspect the VMI conditions and confirm that every writable disk uses a migratable volume.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Confirm RWX access, two suitable nodes, and the other live-migration requirements. See <a href="live-migration-storage.html" class="xref page">Storage Requirements and Configuration for VM Live Migration</a>.</p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>To inspect the controller and node plugin logs, use the following commands:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc logs deployment/csi-nfs-controller -n nfs-csi-system -c nfs
+oc get pods -n nfs-csi-system -l app=csi-nfs-node</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Use a node pod name from the output to inspect its driver log:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc logs &lt;csi-nfs-node-pod&gt; -n nfs-csi-system -c nfs --tail=100</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_cleanup"><a class="anchor" href="#_cleanup"></a>Cleanup</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Delete the VM demo namespace while the NFS server is still running. Wait for the CSI provisioner to remove the test volume from the export before deleting the server:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">pv=$(oc get pvc nfs-vm-demo-rootdisk-fedora -n nfs-vm-demo -o jsonpath='{.spec.volumeName}')
+oc delete namespace nfs-vm-demo
+oc wait --for=delete "pv/${pv}" --timeout=10m</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Delete the StorageClass if you created it only for this tutorial:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc delete storageclass nfs-vm-demo</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If you deployed the lab NFS server, delete its namespace after the demo PVC and PV are gone:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc delete namespace nfs-lab-server</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Keep the CSI driver installed if any other PVCs use it. If this driver and its namespace were created only for this tutorial, first confirm that no other workloads depend on the driver, then remove the Helm release and its SCC grants:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">helm uninstall csi-driver-nfs -n nfs-csi-system
+oc adm policy remove-scc-from-user privileged -z csi-nfs-controller-sa -n nfs-csi-system
+oc adm policy remove-scc-from-user privileged -z csi-nfs-node-sa -n nfs-csi-system
+oc delete namespace nfs-csi-system</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_summary"><a class="anchor" href="#_summary"></a>Summary</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>You learned how to:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Install the upstream NFS CSI driver on OpenShift and grant its service accounts the required SCC</p>
+</li>
+<li>
+<p>Deploy a disposable NFS server VM and expose it through a cluster-internal Service</p>
+</li>
+<li>
+<p>Create an NFS-backed StorageClass with RWX access and filesystem volume mode</p>
+</li>
+<li>
+<p>Attach an NFS-backed disk to a VM and verify guest writes</p>
+</li>
+<li>
+<p>Check whether the VM is ready for live migration</p>
+</li>
+<li>
+<p>Plan NFS export permissions, UID/GID mapping, and data retention</p>
+</li>
+<li>
+<p>Troubleshoot provisioning, mount, permission, and migration issues</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_see_also"><a class="anchor" href="#_see_also"></a>See Also</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p><a href="choosing-storage-class.html" class="xref page">Choosing the Right Storage Class for VM Disks</a></p>
+</li>
+<li>
+<p><a href="live-migration-storage.html" class="xref page">Storage Requirements and Configuration for VM Live Migration</a></p>
+</li>
+<li>
+<p><a href="odf-ceph-storage.html" class="xref page">OpenShift Data Foundation with Ceph Storage</a></p>
+</li>
+<li>
+<p><a href="https://github.com/kubernetes-csi/csi-driver-nfs" target="_blank" rel="noopener">Upstream NFS CSI Driver</a></p>
+</li>
+<li>
+<p><a href="https://github.com/kubernetes-csi/csi-driver-nfs/blob/master/charts/README.md" target="_blank" rel="noopener">Upstream NFS CSI Helm instructions</a></p>
+</li>
+<li>
+<p><a href="https://github.com/kubernetes-csi/csi-driver-nfs/blob/master/docs/driver-parameters.md" target="_blank" rel="noopener">NFS CSI driver parameters and permissions</a></p>
+</li>
+<li>
+<p><a href="https://docs.redhat.com/en/documentation/openshift_container_platform/4.22/html/storage/configuring-persistent-storage" target="_blank" rel="noopener">OpenShift persistent storage configuration</a></p>
+</li>
+<li>
+<p><a href="https://docs.redhat.com/en/documentation/openshift_container_platform/4.22/html/storage/using-container-storage-interface-csi" target="_blank" rel="noopener">CSI drivers supported by OpenShift Container Platform</a></p>
+</li>
+<li>
+<p><a href="https://docs.redhat.com/en/documentation/openshift_container_platform/4.22/html/virtualization/managing-vms" target="_blank" rel="noopener">OpenShift Virtualization VM storage</a></p>
+</li>
+<li>
+<p><a href="https://docs.redhat.com/en/documentation/openshift_container_platform/4.22/html/virtualization/networking" target="_blank" rel="noopener">OpenShift Virtualization VM networking and Services</a></p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<nav class="pagination">
+  <span class="prev"><a href="storage-profiles.html">Storage Profiles</a></span>
+  <span class="next"><a href="live-migration-storage.html">Live Migration Storage</a></span>
+</nav>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <img src="../../../_/img/rhl-logo-red.png" height="40px" alt="Red Hat"  href="https://redhat.com" >
+</footer><script id="site-script" src="../../../_/js/site.js" data-ui-root-path="../../../_"></script>
+<script async src="../../../_/js/vendor/highlight.js"></script>
+<script src="../../../_/js/vendor/lunr.js"></script>
+<script src="../../../_/js/search-ui.js" id="search-ui-script" data-site-root-path="../../.." data-snippet-length="100" data-stylesheet="../../../_/css/search.css"></script>
+<script async src="../../../search-index.js"></script>
+  </body>
+</html>
