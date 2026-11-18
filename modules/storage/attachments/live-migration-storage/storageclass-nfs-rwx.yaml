@@ -1,0 +1,15 @@
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: nfs-rwx
+provisioner: nfs.csi.k8s.io
+parameters:
+  server: nfs.example.com
+  share: /exports/vm-disks
+reclaimPolicy: Delete
+volumeBindingMode: Immediate
+allowVolumeExpansion: true
+mountOptions:
+  - nfsvers=4.1
+  - hard
+  - noatime
