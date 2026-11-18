@@ -1,0 +1,15 @@
+apiVersion: k8s.cni.cncf.io/v1
+kind: NetworkAttachmentDefinition
+metadata:
+  name: lnbr0-bridge
+  namespace: hotplug-demo
+spec:
+  config: |
+    {
+      "cniVersion": "0.3.1",
+      "name": "lnbr0-bridge",
+      "type": "bridge",
+      "bridge": "lnbr0",
+      "vlan": 1,
+      "ipam": {}
+    }
