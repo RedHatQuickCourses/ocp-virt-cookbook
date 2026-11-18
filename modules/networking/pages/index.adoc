@@ -43,17 +43,27 @@ Before proceeding with the tutorials in this section, ensure you have:
 
 == Sections
 
+=== Addressing and IP configuration
+
 xref:static-ip-configuration.adoc[]::
-Configure static IP addresses for virtual machines using cloud-init, DHCP reservations, QEMU guest agent, or Sysprep for Windows VMs.
+Configure static IP addresses for VMs using cloud-init, DHCP reservations, QEMU guest agent, or Sysprep for Windows VMs.
+
+xref:dual-stack-vms.adoc[]::
+Deploy VMs with dual-stack IPv4 and IPv6 networking using masquerade mode and User Defined Networks.
 
 xref:cloud-init-troubleshooting.adoc[]::
-Troubleshooting guide for cloud-init IP configuration issues, including diagnostic commands and common problem solutions.
+Troubleshoot cloud-init IP configuration problems with diagnostic commands and common solutions.
+
+=== Choose a network
 
 xref:udn-primary-networks.adoc[]::
-Configure Layer 2 primary networks using User Defined Networks for complete network control.
+Configure Layer 2 primary networks using User Defined Networks.
 
 xref:udn-deep-dive.adoc[]::
-Deep dive into UDN internals, topology and IPAM trade-offs, CUDN, network policy, live migration behavior, and the migration path from NAD-based networks.
+Explore UDN topology and IPAM choices, CUDN, network policy, live migration behavior, and migration from NAD-based networks.
+
+xref:layer2-secondary.adoc[]::
+Set up Layer 2 secondary networks for cluster-wide VM connectivity abstracted from the physical network.
 
 xref:localnet-secondary.adoc[]::
 Set up localnet secondary networks with ClusterUserDefinedNetwork for external connectivity.
@@ -64,27 +74,27 @@ Configure localnet secondary networks with VLAN tagging using NetworkAttachmentD
 xref:cudn-localnet-vlan.adoc[]::
 Configure localnet secondary networks with VLAN tagging using ClusterUserDefinedNetwork for cross-namespace availability.
 
-xref:layer2-secondary.adoc[]::
-Set up Layer 2 secondary networks for cluster-wide VM connectivity abstracted from the physical network.
-
 xref:linux-bridges.adoc[]::
 Create Linux bridge secondary networks for direct VM connectivity to physical network infrastructure.
 
 xref:sriov-secondary.adoc[]::
 Configure SR-IOV secondary networks for near-native network performance through PCI passthrough of Virtual Functions directly into VMs.
 
-xref:ovs-bridge-troubleshooting.adoc[]::
-Diagnose and resolve OVS bridge creation issues for localnet networks.
+=== Apply policies and expose services
 
 xref:network-policies-vms.adoc[]::
 Apply NetworkPolicy and AdminNetworkPolicy to VM workloads for zero-trust microsegmentation.
+
 xref:metallb-loadbalancer.adoc[]::
 Configure MetalLB to expose VM services via LoadBalancer-type Services for non-HTTP protocols.
-xref:dual-stack-vms.adoc[]::
-Deploy VMs with dual-stack IPv4/IPv6 networking using masquerade mode and User Defined Networks.
 
 xref:vm-ingress-routes.adoc[]::
 Expose VM HTTP and HTTPS services through OpenShift Ingress routes.
+
+=== Troubleshoot network configuration
+
+xref:ovs-bridge-troubleshooting.adoc[]::
+Diagnose and resolve OVS bridge creation issues for localnet networks.
 
 === Primary vs Secondary Networks
 

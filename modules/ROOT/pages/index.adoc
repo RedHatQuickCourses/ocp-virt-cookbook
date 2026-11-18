@@ -17,20 +17,104 @@ To use this cookbook effectively, you need:
 * **Tools**: `oc`, `kubectl`, and `virtctl`. (Optional: `kustomize`, `helm`, `ansible`).
 * **Knowledge**: Proficiency with YAML, and CLI workflows (not mandatory but strongly suggested). Basic understanding of Kubernetes/OpenShift concepts.
 
-Go through all the **xref:getting-started:index.adoc[]** modules, especially if you are new to the technology, to prepare or verify your environment.
+Follow the xref:getting-started:index.adoc[Getting Started learning path] to prepare or verify your environment.
 
-== Cookbook Modules
+== Choose by task
 
-Select one of the module from the left menu to begin:
+Start and create your first VM::
+Start with the xref:getting-started:vm-quick-start.adoc[5-minute quick start], or follow the
+full path through xref:getting-started:prerequisites.adoc[prerequisites],
+xref:getting-started:install-openshift-virtualization.adoc[installation],
+xref:getting-started:default-storage-class.adoc[default storage], and
+xref:getting-started:create-vm-web-console.adoc[VM creation]. Then use
+xref:getting-started:virtctl-basics.adoc[virtctl] and
+xref:getting-started:cloud-init-fundamentals.adoc[cloud-init]. Browse the
+xref:getting-started:index.adoc[Getting Started module].
 
-* **xref:getting-started:index.adoc[]** - Essential tools setup and environment verification.
-* **xref:storage:index.adoc[]** - Storage setup for virtual machines.
-* **xref:networking:index.adoc[]** - Networking and IP configuration guides.
-* **xref:vm-configuration:index.adoc[]** - VM access, DNS, node placement, and templates.
-* **xref:performance:index.adoc[]** - CPU pinning, NUMA, hugepages, and real-time VMs.
-* **xref:vm-lifecycle:index.adoc[]** - Golden images, cloning, snapshots, and boot configuration.
-* **xref:manifests:index.adoc[]** - A library of ready-to-deploy manifest examples.
-* **xref:api:index.adoc[]** - API components architecture and functions such as cloning, export and machine topology.
+Create and customize VMs::
+Choose xref:vm-lifecycle:boot-order-boot-sources.adoc[boot sources and options] or
+xref:vm-lifecycle:import-qcow2-boot-volume.adoc[import an existing disk]. Then use
+xref:vm-configuration:vm-templates.adoc[templates] and
+xref:vm-configuration:instancetype-preference.adoc[instance types and preferences] to configure
+reusable VMs. Browse the xref:vm-lifecycle:index.adoc[VM Lifecycle] and
+xref:vm-configuration:index.adoc[VM Configuration] modules.
+
+Connect to VMs and networks::
+Start with xref:vm-configuration:remote-access-linux-vms.adoc[VM access] or
+xref:vm-configuration:vm-file-transfer.adoc[file transfer]. Configure
+xref:vm-configuration:internal-dns-for-vms.adoc[internal DNS], then choose a network from the
+xref:networking:index.adoc[Networking module]. Expose services with
+xref:networking:vm-ingress-routes.adoc[Ingress routes] or
+xref:networking:metallb-loadbalancer.adoc[LoadBalancer services].
+
+Operate, move, and recover VMs::
+Manage power and preserve disks with
+xref:getting-started:vm-lifecycle-states.adoc[VM lifecycle operations]. Attach a scratch volume
+to collect logs or a memory dump with
+xref:vm-configuration:hotplug-volumes-interfaces.adoc[hotplug]. Continue with
+xref:vm-lifecycle:cloning-vms.adoc[cloning], xref:vm-lifecycle:vm-snapshots.adoc[snapshots and
+restores], xref:vm-lifecycle:live-migration.adoc[live migration], or
+xref:vm-lifecycle:vm-export-import.adoc[export and import]. For scheduling or startup problems,
+see xref:vm-configuration:scheduling-tolerations-taints.adoc[scheduling and tolerations],
+xref:storage:lvm-troubleshooting.adoc[storage troubleshooting], and
+xref:vm-lifecycle:golden-images-troubleshooting.adoc[boot image troubleshooting]. Browse the
+xref:vm-lifecycle:index.adoc[VM Lifecycle module].
+
+Manage storage and protect data::
+Use the xref:storage:index.adoc[Storage module] to compare backends, choose a StorageClass,
+manage disk capacity, and configure shared storage. Start with
+xref:storage:choosing-storage-class.adoc[choosing a StorageClass],
+xref:storage:multi-disk-configuration.adoc[multiple disks], and
+xref:storage:expanding-vm-disk-size.adoc[disk expansion]. For shared disks and live migration,
+see xref:storage:live-migration-storage.adoc[storage for live migration]. For data retention,
+see the reclaim policy in the StorageClass guide. For snapshots, off-cluster copies, checksums,
+and encryption in transit, see xref:vm-lifecycle:vm-export-import.adoc[VM export and import].
+For point-in-time recovery, see xref:vm-lifecycle:vm-snapshots.adoc[snapshots]. Check storage
+class capabilities such as encryption in the xref:getting-started:default-storage-class.adoc[default
+storage guidance].
+
+Tune and observe performance::
+Use the xref:performance:index.adoc[Performance module] for VM tuning and monitoring. Start
+with xref:performance:resource-limits-qos.adoc[resource limits and QoS],
+xref:performance:vm-monitoring-metrics.adoc[VM monitoring], or
+xref:storage:disk-io-tuning.adoc[disk I/O tuning].
+
+Automate and integrate::
+Create VMs from xref:getting-started:create-vm-cli-yaml.adoc[CLI manifests], then explore
+xref:vm-lifecycle:automated-golden-image-pipeline.adoc[automated image pipelines]. For
+JSONPath queries, readiness checks, and a REST export endpoint with authenticated `curl`
+requests, see the xref:vm-lifecycle:vm-export-import.adoc[scripted VM export and import workflow].
+For API
+objects and relationships, see the xref:api:api-component-overview.adoc[API component overview].
+
+Agentic VM management::
+Follow the separate xref:agentic-vm-management:index.adoc[Agentic VM Management learning path]
+to connect an agent to a cluster and manage VMs through natural-language workflows.
+
+Reference::
+Use the xref:manifests:index.adoc[manifest library] for ready-to-deploy examples, the
+xref:api:index.adoc[API guide] for API objects and relationships, and the
+xref:appendix:glossary.adoc[glossary] for key terms.
+
+== Browse by module
+
+Module indexes keep the tutorials in their canonical locations.
+
+=== Tutorial modules
+
+* xref:getting-started:index.adoc[Getting Started] - Prepare your environment and create a first VM.
+* xref:vm-lifecycle:index.adoc[VM Lifecycle] - Prepare boot sources, clone, recover, export, and move VMs.
+* xref:vm-configuration:index.adoc[VM Configuration] - Configure access, placement, templates, and day-2 changes.
+* xref:networking:index.adoc[Networking] - Configure VM networks, addressing, and service exposure.
+* xref:storage:index.adoc[Storage] - Choose and configure VM storage and disks.
+* xref:performance:index.adoc[Performance] - Tune and monitor VM workloads.
+* xref:agentic-vm-management:index.adoc[Agentic VM Management] - Use agent workflows for VM operations.
+
+=== Reference material
+
+* xref:manifests:index.adoc[Manifests] - Ready-to-deploy YAML examples.
+* xref:api:index.adoc[API] - API components and relationships.
+* xref:appendix:glossary.adoc[Glossary] - Key terms and definitions.
 
 == Additional Resources
 
@@ -42,7 +126,6 @@ Select one of the module from the left menu to begin:
 ** link:https://access.redhat.com/articles/7067871[Example Architectures,window=_blank]
 * link:https://kubevirt.io/[KubeVirt Project,window=_blank]
 * link:https://cloudinit.readthedocs.io/[Cloud-init Documentation,window=_blank]
-* xref:appendix:glossary.adoc[Glossary] - Key terms and definitions
 
 == Contributing
 
