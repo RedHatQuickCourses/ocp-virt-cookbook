@@ -1,0 +1,26 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: probe-consumer
+  namespace: storage-selection-demo
+spec:
+  restartPolicy: Never
+  containers:
+    - name: probe
+      image: registry.access.redhat.com/ubi9/ubi-minimal:latest
+      command:
+        - sleep
+        - "600"
+      volumeMounts:
+        - name: fs
+          mountPath: /mnt/fs
+      volumeDevices:
+        - name: blk
+          devicePath: /dev/probe
+  volumes:
+    - name: fs
+      persistentVolumeClaim:
+        claimName: probe-filesystem
+    - name: blk
+      persistentVolumeClaim:
+        claimName: probe-block

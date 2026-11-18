@@ -1,0 +1,24 @@
+apiVersion: forklift.konveyor.io/v1beta1
+kind: NetworkMap
+metadata:
+  name: vmware-networkmap
+  namespace: openshift-mtv
+spec:
+  map:
+    - source:
+        id: network-13
+      destination:
+        type: pod
+    - source:
+        id: network-31
+      destination:
+        type: multus
+        name: vlan-100
+        namespace: openshift-mtv
+  provider:
+    source:
+      name: vsphere-provider
+      namespace: openshift-mtv
+    destination:
+      name: host
+      namespace: openshift-mtv

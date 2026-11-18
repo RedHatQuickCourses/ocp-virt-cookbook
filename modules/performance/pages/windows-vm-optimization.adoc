@@ -1,0 +1,538 @@
+= Windows VM Performance Configuration in OpenShift
+:navtitle: Windows VM Optimization
+
+== Overview
+
+Windows VMs on OpenShift Virtualization require specific configuration to achieve optimal performance. Unlike generic KVM tuning, this tutorial focuses exclusively on OpenShift-specific settings: discovering the VirtIO driver container image, configuring Hyper-V enlightenments, enabling multi-queue virtio devices, setting Windows-appropriate grace periods, and using cluster-native troubleshooting tools.
+
+This tutorial covers the production-grade OpenShift configuration layer. For Windows VM deployment and driver installation, see xref:vm-configuration:windows-vm-virtio-drivers.adoc[Deploying Windows VMs with VirtIO Drivers]. For guest agent setup, see the general xref:getting-started:installing-qemu-guest-agent.adoc[Installing QEMU Guest Agent] tutorial.
+
+== What You Will Learn
+
+* How to discover the cluster's VirtIO driver container image through the `virtio-win` ConfigMap
+* How to configure Hyper-V enlightenments for Windows guests and what each one does
+* How to enable multi-queue for both virtio disks and network interfaces
+* Why Windows VMs need a longer termination grace period and how to configure it
+* How to capture guest memory dumps using `virtctl memory-dump`
+* How to correlate Windows issues with cluster events
+
+== Prerequisites
+
+* OpenShift {ocp-min-version}+ with the OpenShift Virtualization operator installed
+* `oc` and `virtctl` CLIs installed and logged in to the cluster
+* A namespace where you can create VMs, or permission to create one
+* A Windows Server 2022 or Windows 11 boot source available as a `DataSource` in `openshift-virtualization-os-images`
+* A `StorageClass` that supports `ReadWriteMany` if you plan to live migrate the VM
+* At least 8 GiB of memory and 4 vCPUs of spare capacity on a worker node
+
+IMPORTANT: This tutorial assumes you already have a working Windows VM with VirtIO drivers and the QEMU guest agent installed. If you are deploying Windows for the first time, complete xref:vm-configuration:windows-vm-virtio-drivers.adoc[Deploying Windows VMs with VirtIO Drivers] first.
+
+== Understanding Windows VM Performance in OpenShift
+
+Windows guest performance on OpenShift Virtualization is determined by three configuration layers:
+
+[source,text]
+----
+  spec.domain.features / clock / devices     Layer 1: VM spec (this tutorial)
+  ├─ Hyper-V enlightenments
+  ├─ Clock and timer configuration
+  ├─ Multi-queue virtio devices
+  └─ Termination grace period
+
+  VirtIO drivers + QEMU guest agent           Layer 2: Guest image
+  └─ See: windows-vm-virtio-drivers.adoc
+
+  Windows OS settings                         Layer 3: Guest configuration
+  └─ Power plan, services, registry
+     (Out of scope for declarative OCP config)
+----
+
+This tutorial covers **Layer 1**: the declarative OpenShift configuration that lives in Git and is applied via `oc apply`. Layers 2 and 3 belong in golden images or configuration management tools.
+
+== Step 1: Create the Namespace
+
+[source,bash,role=execute]
+----
+oc new-project windows-perf
+----
+
+If the project already exists, switch to it:
+
+[source,bash,role=execute]
+----
+oc project windows-perf
+----
+
+== Step 2: Discover the VirtIO Driver Container Image
+
+OpenShift Virtualization ships the `virtio-win` ISO as a container image. The image reference is recorded in a `ConfigMap` maintained by the HyperConverged operator, so you never have to guess a tag or manually download the ISO.
+
+Read the current image reference:
+
+[source,bash,role=execute]
+----
+oc get configmap virtio-win -n openshift-cnv -o jsonpath='{.data.virtio-win-image}{"\n"}'
+----
+
+.Expected output
+[source,text]
+----
+registry.redhat.io/container-native-virtualization/virtio-win-rhel9@sha256:dbbba8ff...
+----
+
+The same `ConfigMap` exposes a download URL for the ISO, which is useful when building golden images outside the cluster:
+
+[source,bash,role=execute]
+----
+oc get configmap virtio-win -n openshift-cnv -o jsonpath='{.data.virtio-win-image-download-url}{"\n"}'
+----
+
+You can attach this container image as a CD-ROM volume during Windows installation or when updating drivers. The image version is tied to the OpenShift Virtualization operator version, so driver updates arrive automatically with cluster upgrades.
+
+== Step 3: Understanding Hyper-V Enlightenments
+
+Hyper-V enlightenments are paravirtualized interfaces that KVM exposes through the Hyper-V hypervisor ABI. Windows detects them and switches from emulated hardware paths to direct hypercalls. The effect is largest on idle CPU, interrupt handling, and timekeeping.
+
+The OpenShift Virtualization cluster preferences for Windows (`windows.2k22.virtio`, `windows.11.virtio`) already include the recommended enlightenments. Before writing your own configuration, check what the preference provides:
+
+[source,bash,role=execute]
+----
+oc get virtualmachineclusterpreference windows.2k22.virtio \
+  -o jsonpath='{.spec.features.preferredHyperv}' | yq -P
+----
+
+.Expected output
+[source,yaml]
+----
+relaxed:
+  enabled: true
+vapic:
+  enabled: true
+vpindex:
+  enabled: true
+runtime:
+  enabled: true
+synic:
+  enabled: true
+synictimer:
+  enabled: true
+  direct:
+    enabled: true
+reset:
+  enabled: true
+frequencies:
+  enabled: true
+reenlightenment:
+  enabled: true
+tlbflush:
+  enabled: true
+ipi:
+  enabled: true
+spinlocks:
+  enabled: true
+  spinlocks: 8191
+----
+
+=== Enlightenment Reference
+
+[cols="1,3,1",options="header"]
+|===
+|Enlightenment |What it does |Requires
+
+|`relaxed`
+|Tells Windows to disable its watchdog timeouts. Prevents spurious `CLOCK_WATCHDOG_TIMEOUT` bugchecks when a vCPU is descheduled by the host.
+|-
+
+|`vapic`
+|Paravirtualized APIC. Replaces MMIO access to the local APIC with hypercalls, cutting VM exits on every interrupt.
+|-
+
+|`vpindex`
+|Exposes a virtual processor index to the guest. Required by the IPI and TLB flush enlightenments.
+|-
+
+|`runtime`
+|Reports how much time each virtual processor actually ran, so the Windows scheduler accounts for steal time.
+|-
+
+|`synic`
+|Synthetic Interrupt Controller. Provides the message and event channels used by `synictimer` and `reset`.
+|-
+
+|`synictimer`
+|Synthetic timers. With `direct` enabled, timer expiry is delivered as a direct interrupt instead of a synthetic message, which lowers idle CPU noticeably.
+|`synic`
+
+|`reset`
+|Lets Windows reset and reboot itself through a hypercall rather than the emulated reset line.
+|`synic`
+
+|`frequencies`
+|Exposes TSC and APIC frequency MSRs so Windows trusts the TSC as a clock source instead of falling back to slower timers.
+|-
+
+|`reenlightenment`
+|Notifies the guest when the TSC frequency changes, which happens when a VM migrates to a node with a different clock. Required for reliable timekeeping across live migration.
+|`frequencies`
+
+|`tlbflush`
+|Remote TLB shootdowns become a single hypercall instead of an IPI storm. The gain grows with vCPU count and host overcommit.
+|`vpindex`
+
+|`ipi`
+|Bulk inter-processor interrupts through one hypercall. Same rationale as `tlbflush`.
+|`vpindex`
+
+|`spinlocks`
+|Tells Windows how many times to spin before yielding to the hypervisor. 8191 is the value the Red Hat Windows preferences use.
+|-
+|===
+
+=== Enlightenments to Avoid
+
+Do not enable `evmcs` (Enlightened VMCS) or `hypervPassthrough` unless you have a specific reason:
+
+* `evmcs` speeds up nested VM exits but disables other virtualization features and blocks live migration. Only use it if you are running Hyper-V inside the Windows guest and have accepted that the VM cannot migrate.
+
+* `hypervPassthrough` enables every supported flag automatically but makes the VM non-migratable and forbids setting individual flags. It is useful for maximum performance on a pinned VM that will never migrate, but not for general workloads.
+
+For production Windows VMs that need live migration, use the explicit list shown above or rely on the cluster preference.
+
+== Step 4: Configure Clock and Timers for Windows
+
+Windows reads the emulated RTC at boot and then maintains time from a monotonic counter. Both halves need configuration.
+
+The cluster preferences set appropriate clock and timer defaults for Windows:
+
+[source,bash,role=execute]
+----
+oc get virtualmachineclusterpreference windows.2k22.virtio \
+  -o jsonpath='{.spec.clock}' | yq -P
+----
+
+.Expected output
+[source,yaml]
+----
+preferredClockOffset:
+  utc:
+preferredTimer:
+  hpet:
+    present: false
+  hyperv:
+  pit:
+    tickPolicy: delay
+  rtc:
+    tickPolicy: catchup
+----
+
+Key settings:
+
+* `hpet: present: false` disables the High Precision Event Timer because the emulated version is expensive and Windows does not need it when the Hyper-V reference time source is present.
+* `pit: tickPolicy: delay` delivers missed ticks late rather than in a burst.
+* `rtc: tickPolicy: catchup` gradually re-injects missed RTC ticks so the guest catches up without a jump.
+* `hyperv: {}` exposes the Hyper-V reference TSC page, which is the clock source Windows prefers.
+* `utc: {}` means QEMU presents UTC in the RTC.
+
+NOTE: Windows assumes the RTC holds local time. When using `utc`, you must set the `RealTimeIsUniversal` registry value inside the guest so Windows interprets the RTC correctly. This is a one-time in-guest configuration that belongs in your golden image. See the Red Hat Windows guest documentation for details.
+
+== Step 5: Enable Multi-Queue Virtio Devices
+
+By default a virtio device has a single request queue, so all I/O funnels through one vCPU. Multi-queue gives each vCPU its own queue, which improves performance for VMs with multiple vCPUs.
+
+OpenShift Virtualization supports multi-queue for both block devices and network interfaces:
+
+[source,yaml]
+----
+spec:
+  template:
+    spec:
+      domain:
+        devices:
+          blockMultiQueue: true
+          networkInterfaceMultiqueue: true
+----
+
+=== Block Multi-Queue
+
+`blockMultiQueue` applies to virtio disks. It requires `spec.domain.resources.requests.memory` to be set on the VM. KubeVirt caps the queue count at the vCPU count.
+
+NOTE: Each additional queue pair costs host memory for its virtio rings. KubeVirt adds this to the `virt-launcher` pod's computed overhead. Watch actual pod memory usage on high vCPU guests.
+
+=== Network Multi-Queue
+
+`networkInterfaceMultiqueue` applies to virtio NICs. To take advantage of multiple queues, the NetKVM driver inside the guest must have Receive Side Scaling (RSS) enabled.
+
+NOTE: Modern VirtIO drivers for Windows ship with RSS enabled by default. If you are using a recent `virtio-win` package from Red Hat or Fedora, no additional guest configuration is required. If throughput does not improve after enabling `networkInterfaceMultiqueue`, verify RSS is active using `Get-NetAdapterRss` inside the guest and consult the Red Hat Windows guest documentation.
+
+== Step 6: Set Windows Termination Grace Period
+
+Windows VMs need a longer termination grace period than Linux VMs because Windows update processes can take several minutes to complete. If OpenShift kills the VM pod before Windows finishes shutting down, you risk filesystem corruption or incomplete updates.
+
+The Windows cluster preferences set `terminationGracePeriodSeconds: 3600`:
+
+[source,bash,role=execute]
+----
+oc get virtualmachineclusterpreference windows.2k22.virtio \
+  -o jsonpath='{.spec.devices.preferredTerminationGracePeriodSeconds}{"\n"}'
+----
+
+.Expected output
+[source,text]
+----
+3600
+----
+
+This gives Windows one hour to complete its shutdown sequence. Without the QEMU guest agent, OpenShift cannot coordinate the shutdown and the grace period simply delays the pod kill. With the agent installed, `virtctl stop` becomes a graceful, coordinated shutdown that Windows can acknowledge, and the grace period acts as a safety timeout rather than a fixed delay.
+
+TIP: The grace period is why installing the QEMU guest agent is critical for Windows VMs. See xref:getting-started:installing-qemu-guest-agent.adoc[Installing QEMU Guest Agent] for installation steps.
+
+== Step 7: Deploy an Optimized Windows VM
+
+Apply a complete Windows VM manifest with all performance settings. This example uses the `windows.2k22.virtio` preference, which already includes the enlightenments, clock, and timer configuration, and adds explicit multi-queue and memory requests.
+
+xref:attachment$windows-vm-optimization/win2k22-optimized.yaml[Download win2k22-optimized.yaml]
+
+[source,bash,role=execute]
+----
+oc apply -f - <<EOF
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: win2k22-optimized
+  namespace: windows-perf
+  labels:
+    app: win2k22-optimized
+spec:
+  runStrategy: Always
+  preference:
+    kind: VirtualMachineClusterPreference
+    name: windows.2k22.virtio
+  dataVolumeTemplates:
+    - metadata:
+        name: win2k22-optimized-rootdisk
+      spec:
+        sourceRef:
+          kind: DataSource
+          name: win2k22
+          namespace: openshift-virtualization-os-images
+        storage:
+          accessModes:
+            - ReadWriteMany
+          resources:
+            requests:
+              storage: 80Gi
+  template:
+    metadata:
+      labels:
+        kubevirt.io/domain: win2k22-optimized
+    spec:
+      domain:
+        cpu:
+          sockets: 2
+          cores: 2
+          threads: 1
+        memory:
+          guest: 8Gi
+        resources:
+          requests:
+            memory: 8Gi
+            cpu: "4"
+        devices:
+          blockMultiQueue: true
+          networkInterfaceMultiqueue: true
+          disks:
+            - name: rootdisk
+              bootOrder: 1
+              disk:
+                bus: virtio
+          interfaces:
+            - name: default
+              model: virtio
+              masquerade: {}
+      networks:
+        - name: default
+          pod: {}
+      volumes:
+        - name: rootdisk
+          dataVolume:
+            name: win2k22-optimized-rootdisk
+EOF
+----
+
+Wait for the VM to report `Running` and `Ready`:
+
+[source,bash,role=execute]
+----
+oc wait vm win2k22-optimized -n windows-perf --for=condition=Ready --timeout=20m
+----
+
+== Step 8: Verify the Configuration
+
+=== Verify the Domain Definition
+
+The `VirtualMachineInstance` shows the running VM's configuration as rendered by the preference and instance spec. Find the `virt-launcher` pod and dump the libvirt domain XML to verify the enlightenments were applied:
+
+[source,bash,role=execute]
+----
+LAUNCHER=$(oc get pod -n windows-perf -l kubevirt.io/domain=win2k22-optimized \
+  -o jsonpath='{.items[0].metadata.name}')
+
+oc exec -n windows-perf "$LAUNCHER" -c compute -- \
+  virsh dumpxml windows-perf_win2k22-optimized | sed -n '/<hyperv/,/<\/hyperv>/p'
+----
+
+.Expected output
+[source,xml]
+----
+<hyperv mode='custom'>
+  <relaxed state='on'/>
+  <vapic state='on'/>
+  <spinlocks state='on' retries='8191'/>
+  <vpindex state='on'/>
+  <runtime state='on'/>
+  <synic state='on'/>
+  <stimer state='on'>
+    <direct state='on'/>
+  </stimer>
+  <reset state='on'/>
+  <frequencies state='on'/>
+  <reenlightenment state='on'/>
+  <tlbflush state='on'/>
+  <ipi state='on'/>
+</hyperv>
+----
+
+=== Verify Multi-Queue Settings
+
+Check the queue counts on the disk and NIC:
+
+[source,bash,role=execute]
+----
+oc exec -n windows-perf "$LAUNCHER" -c compute -- \
+  virsh dumpxml windows-perf_win2k22-optimized | grep -E 'queues=|driver name'
+----
+
+.Expected output
+[source,xml]
+----
+    <driver name='qemu' type='raw' cache='none' queues='4'/>
+    <driver name='vhost' queues='4'/>
+----
+
+The `queues` values should match the vCPU count (4 in this example).
+
+=== Verify Guest Agent Connection
+
+Confirm the QEMU guest agent is reporting to the cluster:
+
+[source,bash,role=execute]
+----
+oc get vmi win2k22-optimized -n windows-perf \
+  -o jsonpath='{range .status.conditions[*]}{.type}={.status}{"\n"}{end}' | grep AgentConnected
+----
+
+.Expected output
+[source,text]
+----
+AgentConnected=True
+----
+
+If `AgentConnected` is `False` or missing, the guest agent is not installed or not running. See xref:getting-started:installing-qemu-guest-agent.adoc[Installing QEMU Guest Agent].
+
+== Step 9: Troubleshoot Windows Issues with OpenShift Tools
+
+=== Capture Guest Memory Dumps
+
+When a Windows VM is unresponsive or experiencing issues, you can capture its memory state from the cluster side without logging into the guest. KubeVirt writes the full guest RAM to a PVC while the VM keeps running.
+
+[source,bash,role=execute]
+----
+virtctl memory-dump get win2k22-optimized -n windows-perf \
+  --claim-name=win2k22-optimized-memdump --create-claim
+----
+
+Watch for completion:
+
+[source,bash,role=execute]
+----
+oc get vm win2k22-optimized -n windows-perf -o jsonpath='{.status.memoryDumpRequest}{"\n"}'
+----
+
+Once the status shows completion, download the memory dump:
+
+[source,bash,role=execute]
+----
+virtctl memory-dump download win2k22-optimized -n windows-perf \
+  --output=win2k22-optimized-memory.dump.gz
+----
+
+Release the PVC association so a later dump can use a different claim:
+
+[source,bash,role=execute]
+----
+virtctl memory-dump remove win2k22-optimized -n windows-perf
+----
+
+NOTE: The result is a raw guest memory image, not a Windows crash dump. Analyze it with a memory forensics tool such as Volatility, or convert it before loading into WinDbg. This is particularly useful when the guest is too broken to produce its own crash dump.
+
+=== Correlate with Cluster Events
+
+Before assuming a Windows issue is a guest problem, check whether the cluster or node was the cause. Repeated watchdog timeouts or DPC violations on a busy node often point at CPU overcommit rather than a driver bug.
+
+[source,bash,role=execute]
+----
+oc get events -n windows-perf --sort-by=.lastTimestamp | tail -20
+----
+
+[source,bash,role=execute]
+----
+oc describe vmi win2k22-optimized -n windows-perf | grep -A 10 'Events:'
+----
+
+Common cluster-side signals that surface as Windows issues:
+
+* `FailedScheduling` events: The node does not have enough resources to meet the VM's requests.
+* `MemoryPressure` or `DiskPressure` node conditions: The worker node is resource-constrained.
+* `virt-launcher` pod OOMKilled: The pod's memory request was too low for the VM's actual usage, especially with multi-queue enabled.
+* Repeated restarts or migrations during the timeframe when the guest had issues: The VM was disrupted by cluster operations.
+
+For Windows VMs experiencing `CLOCK_WATCHDOG_TIMEOUT` or `DPC_WATCHDOG_VIOLATION` bugchecks, check node CPU usage and vCPU overcommit. See xref:performance:cpu-pinning.adoc[Dedicated CPU Placement] for removing CPU contention and xref:performance:resource-limits-qos.adoc[Resource Limits and QoS] for sizing requests so the guest gets a Guaranteed QoS class.
+
+== Cleanup
+
+Delete the namespace and everything in it:
+
+[source,bash,role=execute]
+----
+oc delete namespace windows-perf
+----
+
+If you captured a memory dump during troubleshooting, delete the PVC:
+
+[source,bash,role=execute]
+----
+oc delete pvc win2k22-optimized-memdump -n windows-perf --ignore-not-found
+----
+
+== Summary
+
+In this tutorial you learned how to:
+
+* Discover the cluster's `virtio-win` container image through the `virtio-win` `ConfigMap`
+* Understand what Hyper-V enlightenments do and which ones Windows VMs need for optimal performance and live migration support
+* Configure clock and timer settings for Windows guests using cluster preferences
+* Enable `blockMultiQueue` and `networkInterfaceMultiqueue` for improved I/O performance on multi-vCPU VMs
+* Set an appropriate termination grace period for Windows VMs to complete shutdown safely
+* Verify that enlightenments and multi-queue settings are applied correctly by inspecting the libvirt domain XML
+* Capture guest memory dumps using `virtctl memory-dump` when a Windows VM is unresponsive
+* Correlate Windows issues with cluster events to distinguish guest problems from cluster resource contention
+
+== See Also
+
+* xref:vm-configuration:windows-vm-virtio-drivers.adoc[Deploying Windows VMs with VirtIO Drivers] -- first-time Windows installation and driver setup
+* xref:getting-started:installing-qemu-guest-agent.adoc[Installing QEMU Guest Agent] -- guest agent installation for graceful shutdown and cluster integration
+* xref:vm-configuration:instancetype-preference.adoc[Instancetype and Preference] -- understanding cluster preferences and creating custom ones
+* xref:performance:cpu-pinning.adoc[Dedicated CPU Placement] -- removing CPU contention for latency-sensitive guests
+* xref:performance:resource-limits-qos.adoc[Resource Limits and QoS] -- sizing requests and limits
+* xref:storage:disk-io-tuning.adoc[Disk I/O Tuning] -- storage-side tuning that applies to Windows guests
+* link:https://docs.redhat.com/en/documentation/openshift_container_platform/{ocp-docs-version}/html/virtualization/virtual-machines#virt-installing-virtio-drivers-on-new-windows-vm[Installing VirtIO drivers on a Windows VM,window=_blank]

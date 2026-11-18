@@ -1,0 +1,744 @@
+= Choosing the Right Storage Class for VM Disks
+:navtitle: Choosing a Storage Class
+
+== Overview
+
+The StorageClass behind a VM disk decides how fast the disk is, whether the VM can live migrate, whether you can snapshot or clone it, and whether you can grow it later. Changing that decision after a fleet of VMs is running means copying data, so it is worth getting right the first time.
+
+This guide compares the storage options available to OpenShift Virtualization: `Block` and `Filesystem` volume modes, `ReadWriteOnce` and `ReadWriteMany` access modes, CSI drivers, and the HostPath Provisioner. It ends with a decision matrix and a set of commands you can run against your own cluster to confirm what a StorageClass actually supports.
+
+== What You Will Learn
+
+* How OpenShift Virtualization turns a StorageClass into a VM disk through StorageProfiles
+* When to use `volumeMode: Block` and when `Filesystem` is acceptable
+* How access modes control live migration
+* Which CSI capabilities matter for VMs: snapshots, clones, expansion, and `ReadWriteOncePod`
+* Where the HostPath Provisioner fits and where it does not
+* How to probe a StorageClass for volume mode, access mode, and expansion support
+
+== Prerequisites
+
+* **OpenShift {ocp-min-version}+** with the OpenShift Virtualization operator installed
+* **Cluster admin access** (`system:admin` or equivalent)
+* **`oc` CLI** installed and logged in
+* **At least one StorageClass** with a working CSI provisioner
+* Roughly **35Gi of free capacity** in the target StorageClass for the optional VM validation step
+
+== How a StorageClass Becomes a VM Disk
+
+A VM disk starts as a DataVolume or a PVC and ends as a block device or a disk image file attached to the `virt-launcher` pod. The Containerized Data Importer (CDI) fills in anything the manifest leaves out by reading the StorageProfile for the StorageClass.
+
+[source,text]
+----
+VirtualMachine
+  └── dataVolumeTemplates[].spec.storage
+        │  storageClassName, accessModes, volumeMode (all optional)
+        ▼
+   StorageProfile  ──►  claimPropertySets: defaults for this provisioner
+        │                cloneStrategy, snapshotClass
+        ▼
+      PVC  ──►  CSI driver  ──►  PV
+        │
+        ▼
+  virt-launcher pod
+     volumeDevices  (volumeMode: Block)     → /dev/<disk>
+     volumeMounts   (volumeMode: Filesystem) → /disk.img on a mounted filesystem
+----
+
+Two consequences follow from this flow:
+
+* If you omit `accessModes` or `volumeMode`, CDI uses the first entry in the StorageProfile `claimPropertySets` list. Defaults differ between provisioners, so a manifest that produces a block RWX disk on Ceph can produce a filesystem RWO disk elsewhere.
+* Spelling out `accessModes` and `volumeMode` in the manifest makes the disk behave the same way on every cluster, as long as the backend supports the combination.
+
+== Volume Mode: Block or Filesystem
+
+`volumeMode` is a PVC field with two values.
+
+=== Block
+
+The PV is handed to the pod as a raw device. QEMU writes to the device directly, with no filesystem and no `disk.img` file in the path.
+
+* No filesystem layer between the guest and the device, so fewer copies and less metadata overhead
+* Required for `ReadWriteMany` live migration on most CSI drivers
+* Supports `virtio-blk` and `virtio-scsi` without extra configuration
+* Cannot be browsed with normal file tools from the host side
+
+=== Filesystem
+
+The PV is mounted into the pod and the disk lives as a `disk.img` file inside it.
+
+* The guest disk is a file, so a sparse image can consume less space than the requested capacity
+* CDI has to reserve filesystem overhead, so usable disk capacity is smaller than the PVC request (the default overhead is 5.5 percent)
+* Adds a host filesystem layer to every guest I/O operation
+* The only option on backends that do not offer raw block volumes, such as most NFS storage
+
+=== Which One to Use
+
+Use `Block` for any VM where disk performance matters, and for any VM that must live migrate. Use `Filesystem` when the backend has no block mode, when you want sparse allocation, or when you need to inspect the image file directly.
+
+NOTE: A `Filesystem` PVC on a shared filesystem such as CephFS or NFS can still support `ReadWriteMany`, so live migration is possible there. The trade-off is I/O latency, not migratability.
+
+== Access Modes and Live Migration
+
+Access modes describe how many nodes can attach a volume at once. This is what decides whether a VM can live migrate.
+
+[cols="1,1,3",options="header"]
+|===
+|Access Mode |Short |Behavior for VMs
+
+|ReadWriteOnce
+|RWO
+|One node at a time. The VM runs, but live migration is rejected because source and target `virt-launcher` pods would need the volume on two nodes at once.
+
+|ReadWriteMany
+|RWX
+|Many nodes at once. Required for live migration. The hypervisor, not the storage, arbitrates writes during the handover.
+
+|ReadOnlyMany
+|ROX
+|Many nodes, read only. Used for shared boot images and CD-ROM style disks, not for writable VM disks.
+
+|ReadWriteOncePod
+|RWOP
+|A single pod, cluster-wide. Blocks a second pod from attaching the volume even on the same node. Useful for data disks that must never be double-mounted, but it prevents live migration.
+|===
+
+A VM with any RWO disk is not migratable. Check the condition rather than guessing:
+
+[source,bash,role=execute]
+----
+oc get vmi -A -o custom-columns='NAME:.metadata.name,NAMESPACE:.metadata.namespace,MIGRATABLE:.status.conditions[?(@.type=="LiveMigratable")].status,REASON:.status.conditions[?(@.type=="LiveMigratable")].reason'
+----
+
+A VMI backed by RWO disks reports `MIGRATABLE=False` with reason `DisksNotLiveMigratable`.
+
+IMPORTANT: Node draining during a cluster upgrade evicts VMs. With RWO disks, the eviction strategy falls back to a shutdown instead of a migration, so plan maintenance windows for those VMs.
+
+== CSI Driver Capabilities That Matter for VMs
+
+Four capabilities separate a usable VM StorageClass from a marginal one.
+
+=== Snapshots
+
+VM snapshots (`VirtualMachineSnapshot`) rely on CSI volume snapshots. Without a VolumeSnapshotClass bound to the same provisioner, a snapshot of a running VM either fails or degrades to an offline copy. The StorageProfile `status.snapshotClass` field tells you what CDI found.
+
+=== Clones
+
+CDI clones a golden image into each new VM disk. The StorageProfile `status.cloneStrategy` field reports which method is used:
+
+* `snapshot` — creates a volume snapshot and restores it into the new PVC. Fast, and the usual choice on Ceph RBD.
+* `csi-clone` — asks the CSI driver for a native volume clone. Fast where the driver implements it.
+* `copy` — starts a helper pod and copies the data block by block. Always works, but the copy time scales with disk size.
+
+A `copy` strategy on a 100Gi golden image means every new VM waits for a full 100Gi copy.
+
+=== Volume Expansion
+
+`allowVolumeExpansion: true` on the StorageClass lets you grow a VM disk by editing the PVC request. Without it, growing a disk means creating a larger disk and copying data. Expansion on a running VM also requires the driver to support online expansion; otherwise the VM must be stopped.
+
+=== Capability Summary by Backend
+
+[cols="2,1,1,1,1,1",options="header"]
+|===
+|Backend |Block |RWX |Snapshots |Clone Strategy |Expansion
+
+|Ceph RBD (ODF)
+|Yes
+|Yes
+|Yes
+|`snapshot`
+|Yes
+
+|CephFS (ODF)
+|No
+|Yes
+|Yes
+|`snapshot`
+|Yes
+
+|LVM Storage (topolvm)
+|Yes
+|No
+|Yes
+|`copy`
+|Yes
+
+|HostPath Provisioner
+|No
+|No
+|No
+|`copy`
+|No
+
+|NFS CSI
+|No
+|Yes
+|Driver dependent
+|`copy`
+|Driver dependent
+
+|Cloud block (EBS, Azure Disk, GCE PD)
+|Yes
+|No
+|Yes
+|`csi-clone` or `snapshot`
+|Yes
+|===
+
+Treat this table as a starting point. Verify against your own cluster with the commands in the procedure below, because driver versions and cluster configuration change the answers.
+
+== The HostPath Provisioner
+
+The HostPath Provisioner (HPP) creates PVs from a directory on a node's local disk. It ships with OpenShift Virtualization and needs no storage array.
+
+=== Where It Fits
+
+* Single-node OpenShift, where there is nowhere to migrate to anyway
+* Development and test clusters that need working storage with no external dependency
+* Scratch or cache disks whose contents can be rebuilt
+* Bare-metal labs with fast local NVMe and no shared storage
+
+=== Limitations
+
+* RWO only, so no live migration
+* `Filesystem` volume mode only
+* No CSI snapshots, so `VirtualMachineSnapshot` objects will not work
+* No volume expansion
+* The volume is pinned to one node. If that node is lost, the data is gone.
+* Capacity is whatever is left on the node path, and nothing stops other workloads from filling it
+
+For the installation procedure, see xref:hostpath-provisioner.adoc[HostPath Provisioner].
+
+== Decision Matrix
+
+Start with the workload, then pick the configuration.
+
+[cols="2,2,1,1,2",options="header"]
+|===
+|Workload |Preferred Backend |Volume Mode |Access Mode |Why
+
+|Production VM needing live migration
+|Ceph RBD or other RWX block CSI
+|Block
+|RWX
+|Migration needs the volume on two nodes at once.
+
+|Production VM, migration not required
+|Any CSI block driver
+|Block
+|RWO
+|Simplest configuration with full block performance.
+
+|Database VM, latency sensitive
+|Local NVMe via LVM Storage
+|Block
+|RWO
+|Lowest latency. Accept the loss of migration, or use application-level replication.
+
+|VM needing snapshots and fast cloning
+|CSI driver with a VolumeSnapshotClass
+|Block
+|RWX or RWO
+|`snapshot` or `csi-clone` strategy avoids full-copy clones.
+
+|Golden image and template storage
+|CSI driver with snapshot support
+|Block
+|RWX
+|Clone targets can land on any node.
+
+|Single-node OpenShift, any VM
+|LVM Storage or HostPath
+|Block or Filesystem
+|RWO
+|There is no second node, so RWO costs nothing.
+
+|Dev and test VMs, disposable
+|HostPath Provisioner
+|Filesystem
+|RWO
+|No external storage needed.
+
+|Shared data disk across VMs
+|CephFS or NFS
+|Filesystem
+|RWX
+|A shared filesystem handles concurrent access.
+
+|Windows VM with Sysprep and templates
+|CSI block with snapshots
+|Block
+|RWX
+|Template cloning dominates provisioning time.
+|===
+
+Two rules cover most of the remaining cases:
+
+* If live migration is a requirement, start from RWX and work backwards. Everything else can be adjusted later; migration capability cannot be added to an RWO disk without copying it.
+* If the workload is a database or anything else with a small-block write pattern, start from `Block` volume mode on the lowest-latency backend that still meets your availability requirements.
+
+== Step 1: Inventory the Storage Classes
+
+List every StorageClass with the fields that matter for VM disks:
+
+[source,bash,role=execute]
+----
+oc get storageclass -o custom-columns='NAME:.metadata.name,PROVISIONER:.provisioner,EXPANSION:.allowVolumeExpansion,BINDING:.volumeBindingMode,RECLAIM:.reclaimPolicy,DEFAULT:.metadata.annotations.storageclass\.kubernetes\.io/is-default-class'
+----
+
+.Expected output
+[source,text]
+----
+NAME       PROVISIONER   EXPANSION   BINDING                RECLAIM   DEFAULT
+lvms-vg1   topolvm.io    true        WaitForFirstConsumer   Delete    true
+----
+
+Read the row as follows:
+
+* `EXPANSION: true` means you can grow VM disks in place.
+* `BINDING: WaitForFirstConsumer` delays provisioning until a pod is scheduled. Local and topology-aware backends need this. It also means a PVC with no consumer stays `Pending`, which is normal rather than an error.
+* `RECLAIM: Delete` removes the backing volume when the PVC is deleted. Use `Retain` for data you cannot lose to an accidental VM deletion.
+
+Check which CSI drivers are registered:
+
+[source,bash,role=execute]
+----
+oc get csidrivers
+----
+
+.Expected output
+[source,text]
+----
+NAME         ATTACHREQUIRED   PODINFOONMOUNT   STORAGECAPACITY   TOKENREQUESTS   REQUIRESREPUBLISH   MODES        AGE
+topolvm.io   false            true             true              <unset>         false               Persistent   88d
+----
+
+== Step 2: Inspect the StorageProfile
+
+CDI creates one StorageProfile per StorageClass and fills in the defaults it will apply to VM disks:
+
+[source,bash,role=execute]
+----
+oc get storageprofile -o custom-columns='NAME:.metadata.name,PROVISIONER:.status.provisioner,CLONE:.status.cloneStrategy,SNAPCLASS:.status.snapshotClass'
+----
+
+.Expected output
+[source,text]
+----
+NAME       PROVISIONER   CLONE   SNAPCLASS
+lvms-vg1   topolvm.io    copy    lvms-vg1
+----
+
+List the volume mode and access mode combinations CDI considers valid for this class:
+
+[source,bash,role=execute]
+----
+oc get storageprofile lvms-vg1 -o jsonpath='{range .status.claimPropertySets[*]}{.volumeMode}{"\t"}{.accessModes}{"\n"}{end}'
+----
+
+.Expected output
+[source,text]
+----
+Block	["ReadWriteOnce"]
+Filesystem	["ReadWriteOnce"]
+----
+
+The first entry is the default. Here, a DataVolume that omits `volumeMode` and `accessModes` gets a `Block` RWO disk, and RWX is not offered at all, which tells you up front that VMs on this class cannot live migrate.
+
+TIP: If the profile shows `Recognized: False`, CDI does not know the provisioner. Set `spec.claimPropertySets` on the StorageProfile yourself so CDI stops guessing.
+
+Inspect the full profile when you need the conditions as well:
+
+[source,bash,role=execute]
+----
+oc get storageprofile lvms-vg1 -o yaml
+----
+
+== Step 3: Confirm Snapshot Support
+
+A VolumeSnapshotClass must exist for the same driver, otherwise VM snapshots and snapshot-based clones are unavailable:
+
+[source,bash,role=execute]
+----
+oc get volumesnapshotclass
+----
+
+.Expected output
+[source,text]
+----
+NAME       DRIVER       DELETIONPOLICY   AGE
+lvms-vg1   topolvm.io   Delete           88d
+----
+
+Match the `DRIVER` column against the `PROVISIONER` value from Step 2. If there is no matching row, the StorageClass cannot back `VirtualMachineSnapshot` objects.
+
+== Step 4: Probe Volume Mode and Access Mode Support
+
+The StorageProfile reports what CDI believes. This step confirms what the driver actually does. Create a namespace for the probes:
+
+xref:attachment$choosing-storage-class/namespace-storage-selection-demo.yaml[Download namespace-storage-selection-demo.yaml]
+
+[source,bash,role=execute]
+----
+oc create namespace storage-selection-demo
+----
+
+Create three small PVCs. The first requests block RWO:
+
+xref:attachment$choosing-storage-class/pvc-block-probe.yaml[Download pvc-block-probe.yaml]
+
+[source,bash,role=execute]
+----
+oc apply -f - <<EOF
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: probe-block
+  namespace: storage-selection-demo
+spec:
+  accessModes:
+    - ReadWriteOnce
+  volumeMode: Block
+  resources:
+    requests:
+      storage: 1Gi
+  storageClassName: lvms-vg1
+EOF
+----
+
+The second requests filesystem RWO:
+
+xref:attachment$choosing-storage-class/pvc-filesystem-probe.yaml[Download pvc-filesystem-probe.yaml]
+
+[source,bash,role=execute]
+----
+oc apply -f - <<EOF
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: probe-filesystem
+  namespace: storage-selection-demo
+spec:
+  accessModes:
+    - ReadWriteOnce
+  volumeMode: Filesystem
+  resources:
+    requests:
+      storage: 1Gi
+  storageClassName: lvms-vg1
+EOF
+----
+
+The third requests block RWX, the combination live migration needs:
+
+xref:attachment$choosing-storage-class/pvc-rwx-probe.yaml[Download pvc-rwx-probe.yaml]
+
+[source,bash,role=execute]
+----
+oc apply -f - <<EOF
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: probe-rwx
+  namespace: storage-selection-demo
+spec:
+  accessModes:
+    - ReadWriteMany
+  volumeMode: Block
+  resources:
+    requests:
+      storage: 1Gi
+  storageClassName: lvms-vg1
+EOF
+----
+
+On a `WaitForFirstConsumer` class the PVCs stay `Pending` until a pod consumes them, so schedule a consumer pod for the two RWO claims:
+
+xref:attachment$choosing-storage-class/pod-probe-consumer.yaml[Download pod-probe-consumer.yaml]
+
+[source,bash,role=execute]
+----
+oc apply -f - <<EOF
+apiVersion: v1
+kind: Pod
+metadata:
+  name: probe-consumer
+  namespace: storage-selection-demo
+spec:
+  restartPolicy: Never
+  containers:
+    - name: probe
+      image: registry.access.redhat.com/ubi9/ubi-minimal:latest
+      command:
+        - sleep
+        - "600"
+      volumeMounts:
+        - name: fs
+          mountPath: /mnt/fs
+      volumeDevices:
+        - name: blk
+          devicePath: /dev/probe
+  volumes:
+    - name: fs
+      persistentVolumeClaim:
+        claimName: probe-filesystem
+    - name: blk
+      persistentVolumeClaim:
+        claimName: probe-block
+EOF
+----
+
+Wait for the pod, then check the claims:
+
+[source,bash,role=execute]
+----
+oc wait --for=condition=Ready pod/probe-consumer -n storage-selection-demo --timeout=180s
+oc get pvc -n storage-selection-demo -o custom-columns='NAME:.metadata.name,MODE:.spec.volumeMode,ACCESS:.spec.accessModes,STATUS:.status.phase'
+----
+
+.Expected output
+[source,text]
+----
+NAME               MODE         ACCESS            STATUS
+probe-block        Block        [ReadWriteOnce]   Bound
+probe-filesystem   Filesystem   [ReadWriteOnce]   Bound
+probe-rwx          Block        [ReadWriteMany]   Pending
+----
+
+Both RWO claims bound, so this driver supports block and filesystem volume modes. Now give the RWX claim a consumer so the provisioner is forced to act on it:
+
+xref:attachment$choosing-storage-class/pod-probe-rwx-consumer.yaml[Download pod-probe-rwx-consumer.yaml]
+
+[source,bash,role=execute]
+----
+oc apply -f - <<EOF
+apiVersion: v1
+kind: Pod
+metadata:
+  name: probe-rwx-consumer
+  namespace: storage-selection-demo
+spec:
+  restartPolicy: Never
+  containers:
+    - name: probe
+      image: registry.access.redhat.com/ubi9/ubi-minimal:latest
+      command:
+        - sleep
+        - "600"
+      volumeDevices:
+        - name: blk
+          devicePath: /dev/probe
+  volumes:
+    - name: blk
+      persistentVolumeClaim:
+        claimName: probe-rwx
+EOF
+----
+
+Inspect the events on the RWX claim:
+
+[source,bash,role=execute]
+----
+oc describe pvc probe-rwx -n storage-selection-demo | tail -8
+----
+
+.Expected output
+[source,text]
+----
+Events:
+  Type     Reason                Age   From                          Message
+  ----     ------                ----  ----                          -------
+  Normal   ExternalProvisioning  20s   persistentvolume-controller   Waiting for a volume to be created either by the external provisioner 'topolvm.io' or manually by the system administrator.
+  Normal   Provisioning          20s   topolvm.io_lvms-operator      External provisioner is provisioning volume for claim "storage-selection-demo/probe-rwx"
+  Warning  ProvisioningFailed    20s   topolvm.io_lvms-operator      failed to provision volume with StorageClass "lvms-vg1": rpc error: code = InvalidArgument desc = unsupported access mode: MULTI_NODE_MULTI_WRITER
+----
+
+`MULTI_NODE_MULTI_WRITER` is the CSI name for RWX. The rejection confirms that VMs on this StorageClass cannot live migrate. On an RWX-capable backend such as Ceph RBD, the claim binds instead.
+
+== Step 5: Confirm Expansion Support
+
+Grow the filesystem probe claim from 1Gi to 2Gi:
+
+[source,bash,role=execute]
+----
+oc patch pvc probe-filesystem -n storage-selection-demo --type merge \
+  -p '{"spec":{"resources":{"requests":{"storage":"2Gi"}}}}'
+----
+
+Expansion is asynchronous. Poll until the status capacity catches up:
+
+[source,bash,role=execute]
+----
+oc get pvc probe-filesystem -n storage-selection-demo -w \
+  -o custom-columns='NAME:.metadata.name,REQUESTED:.spec.resources.requests.storage,ACTUAL:.status.capacity.storage'
+----
+
+.Expected output
+[source,text]
+----
+NAME               REQUESTED   ACTUAL
+probe-filesystem   2Gi         1Gi
+probe-filesystem   2Gi         2Gi
+----
+
+Press `Ctrl+C` to stop watching. If `ACTUAL` never changes, check the events:
+
+[source,bash,role=execute]
+----
+oc describe pvc probe-filesystem -n storage-selection-demo | tail -6
+----
+
+A successful online expansion reports `Resizing`, then `FileSystemResizeRequired`, then `FileSystemResizeSuccessful`. A driver that only supports offline expansion leaves the claim in `FileSystemResizePending` until the consumer pod restarts.
+
+== Step 6: Validate the Choice with a VM
+
+Deploy a VM that pins the storage configuration explicitly instead of relying on StorageProfile defaults:
+
+xref:attachment$choosing-storage-class/vm-storage-choice.yaml[Download vm-storage-choice.yaml]
+
+WARNING: The cloud-init password in this example is for demo purposes only. Use SSH keys or a strong unique password in production.
+
+[source,bash,role=execute]
+----
+oc apply -f - <<EOF
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: storage-choice-vm
+  namespace: storage-selection-demo
+spec:
+  instancetype:
+    name: u1.small
+  preference:
+    name: rhel.9
+  runStrategy: Always
+  template:
+    metadata:
+      labels:
+        kubevirt.io/domain: storage-choice-vm
+    spec:
+      domain:
+        devices:
+          disks:
+            - disk:
+                bus: virtio
+              name: rootdisk
+            - disk:
+                bus: virtio
+              name: cloudinitdisk
+          interfaces:
+            - masquerade: {}
+              name: default
+      networks:
+        - name: default
+          pod: {}
+      volumes:
+        - name: rootdisk
+          dataVolume:
+            name: storage-choice-rootdisk
+        - name: cloudinitdisk
+          cloudInitNoCloud:
+            userData: |
+              #cloud-config
+              password: redhat
+              chpasswd:
+                expire: false
+  dataVolumeTemplates:
+    - apiVersion: cdi.kubevirt.io/v1beta1
+      kind: DataVolume
+      metadata:
+        name: storage-choice-rootdisk
+      spec:
+        sourceRef:
+          kind: DataSource
+          name: rhel9
+          namespace: openshift-virtualization-os-images
+        storage:
+          accessModes:
+            - ReadWriteOnce
+          volumeMode: Block
+          resources:
+            requests:
+              storage: 30Gi
+          storageClassName: lvms-vg1
+EOF
+----
+
+Wait for the VM to start:
+
+[source,bash,role=execute]
+----
+oc wait --for=condition=Ready vm/storage-choice-vm -n storage-selection-demo --timeout=900s
+----
+
+Confirm the disk landed with the requested properties:
+
+[source,bash,role=execute]
+----
+oc get pvc storage-choice-rootdisk -n storage-selection-demo \
+  -o custom-columns='NAME:.metadata.name,MODE:.spec.volumeMode,ACCESS:.spec.accessModes,CLASS:.spec.storageClassName,STATUS:.status.phase'
+----
+
+.Expected output
+[source,text]
+----
+NAME                      MODE    ACCESS            CLASS      STATUS
+storage-choice-rootdisk   Block   [ReadWriteOnce]   lvms-vg1   Bound
+----
+
+Check the migration verdict for this configuration:
+
+[source,bash,role=execute]
+----
+oc get vmi storage-choice-vm -n storage-selection-demo \
+  -o jsonpath='{.status.conditions[?(@.type=="LiveMigratable")].status}{"\t"}{.status.conditions[?(@.type=="LiveMigratable")].reason}{"\n"}'
+----
+
+.Expected output
+[source,text]
+----
+False	DisksNotLiveMigratable
+----
+
+This is the end-to-end confirmation: an RWO disk, whatever the backend, produces a VM that cannot live migrate. Repeat this check whenever you add a StorageClass to the cluster.
+
+== Common Mistakes
+
+* **Relying on defaults across clusters.** A manifest with no `volumeMode` produces different disks on different backends. Set it explicitly.
+* **Requesting RWX on a local-storage class.** The PVC stays `Pending` with `unsupported access mode`. Check the StorageProfile first.
+* **Expecting VM snapshots without a VolumeSnapshotClass.** The snapshot object is created but never becomes ready.
+* **Sizing a filesystem disk to the exact guest requirement.** CDI reserves filesystem overhead, so the usable disk is smaller than the PVC request. Add headroom or use `Block`.
+* **Marking two StorageClasses as default.** PVCs with no `storageClassName` then bind unpredictably. Keep one default, as described in xref:getting-started:default-storage-class.adoc[Setting a Default Storage Class].
+
+== Cleanup
+
+Remove the probe namespace and everything in it:
+
+[source,bash,role=execute]
+----
+oc delete namespace storage-selection-demo
+----
+
+== Summary
+
+In this guide, you learned:
+
+* How CDI turns a StorageClass into a VM disk through the StorageProfile `claimPropertySets` defaults
+* When `Block` volume mode is the right choice and when `Filesystem` is acceptable
+* Why RWX is required for live migration, and how RWO, ROX, and RWOP behave for VM disks
+* Which CSI capabilities matter for VMs: snapshots, clone strategy, and volume expansion
+* Where the HostPath Provisioner fits, and the limitations that rule it out for production VMs
+* How to read the decision matrix to map a workload to a storage configuration
+* How to probe a StorageClass for volume mode, access mode, and expansion support with PVCs and consumer pods
+
+== See Also
+
+* xref:hostpath-provisioner.adoc[HostPath Provisioner]
+* xref:lvm-operator.adoc[LVM Storage Operator]
+* xref:odf-ceph-storage.adoc[OpenShift Data Foundation with Ceph]
+* xref:disk-io-tuning.adoc[VM Disk I/O Performance Tuning]
+* xref:expanding-vm-disk-size.adoc[Expanding VM Disk Size]
+* xref:vm-lifecycle:live-migration.adoc[Live Migration of Virtual Machines]
+* xref:vm-lifecycle:vm-snapshots.adoc[VM Snapshots]
+* link:https://docs.redhat.com/en/documentation/openshift_container_platform/{ocp-docs-version}/html/virtualization/storage[OpenShift Virtualization - Storage,window=_blank]
+* link:https://docs.redhat.com/en/documentation/openshift_container_platform/{ocp-docs-version}/html/storage/using-container-storage-interface-csi[OpenShift - Container Storage Interface,window=_blank]
