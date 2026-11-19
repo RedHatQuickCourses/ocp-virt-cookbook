@@ -29,7 +29,7 @@ spec:
 
 == LimitRanges
 
-LimitRanges are used to set default resource requests and limits for pods in a namespace. This ensures that all pods have a minimum and maximum amount of resources allocated to them, which helps prevent resource contention and ensures fair usage among different workloads.
+LimitRanges are used to set default resource requests and limits for pods in a namespace. This ensures that all pods have a minimum and maximum amount of resources allocated to them, which helps prevent resource contention and ensures fair usage among different workloads. You can also define default resource requests.
 
 [source, yaml]
 ----
@@ -60,6 +60,12 @@ spec:
 
 == Setting up cost management
 
+The simplest way to set up cost management is to use the OpenShift Cost Management Operator. It can be installed from the OpenShift OperatorHub and configured to collect usage data from the cluster.
+
+NOTE: if you have never created an OpenShift integration before, you will need to set `create_source` to `true` in the configuration file.
+
+For more details on installing and configuring the OpenShift Cost Management Operator, refer to the official documentation: link:https://docs.redhat.com/en/documentation/cost_management_service/1-latest/integrate-install_cost_operator#installing-cost-operator_before-you-begin[Install the cost management operator,window=_blank]
+
 == How to build a simple usage report
 
 == Pricing models
@@ -69,3 +75,10 @@ spec:
 === Per resource unit
 
 === Tiered
+
+== See Also
+
+* link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/scalability_and_performance/compute-resource-quotas#admin-quota-limits_using-quotas-and-limit-ranges[Using quotas and limit ranges,window=_blank]
+
+* link:https://docs.redhat.com/en/documentation/cost_management_service/1-latest/integrate-install_cost_operator#installing-cost-operator_before-you-begin[Install the cost management operator,window=_blank]
+
