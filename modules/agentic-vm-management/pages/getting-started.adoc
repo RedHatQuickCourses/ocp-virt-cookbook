@@ -1,5 +1,6 @@
 = Getting Started with Agentic VM Management
 :navtitle: Getting Started with rh-virt
+:page-type: tutorial
 
 == Overview
 
@@ -69,6 +70,7 @@ cd agentic-plugins
 
 === Add the rh-virt local module to lola
 
+[source,text]
 ----
 lola mod add rh-virt
 ----
@@ -177,6 +179,7 @@ oc get virtualmachines -A
 
 The output lists all virtual machines across namespaces:
 
+[source,text]
 ----
 NAMESPACE   NAME               AGE    STATUS    READY
 default     fedora-quickstart  4d7h   Running   True
@@ -195,12 +198,14 @@ After installing the skill pack and setting KUBECONFIG, restart Claude Code or C
 
 In the IDE chat, type:
 
+[source,text]
 ----
 List all VMs
 ----
 
 The agent routes the request to the `vm-inventory` skill, which calls `resources_list` on the MCP server and returns a formatted table:
 
+[source,markdown]
 ----
 ## Virtual Machines (All Namespaces)
 
@@ -216,6 +221,7 @@ Summary:
 
 If the MCP server is not reachable, the skill reports:
 
+[source,text]
 ----
 Cannot execute vm-inventory: MCP server not available.
 Setup: Add openshift-virtualization to mcps.json, set KUBECONFIG, restart Claude Code.

@@ -1,5 +1,6 @@
 = Live Migration and Cluster Rebalancing
 :navtitle: VM Rebalancing and Live Migration
+:page-type: tutorial
 
 This tutorial demonstrates how to migrate virtual machines across cluster nodes using natural language commands through the `vm-rebalance` agent skill. You will learn how to rebalance VMs manually (user-driven) and automatically (AI-driven), understand the differences between live and cold migration, and practice common scenarios such as draining a node for maintenance and optimizing cluster load distribution.
 
@@ -23,14 +24,17 @@ oc create namespace my-vms
 
 If you do not have VMs to work with, create them using the `vm-create` skill by typing in your IDE chat:
 
+[source,text]
 ----
 Create a Fedora VM named web-01 in namespace my-vms
 ----
 
+[source,text]
 ----
 Create a Fedora VM named web-02 in namespace my-vms
 ----
 
+[source,text]
 ----
 Create a Fedora VM named db-01 in namespace my-vms
 ----
@@ -44,6 +48,7 @@ oc get vm -n my-vms
 
 Expected output:
 
+[source,text]
 ----
 NAME     AGE   STATUS    READY
 db-01    3m    Running   True
@@ -60,6 +65,7 @@ oc get vmi -n my-vms -o custom-columns="NAME:.metadata.name,NODE:.status.nodeNam
 
 Expected output:
 
+[source,text]
 ----
 NAME     NODE        PHASE
 db-01    worker-02   Running
@@ -142,12 +148,14 @@ This example moves a single VM to a specific target node using live migration.
 
 . In your IDE chat, type:
 +
+[source,text]
 ----
 Migrate VM web-01 from worker-01 to worker-02 in namespace my-vms
 ----
 
 . The agent validates the VM, checks the target node's readiness and capacity, inspects the storage access mode, and presents the migration plan:
 +
+[source,markdown]
 ----
 ## VM Migration Plan
 
@@ -168,12 +176,14 @@ Proceed with migration? (yes/no)
 
 . You review the plan and confirm:
 +
+[source,text]
 ----
 yes
 ----
 
 . The agent initiates the VirtualMachineInstanceMigration, monitors the state transitions, and reports:
 +
+[source,markdown]
 ----
 ## VM Migration Progress
 
@@ -200,6 +210,7 @@ You can verify the VM is now running on the target node:
 oc get vmi web-01 -n my-vms -o jsonpath='{.status.nodeName}'
 ----
 
+[source,text]
 ----
 worker-02
 ----
@@ -210,12 +221,14 @@ This example demonstrates cold migration for a VM whose storage uses `ReadWriteO
 
 . In your IDE chat, type:
 +
+[source,text]
 ----
 Move VM db-01 to worker-01 in namespace my-vms
 ----
 
 . The agent detects that the VM's PVC uses RWO access mode and warns about the required downtime:
 +
+[source,markdown]
 ----
 ## VM Migration Plan
 
@@ -243,12 +256,14 @@ Proceed with cold migration? (yes/no)
 
 . You confirm:
 +
+[source,text]
 ----
 yes
 ----
 
 . The agent performs the stop-migrate-start sequence and reports:
 +
+[source,markdown]
 ----
 ## Cold Migration Progress
 
@@ -271,12 +286,14 @@ This example drains all VMs from a node before maintenance. The agent migrates e
 
 . In your IDE chat, type:
 +
+[source,text]
 ----
 Drain all VMs from worker-01 for maintenance in namespace my-vms
 ----
 
 . The agent inventories all VMs on the specified node, checks storage compatibility for each, and presents a drain plan:
 +
+[source,markdown]
 ----
 ## Node Drain Plan: worker-01
 
@@ -298,12 +315,14 @@ Approve drain plan? (yes/no)
 
 . You approve:
 +
+[source,text]
 ----
 yes
 ----
 
 . The agent migrates each VM sequentially and reports progress:
 +
+[source,markdown]
 ----
 ## Node Drain Progress
 
@@ -341,12 +360,14 @@ This example uses automatic mode to let the agent analyze cluster resource utili
 
 . In your IDE chat, type:
 +
+[source,text]
 ----
 Rebalance VMs across nodes in namespace my-vms
 ----
 
 . The agent gathers node metrics, analyzes the current VM distribution, and proposes a rebalancing plan:
 +
+[source,markdown]
 ----
 ## Cluster Analysis
 
@@ -375,12 +396,14 @@ Approve rebalancing plan? (yes/no)
 
 . You review the plan and approve:
 +
+[source,text]
 ----
 yes
 ----
 
 . The agent executes the migration and reports:
 +
+[source,markdown]
 ----
 ## Rebalancing Progress
 
@@ -405,6 +428,7 @@ You can verify the new distribution:
 oc get vmi -n my-vms -o custom-columns="NAME:.metadata.name,NODE:.status.nodeName,PHASE:.status.phase"
 ----
 
+[source,text]
 ----
 NAME     NODE        PHASE
 db-01    worker-01   Running
@@ -435,6 +459,7 @@ You can check a VM's PVC access mode:
 oc get pvc -n my-vms -o custom-columns="NAME:.metadata.name,ACCESS:.status.accessModes[0],CAPACITY:.status.capacity.storage"
 ----
 
+[source,text]
 ----
 NAME                 ACCESS          CAPACITY
 db-01-rootdisk       ReadWriteOnce   30Gi
@@ -466,6 +491,7 @@ The agent verifies the target node is not cordoned or marked as unschedulable:
 oc get nodes -o custom-columns="NAME:.metadata.name,STATUS:.status.conditions[-1].type,SCHEDULABLE:.spec.unschedulable"
 ----
 
+[source,text]
 ----
 NAME        STATUS   SCHEDULABLE
 worker-01   Ready    <none>

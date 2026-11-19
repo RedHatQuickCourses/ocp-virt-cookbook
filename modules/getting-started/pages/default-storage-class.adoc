@@ -1,5 +1,6 @@
 = Configuring Default Storage Class
 :navtitle: Storage Setup
+:page-type: tutorial
 
 == Overview
 
@@ -26,6 +27,7 @@ oc get sc
 This command will list all the storage classes, showing their names and provisioners. Look for any storage class that has `(default)` next to its name, which indicates it's currently set as the default.
 
 Example output showing no default storage class:
+[source,text]
 ----
 NAME                    PROVISIONER                             RECLAIMPOLICY   VOLUMEBINDINGMODE      ALLOWVOLUMEEXPANSION   AGE
 ceph-rbd-sc             rbd.csi.ceph.com                        Delete          Immediate              true                   2d
@@ -34,6 +36,7 @@ local-storage           kubernetes.io/no-provisioner            Delete          
 ----
 
 Example output showing an existing default storage class:
+[source,text]
 ----
 NAME                    PROVISIONER                             RECLAIMPOLICY   VOLUMEBINDINGMODE      ALLOWVOLUMEEXPANSION   AGE
 ceph-rbd-sc (default)   rbd.csi.ceph.com                        Delete          Immediate              true                   2d
@@ -87,6 +90,7 @@ oc get sc
 ----
 
 Example output after setting the default:
+[source,text]
 ----
 NAME                    PROVISIONER                             RECLAIMPOLICY   VOLUMEBINDINGMODE      ALLOWVOLUMEEXPANSION   AGE
 ceph-rbd-sc (default)   rbd.csi.ceph.com                        Delete          Immediate              true                   2d
@@ -126,6 +130,7 @@ oc get pvc test-default-storage -n default
 
 Example output:
 
+[source,text]
 ----
 NAME                   STATUS    VOLUME   CAPACITY   ACCESS MODES   STORAGECLASS   AGE
 test-default-storage   Pending                                      lvms-vg1       0s

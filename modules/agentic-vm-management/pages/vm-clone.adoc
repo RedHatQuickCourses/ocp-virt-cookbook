@@ -1,5 +1,6 @@
 = Cloning Virtual Machines with AI Agents
 :navtitle: Cloning VMs
+:page-type: tutorial
 
 This tutorial demonstrates how to clone existing virtual machines using natural language commands through the `vm-clone` agent skill. The agent retrieves the source VM's full configuration and storage layout, asks you to choose a storage cloning strategy, presents a resource-impact summary, and waits for your explicit confirmation before creating any cluster resources.
 
@@ -21,6 +22,7 @@ oc create namespace qa-environment
 
 If you do not have a source VM, create one using the `vm-create` skill by typing in your IDE chat:
 
+[source,text]
 ----
 Create a Fedora VM named web-server in namespace my-vms
 ----
@@ -34,6 +36,7 @@ oc get vm -n my-vms
 
 Expected output:
 
+[source,text]
 ----
 NAME         AGE   STATUS    READY
 web-server   5m    Running   True
@@ -73,12 +76,14 @@ This example clones a VM with an independent copy of its disk, which is the most
 
 . In your IDE chat, type:
 +
+[source,text]
 ----
 Clone web-server to web-server-test in namespace qa-environment
 ----
 
 . The agent retrieves the source VM configuration, discovers its 30Gi root disk, checks that no VM named `web-server-test` exists in `qa-environment`, and presents storage options:
 +
+[source,markdown]
 ----
 ## VM Cloning - Storage Strategy
 
@@ -97,12 +102,14 @@ Clone web-server to web-server-test in namespace qa-environment
 
 . You select option 1 for a full copy:
 +
+[source,text]
 ----
 1
 ----
 
 . The agent checks ResourceQuotas in the target namespace and presents the clone configuration for confirmation:
 +
+[source,markdown]
 ----
 ## VM Clone Configuration - Review
 
@@ -120,12 +127,14 @@ Clone web-server to web-server-test in namespace qa-environment
 
 . You confirm:
 +
+[source,text]
 ----
 yes
 ----
 
 . The agent creates the DataVolume (triggering the storage clone), creates the VirtualMachine, monitors cloning progress, and reports:
 +
+[source,markdown]
 ----
 ## VM Cloned Successfully
 
@@ -145,6 +154,7 @@ You can verify the clone with:
 oc get vm -n qa-environment
 ----
 
+[source,text]
 ----
 NAME              AGE   STATUS    READY
 web-server-test   8m    Stopped   False
@@ -155,6 +165,7 @@ web-server-test   8m    Stopped   False
 oc get datavolume -n qa-environment
 ----
 
+[source,text]
 ----
 NAME                       PHASE       PROGRESS   RESTARTS   AGE
 web-server-test-rootdisk   Succeeded   100.0%                8m
@@ -166,18 +177,21 @@ This example creates a clone that preserves the VM configuration (instance type,
 
 . In your IDE chat, type:
 +
+[source,text]
 ----
 Clone web-server to clean-worker in namespace my-vms with empty storage
 ----
 
 . The agent presents storage options. You select option 3:
 +
+[source,text]
 ----
 3
 ----
 
 . After confirmation, the agent creates the VM with an empty DataVolume and reports:
 +
+[source,markdown]
 ----
 ## VM Cloned Successfully
 
@@ -196,12 +210,14 @@ The `vm-clone` skill supports creating multiple clones from a single source VM i
 
 . In your IDE chat, type:
 +
+[source,text]
 ----
 Create 3 copies of web-server named app-01, app-02, app-03 in namespace qa-environment
 ----
 
 . The agent validates the source VM, checks that all three target names are available, and asks for a storage strategy once (applied to all clones):
 +
+[source,markdown]
 ----
 ## Batch Cloning: 3 VMs from `web-server`
 
@@ -215,6 +231,7 @@ Create 3 copies of web-server named app-01, app-02, app-03 in namespace qa-envir
 
 . You select option 1 (clone storage). The agent then processes each clone individually with separate confirmation:
 +
+[source,markdown]
 ----
 ## Clone 1 of 3: app-01
 
@@ -224,6 +241,7 @@ Create 3 copies of web-server named app-01, app-02, app-03 in namespace qa-envir
 
 . You confirm each clone. The agent creates them one at a time, stopping on first failure:
 +
+[source,markdown]
 ----
 ## Batch Cloning Complete
 
@@ -244,6 +262,7 @@ You can verify all clones:
 oc get vm -n qa-environment
 ----
 
+[source,text]
 ----
 NAME              AGE   STATUS    READY
 app-01            20m   Stopped   False
@@ -260,18 +279,21 @@ If you select the shared storage option, the agent issues a prominent warning be
 
 . In your IDE chat, type:
 +
+[source,text]
 ----
 Clone web-server to web-server-shared in namespace my-vms
 ----
 
 . The agent presents storage options. You select option 2:
 +
+[source,text]
 ----
 2
 ----
 
 . The agent warns about the risks:
 +
+[source,text]
 ----
 WARNING: Shared Storage is Dangerous
 
@@ -287,12 +309,14 @@ Proceed with shared storage anyway? (yes/cancel)
 
 . You reconsider and cancel:
 +
+[source,text]
 ----
 cancel
 ----
 
 . The agent aborts cleanly:
 +
+[source,text]
 ----
 VM cloning cancelled by user. No resources were created.
 ----
@@ -310,6 +334,7 @@ When cloning across namespaces, note the following:
 
 Example:
 
+[source,text]
 ----
 Clone production-db from production namespace to staging namespace as staging-db
 ----
@@ -349,6 +374,7 @@ If cloning fails, the agent reports the error and suggests troubleshooting steps
 
 If cloning fails partway through (for example, the DataVolume was created but the VirtualMachine creation failed), the agent reports which resources were partially created and suggests cleanup:
 
+[source,markdown]
 ----
 ## VM Cloning Failed
 

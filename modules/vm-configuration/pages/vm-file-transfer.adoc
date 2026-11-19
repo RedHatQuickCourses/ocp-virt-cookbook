@@ -1,5 +1,6 @@
 = Transferring Files to and from a Virtual Machine
 :navtitle: VM File Transfer
+:page-type: tutorial
 
 == Overview
 
@@ -78,14 +79,14 @@ To keep things simple (and consistent), the Git repository for this documentatio
 
 With the `ssh` and `scp` nuances explained, go ahead and use the `git` command to clone the docs repo:
 
-[source=bash,role=execute]
+[source,bash,role=execute]
 ----
 git clone https://github.com/RedHatQuickCourses/ocp-virt-cookbook
 ----
 
 Change directory to the repo that was just downloaded:
 
-[source=bash,role=execute]
+[source,bash,role=execute]
 ----
 cd ocp-virt-cookbook
 ----
@@ -98,7 +99,7 @@ Regardless of whether you choose `virtctl` or native tools such as `scp` or `rsy
 
 A breakdown of the `ssh` connection string is provided below:
 
-[source=bash,role=execute]
+[source,bash,role=execute]
 ----
 <username>@<vm-name>:<filepath>
 ----
@@ -152,14 +153,14 @@ They will each need to be replaced with the applicable value for your use case.
 
 Upload the `README.md` file to the `/var/tmp` directory on the VM, replacing `<username>` and `<vm-name>` with the values for _your_ VM:
 
-[source=bash,role=execute]
+[source,bash,role=execute]
 ----
 virtctl scp README.md <username>@vm/<vm-name>:/var/tmp/
 ----
 
 Upload the `images` directory to the user's home directory by passing the `-r` flag (meaning to copy recursively):
 
-[source=bash,role=execute]
+[source,bash,role=execute]
 ----
 virtctl scp -r images/ <username>@vm/<vm-name>:
 ----
@@ -171,7 +172,7 @@ NOTE: An empty path (specifically, the part after the `:` in the `ssh` connectio
 
 Upload the `README.md` file to the user's home directory on the Windows VM, replacing `<username>` and `<vm-name>` with the applicable values:
 
-[source=bash,role=execute]
+[source,bash,role=execute]
 ----
 virtctl scp README.md <username>@vm/<vm-name>:
 ----
@@ -181,7 +182,7 @@ NOTE: As with RHEL, Fedora and other Linux systems, an empty path (defined after
 Upload the `images/` directory from the root of the Git repository (which should still be the current working directory on our client machine) to the Public Pictures directory.
 Replace the `<username>` and `<vm-name>` as in the previous step:
 
-[source=bash,role=execute]
+[source,bash,role=execute]
 ----
 virtctl scp -r images/ <username>@vm/<vm-name>:C:/Users/Public/Pictures/
 ----
@@ -204,7 +205,7 @@ Remember that `<placeholders>` still need replacing with values that match your 
 
 Download the `README.md` file from `/var/tmp` on the RHEL VM to the current directory and name it `README.bak`:
 
-[source=bash,role=execute]
+[source,bash,role=execute]
 ----
 virtctl scp <username>@vm/<vm-name>:/var/tmp/README.md ./README.bak
 ----
@@ -212,7 +213,7 @@ virtctl scp <username>@vm/<vm-name>:/var/tmp/README.md ./README.bak
 Download the `images` folder from the user's home directory on the RHEL VM (using the `-r` flag to copy recursively),
 name it `images.d`, and place it in the current directory:
 
-[source=bash,role=execute]
+[source,bash,role=execute]
 ----
 virtctl scp -r <username>@vm/<vm-name>:images ./images.d
 ----
@@ -221,14 +222,14 @@ virtctl scp -r <username>@vm/<vm-name>:images ./images.d
 
 Download the `README.md` file from the user's home directory and save it locally as `README.bkp`. Replace `<username>` and `<vm-name>` as required:
 
-[source=bash,role=execute]
+[source,bash,role=execute]
 ----
 virtctl scp <username>@vm/<vm-name>:README.md ./README.bkp
 ----
 
 Download the `images` folder from the Public Pictures directory and save it locally as `images.bak.d`. Replace `<username>` and `<vm-name>` as before:
 
-[source=bash,role=execute]
+[source,bash,role=execute]
 ----
 virtctl scp -r <username>@vm/<vm-name>:C:/Users/Public/Pictures/images ./images.bak.d
 ----
@@ -260,14 +261,14 @@ Uploading using `scp` is almost exactly the same as when using `virtctl`, minus 
 The main difference is that, instead of using the name of either the `VirtualMachine` or `VirtualMachineInstance`,
 you will use either the domain name or the IP address (whether public or private) of the `Service` exposing the VM:
 
-[source=bash,role=execute]
+[source,bash,role=execute]
 ----
 scp README.md <user>@<hostname-or-ip-address>:/run/tmpfiles.d/
 ----
 
 To upload a directory, simply use the path of a local directory as the source parameter, and add the `-r` flag:
 
-[source=bash,role=execute]
+[source,bash,role=execute]
 ----
 scp -r images <user>@<hostname-or-ip-address>:/run/tmpfiles.d/
 ----
@@ -306,7 +307,7 @@ We've chosen the flags `-avP` for all `rsync` command examples in this guide.
 
 A simple sync of the Git repository that was cloned at the beginning of this guide could be done easily (assuming the `ocp-virt-cookbook/` repository is the current working directory):
 
-[source=bash,role=execute]
+[source,bash,role=execute]
 ----
 rsync -avP ./ <user>@<hostname-or-ip-address>:ocp-virt-cookbook/
 ----
@@ -317,7 +318,7 @@ The `rsync` command also supports passing file and directory exclusions using a 
 
 Create an `rsync` exclusions file with the following list of undesired files and directories:
 
-[source=gitignore]
+[source,gitignore]
 ----
 build/
 scripts/
@@ -331,14 +332,14 @@ so any file or directory excluded by name will also be excluded from any subdire
 Take the example file contents above and paste them into a file named `rsync-file-exclusions.lst` in the root of the Git repository (which should be the current working directory).
 Once saved, you can run the `rsync` command, this time passing in the list of excluded files and directories:
 
-[source=bash,role=execute]
+[source,bash,role=execute]
 ----
 rsync -avP --exclude-from=rsync-file-exclusions.lst ./ <user>@<hostname-or-ip-address>:ocp-virt-cookbook2
 ----
 
 To check this, you can `ssh` into the destination machine:
 
-[source=bash,role=execute]
+[source,bash,role=execute]
 ----
 ssh <user>@<hostname-or-ip-address>
 ----
@@ -347,14 +348,14 @@ Once logged in, perform a quick `diff` on the two Git repositories.
 Notice that the excluded files only exist in `ocp-virt-cookbook/`,
 with the `rsync-file-exclusions.lst` file only in the second repo:
 
-[source=bash,role=execute]
+[source,bash,role=execute]
 ----
 diff -u ocp-virt-cookbook{,2}
 ----
 
 Go ahead and clean up both Git repositories ahead of the next section:
 
-[source=bash,role=execute]
+[source,bash,role=execute]
 ----
 rm -rf ocp-virt-cookbook{,2}/
 ----
@@ -367,13 +368,13 @@ or by simply using the console viewer provided with OpenShift Virtualization to 
 To clean up the local files, simply back out of the Git repository directory and then remove it:
 
 .Change to the parent directory
-[source=bash,role=execute]
+[source,bash,role=execute]
 ----
 cd ../
 ----
 
 .Remove the Git repository
-[source=bash,role=execute]
+[source,bash,role=execute]
 ----
 rm -rf ocp-virt-cookbook/
 ----
@@ -382,14 +383,14 @@ To clean up leftover files from the VMs, run the following commands as desired.
 
 For the RHEL/Fedora VM, simply run the following `rm` command on the VM itself:
 
-[source=bash,role=execute]
+[source,bash,role=execute]
 ----
 rm -rf /var/tmp/README.md ~/images
 ----
 
 To remove leftover files from Windows, open a PowerShell window (`WIN+R`, then type `powershell`, and press `ENTER`) and run the following command:
 
-[source=powershell,role=execute]
+[source,powershell,role=execute]
 ----
 Remove-Item -Path "$HOME/README.md", "C:\Users\Public\Pictures\images" -Recurse
 ----
@@ -403,19 +404,19 @@ then proceed to disable OpenSSH server.
 To stop the OpenSSH server process:
 
 .On RHEL and Fedora
-[source=bash,role=execute]
+[source,bash,role=execute]
 ----
 sudo systemctl stop sshd
 ----
 
 .On Debian and Ubuntu
-[source=bash,role=execute]
+[source,bash,role=execute]
 ----
 sudo systemctl stop ssh
 ----
 
 .On Windows (in a privileged PowerShell window)
-[source=powershell,role=execute]
+[source,powershell,role=execute]
 ----
 Stop-Service sshd
 ----
@@ -423,19 +424,19 @@ Stop-Service sshd
 To disable OpenSSH from running at startup:
 
 .On RHEL and Fedora
-[source=bash,role=execute]
+[source,bash,role=execute]
 ----
 sudo systemctl disable sshd
 ----
 
 .On Debian and Ubuntu
-[source=bash,role=execute]
+[source,bash,role=execute]
 ----
 sudo systemctl disable ssh
 ----
 
 .On Windows (in a privileged PowerShell window)
-[source=powershell,role=execute]
+[source,powershell,role=execute]
 ----
 Set-Service -Name sshd -StartupType 'Manual'
 ----

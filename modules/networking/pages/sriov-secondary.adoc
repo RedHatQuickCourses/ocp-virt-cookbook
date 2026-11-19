@@ -1,5 +1,6 @@
 = Configuring SR-IOV Secondary Networks for Virtual Machines
 :navtitle: SR-IOV Secondary Networks
+:page-type: tutorial
 
 SR-IOV (Single Root I/O Virtualization) enables a single physical network adapter to present multiple virtual functions (VFs) that can be passed directly into virtual machines.
 Unlike software-based networking (OVN overlays, Linux bridges), SR-IOV bypasses the host network stack entirely, giving the VM near-native network performance.
@@ -36,6 +37,7 @@ oc get csv -n openshift-sriov-network-operator
 
 Expected output (version may differ):
 
+[source,text]
 ----
 NAME                                          DISPLAY                   VERSION               PHASE
 sriov-network-operator.v4.21.0-202605200241   SR-IOV Network Operator   4.21.0-202605200241   Succeeded
@@ -72,6 +74,7 @@ Each entry shows the PCI address, vendor and device ID, driver, link speed, and 
 
 For example, a Mellanox ConnectX-4 Lx entry looks like:
 
+[source,yaml]
 ----
 - deviceID: "1015"
   driver: mlx5_core
@@ -180,6 +183,7 @@ oc get node <node-name> -o jsonpath='{.status.allocatable.openshift\.io/mlxsriov
 
 Expected output:
 
+[source,text]
 ----
 4
 ----
@@ -262,6 +266,7 @@ oc get net-attach-def -n sriov-demo
 
 Expected output:
 
+[source,text]
 ----
 NAME             AGE
 sriov-net-data   10s
@@ -452,6 +457,7 @@ ip -br addr show
 
 Expected output:
 
+[source,text]
 ----
 lo               UNKNOWN        127.0.0.1/8 ::1/128
 enp1s0           UP             10.0.2.2/24

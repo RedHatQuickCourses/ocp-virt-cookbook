@@ -1,5 +1,6 @@
 = Creating Virtual Machines with Natural Language
 :navtitle: Natural Language VM Creation
+:page-type: tutorial
 
 This tutorial demonstrates how to create virtual machines using natural language commands through the `vm-create` agent skill. The agent interprets human-readable descriptions of VM requirements, gathers any missing parameters through interactive questions, and translates them into complete KubeVirt VirtualMachine resources with proper instance types, OS selection, storage configuration, and scheduling.
 
@@ -47,6 +48,7 @@ Create a Fedora VM in namespace my-vms
 
 . The agent gathers cluster information (available StorageClasses, namespaces) and assigns defaults for parameters you did not specify. It then presents a configuration summary for your approval:
 +
+[source,text]
 ----
 Here's the full configuration before I proceed:
 
@@ -126,6 +128,7 @@ spec:
 
 . The agent monitors the DataVolume provisioning (cloning from the golden image takes approximately 2–5 minutes) and reports the result once the VM is ready:
 +
+[source,text]
 ----
 ✓ Virtual Machine Created Successfully
 
@@ -149,6 +152,7 @@ oc get vm fedora-vm -n my-vms
 
 Expected output:
 
+[source,text]
 ----
 NAME        AGE   STATUS    READY
 fedora-vm   7m    Running   True
@@ -161,6 +165,7 @@ You can also inspect the DataVolume and PVC created for the root disk:
 oc get datavolume -n my-vms
 ----
 
+[source,text]
 ----
 NAME                 PHASE       PROGRESS   RESTARTS   AGE
 fedora-vm-rootdisk   Succeeded   100.0%                7m
@@ -171,6 +176,7 @@ fedora-vm-rootdisk   Succeeded   100.0%                7m
 oc get pvc -n my-vms
 ----
 
+[source,text]
 ----
 NAME                 STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS
 fedora-vm-rootdisk   Bound    pvc-ebfcfd3d-f865-4186-b306-08dfc1d60272   30Gi       RWO            lvms-vg1
@@ -189,6 +195,7 @@ Create a Fedora VM named fedora-dev with 2 vCPUs and 8GB RAM and a 50GB disk in 
 
 . The agent maps 2 vCPUs and 8Gi RAM to the `u1.large` instance type, queries the cluster for available StorageClasses, and presents the configuration:
 +
+[source,text]
 ----
 Virtual Machine Configuration
 
@@ -225,6 +232,7 @@ modify: change autostart to yes
 
 . The agent displays the updated configuration with autostart changed and asks for confirmation again. After you confirm, it creates the VM and reports:
 +
+[source,text]
 ----
 ✓ Virtual Machine Created and Starting
 
@@ -243,6 +251,7 @@ After provisioning completes you can verify the VM:
 oc get vm fedora-dev -n development
 ----
 
+[source,text]
 ----
 NAME         AGE   STATUS    READY
 fedora-dev   7m    Running   True
@@ -255,6 +264,7 @@ The PVC shows the larger disk size:
 oc get pvc -n development
 ----
 
+[source,text]
 ----
 NAME                  STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS
 fedora-dev-rootdisk   Bound    pvc-35dbc583-8f54-47a8-8497-f941b72633e9   50Gi       RWO            lvms-vg1
@@ -275,6 +285,7 @@ Create a Fedora VM named fedora-db with 4 vCPUs and 16GB RAM in the production n
 
 . The agent maps the request to an `xlarge` size with `m1` (memory-optimized) performance profile and presents the confirmation table:
 +
+[source,text]
 ----
 Virtual Machine Configuration
 
@@ -304,6 +315,7 @@ Confirm: yes / no / modify?
 
 . After confirmation, the agent creates the VM but detects a scheduling error:
 +
+[source,text]
 ----
 ⚠️ VM Scheduling Issue Detected
 
@@ -338,6 +350,7 @@ apply workaround
 
 . The agent patches the VM spec to add tolerations, restarts it, and verifies:
 +
+[source,text]
 ----
 ✓ Workaround Applied
 
@@ -400,6 +413,7 @@ The agent maps explicit resource requests like "2 vCPUs and 8GB RAM" to the clos
 oc get VirtualMachineClusterInstancetype -o custom-columns="NAME:.metadata.name,CPU:.spec.cpu.guest,MEMORY:.spec.memory.guest" | grep u1
 ----
 
+[source,text]
 ----
 u1.2xlarge    8    32Gi
 u1.2xmedium   2    4Gi
@@ -424,6 +438,7 @@ You can check which OS images are available on your cluster:
 oc get datasource -n openshift-virtualization-os-images
 ----
 
+[source,text]
 ----
 NAME              AGE
 centos-stream10   17d
@@ -472,6 +487,7 @@ You can check your cluster's available StorageClasses:
 oc get sc
 ----
 
+[source,text]
 ----
 NAME               PROVISIONER   RECLAIMPOLICY   VOLUMEBINDINGMODE      ALLOWVOLUMEEXPANSION   AGE
 lvms-vg1 (default) topolvm.io    Delete          WaitForFirstConsumer   true                   17d
@@ -541,6 +557,7 @@ To find the VM's IP address:
 oc get vmi fedora-vm -n my-vms -o jsonpath='{.status.interfaces[0].ipAddress}'
 ----
 
+[source,text]
 ----
 10.128.0.102
 ----
@@ -583,6 +600,10 @@ oc delete vm fedora-dev -n development
 ----
 
 You can also use natural language: type "Delete VM fedora-vm in namespace my-vms" and the agent will use the `vm-delete` skill, which includes a name-confirmation safety check before deletion.
+
+== Summary
+
+You used the `vm-create` skill to translate natural language requirements into VirtualMachine resources, review the proposed configuration, and create VMs after confirmation. You also learned how to check VM status, diagnose creation errors, connect to a running VM, and remove the resources when finished.
 
 == See Also
 

@@ -1,5 +1,6 @@
 = Installing LVM Storage Operator
 :navtitle: LVM Operator Installation
+:page-type: tutorial
 
 == Overview
 
@@ -30,6 +31,7 @@ oc debug node/<node-name> -- chroot /host lsblk -o NAME,SIZE,TYPE,FSTYPE,MOUNTPO
 ----
 
 Example output:
+[source,text]
 ----
 NAME    SIZE TYPE FSTYPE      MOUNTPOINT MODEL
 sda   558.4G disk LVM2_member            PERC H730 Adp
@@ -53,6 +55,7 @@ oc debug node/<node-name> -- chroot /host pvs
 ----
 
 Example output:
+[source,text]
 ----
 PV         VG  Fmt  Attr PSize   PFree  
 /dev/sda   vg1 lvm2 a--  558.37g <55.84g
@@ -68,6 +71,7 @@ oc debug node/<node-name> -- chroot /host ls -la /dev/disk/by-path/ | grep -E "p
 ----
 
 Example output:
+[source,text]
 ----
 lrwxrwxrwx. 1 root root 9 Oct 6 13:30 pci-0000:03:00.0-scsi-0:2:1:0 -> ../../sda
 ----
@@ -143,6 +147,7 @@ oc get pods -n openshift-lvm-storage
 ----
 
 Expected output (after operator installation, before LVMCluster):
+[source,text]
 ----
 NAME                             READY   STATUS    RESTARTS   AGE
 lvms-operator-864b6975bb-kxt4t   1/1     Running   0          2m
@@ -151,6 +156,7 @@ lvms-operator-864b6975bb-kxt4t   1/1     Running   0          2m
 NOTE: At this stage, you should only see the `lvms-operator` pod. The `vg-manager` pod will be created automatically after you create the LVMCluster resource in Step 3.
 
 Expected output (after LVMCluster is created in Step 3):
+[source,text]
 ----
 NAME                                  READY   STATUS    RESTARTS   AGE
 lvms-operator-864b6975bb-kxt4t        1/1     Running   0          5m
@@ -292,6 +298,7 @@ oc get storageclass
 ----
 
 Expected output:
+[source,text]
 ----
 NAME       PROVISIONER   RECLAIMPOLICY   VOLUMEBINDINGMODE      ALLOWVOLUMEEXPANSION   AGE
 lvms-vg1   topolvm.io    Delete          WaitForFirstConsumer   true                   5m
@@ -316,6 +323,7 @@ oc describe sc | grep IsDefaultClass
 ----
 
 Expected output after setting default:
+[source,text]
 ----
 NAME                 PROVISIONER   RECLAIMPOLICY   VOLUMEBINDINGMODE      ALLOWVOLUMEEXPANSION   AGE
 lvms-vg1 (default)   topolvm.io    Delete          WaitForFirstConsumer   true                   6m

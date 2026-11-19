@@ -1,5 +1,6 @@
 = Creating a Boot Volume from a Local qcow2 Image
 :navtitle: Import qcow2 Boot Volume
+:page-type: tutorial
 
 == Overview
 
@@ -502,23 +503,27 @@ virtctl start vm-with-upload -n imported-vms
 == Best Practices
 
 === Image Preparation
+
 * **Verify image integrity** - Check checksums before uploading
 * **Optimize image size** - Use `virt-sparsify` to reduce qcow2 file size
 * **Remove sensitive data** - Clean any credentials or machine-specific configs
 * **Install cloud-init** - Ensure cloud-init is installed for proper initialization
 
 === Storage Sizing
+
 * **Plan for growth** - Allocate more storage than the virtual size for VM operations
 * **Thin provisioning** - Use storage classes that support thin provisioning when available
 * **Monitor usage** - Track PVC usage over time
 
 === Security
+
 * **Scan images** - Scan qcow2 images for vulnerabilities before import
 * **Use TLS** - Remove `--insecure` flag when possible, configure proper certificates
 * **Access control** - Use RBAC to control who can upload images
 * **Encrypted storage** - Consider storage classes with encryption at rest
 
 === Performance
+
 * **Local upload** - Upload from within the cluster network for better speed
 * **Parallel imports** - Import multiple images simultaneously if bandwidth allows
 * **Network placement** - Co-locate upload source and cluster for optimal transfer speeds

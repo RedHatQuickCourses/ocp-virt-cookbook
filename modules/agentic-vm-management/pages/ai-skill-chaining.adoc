@@ -1,5 +1,6 @@
 = Day-2 Operations with Skill Chaining
 :navtitle: Day-2 Skill Chaining
+:page-type: tutorial
 
 This advanced tutorial demonstrates how to chain multiple `rh-virt` skills in a single conversation to perform complex Day-2 operations. You will walk through a complete node maintenance workflow that sequences six skill invocations, then a test environment scale-out workflow that sequences four. Along the way, you will learn how the agent routes each request to the correct skill, preserves context across transitions, and maintains human-in-the-loop safety throughout.
 
@@ -21,20 +22,24 @@ oc create namespace production-vms
 
 If you do not have VMs to work with, create several using the `vm-create` skill by typing in your IDE chat:
 
+[source,text]
 ----
 Create a Fedora VM named web-frontend in namespace production-vms
 ----
 
+[source,text]
 ----
 Create a Fedora VM named api-server in namespace production-vms
 ----
 
+[source,text]
 ----
 Create a Fedora VM named cache-node in namespace production-vms
 ----
 
 The VMs are created in `Stopped` state by default. Start all three:
 
+[source,text]
 ----
 Start all three VMs in namespace production-vms
 ----
@@ -48,6 +53,7 @@ oc get vm -n production-vms
 
 Expected output:
 
+[source,text]
 ----
 NAME           AGE   STATUS    READY
 api-server     3m    Running   True
@@ -137,12 +143,14 @@ First, identify which VMs are running on the target maintenance node.
 
 . In your IDE chat, type:
 +
+[source,text]
 ----
 List all VMs in namespace production-vms and show which node each VM is running on
 ----
 
 . The agent routes to `vm-inventory` and calls the MCP server. It returns a table with node placement:
 +
+[source,markdown]
 ----
 ## Virtual Machines in production-vms
 
@@ -167,12 +175,14 @@ Before migrating VMs off the node, create snapshots as a safety net in case anyt
 
 . In your IDE chat, type:
 +
+[source,text]
 ----
 Create snapshots of api-server and cache-node in namespace production-vms before maintenance
 ----
 
 . The agent routes to `vm-snapshot-create`. It validates that the storage class supports snapshots, then presents each snapshot for confirmation:
 +
+[source,markdown]
 ----
 ## VM Snapshot - Pre-Maintenance Safety Net
 
@@ -191,6 +201,7 @@ Confirm: yes/no
 
 . You confirm each snapshot. The agent creates them sequentially:
 +
+[source,markdown]
 ----
 ## Snapshots Created
 
@@ -209,6 +220,7 @@ You can verify the snapshots with:
 oc get virtualmachinesnapshot -n production-vms
 ----
 
+[source,text]
 ----
 NAME                          SOURCEKIND       SOURCENAME   PHASE       READYTOUSE   AGE
 api-server-pre-maintenance    VirtualMachine   api-server   Succeeded   true         1m
@@ -221,12 +233,14 @@ Now evacuate all VMs from `worker-02` using manual migration mode.
 
 . In your IDE chat, type:
 +
+[source,text]
 ----
 Migrate all VMs off worker-02 in namespace production-vms
 ----
 
 . The agent routes to `vm-rebalance` in manual mode. It identifies the two VMs on `worker-02` and presents the migration plan:
 +
+[source,markdown]
 ----
 ## VM Migration Plan - Node Evacuation
 
@@ -246,6 +260,7 @@ Proceed with migration? (yes/no)
 
 . You confirm. The agent performs live migrations and reports progress:
 +
+[source,markdown]
 ----
 ## Migration Complete
 
@@ -263,12 +278,14 @@ Confirm that no VMs remain on the maintenance node.
 
 . In your IDE chat, type:
 +
+[source,text]
 ----
 Verify no VMs are running on worker-02
 ----
 
 . The agent routes back to `vm-inventory` and checks node placement:
 +
+[source,markdown]
 ----
 ## Virtual Machines in production-vms
 
@@ -322,6 +339,7 @@ Verify the node is Ready:
 oc get node worker-02
 ----
 
+[source,text]
 ----
 NAME        STATUS   ROLES    AGE   VERSION
 worker-02   Ready    worker   30d   v1.28.6+openshift.1
@@ -333,12 +351,14 @@ After maintenance, rebalance VMs across all nodes including the returned `worker
 
 . In your IDE chat, type:
 +
+[source,text]
 ----
 Rebalance VMs in namespace production-vms across all nodes
 ----
 
 . The agent routes to `vm-rebalance` in automatic mode. It evaluates the current distribution and proposes an optimal placement:
 +
+[source,markdown]
 ----
 ## VM Rebalance Plan
 
@@ -364,6 +384,7 @@ Proceed with rebalancing? (yes/no)
 
 . You confirm. The agent migrates `api-server` back to `worker-02`:
 +
+[source,markdown]
 ----
 ## Rebalance Complete
 
@@ -387,12 +408,14 @@ This secondary scenario shows how to clone a golden image VM into multiple test 
 
 . In your IDE chat, type:
 +
+[source,text]
 ----
 List VMs in namespace production-vms
 ----
 
 . The agent routes to `vm-inventory`:
 +
+[source,markdown]
 ----
 ## Virtual Machines in production-vms
 
@@ -411,12 +434,14 @@ You identify `web-frontend` as the golden image to clone for load testing.
 
 . In your IDE chat, type:
 +
+[source,text]
 ----
 Create 5 clones of web-frontend named loadtest-01 through loadtest-05 in namespace production-vms
 ----
 
 . The agent routes to `vm-clone` in batch mode. It validates the source VM, checks that all five target names are available, and asks for a storage strategy:
 +
+[source,markdown]
 ----
 ## Batch Cloning: 5 VMs from `web-frontend`
 
@@ -434,6 +459,7 @@ Create 5 clones of web-frontend named loadtest-01 through loadtest-05 in namespa
 
 . You select option 1. The agent creates each clone with individual confirmation and reports:
 +
+[source,markdown]
 ----
 ## Batch Cloning Complete
 
@@ -454,12 +480,14 @@ loadtest-05 (production-vms) - Cloned in 5m55s
 
 . In your IDE chat, type:
 +
+[source,text]
 ----
 Start all loadtest VMs in namespace production-vms
 ----
 
 . The agent routes to `vm-lifecycle-manager`. It identifies the five clones and presents each for confirmation:
 +
+[source,markdown]
 ----
 ## VM Lifecycle Operation - Batch Start
 
@@ -480,6 +508,7 @@ Confirm starting all 5 VMs? (yes/no)
 
 . You confirm. The agent starts each VM and verifies Running status:
 +
+[source,markdown]
 ----
 ## Batch Start Complete
 
@@ -496,12 +525,14 @@ All 5 VMs started successfully.
 
 . In your IDE chat, type:
 +
+[source,text]
 ----
 Show all loadtest VMs with their IPs
 ----
 
 . The agent routes to `vm-inventory` and enriches the output with IP addresses from the VirtualMachineInstance resources:
 +
+[source,markdown]
 ----
 ## Virtual Machines - Load Test Fleet
 

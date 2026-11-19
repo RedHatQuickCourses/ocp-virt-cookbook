@@ -1,5 +1,6 @@
 = Troubleshooting LVM Storage Operator
 :navtitle: LVM Troubleshooting
+:page-type: troubleshooting
 
 == Overview
 
@@ -47,6 +48,7 @@ oc get lvmcluster -n openshift-lvm-storage
 ----
 
 Healthy output:
+[source,text]
 ----
 NAME         STATUS
 lvmcluster   Ready
@@ -129,6 +131,7 @@ oc get pods -n openshift-lvm-storage
 ----
 
 Healthy output:
+[source,text]
 ----
 NAME                             READY   STATUS    RESTARTS   AGE
 lvms-operator-864b6975bb-kxt4t   1/1     Running   0          10m
@@ -190,6 +193,7 @@ oc get storageclass lvms-vg1 -o yaml
 ----
 
 Healthy output:
+[source,text]
 ----
 NAME       PROVISIONER   RECLAIMPOLICY   VOLUMEBINDINGMODE      ALLOWVOLUMEEXPANSION   AGE
 lvms-vg1   topolvm.io    Delete          WaitForFirstConsumer   true                   10m
@@ -234,6 +238,7 @@ oc debug node/<node-name> -- chroot /host vgs
 ----
 
 Healthy output:
+[source,text]
 ----
 VG   #PV #LV #SN Attr   VSize   VFree  
 vg1    1   1   0 wz--n- 558.37g <55.84g
@@ -254,6 +259,7 @@ oc debug node/<node-name> -- chroot /host vgdisplay vg1
 ----
 
 Example output:
+[source,text]
 ----
 --- Volume group ---
 VG Name               vg1
@@ -293,6 +299,7 @@ oc debug node/<node-name> -- chroot /host lvs
 ----
 
 Healthy output:
+[source,text]
 ----
 LV          VG  Attr       LSize    Pool Origin Data%  Meta%  
 thin-pool-1 vg1 twi-a-tz-- <502.04g             0.00   6.76
@@ -334,6 +341,7 @@ oc debug node/<node-name> -- chroot /host pvs
 ----
 
 Healthy output:
+[source,text]
 ----
 PV         VG  Fmt  Attr PSize   PFree  
 /dev/sda   vg1 lvm2 a--  558.37g <55.84g
@@ -378,6 +386,7 @@ oc debug node/<node-name> -- chroot /host lsblk -o NAME,SIZE,TYPE,FSTYPE,MOUNTPO
 ----
 
 Example output:
+[source,text]
 ----
 NAME    SIZE TYPE FSTYPE      MOUNTPOINT MODEL
 sda   558.4G disk LVM2_member            PERC H730 Adp
@@ -420,6 +429,7 @@ oc debug node/<node-name> -- chroot /host ls -la /dev/disk/by-id/ | grep sda
 === Issue 1: LVMCluster Shows "NotReady"
 
 Symptoms:
+[source,text]
 ----
 NAME         STATUS
 lvmcluster   NotReady
@@ -509,6 +519,7 @@ Solutions:
 === Issue 3: PVC Stuck in Pending
 
 Symptoms:
+[source,text]
 ----
 NAME            STATUS    VOLUME   CAPACITY   ACCESS MODES   STORAGECLASS   AGE
 test-pvc        Pending                                      lvms-vg1       5m
@@ -567,6 +578,7 @@ oc get lvmcluster lvmcluster -n openshift-lvm-storage -o yaml | grep -A 5 nodeSe
 === Issue 4: Thin Pool Data% or Meta% High
 
 Symptoms:
+[source,text]
 ----
 LV          VG  Attr       LSize    Data%  Meta%
 thin-pool-1 vg1 twi-a-tz-- 502.04g  92.00  85.00
@@ -649,6 +661,7 @@ forceWipeDevicesAndDestroyAllData: true
 === Issue 6: vg-manager Pod CrashLooping
 
 Symptoms:
+[source,text]
 ----
 NAME             READY   STATUS             RESTARTS   AGE
 vg-manager-xxx   0/1     CrashLoopBackOff   5          3m

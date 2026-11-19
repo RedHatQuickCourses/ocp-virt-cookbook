@@ -1,5 +1,6 @@
 = Local Storage with HostPath Provisioner
 :navtitle: HostPath Provisioner
+:page-type: tutorial
 
 == Overview
 
@@ -82,6 +83,7 @@ oc get csv -n openshift-cnv | grep kubevirt
 ----
 
 Expected output shows the operator version (version will vary):
+[source,text]
 ----
 kubevirt-hyperconverged-operator.v4.x.x   OpenShift Virtualization   4.x.x   Succeeded
 ----
@@ -143,6 +145,7 @@ oc get mcp worker
 ----
 
 Wait until `UPDATED` shows `True` and `UPDATING` shows `False`:
+[source,text]
 ----
 NAME     CONFIG                                             UPDATED   UPDATING   DEGRADED   MACHINECOUNT   READYMACHINECOUNT
 worker   rendered-worker-abc123                             True      False      False      6              6
@@ -183,6 +186,7 @@ oc debug node/<worker-node-name> -- chroot /host ls -laZ /var/hpvolumes
 ----
 
 Expected output:
+[source,text]
 ----
 total 0
 drwxr-xr-x. 2 root root system_u:object_r:container_file_t:s0 6 Mar 19 10:00 .
@@ -233,6 +237,7 @@ oc get hostpathprovisioner hostpath-provisioner
 ----
 
 Expected output:
+[source,text]
 ----
 NAME                   AGE
 hostpath-provisioner   30s
@@ -246,6 +251,7 @@ oc get pods -n openshift-cnv -l k8s-app=hostpath-provisioner
 ----
 
 Expected output (one pod per worker node):
+[source,text]
 ----
 NAME                                           READY   STATUS    RESTARTS   AGE
 hostpath-provisioner-csi-xxxxx                 4/4     Running   0          2m
@@ -289,6 +295,7 @@ oc get storageclass hostpath-csi
 ----
 
 Expected output:
+[source,text]
 ----
 NAME           PROVISIONER                        RECLAIMPOLICY   VOLUMEBINDINGMODE      ALLOWVOLUMEEXPANSION   AGE
 hostpath-csi   kubevirt.io.hostpath-provisioner   Delete          WaitForFirstConsumer   false                  10s
@@ -343,6 +350,7 @@ oc get pvc hpp-test-pvc
 ----
 
 With `WaitForFirstConsumer`, the PVC remains `Pending` until a pod uses it:
+[source,text]
 ----
 NAME           STATUS    VOLUME   CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   AGE
 hpp-test-pvc   Pending                                      hostpath-csi   <unset>                 5s
@@ -381,6 +389,7 @@ oc get pvc hpp-test-pvc
 ----
 
 Expected output:
+[source,text]
 ----
 NAME           STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   AGE
 hpp-test-pvc   Bound    pvc-abc12345-6789-def0-1234-567890abcdef   5Gi        RWO            hostpath-csi   <unset>                 30s
@@ -396,6 +405,7 @@ oc exec hpp-test-pod -- sh -c "echo 'HPP Storage Test' > /data/test.txt && cat /
 ----
 
 Expected output:
+[source,text]
 ----
 HPP Storage Test
 ----
@@ -488,6 +498,7 @@ oc get dv -n default hpp-test-vm-rootdisk -w
 ----
 
 Expected progression:
+[source,text]
 ----
 NAME                    PHASE              PROGRESS   RESTARTS   AGE
 hpp-test-vm-rootdisk    ImportScheduled    N/A                   5s
@@ -505,6 +516,7 @@ oc get vmi hpp-test-vm
 ----
 
 Expected output:
+[source,text]
 ----
 NAME          AGE   STATUS    READY
 hpp-test-vm   2m    Running   True

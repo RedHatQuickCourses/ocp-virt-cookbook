@@ -1,5 +1,6 @@
 = Expanding VM Disk Size (PVC Volume Expansion)
 :navtitle: Expanding VM Disk Size
+:page-type: tutorial
 
 == Overview
 
@@ -25,6 +26,7 @@ oc get storageclass -o custom-columns=NAME:.metadata.name,PROVISIONER:.provision
 ----
 
 Expected output:
+[source,text]
 ----
 NAME         PROVISIONER    EXPANSION
 lvms-vg1     topolvm.io     true
@@ -137,6 +139,7 @@ oc get vm -n pvc-expansion-demo
 ----
 
 Expected output:
+[source,text]
 ----
 NAME           AGE   STATUS    READY
 expansion-vm   3m    Running   True
@@ -150,6 +153,7 @@ oc get pvc -n pvc-expansion-demo
 ----
 
 Expected output:
+[source,text]
 ----
 NAME                      STATUS   VOLUME       CAPACITY   ACCESS MODES   STORAGECLASS   AGE
 expansion-vm-rootdisk     Bound    pvc-xxxx     10Gi       RWO            lvms-vg1       3m
@@ -176,6 +180,7 @@ oc get vm expansion-vm -n pvc-expansion-demo
 ----
 +
 Expected output:
+[source,text]
 ----
 NAME           AGE   STATUS    READY
 expansion-vm   5m    Stopped   False
@@ -205,6 +210,7 @@ oc get vm expansion-vm -n pvc-expansion-demo
 ----
 +
 Expected output:
+[source,text]
 ----
 NAME           AGE   STATUS    READY
 expansion-vm   6m    Running   True
@@ -216,6 +222,7 @@ oc get pvc expansion-vm-rootdisk -n pvc-expansion-demo
 ----
 +
 Expected output:
+[source,text]
 ----
 NAME                      STATUS   VOLUME       CAPACITY   ACCESS MODES   STORAGECLASS   AGE
 expansion-vm-rootdisk     Bound    pvc-xxxx     20Gi       RWO            lvms-vg1       6m
@@ -245,6 +252,7 @@ oc describe pvc expansion-vm-rootdisk -n pvc-expansion-demo | grep -A 5 Conditio
 
 If the CSI driver supports online expansion, the PVC capacity updates once the resize completes:
 
+[source,text]
 ----
 Conditions:
   Type                      Status
@@ -254,6 +262,7 @@ Conditions:
 
 If the driver does not support online expansion, or the resize is still in progress, you will see `FileSystemResizePending: True` until the volume is re-mounted:
 
+[source,text]
 ----
 Conditions:
   Type                      Status
@@ -287,6 +296,7 @@ lsblk
 
 Modern Fedora cloud images use `cloud-utils-growpart` and `systemd-growfs` services to automatically expand the root partition and filesystem on boot. If the image handles this automatically, `lsblk` will show the root partition already filling the expanded disk:
 
+[source,text]
 ----
 NAME   MAJ:MIN RM  SIZE RO TYPE MOUNTPOINTS
 zram0  251:0    0  883M  0 disk [SWAP]
@@ -310,6 +320,7 @@ df -h /
 ----
 
 Expected output:
+[source,text]
 ----
 Filesystem      Size  Used Avail Use% Mounted on
 /dev/vda3        19G  759M   18G   5% /
@@ -333,6 +344,7 @@ sudo growpart /dev/vda 4
 ----
 
 Expected output:
+[source,text]
 ----
 CHANGED: partition=4 start=6094848 old: size=14882816 end=20977664 new: size=35756032 end=41850880
 ----
@@ -413,6 +425,7 @@ oc get pvc expansion-vm-rootdisk -n pvc-expansion-demo
 ----
 
 Expected output:
+[source,text]
 ----
 NAME                      STATUS   VOLUME       CAPACITY   ACCESS MODES   STORAGECLASS   AGE
 expansion-vm-rootdisk     Bound    pvc-xxxx     20Gi       RWO            lvms-vg1       10m
@@ -462,6 +475,7 @@ oc get namespace pvc-expansion-demo
 ----
 
 Expected output:
+[source,text]
 ----
 Error from server (NotFound): namespaces "pvc-expansion-demo" not found
 ----

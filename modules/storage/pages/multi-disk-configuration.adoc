@@ -1,5 +1,6 @@
 = Multi-Disk VM Configuration with Different Storage Classes
 :navtitle: Multi-Disk VMs
+:page-type: tutorial
 
 == Overview
 
@@ -61,6 +62,7 @@ oc get storageclass
 ----
 
 Expected output:
+[source,text]
 ----
 NAME                 PROVISIONER   RECLAIMPOLICY   VOLUMEBINDINGMODE      ALLOWVOLUMEEXPANSION   AGE
 lvms-vg1 (default)   topolvm.io    Delete          WaitForFirstConsumer   true                   30d
@@ -186,6 +188,7 @@ oc get vm -n multi-disk-demo
 ----
 
 Expected output:
+[source,text]
 ----
 NAME            AGE   STATUS    READY
 multi-disk-vm   3m    Running   True
@@ -199,6 +202,7 @@ oc get pvc -n multi-disk-demo
 ----
 
 Expected output:
+[source,text]
 ----
 NAME                   STATUS   VOLUME       CAPACITY   ACCESS MODES   STORAGECLASS      AGE
 multi-disk-rootdisk    Bound    pvc-xxxx     30Gi       RWO            lvms-vg1          3m
@@ -224,6 +228,7 @@ lsblk
 ----
 
 Expected output:
+[source,text]
 ----
 NAME   MAJ:MIN RM  SIZE RO TYPE MOUNTPOINTS
 vda    252:0    0   30G  0 disk
@@ -258,6 +263,7 @@ df -h /mnt/data
 ----
 
 Expected output:
+[source,text]
 ----
 Filesystem      Size  Used Avail Use% Mounted on
 /dev/vdb         10G   105M  9.9G   2% /mnt/data

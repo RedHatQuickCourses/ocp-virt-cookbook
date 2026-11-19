@@ -1,5 +1,6 @@
 = Deep Dive: OpenShift Virtualization with Hosted Control Planes
 :navtitle: Hosted Control Planes
+:page-type: tutorial
 
 == Overview
 
@@ -11,7 +12,7 @@ This guide explains the architecture, documents which OpenShift Virtualization f
 
 Applies to:
 
-[source,text]
+[source,text,subs="+attributes"]
 ----
 OpenShift Container Platform {ocp-min-version}+
 OpenShift Virtualization {ocp-min-version}+
@@ -455,7 +456,7 @@ oc get hostedcluster virt01 -n clusters
 ----
 
 .Expected output
-[source,text]
+[source,text,subs="+attributes"]
 ----
 NAME     VERSION   KUBECONFIG                PROGRESS    AVAILABLE   REASON
 virt01   {ocp-min-version}.x    virt01-admin-kubeconfig   Completed   True        HostedClusterAsExpected
@@ -583,7 +584,7 @@ Create the node pool that consumes both ConfigMaps and selects the labeled agent
 
 xref:attachment$hosted-control-planes/nodepool-virt01-workers.yaml[Download nodepool-virt01-workers.yaml]
 
-[source,yaml]
+[source,yaml,subs="+attributes"]
 ----
 apiVersion: hypershift.openshift.io/v1beta1
 kind: NodePool
@@ -617,7 +618,7 @@ spec:
 
 Apply the node pool and watch the agents get installed:
 
-[source,bash,role=execute]
+[source,bash,role=execute,subs="+attributes"]
 ----
 oc apply -f - <<EOF
 apiVersion: hypershift.openshift.io/v1beta1
@@ -652,7 +653,7 @@ oc get nodepool virt01-workers -n clusters -w
 ----
 
 .Expected output once the nodes join
-[source,text]
+[source,text,subs="+attributes"]
 ----
 NAME             CLUSTER   DESIRED NODES   CURRENT NODES   AUTOSCALING   AUTOREPAIR   VERSION   UPDATINGVERSION   UPDATINGCONFIG   MESSAGE
 virt01-workers   virt01    3               3               False         False        {ocp-min-version}.x    False             False

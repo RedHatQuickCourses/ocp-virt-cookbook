@@ -1,5 +1,6 @@
 = Hotplugging Volumes and Network Interfaces to Running VMs
 :navtitle: Hotplug Volumes and Interfaces
+:page-type: tutorial
 
 == Overview
 
@@ -139,6 +140,7 @@ oc get vmi hotplug-vm -n hotplug-demo -o jsonpath='{range .status.volumeStatus[*
 ----
 
 Expected output:
+[source,text]
 ----
 rootdisk: vda
 cloudinitdisk: vdb
@@ -188,6 +190,7 @@ virtctl addvolume hotplug-vm --volume-name=hotplug-disk --namespace=hotplug-demo
 ----
 
 Expected output:
+[source,text]
 ----
 Successfully submitted addvolume request to VM hotplug-vm for volume hotplug-disk
 ----
@@ -204,6 +207,7 @@ oc get vmi hotplug-vm -n hotplug-demo -o jsonpath='{range .status.volumeStatus[*
 ----
 
 Expected output:
+[source,text]
 ----
 rootdisk: vda (hotplugVolume: )
 cloudinitdisk: vdb (hotplugVolume: )
@@ -220,6 +224,7 @@ oc get pvc hotplug-disk -n hotplug-demo
 ----
 
 Expected output:
+[source,text]
 ----
 NAME           STATUS   VOLUME       CAPACITY   ACCESS MODES   STORAGECLASS   AGE
 hotplug-disk   Bound    pvc-xxxx     5Gi        RWO            lvms-vg1       1m
@@ -271,6 +276,7 @@ cat /mnt/hotplug/test.txt
 ----
 
 Expected output:
+[source,text]
 ----
 Hotplug test
 ----
@@ -294,6 +300,7 @@ virtctl removevolume hotplug-vm --volume-name=hotplug-disk --namespace=hotplug-d
 ----
 
 Expected output:
+[source,text]
 ----
 Successfully submitted removevolume request to VM hotplug-vm for volume hotplug-disk
 ----
@@ -308,6 +315,7 @@ oc get vmi hotplug-vm -n hotplug-demo -o jsonpath='{range .status.volumeStatus[*
 ----
 
 Expected output:
+[source,text]
 ----
 rootdisk: vda
 cloudinitdisk: vdb
