@@ -1,4 +1,5 @@
 = Implementing Resource Quotas and Chargeback for VM Workloads
+:navtitle: Implementing Resource Quotas and Chargeback for VM Workloads
 
 == Overview
 
@@ -9,6 +10,7 @@ This guide provides instructions for implementing resource quotas and chargeback
 * admin access to the OpenShift cluster
 * oc command line tool installed and configured
 * OpenShift v 4.18 or later
+* A user with either Cost Administrator or Cost Price List Administrator permissions
 
 == Configuring Resource Quotas
 
@@ -64,17 +66,54 @@ The simplest way to set up cost management is to use the OpenShift Cost Manageme
 
 NOTE: if you have never created an OpenShift integration before, you will need to set `create_source` to `true` in the configuration file.
 
+Once the operator is installed, you will want to add labels to your VMs and related resources to ensure that they are properly tracked for cost management. You can use the `oc label` command to add labels to your resources. For example, to label a VM with the name `my-vm` in the namespace `my-namespace`, you can run the following command:
+
+[source, bash]
+----
+oc label vm my-vm -n my-namespace cost-center=engineering
+----
+
 For more details on installing and configuring the OpenShift Cost Management Operator, refer to the official documentation: link:https://docs.redhat.com/en/documentation/cost_management_service/1-latest/integrate-install_cost_operator#installing-cost-operator_before-you-begin[Install the cost management operator,window=_blank]
 
 == How to build a simple usage report
 
-== Pricing models
+Once you have set up cost management, you can generate usage reports to see how much resources are being consumed by your VMs and related resources. The OpenShift Cost Management Operator provides a web-based interface for generating reports, as well as an API for programmatically accessing usage data.
 
-=== Per VM
+1. On the OpenShift defails menu, click the filer button and select Tag
 
-=== Per resource unit
+2. Using the Choose Key drop-down menu, select the label key you want to filter by (for example, `cost-center`).
 
-=== Tiered
+3. Using the Choose Value drop-down menu, select the label value you want to filter by (for example, `engineering`).
+
+4. to export data, click the Export button and select the format you want to export to (for example, CSV or JSON).
+
+5. Select either a daily or monthly report and click the Generate and Download button to download the report.
+
+For more detailed instructions on generating usage reports, refer to the official documentation: link:https://docs.redhat.com/en/documentation/cost_management_service/1-latest/configure-view#exporting-cost-data-reporting_procedure[Export cost data to a reporting tool,window=_blank]
+
+
+== Configure a cost model
+
+To configure a cost model, you will need to define the cost of each resource type in your OpenShift cluster. This can be set up using the GUI provided by the OpenShift Cost Management Operator or by using the API. You can define costs for CPU, memory, storage, and other resources.
+
+1. Navigate to Cost Management > Settings and open the Cost Model tab.
+
+2. Click the Create Cost Model button to open the cost model creation wizard.
+
+3. Enter a name and description for the cost model.
+
+4. Make sure to select the appropriate currency for your cost model, and then click the Next button to proceed to the next step.
+
+5. Define the cost for each resource type by entering the cost per unit in the appropriate fields.
+
+6. Optionally, you can set a markup or discount for each resource type by entering a percentage in the appropriate fields.
+
+7. Set the distribution method for the cost model. 
+
+8. Review the cost model settings and click the Create button to create the cost model.
+
+For more detailed instructions on configuring a cost model, refer to the official documentation: link:https://docs.redhat.com/en/documentation/cost_management_service/1-latest/configure-cost_mod_setting_up[Set up a cost model,window=_blank]
+
 
 == See Also
 
@@ -82,3 +121,6 @@ For more details on installing and configuring the OpenShift Cost Management Ope
 
 * link:https://docs.redhat.com/en/documentation/cost_management_service/1-latest/integrate-install_cost_operator#installing-cost-operator_before-you-begin[Install the cost management operator,window=_blank]
 
+* link:https://docs.redhat.com/en/documentation/cost_management_service/1-latest/configure-view#exporting-cost-data-reporting_procedure[Export cost data to a reporting tool,window=_blank]
+
+* link:https://docs.redhat.com/en/documentation/cost_management_service/1-latest/configure-cost_mod_setting_up[Set up a cost model,window=_blank]
